@@ -1,0 +1,7 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/i18n">
+        <file alias="riip_en.qm">@QM_EN@</file>
+        <file alias="riip_zh.qm">@QM_ZH@</file>
+    </qresource>
+</RCC>
