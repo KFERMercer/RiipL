@@ -3,6 +3,16 @@ dev/
 tmp/
 temp/
 compile_commands.json
+RiipL
+*.AppImage
+*.deb
+*.rpm
+*.app
+*.dmg
+*.exe
+*.msi
+*.sig
+.tar.*
 .DS_Store
 .env
 .env.*

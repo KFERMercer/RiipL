@@ -76,6 +76,14 @@ cmake --build build --target riip_tests
 cd build && QT_QPA_PLATFORM=offscreen ./riip_tests
 ```
 
+### 打包
+
+| 目标 | 命令 | 平台 |
+| :-- | :-- | :-- |
+| Linux AppImage | `./packaging/appimage/build.sh` | Linux（自动下载 linuxdeploy 至 `build/tools`） |
+| Windows 便携 zip | `packaging\\windows\\build.bat` | Windows（PATH 中需有 Qt 与 MSVC/CMake） |
+| macOS dmg | `./packaging/macos/build.sh` | macOS（PATH 中需有 Qt 与 macdeployqt） |
+
 ## 使用技巧
 
 ### 接入自定义模型

@@ -75,6 +75,14 @@ cmake --build build --target riip_tests
 cd build && QT_QPA_PLATFORM=offscreen ./riip_tests
 ```
 
+### Packaging
+
+| Target | Command | Runs on |
+| :-- | :-- | :-- |
+| Linux AppImage | `./packaging/appimage/build.sh` | Linux (fetches linuxdeploy into `build/tools` automatically) |
+| Windows portable zip | `packaging\\windows\\build.bat` | Windows (Qt + MSVC/CMake on PATH) |
+| macOS dmg | `./packaging/macos/build.sh` | macOS (Qt + macdeployqt on PATH) |
+
 ## Usage Tips
 
 ### Connecting a custom model
