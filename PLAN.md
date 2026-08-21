@@ -10,9 +10,9 @@
 
 | 项 | 选择 |
 |---|---|
-| 语言 | C++17 |
+| 语言 | C++ |
 | GUI 框架 | Qt 6 (Widgets) |
-| 构建系统 | CMake ≥ 3.21 |
+| 构建系统 | CMake |
 | 网络层 | Qt6::Network (QNetworkAccessManager) |
 | JSON | QJsonDocument / QJsonObject |
 | UI 国际化 | Qt Linguist (.ts → .qm) |
@@ -22,7 +22,7 @@
 
 ### 跨平台目标
 
-Windows 10+、macOS 11+、Linux（X11/Wayland）。除全局热键外全部使用 Qt 标准库。
+Windows 10+、macOS 11+、Linux（X11/Wayland）。全部使用 Qt 标准库。
 
 ---
 
@@ -73,8 +73,7 @@ RiipL/
 每个可配置输入控件遵循以下交互：
 
 - **输入框 `placeholderText` 显示默认值**：形如 `默认：formal`。当输入框为空时，placeholder 显示，实际生效值为默认值。
-- **输入框背景色提示**：当当前值与默认值**不同**时，输入框背景设为浅黄色（`#FFFDE7`）；与默认值相同时为常规背景色。这是"底色显示默认值"的视觉反馈。
-- **"恢复默认"按钮隐藏**：每个配置项旁有一个小型重置按钮（图标为 ↺），**默认隐藏**（`visible = false`）。仅当该项当前值与默认值不同时才显示。点击后清空输入框并从 `config.json` 删除该键。
+- **"恢复默认"按钮隐藏**：每个配置项旁有一个小型重置按钮，**默认隐藏**（`visible = false`）。仅当该项当前值与默认值不同时才显示。点击后清空输入框并从 `config.json` 删除该键。
 - **实时生效**：输入框 `textEdited` 信号触发配置写入与默认值比对，动态切换背景色与重置按钮可见性。
 
 ### 3.3 `Defaults.h` 结构示意
@@ -205,7 +204,7 @@ class ApiClient : public QObject
 ### 5.2 模型参数配置 UI
 
 设置对话框"API"页包含：
-- 常用参数的独立输入框：`base_url`、`api_key`（密码模式）、`model`、`temperature`(QDoubleSpinBox 0-2)、`max_tokens`(QSpinBox)、`top_p`(QDoubleSpinBox 0-1)、`stream`(QCheckBox)。
+- 常用参数的独立输入框：`base_url`、`api_key`（密码模式）、`model`、`temperature`(QDoubleSpinBox 0-2)、`max_tokens`(QSpinBox)、`stream`(QCheckBox)。
 - 每个输入框遵循 3.2 的默认值回落交互。
 - **额外 body 参数**：一个 `QPlainTextEdit`，用户可输入 JSON 对象（如 `{"frequency_penalty": 0.5, "presence_penalty": 0}`），解析后 `merge` 到请求 body。输入框下方显示语法校验状态（绿✓/红✗）。空则不追加。
 
