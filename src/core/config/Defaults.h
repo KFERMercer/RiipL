@@ -5,7 +5,44 @@
 #include <QString>
 #include <QStringList>
 
+namespace Prompts {
+
+// Canonical prompt template identifiers from which per-language config keys derive.
+inline const QString defaultTemplate = QStringLiteral("default");
+inline const QString systemTemplate = QStringLiteral("system");
+inline const QString glossaryTemplate = QStringLiteral("glossary");
+inline const QString toneTemplate = QStringLiteral("tone");
+inline const QString styleTemplate = QStringLiteral("style");
+inline const QString backgroundTemplate = QStringLiteral("background");
+inline const QString personalizationTemplate = QStringLiteral("personalization");
+inline const QString candidateTemplate = QStringLiteral("candidate");
+
+}
+
 namespace Keys {
+
+// Single construction point for per-language prompt template keys.
+inline QString promptKey(const QString& name, const QString& language)
+{
+    return QStringLiteral("prompts.%1_%2").arg(name, language);
+}
+
+inline const QString promptDefaultZh = promptKey(Prompts::defaultTemplate, QStringLiteral("zh"));
+inline const QString promptDefaultEn = promptKey(Prompts::defaultTemplate, QStringLiteral("en"));
+inline const QString promptSystemZh = promptKey(Prompts::systemTemplate, QStringLiteral("zh"));
+inline const QString promptSystemEn = promptKey(Prompts::systemTemplate, QStringLiteral("en"));
+inline const QString promptGlossaryZh = promptKey(Prompts::glossaryTemplate, QStringLiteral("zh"));
+inline const QString promptGlossaryEn = promptKey(Prompts::glossaryTemplate, QStringLiteral("en"));
+inline const QString promptToneZh = promptKey(Prompts::toneTemplate, QStringLiteral("zh"));
+inline const QString promptToneEn = promptKey(Prompts::toneTemplate, QStringLiteral("en"));
+inline const QString promptStyleZh = promptKey(Prompts::styleTemplate, QStringLiteral("zh"));
+inline const QString promptStyleEn = promptKey(Prompts::styleTemplate, QStringLiteral("en"));
+inline const QString promptBackgroundZh = promptKey(Prompts::backgroundTemplate, QStringLiteral("zh"));
+inline const QString promptBackgroundEn = promptKey(Prompts::backgroundTemplate, QStringLiteral("en"));
+inline const QString promptPersonalizationZh = promptKey(Prompts::personalizationTemplate, QStringLiteral("zh"));
+inline const QString promptPersonalizationEn = promptKey(Prompts::personalizationTemplate, QStringLiteral("en"));
+inline const QString promptCandidateZh = promptKey(Prompts::candidateTemplate, QStringLiteral("zh"));
+inline const QString promptCandidateEn = promptKey(Prompts::candidateTemplate, QStringLiteral("en"));
 
 inline const QString apiBaseUrl = QStringLiteral("api.base_url");
 inline const QString apiKey = QStringLiteral("api.api_key");
@@ -34,23 +71,6 @@ inline const QString translationPreferences = QStringLiteral("translation.prefer
 
 inline const QString glossaryEnabled = QStringLiteral("glossary.enabled");
 inline const QString glossaryEntries = QStringLiteral("glossary.entries");
-
-inline const QString promptDefaultZh = QStringLiteral("prompts.default_zh");
-inline const QString promptDefaultEn = QStringLiteral("prompts.default_en");
-inline const QString promptSystemZh = QStringLiteral("prompts.system_zh");
-inline const QString promptSystemEn = QStringLiteral("prompts.system_en");
-inline const QString promptGlossaryZh = QStringLiteral("prompts.glossary_zh");
-inline const QString promptGlossaryEn = QStringLiteral("prompts.glossary_en");
-inline const QString promptToneZh = QStringLiteral("prompts.tone_zh");
-inline const QString promptToneEn = QStringLiteral("prompts.tone_en");
-inline const QString promptStyleZh = QStringLiteral("prompts.style_zh");
-inline const QString promptStyleEn = QStringLiteral("prompts.style_en");
-inline const QString promptBackgroundZh = QStringLiteral("prompts.background_zh");
-inline const QString promptBackgroundEn = QStringLiteral("prompts.background_en");
-inline const QString promptPersonalizationZh = QStringLiteral("prompts.personalization_zh");
-inline const QString promptPersonalizationEn = QStringLiteral("prompts.personalization_en");
-inline const QString promptCandidateZh = QStringLiteral("prompts.candidate_zh");
-inline const QString promptCandidateEn = QStringLiteral("prompts.candidate_en");
 
 inline const QString hotkeyEnabled = QStringLiteral("hotkey.enabled");
 inline const QString hotkeySequence = QStringLiteral("hotkey.sequence");

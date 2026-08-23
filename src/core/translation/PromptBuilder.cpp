@@ -7,12 +7,11 @@
 QString PromptBuilder::templateFor(const QString& name, const QString& uiLanguage)
 {
     ConfigManager* config = ConfigManager::instance();
-    const QString key = QStringLiteral("prompts.%1_%2").arg(name, uiLanguage);
-    const QString value = config->stringValue(key);
+    const QString value = config->stringValue(Keys::promptKey(name, uiLanguage));
     if (!value.isEmpty())
         return value;
-    const QString fallbackKey = QStringLiteral("prompts.%1_%2").arg(name, uiLanguage == QLatin1String("zh") ? QStringLiteral("en") : QStringLiteral("zh"));
-    const QString fallback = config->stringValue(fallbackKey);
+    const QString fallbackLanguage = uiLanguage == QLatin1String("zh") ? QStringLiteral("en") : QStringLiteral("zh");
+    const QString fallback = config->stringValue(Keys::promptKey(name, fallbackLanguage));
     if (!fallback.isEmpty())
         return fallback;
     return QString();
@@ -62,19 +61,19 @@ PromptBuilder::Result PromptBuilder::build(const TranslationContext& context)
     QStringList fragments;
 
     if (!context.background.isEmpty())
-        fragments << templateFor(QStringLiteral("background"), context.uiLanguage);
+        fragments << templateFor(Prompts::backgroundTemplate, context.uiLanguage);
     if (context.glossaryEnabled && !context.glossary.isEmpty())
-        fragments << templateFor(QStringLiteral("glossary"), context.uiLanguage);
+        fragments << templateFor(Prompts::glossaryTemplate, context.uiLanguage);
     if (!context.tone.isEmpty() && context.tone != QLatin1String("neutral"))
-        fragments << templateFor(QStringLiteral("tone"), context.uiLanguage);
+        fragments << templateFor(Prompts::toneTemplate, context.uiLanguage);
     if (!context.style.isEmpty())
-        fragments << templateFor(QStringLiteral("style"), context.uiLanguage);
+        fragments << templateFor(Prompts::styleTemplate, context.uiLanguage);
     if (!context.preferences.isEmpty())
-        fragments << templateFor(QStringLiteral("personalization"), context.uiLanguage);
-    fragments << templateFor(QStringLiteral("default"), context.uiLanguage);
+        fragments << templateFor(Prompts::personalizationTemplate, context.uiLanguage);
+    fragments << templateFor(Prompts::defaultTemplate, context.uiLanguage);
 
     Result result;
-    result.system = substitute(templateFor(QStringLiteral("system"), context.uiLanguage), variables);
+    result.system = substitute(templateFor(Prompts::systemTemplate, context.uiLanguage), variables);
     for (const QString& fragment : std::as_const(fragments)) {
         if (fragment.isEmpty())
             continue;
@@ -96,6 +95,6 @@ QString PromptBuilder::candidatePrompt(const QString& sourceText,
     variables.insert(QStringLiteral("translated_text"), translatedText);
     variables.insert(QStringLiteral("word"), word);
     variables.insert(QStringLiteral("target_lang"), Languages::englishName(targetLang));
-    const QString templ = templateFor(QStringLiteral("candidate"), uiLanguage);
+    const QString templ = templateFor(Prompts::candidateTemplate, uiLanguage);
     return substitute(templ, variables);
 }

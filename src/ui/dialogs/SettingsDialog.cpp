@@ -43,14 +43,14 @@ struct TemplateInfo
 const QVector<TemplateInfo>& templateInfos()
 {
     static const QVector<TemplateInfo> list = {
-        {QStringLiteral("default"), QStringLiteral("Default"), QStringLiteral("默认指令")},
-        {QStringLiteral("system"), QStringLiteral("System prompt"), QStringLiteral("系统提示词")},
-        {QStringLiteral("glossary"), QStringLiteral("Glossary"), QStringLiteral("术语表")},
-        {QStringLiteral("tone"), QStringLiteral("Tone"), QStringLiteral("语气")},
-        {QStringLiteral("style"), QStringLiteral("Style"), QStringLiteral("风格")},
-        {QStringLiteral("background"), QStringLiteral("Background"), QStringLiteral("背景信息")},
-        {QStringLiteral("personalization"), QStringLiteral("Personalization"), QStringLiteral("个性化偏好")},
-        {QStringLiteral("candidate"), QStringLiteral("Candidate wording"), QStringLiteral("候选遣词")}
+        {Prompts::defaultTemplate, QStringLiteral("Default"), QStringLiteral("默认指令")},
+        {Prompts::systemTemplate, QStringLiteral("System prompt"), QStringLiteral("系统提示词")},
+        {Prompts::glossaryTemplate, QStringLiteral("Glossary"), QStringLiteral("术语表")},
+        {Prompts::toneTemplate, QStringLiteral("Tone"), QStringLiteral("语气")},
+        {Prompts::styleTemplate, QStringLiteral("Style"), QStringLiteral("风格")},
+        {Prompts::backgroundTemplate, QStringLiteral("Background"), QStringLiteral("背景信息")},
+        {Prompts::personalizationTemplate, QStringLiteral("Personalization"), QStringLiteral("个性化偏好")},
+        {Prompts::candidateTemplate, QStringLiteral("Candidate wording"), QStringLiteral("候选遣词")}
     };
     return list;
 }
@@ -353,8 +353,8 @@ QWidget* SettingsDialog::createPromptsPage()
         auto* pageWidget = new QWidget(stack);
         auto* pageLayout = new QVBoxLayout(pageWidget);
         auto* langTabs = new QTabWidget(pageWidget);
-        auto* zhEditor = new ConfigTextEdit(QStringLiteral("prompts.%1_zh").arg(info.key), 10, pageWidget);
-        auto* enEditor = new ConfigTextEdit(QStringLiteral("prompts.%1_en").arg(info.key), 10, pageWidget);
+        auto* zhEditor = new ConfigTextEdit(Keys::promptKey(info.key, QStringLiteral("zh")), 10, pageWidget);
+        auto* enEditor = new ConfigTextEdit(Keys::promptKey(info.key, QStringLiteral("en")), 10, pageWidget);
         langTabs->addTab(zhEditor, tr("Chinese template"));
         langTabs->addTab(enEditor, tr("English template"));
         pageLayout->addWidget(langTabs);
