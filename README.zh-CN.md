@@ -119,7 +119,7 @@ RiipL/
 │   │   ├── translation/  # PromptBuilder、TranslationEngine、语言与语气
 │   │   ├── models/       # Glossary
 │   │   └── history/      # HistoryManager
-│   ├── platform/         # GlobalHotkey（Win / macOS Carbon / Linux X11）
+│   ├── platform/         # GlobalHotkey（Win / macOS / Linux X11）
 │   ├── ui/               # MainWindow、配置绑定控件、各对话框
 │   └── utils/            # JsonUtils、TextUtils、SingleInstance
 └── tests/                # 核心层 QTest 单元测试
