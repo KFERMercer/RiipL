@@ -21,6 +21,7 @@ private slots:
     void configFallsBackToDefaults();
     void configStoresOnlyNonDefaults();
     void configPersistsAcrossInstances();
+    void configFlushesPendingSaveOnRecreate();
     void promptSubstitution();
     void promptGlossaryFormatting();
     void candidatePromptSubstitution();
@@ -98,6 +99,16 @@ void TestCore::configPersistsAcrossInstances()
     QCOMPARE(ConfigManager::instance()->stringValue(Keys::uiLanguage), QStringLiteral("zh"));
     QCOMPARE(ConfigManager::instance()->stringValue(Keys::translationTargetLang), QStringLiteral("ja"));
     QCOMPARE(ConfigManager::instance()->intValue(Keys::uiAutoTranslateDelay), 800);
+}
+
+void TestCore::configFlushesPendingSaveOnRecreate()
+{
+    QDir().mkpath(tempDir());
+    ConfigManager::createInstance(tempDir());
+    ConfigManager::instance()->setValue(Keys::translationTargetLang, QStringLiteral("ja"));
+    ConfigManager::createInstance(tempDir());
+    QCOMPARE(ConfigManager::instance()->stringValue(Keys::translationTargetLang),
+             QStringLiteral("ja"));
 }
 
 void TestCore::promptSubstitution()

@@ -22,6 +22,8 @@ ConfigManager* ConfigManager::instance()
 
 void ConfigManager::createInstance(const QString& configDir)
 {
+    if (s_instance)
+        s_instance->flush();
     delete s_instance;
     QString dir = configDir;
     if (dir.isEmpty()) {
