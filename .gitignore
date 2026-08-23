@@ -1,6 +1,10 @@
+build
 build/
+dev
 dev/
+tmp
 tmp/
+temp
 temp/
 compile_commands.json
 RiipL
