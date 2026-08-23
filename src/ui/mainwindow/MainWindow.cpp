@@ -243,26 +243,26 @@ QWidget* MainWindow::createRightPane()
 
 void MainWindow::buildMenus()
 {
-    QMenu* fileMenu = menuBar()->addMenu(QString());
-    m_documentAction = fileMenu->addAction(QString());
-    m_exportAction = fileMenu->addAction(QString());
-    fileMenu->addSeparator();
-    m_exitAction = fileMenu->addAction(QString());
+    m_fileMenu = menuBar()->addMenu(QString());
+    m_documentAction = m_fileMenu->addAction(QString());
+    m_exportAction = m_fileMenu->addAction(QString());
+    m_fileMenu->addSeparator();
+    m_exitAction = m_fileMenu->addAction(QString());
 
-    QMenu* editMenu = menuBar()->addMenu(QString());
-    m_glossaryAction = editMenu->addAction(QString());
-    m_toneAction = editMenu->addAction(QString());
-    m_historyAction = editMenu->addAction(QString());
+    m_editMenu = menuBar()->addMenu(QString());
+    m_glossaryAction = m_editMenu->addAction(QString());
+    m_toneAction = m_editMenu->addAction(QString());
+    m_historyAction = m_editMenu->addAction(QString());
 
-    QMenu* viewMenu = menuBar()->addMenu(QString());
-    m_autoTranslateAction = viewMenu->addAction(QString());
+    m_viewMenu = menuBar()->addMenu(QString());
+    m_autoTranslateAction = m_viewMenu->addAction(QString());
     m_autoTranslateAction->setCheckable(true);
     m_autoTranslateAction->setChecked(ConfigManager::instance()->boolValue(Keys::uiAutoTranslate));
-    m_onTopAction = viewMenu->addAction(QString());
+    m_onTopAction = m_viewMenu->addAction(QString());
     m_onTopAction->setCheckable(true);
     m_onTopAction->setChecked(ConfigManager::instance()->boolValue(Keys::uiAlwaysOnTop));
-    viewMenu->addSeparator();
-    m_languageMenu = viewMenu->addMenu(QString());
+    m_viewMenu->addSeparator();
+    m_languageMenu = m_viewMenu->addMenu(QString());
     auto* languageGroup = new QActionGroup(m_languageMenu);
     languageGroup->setExclusive(true);
     const QList<QPair<QString, QString>> languageOptions = {
@@ -280,16 +280,16 @@ void MainWindow::buildMenus()
         });
     }
 
-    QMenu* toolsMenu = menuBar()->addMenu(QString());
-    m_clipboardAction = toolsMenu->addAction(QString());
+    m_toolsMenu = menuBar()->addMenu(QString());
+    m_clipboardAction = m_toolsMenu->addAction(QString());
     m_clipboardAction->setCheckable(true);
     m_clipboardAction->setChecked(ConfigManager::instance()->boolValue(Keys::clipboardMonitor));
-    m_hotkeySettingsAction = toolsMenu->addAction(QString());
-    toolsMenu->addSeparator();
-    m_settingsAction = toolsMenu->addAction(QString());
+    m_hotkeySettingsAction = m_toolsMenu->addAction(QString());
+    m_toolsMenu->addSeparator();
+    m_settingsAction = m_toolsMenu->addAction(QString());
 
-    QMenu* helpMenu = menuBar()->addMenu(QString());
-    QAction* aboutAction = helpMenu->addAction(QString());
+    m_helpMenu = menuBar()->addMenu(QString());
+    m_aboutAction = m_helpMenu->addAction(QString());
 
     QToolBar* toolBar = addToolBar(QString());
     toolBar->setMovable(false);
@@ -345,7 +345,7 @@ void MainWindow::buildMenus()
         SettingsDialog dialog(&m_hotkey, 5, this);
         dialog.exec();
     });
-    connect(aboutAction, &QAction::triggered, this, [this]() {
+    connect(m_aboutAction, &QAction::triggered, this, [this]() {
         AboutDialog dialog(this);
         dialog.exec();
     });
@@ -357,9 +357,9 @@ void MainWindow::buildTray()
         return;
     m_tray = new QSystemTrayIcon(QIcon(QStringLiteral(":/icons/app.svg")), this);
     QMenu* menu = new QMenu();
-    QAction* toggleAction = menu->addAction(QString());
+    m_trayShowHideAction = menu->addAction(QString());
     menu->addAction(m_clipboardAction);
-    QAction* translateClipAction = menu->addAction(QString());
+    m_trayTranslateClipAction = menu->addAction(QString());
     menu->addSeparator();
     menu->addAction(m_exitAction);
     m_tray->setContextMenu(menu);
@@ -368,8 +368,8 @@ void MainWindow::buildTray()
         if (reason == QSystemTrayIcon::DoubleClick || reason == QSystemTrayIcon::Trigger)
             toggleVisible();
     });
-    connect(toggleAction, &QAction::triggered, this, &MainWindow::toggleVisible);
-    connect(translateClipAction, &QAction::triggered, this, [this]() {
+    connect(m_trayShowHideAction, &QAction::triggered, this, &MainWindow::toggleVisible);
+    connect(m_trayTranslateClipAction, &QAction::triggered, this, [this]() {
         show();
         raise();
         activateWindow();
@@ -753,8 +753,7 @@ void MainWindow::retranslateUi()
 {
     setWindowTitle(tr("RiipL Translator"));
 
-    QMenu* fileMenu = menuBar()->actions().value(0)->menu();
-    fileMenu->setTitle(tr("&File"));
+    m_fileMenu->setTitle(tr("&File"));
     m_documentAction->setText(tr("Open document..."));
     m_documentAction->setShortcut(QKeySequence::Open);
     m_exportAction->setText(tr("Export translation..."));
@@ -762,47 +761,36 @@ void MainWindow::retranslateUi()
     m_exitAction->setText(tr("Exit"));
     m_exitAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+Q")));
 
-    QMenu* editMenu = menuBar()->actions().value(1)->menu();
-    editMenu->setTitle(tr("&Edit"));
+    m_editMenu->setTitle(tr("&Edit"));
     m_glossaryAction->setText(tr("Glossary..."));
     m_glossaryAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+G")));
     m_toneAction->setText(tr("Manage tones..."));
     m_historyAction->setText(tr("History..."));
     m_historyAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+H")));
 
-    QMenu* viewMenu = menuBar()->actions().value(2)->menu();
-    viewMenu->setTitle(tr("&View"));
+    m_viewMenu->setTitle(tr("&View"));
     m_autoTranslateAction->setText(tr("Auto translate"));
     m_onTopAction->setText(tr("Always on top"));
     m_languageMenu->setTitle(tr("Interface language"));
-    if (!m_languageMenu->actions().isEmpty()) {
-        m_languageMenu->actions().value(0)->setText(tr("Follow system"));
-        syncLanguageMenu();
+    for (QAction* action : m_languageMenu->actions()) {
+        if (action->data().toString() == QLatin1String("auto"))
+            action->setText(tr("Follow system"));
     }
+    syncLanguageMenu();
 
-    QMenu* toolsMenu = menuBar()->actions().value(3)->menu();
-    toolsMenu->setTitle(tr("&Tools"));
+    m_toolsMenu->setTitle(tr("&Tools"));
     m_clipboardAction->setText(tr("Monitor clipboard"));
     m_hotkeySettingsAction->setText(tr("Global hotkey..."));
     m_settingsAction->setText(tr("Settings..."));
 
-    QMenu* helpMenu = menuBar()->actions().value(4)->menu();
-    helpMenu->setTitle(tr("&Help"));
-    helpMenu->actions().value(0)->setText(tr("About RiipL"));
+    m_helpMenu->setTitle(tr("&Help"));
+    m_aboutAction->setText(tr("About RiipL"));
 
-    const QList<QToolBar*> toolBars = findChildren<QToolBar*>();
-    if (!toolBars.isEmpty()) {
-        QToolBar* bar = toolBars.first();
-        const QList<QAction*> actions = bar->actions();
-        if (actions.size() >= 8) {
-            actions.at(0)->setText(tr("Translate"));
-            actions.at(1)->setText(tr("Stop"));
-            actions.at(3)->setText(tr("Auto translate"));
-            actions.at(4)->setText(tr("Document"));
-            actions.at(5)->setText(tr("History"));
-            actions.at(7)->setText(tr("Settings"));
-        }
-    }
+    m_translateAction->setText(tr("Translate"));
+    m_stopAction->setText(tr("Stop"));
+    m_documentAction->setText(tr("Document"));
+    m_historyAction->setText(tr("History"));
+    m_settingsAction->setText(tr("Settings"));
     m_translateAction->setToolTip(tr("Translate now (Ctrl+Return)"));
     m_stopAction->setToolTip(tr("Stop translation"));
     m_undoAction->setToolTip(tr("Restore previous translation"));
@@ -813,7 +801,7 @@ void MainWindow::retranslateUi()
 
     m_sourceEdit->setPlaceholderText(tr("Enter text to translate"));
     if (m_trayMenu) {
-        m_trayMenu->actions().value(0)->setText(tr("Show/Hide window"));
-        m_trayMenu->actions().value(2)->setText(tr("Translate clipboard"));
+        m_trayShowHideAction->setText(tr("Show/Hide window"));
+        m_trayTranslateClipAction->setText(tr("Translate clipboard"));
     }
 }

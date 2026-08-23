@@ -86,6 +86,15 @@ private:
     QAction* m_copyAction = nullptr;
     QAction* m_undoAction = nullptr;
     QAction* m_exitAction = nullptr;
+    QAction* m_aboutAction = nullptr;
+    QAction* m_trayShowHideAction = nullptr;
+    QAction* m_trayTranslateClipAction = nullptr;
+
+    QMenu* m_fileMenu = nullptr;
+    QMenu* m_editMenu = nullptr;
+    QMenu* m_viewMenu = nullptr;
+    QMenu* m_toolsMenu = nullptr;
+    QMenu* m_helpMenu = nullptr;
     QMenu* m_languageMenu = nullptr;
     QMenu* m_trayMenu = nullptr;
 
