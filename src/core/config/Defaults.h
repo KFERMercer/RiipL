@@ -105,7 +105,7 @@ inline const bool uiMinimizeToTray = false;
 inline const int uiFontSize = 10;
 
 inline const QString translationSourceLang = QStringLiteral("auto");
-inline const QString translationTargetLang = QStringLiteral("en");
+inline const QString translationTargetLang = QStringLiteral("zh");
 inline const QString translationTone = QStringLiteral("neutral");
 inline const QString translationStyle = QString();
 inline const QString translationBackground = QString();

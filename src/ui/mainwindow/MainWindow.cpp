@@ -513,16 +513,21 @@ void MainWindow::swapLanguages()
     const QString sourceCode = m_sourceLang->currentData().toString();
     const QString targetCode = m_targetLang->currentData().toString();
     if (sourceCode == QLatin1String("auto")) {
-        const int fallback = m_sourceLang->findData(QStringLiteral("en"));
-        m_sourceLang->setCurrentIndex(fallback < 0 ? 0 : fallback);
+        // "Auto detect" stays selected; the target combo (which offers no
+        // auto entry) receives the effective source language resolved from
+        // the current text so both combos never collapse onto one language.
+        const int resolvedTarget =
+            m_targetLang->findData(Languages::resolveAuto(m_sourceEdit->toPlainText(), targetCode));
+        if (resolvedTarget >= 0)
+            m_targetLang->setCurrentIndex(resolvedTarget);
     } else {
         const int newTarget = m_targetLang->findData(sourceCode);
         if (newTarget >= 0)
             m_targetLang->setCurrentIndex(newTarget);
+        const int newSource = m_sourceLang->findData(targetCode);
+        if (newSource >= 0)
+            m_sourceLang->setCurrentIndex(newSource);
     }
-    const int newSource = m_sourceLang->findData(targetCode);
-    if (newSource >= 0)
-        m_sourceLang->setCurrentIndex(newSource);
     const QString sourceText = m_sourceEdit->toPlainText();
     const QString resultText = m_resultEdit->result();
     if (!resultText.isEmpty()) {

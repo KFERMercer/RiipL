@@ -4,6 +4,7 @@
 #include "core/config/Defaults.h"
 #include "core/history/HistoryManager.h"
 #include "core/models/Glossary.h"
+#include "core/translation/Language.h"
 #include "core/translation/PromptBuilder.h"
 #include "core/translation/TranslationEngine.h"
 #include "utils/SingleInstance.h"
@@ -31,6 +32,8 @@ private slots:
     void candidateResponseParsing();
     void replaceTargetsCompleteWord();
     void singleInstanceArbitration();
+    void guessFromScriptDetection();
+    void resolveAutoExcludesTarget();
 
 private:
     QString tempDir()
@@ -47,6 +50,7 @@ void TestCore::configFallsBackToDefaults()
     QCOMPARE(ConfigManager::instance()->stringValue(Keys::apiModel), Defaults::apiModel);
     QCOMPARE(ConfigManager::instance()->doubleValue(Keys::apiTemperature), Defaults::apiTemperature);
     QCOMPARE(ConfigManager::instance()->intValue(Keys::apiTimeoutMs), Defaults::apiTimeoutMs);
+    QCOMPARE(ConfigManager::instance()->stringValue(Keys::translationTargetLang), QStringLiteral("zh"));
     QVERIFY(ConfigManager::instance()->isDefault(Keys::apiModel));
     QFile file(ConfigManager::instance()->configFilePath());
     QVERIFY(file.open(QIODevice::ReadOnly));
@@ -329,6 +333,33 @@ void TestCore::singleInstanceArbitration()
     SingleInstance third;
     QCOMPARE(third.tryLock(), SingleInstance::Role::Primary);
     QVERIFY(third.isPrimary());
+}
+
+void TestCore::guessFromScriptDetection()
+{
+    using namespace Languages;
+    QCOMPARE(guessFromScript(QStringLiteral("你好，世界")), QStringLiteral("zh"));
+    QCOMPARE(guessFromScript(QStringLiteral("こんにちは世界")), QStringLiteral("ja"));
+    QCOMPARE(guessFromScript(QStringLiteral("안녕하세요")), QStringLiteral("ko"));
+    QCOMPARE(guessFromScript(QStringLiteral("Привет, мир")), QStringLiteral("ru"));
+    QCOMPARE(guessFromScript(QStringLiteral("مرحبا بالعالم")), QStringLiteral("ar"));
+    QCOMPARE(guessFromScript(QStringLiteral("שלום עולם")), QStringLiteral("he"));
+    QCOMPARE(guessFromScript(QStringLiteral("สวัสดีครับ")), QStringLiteral("th"));
+    QCOMPARE(guessFromScript(QStringLiteral("Hello world")), QString());
+    QCOMPARE(guessFromScript(QString()), QString());
+    QCOMPARE(guessFromScript(QStringLiteral("Hello 你好")), QStringLiteral("zh"));
+}
+
+void TestCore::resolveAutoExcludesTarget()
+{
+    using namespace Languages;
+    QCOMPARE(resolveAuto(QStringLiteral("你好"), QStringLiteral("en")), QStringLiteral("zh"));
+    QCOMPARE(resolveAuto(QStringLiteral("你好"), QStringLiteral("fr")), QStringLiteral("zh"));
+    const QString latinFallback = resolveAuto(QStringLiteral("Hello world"), QStringLiteral("en"));
+    QVERIFY(latinFallback != QStringLiteral("en"));
+    QVERIFY(indexOf(latinFallback) > 0);
+    QVERIFY(resolveAuto(QStringLiteral("你好"), QStringLiteral("zh")) != QStringLiteral("zh"));
+    QVERIFY(resolveAuto(QString(), QStringLiteral("ja")) != QStringLiteral("ja"));
 }
 
 QTEST_MAIN(TestCore)
