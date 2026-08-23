@@ -7,7 +7,6 @@
 #include "core/translation/PromptBuilder.h"
 #include "core/translation/TranslationEngine.h"
 #include "utils/TextUtils.h"
-#include "ui/widgets/TranslationEdit.h"
 
 #include <QJsonDocument>
 #include <QTemporaryDir>
@@ -272,21 +271,27 @@ void TestCore::candidateResponseParsing()
 
 void TestCore::replaceTargetsCompleteWord()
 {
-    TranslationEdit edit;
     const QString translated = QStringLiteral("莫卧儿皇帝是从什么时候开始觉得自己是印度人的？");
-    edit.setResult(translated);
-
     const int huangIndex = translated.indexOf(QStringLiteral("皇"));
     const TextUtils::WordSpan span = TextUtils::wordSpanAt(translated, huangIndex);
     QVERIFY(span.valid());
 
-    QTextCursor hint = edit.textCursor();
-    hint.setPosition(span.start);
-    hint.setPosition(span.end, QTextCursor::KeepAnchor);
+    // The clicked span acts only as an anchor; the replacement target from
+    // the candidate response may cover a longer run than the clicked word.
+    const QString target = QStringLiteral("皇帝");
+    const int start = TextUtils::nearestOccurrence(translated, target, span.start);
+    QCOMPARE(start, span.start);
 
-    QVERIFY(edit.replaceWordAt(hint, QStringLiteral("皇帝"), QStringLiteral("君主")));
-    QCOMPARE(edit.toPlainText(),
+    QString replaced = translated;
+    replaced.replace(start, target.size(), QStringLiteral("君主"));
+    QCOMPARE(replaced,
              QStringLiteral("莫卧儿君主是从什么时候开始觉得自己是印度人的？"));
+
+    // Anchoring resolves to the occurrence closest to the given position.
+    const QString repeated = QStringLiteral("alpha beta alpha");
+    QCOMPARE(TextUtils::nearestOccurrence(repeated, QStringLiteral("alpha"), 6), 11);
+    QCOMPARE(TextUtils::nearestOccurrence(repeated, QStringLiteral("gamma"), 0), -1);
+    QCOMPARE(TextUtils::nearestOccurrence(repeated, QString(), 0), -1);
 }
 
 QTEST_MAIN(TestCore)

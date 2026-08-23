@@ -1,5 +1,7 @@
 #include "TextUtils.h"
 
+#include <limits>
+
 #include <QList>
 #include <QTextBoundaryFinder>
 
@@ -78,6 +80,26 @@ WordSpan wordSpanAt(const QString& text, int position)
         return {start, end};
     }
     return {};
+}
+
+int nearestOccurrence(const QString& text, const QString& needle, int anchor)
+{
+    if (needle.isEmpty())
+        return -1;
+
+    anchor = qBound(0, anchor, text.size());
+    int bestStart = -1;
+    int bestDistance = std::numeric_limits<int>::max();
+    int index = text.indexOf(needle);
+    while (index != -1) {
+        const int distance = qAbs(index - anchor);
+        if (distance < bestDistance) {
+            bestDistance = distance;
+            bestStart = index;
+        }
+        index = text.indexOf(needle, index + 1);
+    }
+    return bestStart;
 }
 
 }

@@ -23,7 +23,6 @@ protected:
 
 private:
     void clearHighlight();
-    QTextCursor locateText(const QTextCursor& hint, const QString& text) const;
 
     QTextCursor m_wordCursor;
     QPoint m_pressPos;

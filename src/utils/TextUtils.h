@@ -15,4 +15,8 @@ struct WordSpan
 
 WordSpan wordSpanAt(const QString& text, int position);
 
+// Index of the occurrence of \p needle closest to \p anchor, or -1 when
+// \p needle is empty or not found.
+int nearestOccurrence(const QString& text, const QString& needle, int anchor);
+
 }

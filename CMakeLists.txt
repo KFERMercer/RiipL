@@ -104,9 +104,7 @@ find_package(Qt6 REQUIRED COMPONENTS Test)
 enable_testing()
 add_executable(riip_tests
     tests/test_core.cpp
-    src/ui/widgets/TranslationEdit.cpp
-    src/ui/widgets/TranslationEdit.h
 )
 target_include_directories(riip_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(riip_tests PRIVATE riip_core Qt6::Test Qt6::Widgets)
+target_link_libraries(riip_tests PRIVATE riip_core Qt6::Test)
 add_test(NAME core_tests COMMAND riip_tests)

@@ -2,8 +2,6 @@
 
 #include "utils/TextUtils.h"
 
-#include <limits>
-
 #include <QAbstractTextDocumentLayout>
 #include <QMouseEvent>
 #include <QScrollBar>
@@ -31,37 +29,6 @@ void TranslationEdit::clearHighlight()
 {
     setExtraSelections({});
     m_wordCursor = QTextCursor();
-}
-
-QTextCursor TranslationEdit::locateText(const QTextCursor& hint, const QString& text) const
-{
-    if (text.isEmpty())
-        return QTextCursor();
-    if (hint.hasSelection() && hint.selectedText() == text)
-        return hint;
-
-    const QString docText = toPlainText();
-    int anchor = hint.hasSelection() ? hint.selectionStart() : hint.position();
-    anchor = qBound(0, anchor, docText.size());
-
-    int bestStart = -1;
-    int bestDistance = std::numeric_limits<int>::max();
-    int index = docText.indexOf(text);
-    while (index != -1) {
-        const int distance = qAbs(index - anchor);
-        if (distance < bestDistance) {
-            bestDistance = distance;
-            bestStart = index;
-        }
-        index = docText.indexOf(text, index + 1);
-    }
-    if (bestStart == -1)
-        return QTextCursor();
-
-    QTextCursor cursor(document());
-    cursor.setPosition(bestStart);
-    cursor.setPosition(bestStart + text.size(), QTextCursor::KeepAnchor);
-    return cursor;
 }
 
 void TranslationEdit::mousePressEvent(QMouseEvent* event)
@@ -129,17 +96,26 @@ bool TranslationEdit::replaceWordAt(const QTextCursor& hint,
                                     const QString& targetText,
                                     const QString& replacement)
 {
-    if (targetText.isEmpty()) {
+    int start = -1;
+    if (!targetText.isEmpty()) {
+        // An exact hint selection pins the occurrence; otherwise the one
+        // nearest to the cursor position wins.
+        if (hint.hasSelection() && hint.selectedText() == targetText) {
+            start = hint.selectionStart();
+        } else {
+            const int anchor = hint.hasSelection() ? hint.selectionStart() : hint.position();
+            start = TextUtils::nearestOccurrence(toPlainText(), targetText, anchor);
+        }
+    }
+
+    if (start < 0) {
         emit replacementSkipped(targetText);
         return false;
     }
 
-    QTextCursor target = locateText(hint, targetText);
-    if (!target.hasSelection()) {
-        emit replacementSkipped(targetText);
-        return false;
-    }
-
+    QTextCursor target(document());
+    target.setPosition(start);
+    target.setPosition(start + targetText.size(), QTextCursor::KeepAnchor);
     target.insertText(replacement);
     clearHighlight();
     return true;
