@@ -41,6 +41,7 @@
 #include <QSystemTrayIcon>
 #include <QTimer>
 #include <QToolBar>
+#include <QWindow>
 #include <QToolButton>
 #include <QVBoxLayout>
 
@@ -640,11 +641,14 @@ void MainWindow::syncLanguageMenu()
 
 void MainWindow::applyAlwaysOnTop(bool onTop)
 {
-    // QWidget hides a visible window when its flags change; restore visibility afterwards.
-    const bool wasVisible = isVisible();
+    if (QWindow* handle = windowHandle()) {
+        Qt::WindowFlags flags = handle->flags();
+        flags.setFlag(Qt::WindowStaysOnTopHint, onTop);
+        if (flags != handle->flags())
+            handle->setFlags(flags);
+        return;
+    }
     setWindowFlag(Qt::WindowStaysOnTopHint, onTop);
-    if (wasVisible)
-        show();
 }
 
 void MainWindow::applyEditorFonts()
