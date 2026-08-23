@@ -6,6 +6,7 @@
 #include "core/models/Glossary.h"
 #include "core/translation/PromptBuilder.h"
 #include "core/translation/TranslationEngine.h"
+#include "utils/SingleInstance.h"
 #include "utils/TextUtils.h"
 
 #include <QJsonDocument>
@@ -29,6 +30,7 @@ private slots:
     void wordSpanAtBoundaries();
     void candidateResponseParsing();
     void replaceTargetsCompleteWord();
+    void singleInstanceArbitration();
 
 private:
     QString tempDir()
@@ -300,6 +302,32 @@ void TestCore::replaceTargetsCompleteWord()
     QCOMPARE(TextUtils::nearestOccurrence(repeated, QStringLiteral("alpha"), 6), 11);
     QCOMPARE(TextUtils::nearestOccurrence(repeated, QStringLiteral("gamma"), 0), -1);
     QCOMPARE(TextUtils::nearestOccurrence(repeated, QString(), 0), -1);
+}
+
+void TestCore::singleInstanceArbitration()
+{
+    {
+        SingleInstance first;
+        QCOMPARE(first.tryLock(), SingleInstance::Role::Primary);
+        QVERIFY(first.isPrimary());
+
+        {
+            SingleInstance second;
+            QCOMPARE(second.tryLock(), SingleInstance::Role::Secondary);
+            QVERIFY(!second.isPrimary());
+
+            QSignalSpy activated(&first, &SingleInstance::activationRequested);
+            second.notifyExistingInstance();
+            QVERIFY(activated.wait(2000));
+            QCOMPARE(activated.count(), 1);
+        }
+    }
+
+    // A fresh launch takes over once the previous primary released the lock,
+    // which also covers takeover after a crashed instance.
+    SingleInstance third;
+    QCOMPARE(third.tryLock(), SingleInstance::Role::Primary);
+    QVERIFY(third.isPrimary());
 }
 
 QTEST_MAIN(TestCore)

@@ -4,6 +4,7 @@
 #include "utils/SingleInstance.h"
 
 #include <QApplication>
+#include <QDebug>
 #include <QFont>
 #include <QLibraryInfo>
 #include <QObject>
@@ -65,9 +66,15 @@ int main(int argc, char* argv[])
         });
 
     SingleInstance singleInstance;
-    if (!singleInstance.tryLock()) {
+    switch (singleInstance.tryLock()) {
+    case SingleInstance::Role::Secondary:
         singleInstance.notifyExistingInstance();
         return 0;
+    case SingleInstance::Role::Error:
+        qWarning() << "Failed to establish the single-instance IPC channel";
+        return 1;
+    case SingleInstance::Role::Primary:
+        break;
     }
 
     MainWindow window;
