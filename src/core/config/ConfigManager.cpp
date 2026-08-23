@@ -179,22 +179,3 @@ void ConfigManager::flush()
         save();
     }
 }
-
-QString ConfigManager::placeholderFor(const QString& key) const
-{
-    const QJsonValue def = Defaults::value(key);
-    QString text;
-    if (def.isString())
-        text = def.toString();
-    else if (def.isBool())
-        text = def.toBool() ? QStringLiteral("true") : QStringLiteral("false");
-    else if (def.isDouble())
-        text = JsonUtils::compactJson(def);
-    if (text.isEmpty())
-        return tr("Default: empty");
-    if (text.size() > 64) {
-        text = text.left(61) + QStringLiteral("...");
-        return tr("Default: %1").arg(text);
-    }
-    return tr("Default: %1").arg(text);
-}

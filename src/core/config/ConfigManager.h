@@ -24,8 +24,6 @@ public:
     void setValue(const QString& key, const QJsonValue& value);
     void removeValue(const QString& key);
 
-    QString placeholderFor(const QString& key) const;
-
     QJsonObject userDocument() const { return m_user; }
     void resetTo(const QJsonObject& doc);
     void flush();

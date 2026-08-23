@@ -55,10 +55,6 @@ ConfigLineEdit::ConfigLineEdit(const QString& key, bool password, QWidget* paren
 
     connect(m_reset, &QToolButton::clicked, this, [this]() {
         ConfigManager::instance()->removeValue(m_key);
-        m_guard = true;
-        m_edit->clear();
-        m_guard = false;
-        applyState();
     });
     connect(m_edit, &QLineEdit::textEdited, this, [this](const QString& text) {
         ConfigManager::instance()->setValue(m_key, text);
@@ -69,7 +65,6 @@ ConfigLineEdit::ConfigLineEdit(const QString& key, bool password, QWidget* paren
 
     m_guard = true;
     m_edit->setText(ConfigManager::instance()->stringValue(m_key));
-    m_edit->setPlaceholderText(ConfigManager::instance()->placeholderFor(m_key));
     m_guard = false;
     applyState();
 }
@@ -171,10 +166,6 @@ ConfigTextEdit::ConfigTextEdit(const QString& key, int rows, QWidget* parent)
 
     connect(m_reset, &QToolButton::clicked, this, [this]() {
         ConfigManager::instance()->removeValue(m_key);
-        m_guard = true;
-        m_edit->clear();
-        m_guard = false;
-        applyState();
     });
     connect(m_edit, &QPlainTextEdit::textChanged, this, [this]() {
         if (m_guard)
@@ -187,7 +178,6 @@ ConfigTextEdit::ConfigTextEdit(const QString& key, int rows, QWidget* parent)
 
     m_guard = true;
     m_edit->setPlainText(ConfigManager::instance()->stringValue(m_key));
-    m_edit->setPlaceholderText(ConfigManager::instance()->placeholderFor(m_key));
     m_guard = false;
     applyState();
 }
