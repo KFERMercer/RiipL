@@ -42,11 +42,6 @@ void ApiClient::sendChatRequest(const QJsonObject& body,
                                 ErrorCallback onError)
 {
     ConfigManager* config = ConfigManager::instance();
-    if (!config) {
-        if (onError)
-            onError(tr("Internal error: configuration is not initialized"));
-        return;
-    }
 
     const QString baseUrl = config->stringValue(Keys::apiBaseUrl).trimmed();
     if (baseUrl.isEmpty()) {

@@ -15,6 +15,8 @@ ConfigManager* ConfigManager::s_instance = nullptr;
 
 ConfigManager* ConfigManager::instance()
 {
+    if (!s_instance)
+        createInstance();
     return s_instance;
 }
 

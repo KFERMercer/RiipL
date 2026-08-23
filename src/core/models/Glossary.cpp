@@ -32,15 +32,13 @@ QVector<GlossaryEntry> Glossary::fromJson(const QJsonArray& array)
 
 void Glossary::saveToConfig() const
 {
-    if (ConfigManager* config = ConfigManager::instance())
-        config->setValue(Keys::glossaryEntries, toJson(entries));
+    ConfigManager::instance()->setValue(Keys::glossaryEntries, toJson(entries));
 }
 
 Glossary Glossary::loadFromConfig()
 {
     Glossary glossary;
-    if (const ConfigManager* config = ConfigManager::instance())
-        glossary.entries = fromJson(config->value(Keys::glossaryEntries).toArray());
+    glossary.entries = fromJson(ConfigManager::instance()->value(Keys::glossaryEntries).toArray());
     return glossary;
 }
 

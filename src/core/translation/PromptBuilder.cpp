@@ -7,16 +7,14 @@
 QString PromptBuilder::templateFor(const QString& name, const QString& uiLanguage)
 {
     ConfigManager* config = ConfigManager::instance();
-    if (config) {
-        const QString key = QStringLiteral("prompts.%1_%2").arg(name, uiLanguage);
-        const QString value = config->stringValue(key);
-        if (!value.isEmpty())
-            return value;
-        const QString fallbackKey = QStringLiteral("prompts.%1_%2").arg(name, uiLanguage == QLatin1String("zh") ? QStringLiteral("en") : QStringLiteral("zh"));
-        const QString fallback = config->stringValue(fallbackKey);
-        if (!fallback.isEmpty())
-            return fallback;
-    }
+    const QString key = QStringLiteral("prompts.%1_%2").arg(name, uiLanguage);
+    const QString value = config->stringValue(key);
+    if (!value.isEmpty())
+        return value;
+    const QString fallbackKey = QStringLiteral("prompts.%1_%2").arg(name, uiLanguage == QLatin1String("zh") ? QStringLiteral("en") : QStringLiteral("zh"));
+    const QString fallback = config->stringValue(fallbackKey);
+    if (!fallback.isEmpty())
+        return fallback;
     return QString();
 }
 
