@@ -21,11 +21,9 @@
 #include <QCloseEvent>
 #include <QComboBox>
 #include <QCursor>
-#include <QDebug>
 #include <QDateTime>
 #include <QFile>
 #include <QFileDialog>
-#include <QFileInfo>
 #include <QFont>
 #include <QGuiApplication>
 #include <QHBoxLayout>
@@ -33,7 +31,7 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QPlainTextEdit>
-#include <QPushButton>
+#include <QResizeEvent>
 #include <QScreen>
 #include <QScrollBar>
 #include <QSplitter>
@@ -41,9 +39,13 @@
 #include <QSystemTrayIcon>
 #include <QTimer>
 #include <QToolBar>
-#include <QWindow>
 #include <QToolButton>
+#include <QWindow>
 #include <QVBoxLayout>
+
+namespace {
+constexpr int kMaxResultSnapshots = 30;
+}
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
@@ -54,13 +56,29 @@ MainWindow::MainWindow(QWidget* parent)
     setUnifiedTitleAndToolBarOnMac(true);
     restoreGeometryFromConfig();
 
-    auto* splitter = new QSplitter(Qt::Horizontal, this);
-    splitter->addWidget(createLeftPane());
-    splitter->addWidget(createRightPane());
-    splitter->setStretchFactor(0, 1);
-    splitter->setStretchFactor(1, 1);
-    splitter->setSizes({600, 600});
-    setCentralWidget(splitter);
+    auto* centralArea = new QWidget(this);
+    auto* centralLayout = new QVBoxLayout(centralArea);
+    centralLayout->setContentsMargins(0, 0, 0, 0);
+
+    m_splitter = new QSplitter(Qt::Horizontal, centralArea);
+    m_splitter->addWidget(createLeftPane());
+    m_splitter->addWidget(createRightPane());
+    m_splitter->setStretchFactor(0, 1);
+    m_splitter->setStretchFactor(1, 1);
+    m_splitter->setSizes({600, 600});
+    centralLayout->addWidget(m_splitter);
+    setCentralWidget(centralArea);
+
+    m_swapAction = new QAction(this);
+    m_swapAction->setIcon(AppIcons::swapHorizontal());
+    connect(m_swapAction, &QAction::triggered, this, &MainWindow::swapLanguages);
+
+    m_swapButton = new QToolButton(centralArea);
+    m_swapButton->setDefaultAction(m_swapAction);
+    m_swapButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
+    connect(m_splitter, &QSplitter::splitterMoved, this,
+            &MainWindow::updateSwapButtonGeometry);
+    QTimer::singleShot(0, this, &MainWindow::updateSwapButtonGeometry);
 
     buildMenus();
     buildTray();
@@ -81,7 +99,7 @@ MainWindow::MainWindow(QWidget* parent)
                 pushResultSnapshot();
                 if (!m_resultEdit->replaceWordAt(cursor, replaceTarget, replacement)) {
                     m_resultSnapshots.removeLast();
-                    updateUndoAction();
+                    updateUndoRedoActions();
                     setStatusMessage(tr("Translation has changed; replacement skipped"), false);
                 }
             });
@@ -152,6 +170,24 @@ MainWindow::MainWindow(QWidget* parent)
     retranslateUi();
 }
 
+void MainWindow::closeEvent(QCloseEvent* event)
+{
+    if (m_tray && ConfigManager::instance()->boolValue(Keys::uiMinimizeToTray)) {
+        hide();
+        event->ignore();
+        return;
+    }
+    saveGeometryToConfig();
+    ConfigManager::instance()->flush();
+    event->accept();
+}
+
+void MainWindow::resizeEvent(QResizeEvent* event)
+{
+    QMainWindow::resizeEvent(event);
+    updateSwapButtonGeometry();
+}
+
 QWidget* MainWindow::createLeftPane()
 {
     auto* pane = new QWidget(this);
@@ -161,13 +197,7 @@ QWidget* MainWindow::createLeftPane()
     auto* topRow = new QHBoxLayout();
     m_sourceLang = new QComboBox(pane);
     m_sourceLang->setSizeAdjustPolicy(QComboBox::AdjustToContents);
-    m_swapAction = new QAction(pane);
-    m_swapAction->setIcon(AppIcons::swapHorizontal());
-    auto* swapButton = new QToolButton(pane);
-    swapButton->setDefaultAction(m_swapAction);
-    swapButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
     topRow->addWidget(m_sourceLang);
-    topRow->addWidget(swapButton);
     topRow->addStretch(1);
     layout->addLayout(topRow);
 
@@ -178,21 +208,20 @@ QWidget* MainWindow::createLeftPane()
     auto* bottomRow = new QHBoxLayout();
     m_clearAction = new QAction(pane);
     m_pasteAction = new QAction(pane);
-    auto* clearButton = new QToolButton(pane);
-    clearButton->setDefaultAction(m_clearAction);
-    clearButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
     auto* pasteButton = new QToolButton(pane);
     pasteButton->setDefaultAction(m_pasteAction);
     pasteButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
-    bottomRow->addWidget(clearButton);
+    auto* clearButton = new QToolButton(pane);
+    clearButton->setDefaultAction(m_clearAction);
+    clearButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
     bottomRow->addWidget(pasteButton);
+    bottomRow->addWidget(clearButton);
     bottomRow->addStretch(1);
     m_countLabel = new QLabel(QStringLiteral("0"), pane);
     bottomRow->addWidget(m_countLabel);
     layout->addLayout(bottomRow);
 
     connect(m_sourceEdit, &QPlainTextEdit::textChanged, this, &MainWindow::onSourceChanged);
-    connect(m_swapAction, &QAction::triggered, this, &MainWindow::swapLanguages);
     connect(m_clearAction, &QAction::triggered, this, [this]() {
         m_sourceEdit->clear();
         m_sourceEdit->setFocus();
@@ -212,32 +241,49 @@ QWidget* MainWindow::createRightPane()
     m_targetLang->setSizeAdjustPolicy(QComboBox::AdjustToContents);
     m_tone = new QComboBox(pane);
     m_tone->setSizeAdjustPolicy(QComboBox::AdjustToContents);
-    topRow->addWidget(m_targetLang);
-    topRow->addWidget(m_tone);
     topRow->addStretch(1);
+    topRow->addWidget(m_tone);
+    topRow->addWidget(m_targetLang);
     layout->addLayout(topRow);
 
     m_resultEdit = new TranslationEdit(pane);
     layout->addWidget(m_resultEdit, 1);
 
     auto* bottomRow = new QHBoxLayout();
-    m_copyAction = new QAction(pane);
     m_undoAction = new QAction(pane);
     m_undoAction->setIcon(AppIcons::undo());
     m_undoAction->setEnabled(false);
     connect(m_undoAction, &QAction::triggered, this, &MainWindow::undoResult);
+    m_redoAction = new QAction(pane);
+    m_redoAction->setIcon(AppIcons::redo());
+    m_redoAction->setEnabled(false);
+    connect(m_redoAction, &QAction::triggered, this, &MainWindow::redoResult);
+    m_copyAction = new QAction(pane);
+    m_clearResultAction = new QAction(pane);
     auto* undoButton = new QToolButton(pane);
     undoButton->setDefaultAction(m_undoAction);
     undoButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
-    bottomRow->addWidget(undoButton);
+    auto* redoButton = new QToolButton(pane);
+    redoButton->setDefaultAction(m_redoAction);
+    redoButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
+    auto* clearResultButton = new QToolButton(pane);
+    clearResultButton->setDefaultAction(m_clearResultAction);
+    clearResultButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
     auto* copyButton = new QToolButton(pane);
     copyButton->setDefaultAction(m_copyAction);
     copyButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
-    bottomRow->addWidget(copyButton);
+    bottomRow->addWidget(undoButton);
+    bottomRow->addWidget(redoButton);
     bottomRow->addStretch(1);
+    bottomRow->addWidget(clearResultButton);
+    bottomRow->addWidget(copyButton);
     layout->addLayout(bottomRow);
 
     connect(m_copyAction, &QAction::triggered, this, &MainWindow::copyResult);
+    connect(m_clearResultAction, &QAction::triggered, this, [this]() {
+        pushResultSnapshot();
+        m_resultEdit->setResult(QString());
+    });
     return pane;
 }
 
@@ -293,10 +339,28 @@ void MainWindow::buildMenus()
     QToolBar* toolBar = addToolBar(QString());
     toolBar->setMovable(false);
     toolBar->setToolButtonStyle(Qt::ToolButtonTextOnly);
-    m_translateAction = toolBar->addAction(QString());
+
+    m_translateAction = new QAction(this);
+    m_translateAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+Return")));
+    m_translateButton = new QToolButton(toolBar);
+    m_translateButton->setDefaultAction(m_translateAction);
+    m_translateButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    m_translateButton->setStyleSheet(QStringLiteral(
+        "QToolButton { color: white;"
+        "              background-color: #007653;"
+        "              border-radius: 0.25em;"
+        "              padding: 0.25em; }"
+        "QToolButton:hover { background-color: #009065; }"
+        "QToolButton:pressed { background-color: #005C41; }"
+        "QToolButton:disabled { color: rgba(255, 255, 255, 140);"
+        "                       background-color: rgba(0, 118, 83, 110); }"));
+    toolBar->addWidget(m_translateButton);
+    connect(m_translateAction, &QAction::triggered, this, &MainWindow::translateNow);
+
     m_stopAction = toolBar->addAction(QString());
     m_stopAction->setEnabled(false);
-    m_translateAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+Return")));
+    connect(m_stopAction, &QAction::triggered, this, [this]() { m_engine.stop(); });
+
     toolBar->addSeparator();
     toolBar->addAction(m_autoTranslateAction);
     toolBar->addAction(m_documentAction);
@@ -304,8 +368,6 @@ void MainWindow::buildMenus()
     toolBar->addSeparator();
     toolBar->addAction(m_settingsAction);
 
-    connect(m_translateAction, &QAction::triggered, this, &MainWindow::translateNow);
-    connect(m_stopAction, &QAction::triggered, this, [this]() { m_engine.stop(); });
     connect(m_autoTranslateAction, &QAction::toggled, this, [this](bool checked) {
         ConfigManager::instance()->setValue(Keys::uiAutoTranslate, checked);
     });
@@ -372,6 +434,20 @@ void MainWindow::buildTray()
     m_trayMenu = menu;
 }
 
+void MainWindow::updateSwapButtonGeometry()
+{
+    if (!m_splitter || !m_swapButton || !m_sourceLang)
+        return;
+    const QWidget* handle = m_splitter->handle(1);
+    QWidget* base = m_swapButton->parentWidget();
+    if (!handle || !base)
+        return;
+    const QPoint comboCenter = m_sourceLang->mapTo(base, m_sourceLang->rect().center());
+    const QPoint handleCenter = m_splitter->mapTo(base, handle->geometry().center());
+    m_swapButton->move(handleCenter.x() - m_swapButton->width() / 2,
+                       comboCenter.y() - m_swapButton->height() / 2);
+}
+
 void MainWindow::populateLanguageCombos()
 {
     const QString uiLanguage = ConfigManager::instance()->resolvedUiLanguage();
@@ -419,6 +495,90 @@ void MainWindow::populateToneCombo()
     m_tone->setCurrentIndex(index < 0 ? 0 : index);
 }
 
+void MainWindow::syncLanguageMenu()
+{
+    if (!m_languageMenu)
+        return;
+    const QString current = ConfigManager::instance()->value(Keys::uiLanguage).toString();
+    const auto actions = m_languageMenu->actions();
+    for (QAction* action : actions) {
+        QSignalBlocker blocker(action);
+        action->setChecked(action->data().toString() == current);
+    }
+}
+
+void MainWindow::applyAlwaysOnTop(bool onTop)
+{
+    if (QWindow* handle = windowHandle()) {
+        Qt::WindowFlags flags = handle->flags();
+        flags.setFlag(Qt::WindowStaysOnTopHint, onTop);
+        if (flags != handle->flags())
+            handle->setFlags(flags);
+        return;
+    }
+    setWindowFlag(Qt::WindowStaysOnTopHint, onTop);
+}
+
+void MainWindow::applyEditorFonts()
+{
+    QFont editorFont = QApplication::font();
+    editorFont.setPointSize(ConfigManager::instance()->intValue(Keys::uiFontSize) + 1);
+    m_sourceEdit->setFont(editorFont);
+    m_resultEdit->setFont(editorFont);
+}
+
+void MainWindow::applyClipboardMonitoring(bool enabled)
+{
+    disconnect(QApplication::clipboard(), &QClipboard::dataChanged, this, nullptr);
+    m_clipboardTimer->stop();
+    if (enabled) {
+        connect(QApplication::clipboard(), &QClipboard::dataChanged, this, [this]() {
+            if (QApplication::clipboard()->text().trimmed() == m_lastClipboard)
+                return;
+            m_clipboardTimer->start();
+        });
+        m_lastClipboard = QApplication::clipboard()->text().trimmed();
+    }
+}
+
+void MainWindow::onConfigChanged(const QString& key)
+{
+    if (key == Keys::uiLanguage) {
+        populateLanguageCombos();
+        populateToneCombo();
+        retranslateUi();
+        return;
+    }
+    if (key == Keys::uiAutoTranslate) {
+        QSignalBlocker blocker(m_autoTranslateAction);
+        m_autoTranslateAction->setChecked(ConfigManager::instance()->boolValue(key));
+    } else if (key == Keys::uiAutoTranslateDelay) {
+        m_debounce->setInterval(ConfigManager::instance()->intValue(key));
+    } else if (key == Keys::uiAlwaysOnTop) {
+        QSignalBlocker blocker(m_onTopAction);
+        m_onTopAction->setChecked(ConfigManager::instance()->boolValue(key));
+        applyAlwaysOnTop(ConfigManager::instance()->boolValue(key));
+    } else if (key == Keys::uiFontSize) {
+        applyEditorFonts();
+    } else if (key == Keys::clipboardMonitor) {
+        QSignalBlocker blocker(m_clipboardAction);
+        m_clipboardAction->setChecked(ConfigManager::instance()->boolValue(key));
+        applyClipboardMonitoring(ConfigManager::instance()->boolValue(key));
+    } else if (key == Keys::clipboardDelayMs) {
+        m_clipboardTimer->setInterval(ConfigManager::instance()->intValue(key));
+    } else if (key == Keys::historyMaxRecords) {
+        m_history.setMaxRecords(ConfigManager::instance()->intValue(key));
+    } else if (key == Keys::translationSourceLang || key == Keys::translationTargetLang) {
+        QComboBox* combo = key == Keys::translationSourceLang ? m_sourceLang : m_targetLang;
+        QSignalBlocker blocker(combo);
+        const int index = combo->findData(ConfigManager::instance()->stringValue(key));
+        if (index >= 0)
+            combo->setCurrentIndex(index);
+    } else if (key == Keys::translationTone || key == Keys::translationCustomTones) {
+        populateToneCombo();
+    }
+}
+
 TranslationContext MainWindow::currentContext() const
 {
     ConfigManager* config = ConfigManager::instance();
@@ -436,34 +596,6 @@ TranslationContext MainWindow::currentContext() const
         context.preferences << value.toString();
     context.uiLanguage = config->resolvedUiLanguage();
     return context;
-}
-
-void MainWindow::pushResultSnapshot()
-{
-    const QString current = m_resultEdit->toPlainText();
-    if (current.isEmpty())
-        return;
-    if (!m_resultSnapshots.isEmpty() && m_resultSnapshots.last() == current)
-        return;
-    m_resultSnapshots.append(current);
-    while (m_resultSnapshots.size() > 30)
-        m_resultSnapshots.removeFirst();
-    updateUndoAction();
-}
-
-void MainWindow::undoResult()
-{
-    if (m_resultSnapshots.isEmpty())
-        return;
-    const QString previous = m_resultSnapshots.takeLast();
-    m_resultEdit->setResult(previous);
-    updateUndoAction();
-    setStatusMessage(tr("Restored previous translation"), false);
-}
-
-void MainWindow::updateUndoAction()
-{
-    m_undoAction->setEnabled(!m_resultSnapshots.isEmpty());
 }
 
 void MainWindow::onSourceChanged()
@@ -505,9 +637,6 @@ void MainWindow::swapLanguages()
     const QString sourceCode = m_sourceLang->currentData().toString();
     const QString targetCode = m_targetLang->currentData().toString();
     if (sourceCode == QLatin1String("auto")) {
-        // "Auto detect" stays selected; the target combo (which offers no
-        // auto entry) receives the effective source language resolved from
-        // the current text so both combos never collapse onto one language.
         const int resolvedTarget =
             m_targetLang->findData(Languages::resolveAuto(m_sourceEdit->toPlainText(), targetCode));
         if (resolvedTarget >= 0)
@@ -535,6 +664,85 @@ void MainWindow::pasteSource()
     if (!text.isEmpty())
         m_sourceEdit->setPlainText(text);
     m_sourceEdit->setFocus();
+}
+
+void MainWindow::translateClipboard()
+{
+    const QString text = QApplication::clipboard()->text().trimmed();
+    if (text.isEmpty() || text == m_lastClipboard)
+        return;
+    m_lastClipboard = text;
+    m_sourceEdit->setPlainText(text);
+    translateNow();
+}
+
+void MainWindow::toggleVisible()
+{
+    if (isVisible() && isActiveWindow()) {
+        hide();
+        return;
+    }
+    show();
+    raise();
+    activateWindow();
+    if (const QScreen* screen = QGuiApplication::screenAt(QCursor::pos()))
+        move(screen->geometry().center() - rect().center());
+    const QString clipboardText = QApplication::clipboard()->text().trimmed();
+    if (!clipboardText.isEmpty() && clipboardText != m_lastClipboard
+        && clipboardText != m_sourceEdit->toPlainText().trimmed()) {
+        m_sourceEdit->setPlainText(clipboardText);
+        translateNow();
+    }
+}
+
+void MainWindow::pushResultSnapshot()
+{
+    const QString current = m_resultEdit->toPlainText();
+    if (current.isEmpty())
+        return;
+    if (!m_resultSnapshots.isEmpty() && m_resultSnapshots.last() == current)
+        return;
+    m_resultSnapshots.append(current);
+    while (m_resultSnapshots.size() > kMaxResultSnapshots)
+        m_resultSnapshots.removeFirst();
+    m_redoSnapshots.clear();
+    updateUndoRedoActions();
+}
+
+void MainWindow::undoResult()
+{
+    if (m_resultSnapshots.isEmpty())
+        return;
+    const QString current = m_resultEdit->toPlainText();
+    if (!current.isEmpty()
+        && (m_redoSnapshots.isEmpty() || m_redoSnapshots.last() != current))
+        m_redoSnapshots.append(current);
+    while (m_redoSnapshots.size() > kMaxResultSnapshots)
+        m_redoSnapshots.removeFirst();
+    m_resultEdit->setResult(m_resultSnapshots.takeLast());
+    updateUndoRedoActions();
+    setStatusMessage(tr("Restored previous translation"), false);
+}
+
+void MainWindow::redoResult()
+{
+    if (m_redoSnapshots.isEmpty())
+        return;
+    const QString current = m_resultEdit->toPlainText();
+    if (!current.isEmpty()
+        && (m_resultSnapshots.isEmpty() || m_resultSnapshots.last() != current))
+        m_resultSnapshots.append(current);
+    while (m_resultSnapshots.size() > kMaxResultSnapshots)
+        m_resultSnapshots.removeFirst();
+    m_resultEdit->setResult(m_redoSnapshots.takeLast());
+    updateUndoRedoActions();
+    setStatusMessage(tr("Re-applied translation"), false);
+}
+
+void MainWindow::updateUndoRedoActions()
+{
+    m_undoAction->setEnabled(!m_resultSnapshots.isEmpty());
+    m_redoAction->setEnabled(!m_redoSnapshots.isEmpty());
 }
 
 void MainWindow::copyResult()
@@ -590,121 +798,6 @@ void MainWindow::showHistoryDialog()
     dialog.exec();
 }
 
-void MainWindow::onConfigChanged(const QString& key)
-{
-    if (key == Keys::uiLanguage) {
-        populateLanguageCombos();
-        populateToneCombo();
-        retranslateUi();
-        return;
-    }
-    if (key == Keys::uiAutoTranslate) {
-        QSignalBlocker blocker(m_autoTranslateAction);
-        m_autoTranslateAction->setChecked(ConfigManager::instance()->boolValue(key));
-    } else if (key == Keys::uiAutoTranslateDelay) {
-        m_debounce->setInterval(ConfigManager::instance()->intValue(key));
-    } else if (key == Keys::uiAlwaysOnTop) {
-        QSignalBlocker blocker(m_onTopAction);
-        m_onTopAction->setChecked(ConfigManager::instance()->boolValue(key));
-        applyAlwaysOnTop(ConfigManager::instance()->boolValue(key));
-    } else if (key == Keys::uiFontSize) {
-        applyEditorFonts();
-    } else if (key == Keys::clipboardMonitor) {
-        QSignalBlocker blocker(m_clipboardAction);
-        m_clipboardAction->setChecked(ConfigManager::instance()->boolValue(key));
-        applyClipboardMonitoring(ConfigManager::instance()->boolValue(key));
-    } else if (key == Keys::clipboardDelayMs) {
-        m_clipboardTimer->setInterval(ConfigManager::instance()->intValue(key));
-    } else if (key == Keys::historyMaxRecords) {
-        m_history.setMaxRecords(ConfigManager::instance()->intValue(key));
-    } else if (key == Keys::translationSourceLang || key == Keys::translationTargetLang) {
-        QComboBox* combo = key == Keys::translationSourceLang ? m_sourceLang : m_targetLang;
-        QSignalBlocker blocker(combo);
-        const int index = combo->findData(ConfigManager::instance()->stringValue(key));
-        if (index >= 0)
-            combo->setCurrentIndex(index);
-    } else if (key == Keys::translationTone || key == Keys::translationCustomTones) {
-        populateToneCombo();
-    }
-}
-
-void MainWindow::syncLanguageMenu()
-{
-    if (!m_languageMenu)
-        return;
-    const QString current = ConfigManager::instance()->value(Keys::uiLanguage).toString();
-    const auto actions = m_languageMenu->actions();
-    for (QAction* action : actions) {
-        QSignalBlocker blocker(action);
-        action->setChecked(action->data().toString() == current);
-    }
-}
-
-void MainWindow::applyAlwaysOnTop(bool onTop)
-{
-    if (QWindow* handle = windowHandle()) {
-        Qt::WindowFlags flags = handle->flags();
-        flags.setFlag(Qt::WindowStaysOnTopHint, onTop);
-        if (flags != handle->flags())
-            handle->setFlags(flags);
-        return;
-    }
-    setWindowFlag(Qt::WindowStaysOnTopHint, onTop);
-}
-
-void MainWindow::applyEditorFonts()
-{
-    // The source and result panes always render one point larger than the
-    // main application font, regardless of the propagated widget font.
-    QFont editorFont = QApplication::font();
-    editorFont.setPointSize(ConfigManager::instance()->intValue(Keys::uiFontSize) + 1);
-    m_sourceEdit->setFont(editorFont);
-    m_resultEdit->setFont(editorFont);
-}
-
-void MainWindow::applyClipboardMonitoring(bool enabled)
-{
-    disconnect(QApplication::clipboard(), &QClipboard::dataChanged, this, nullptr);
-    m_clipboardTimer->stop();
-    if (enabled) {
-        connect(QApplication::clipboard(), &QClipboard::dataChanged, this, [this]() {
-            if (QApplication::clipboard()->text().trimmed() == m_lastClipboard)
-                return;
-            m_clipboardTimer->start();
-        });
-        m_lastClipboard = QApplication::clipboard()->text().trimmed();
-    }
-}
-
-void MainWindow::translateClipboard()
-{
-    const QString text = QApplication::clipboard()->text().trimmed();
-    if (text.isEmpty() || text == m_lastClipboard)
-        return;
-    m_lastClipboard = text;
-    m_sourceEdit->setPlainText(text);
-    translateNow();
-}
-
-void MainWindow::toggleVisible()
-{
-    if (isVisible() && isActiveWindow()) {
-        hide();
-        return;
-    }
-    show();
-    raise();
-    activateWindow();
-    if (const QScreen* screen = QGuiApplication::screenAt(QCursor::pos()))
-        move(screen->geometry().center() - rect().center());
-    const QString clipboardText = QApplication::clipboard()->text().trimmed();
-    if (!clipboardText.isEmpty() && clipboardText != m_lastClipboard
-        && clipboardText != m_sourceEdit->toPlainText().trimmed()) {
-        m_sourceEdit->setPlainText(clipboardText);
-        translateNow();
-    }
-}
-
 void MainWindow::restoreGeometryFromConfig()
 {
     const QString encoded = ConfigManager::instance()->stringValue(Keys::uiWindowGeometry);
@@ -721,18 +814,6 @@ void MainWindow::saveGeometryToConfig()
 {
     ConfigManager::instance()->setValue(Keys::uiWindowGeometry,
                                         QString::fromLatin1(saveGeometry().toBase64()));
-}
-
-void MainWindow::closeEvent(QCloseEvent* event)
-{
-    if (m_tray && ConfigManager::instance()->boolValue(Keys::uiMinimizeToTray)) {
-        hide();
-        event->ignore();
-        return;
-    }
-    saveGeometryToConfig();
-    ConfigManager::instance()->flush();
-    event->accept();
 }
 
 void MainWindow::retranslateUi()
@@ -779,10 +860,12 @@ void MainWindow::retranslateUi()
     m_translateAction->setToolTip(tr("Translate now (Ctrl+Return)"));
     m_stopAction->setToolTip(tr("Stop translation"));
     m_undoAction->setToolTip(tr("Restore previous translation"));
+    m_redoAction->setToolTip(tr("Redo translation"));
     m_swapAction->setToolTip(tr("Swap languages"));
     m_clearAction->setText(tr("Clear"));
     m_pasteAction->setText(tr("Paste"));
     m_copyAction->setText(tr("Copy"));
+    m_clearResultAction->setText(tr("Clear"));
 
     m_sourceEdit->setPlaceholderText(tr("Enter text to translate"));
     if (m_trayMenu) {

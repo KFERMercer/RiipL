@@ -8,4 +8,5 @@ public:
     static QIcon swapHorizontal();
     static QIcon reset();
     static QIcon undo();
+    static QIcon redo();
 };

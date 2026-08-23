@@ -10,8 +10,11 @@ class QComboBox;
 class QLabel;
 class QMenu;
 class QPlainTextEdit;
+class QResizeEvent;
+class QSplitter;
 class QSystemTrayIcon;
 class QTimer;
+class QToolButton;
 class CandidatePopup;
 
 class MainWindow : public QMainWindow
@@ -24,12 +27,15 @@ public:
 
 protected:
     void closeEvent(QCloseEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
 
 private slots:
     void onSourceChanged();
     void translateNow();
     void swapLanguages();
     void pasteSource();
+    void undoResult();
+    void redoResult();
     void copyResult();
     void exportTranslation();
     void showSettingsDialog();
@@ -42,22 +48,27 @@ private:
     QWidget* createRightPane();
     void buildMenus();
     void buildTray();
+    void updateSwapButtonGeometry();
+
     void populateLanguageCombos();
     void populateToneCombo();
+    void syncLanguageMenu();
+    void applyAlwaysOnTop(bool onTop);
+    void applyEditorFonts();
+    void applyClipboardMonitoring(bool enabled);
+
     TranslationContext currentContext() const;
     void setBusy(bool busy);
     void setStatusMessage(const QString& message, bool isError);
-    void applyClipboardMonitoring(bool enabled);
-    void applyAlwaysOnTop(bool onTop);
-    void applyEditorFonts();
-    void syncLanguageMenu();
-    void pushResultSnapshot();
-    void undoResult();
-    void updateUndoAction();
-    void restoreGeometryFromConfig();
-    void saveGeometryToConfig();
     void translateClipboard();
 
+    void pushResultSnapshot();
+    void updateUndoRedoActions();
+
+    void restoreGeometryFromConfig();
+    void saveGeometryToConfig();
+
+    QSplitter* m_splitter = nullptr;
     QComboBox* m_sourceLang = nullptr;
     QComboBox* m_targetLang = nullptr;
     QComboBox* m_tone = nullptr;
@@ -65,6 +76,8 @@ private:
     TranslationEdit* m_resultEdit = nullptr;
     QLabel* m_countLabel = nullptr;
     QLabel* m_statusLabel = nullptr;
+    QToolButton* m_swapButton = nullptr;
+    QToolButton* m_translateButton = nullptr;
 
     QAction* m_translateAction = nullptr;
     QAction* m_stopAction = nullptr;
@@ -80,8 +93,10 @@ private:
     QAction* m_swapAction = nullptr;
     QAction* m_clearAction = nullptr;
     QAction* m_pasteAction = nullptr;
-    QAction* m_copyAction = nullptr;
     QAction* m_undoAction = nullptr;
+    QAction* m_redoAction = nullptr;
+    QAction* m_clearResultAction = nullptr;
+    QAction* m_copyAction = nullptr;
     QAction* m_exitAction = nullptr;
     QAction* m_aboutAction = nullptr;
     QAction* m_trayShowHideAction = nullptr;
@@ -103,4 +118,5 @@ private:
     CandidatePopup* m_popup = nullptr;
     QString m_lastClipboard;
     QStringList m_resultSnapshots;
+    QStringList m_redoSnapshots;
 };

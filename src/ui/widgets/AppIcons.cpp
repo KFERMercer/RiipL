@@ -105,3 +105,10 @@ QIcon AppIcons::undo()
         p.restore();
     });
 }
+
+QIcon AppIcons::redo()
+{
+    return build([](QPainter& p, const QRectF& r) {
+        renderArcArrow(p, r);
+    });
+}
