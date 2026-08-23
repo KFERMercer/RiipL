@@ -108,17 +108,19 @@ void ApiClient::onReadyRead()
     m_rawBuffer += data;
     if (m_streaming) {
         m_streamBuffer += data;
-        handleStreamData(m_streamBuffer);
+        consumeStreamBuffer();
     }
 }
 
-void ApiClient::handleStreamData(const QByteArray& data)
+void ApiClient::consumeStreamBuffer()
 {
-    int index;
-    while ((index = data.indexOf('\n')) >= 0) {
-        QByteArray line = data.left(index);
-        m_streamBuffer.remove(0, index + 1);
-        line = line.trimmed();
+    int start = 0;
+    while (true) {
+        const int index = m_streamBuffer.indexOf('\n', start);
+        if (index < 0)
+            break;
+        const QByteArray line = m_streamBuffer.mid(start, index - start).trimmed();
+        start = index + 1;
         if (line.isEmpty())
             continue;
         if (!line.startsWith("data:"))
@@ -142,6 +144,8 @@ void ApiClient::handleStreamData(const QByteArray& data)
                 m_onDelta(piece);
         }
     }
+    if (start > 0)
+        m_streamBuffer.remove(0, start);
 }
 
 void ApiClient::emitError(const QString& message)
@@ -170,7 +174,7 @@ void ApiClient::onFinished()
     m_rawBuffer += remaining;
     if (m_streaming && !remaining.isEmpty()) {
         m_streamBuffer += remaining;
-        handleStreamData(m_streamBuffer);
+        consumeStreamBuffer();
         m_streamBuffer.clear();
     }
 

@@ -33,7 +33,7 @@ signals:
 private:
     void onReadyRead();
     void onFinished();
-    void handleStreamData(const QByteArray& data);
+    void consumeStreamBuffer();
     void emitError(const QString& message);
     QString apiErrorMessage(const QString& body) const;
 
