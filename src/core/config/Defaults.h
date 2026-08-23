@@ -73,9 +73,6 @@ inline const QString translationPreferences = QStringLiteral("translation.prefer
 inline const QString glossaryEnabled = QStringLiteral("glossary.enabled");
 inline const QString glossaryEntries = QStringLiteral("glossary.entries");
 
-inline const QString hotkeyEnabled = QStringLiteral("hotkey.enabled");
-inline const QString hotkeySequence = QStringLiteral("hotkey.sequence");
-
 inline const QString clipboardMonitor = QStringLiteral("clipboard.monitor");
 inline const QString clipboardDelayMs = QStringLiteral("clipboard.delay_ms");
 
@@ -112,9 +109,6 @@ inline const QString translationStyle = QString();
 inline const QString translationBackground = QString();
 
 inline const bool glossaryEnabled = true;
-
-inline const bool hotkeyEnabled = false;
-inline const QString hotkeySequence = QStringLiteral("Ctrl+Alt+T");
 
 inline const bool clipboardMonitor = false;
 inline const int clipboardDelayMs = 500;
@@ -234,7 +228,6 @@ inline QStringList allKeys()
         Keys::promptBackgroundZh, Keys::promptBackgroundEn,
         Keys::promptPersonalizationZh, Keys::promptPersonalizationEn,
         Keys::promptCandidateZh, Keys::promptCandidateEn,
-        Keys::hotkeyEnabled, Keys::hotkeySequence,
         Keys::clipboardMonitor, Keys::clipboardDelayMs,
         Keys::historyEnabled, Keys::historyMaxRecords
     };
@@ -284,8 +277,6 @@ inline QJsonValue value(const QString& key)
     if (key == Keys::promptPersonalizationEn) return QJsonValue(promptPersonalizationEn);
     if (key == Keys::promptCandidateZh) return QJsonValue(promptCandidateZh);
     if (key == Keys::promptCandidateEn) return QJsonValue(promptCandidateEn);
-    if (key == Keys::hotkeyEnabled) return QJsonValue(hotkeyEnabled);
-    if (key == Keys::hotkeySequence) return QJsonValue(hotkeySequence);
     if (key == Keys::clipboardMonitor) return QJsonValue(clipboardMonitor);
     if (key == Keys::clipboardDelayMs) return QJsonValue(clipboardDelayMs);
     if (key == Keys::historyEnabled) return QJsonValue(historyEnabled);

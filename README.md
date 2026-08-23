@@ -37,7 +37,6 @@ What DeepL reserves for paying members, RiipL gives you completely free:
 - 🧩 **Prompt template pipeline** — multiple customizable prompt templates: glossary, tone, style, background knowledge, personalization and more. Placeholder injection and live preview supported.
 - 📖 **Glossary** — custom translations for your domain terms, with JSON import/export.
 - 🗣 **Tones, styles & background** — 13 preset tones plus custom ones, with free-form style and background info.
-- ⌨️ **Global hotkey** — summon the hidden window and translate the clipboard from anywhere.
 - 📋 **Clipboard monitoring** — clipboard text is translated automatically, with copy-back of results.
 - 🕘 **Translation history** — search and reuse past translations.
 
@@ -112,7 +111,6 @@ RiipL/
 │   │   ├── translation/  # PromptBuilder, TranslationEngine, languages & tones
 │   │   ├── models/       # Glossary
 │   │   └── history/      # HistoryManager
-│   ├── platform/         # GlobalHotkey (Win / macOS / Linux X11)
 │   ├── ui/               # MainWindow, bound editor widgets, dialogs
 │   └── utils/            # JsonUtils, TextUtils, SingleInstance
 └── tests/                # QTest suite for the core layer
@@ -120,5 +118,4 @@ RiipL/
 
 ## Limitations
 
-- Global hotkeys on Linux require an X11 session; Wayland is not supported yet.
 - Alternative-wording and tokenization quality depend on the connected model.

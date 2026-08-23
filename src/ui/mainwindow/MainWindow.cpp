@@ -139,9 +139,6 @@ MainWindow::MainWindow(QWidget* parent)
         ConfigManager::instance()->setValue(Keys::translationTone, m_tone->itemData(index).toString());
     });
 
-    m_hotkey.setSequence(ConfigManager::instance()->stringValue(Keys::hotkeySequence));
-    connect(&m_hotkey, &GlobalHotkey::activated, this, &MainWindow::toggleVisible);
-    applyHotkeyFromConfig();
     applyClipboardMonitoring(ConfigManager::instance()->boolValue(Keys::clipboardMonitor));
     m_history.setMaxRecords(ConfigManager::instance()->intValue(Keys::historyMaxRecords));
 
@@ -284,7 +281,6 @@ void MainWindow::buildMenus()
     m_clipboardAction = m_toolsMenu->addAction(QString());
     m_clipboardAction->setCheckable(true);
     m_clipboardAction->setChecked(ConfigManager::instance()->boolValue(Keys::clipboardMonitor));
-    m_hotkeySettingsAction = m_toolsMenu->addAction(QString());
     m_toolsMenu->addSeparator();
     m_settingsAction = m_toolsMenu->addAction(QString());
 
@@ -339,10 +335,6 @@ void MainWindow::buildMenus()
     });
     connect(m_historyAction, &QAction::triggered, this, &MainWindow::showHistoryDialog);
     connect(m_settingsAction, &QAction::triggered, this, &MainWindow::showSettingsDialog);
-    connect(m_hotkeySettingsAction, &QAction::triggered, this, [this]() {
-        SettingsDialog dialog(&m_hotkey, 5, this);
-        dialog.exec();
-    });
     connect(m_aboutAction, &QAction::triggered, this, [this]() {
         AboutDialog dialog(this);
         dialog.exec();
@@ -575,7 +567,7 @@ void MainWindow::exportTranslation()
 
 void MainWindow::showSettingsDialog()
 {
-    SettingsDialog dialog(&m_hotkey, 0, this);
+    SettingsDialog dialog(this);
     dialog.exec();
 }
 
@@ -621,8 +613,6 @@ void MainWindow::onConfigChanged(const QString& key)
         applyClipboardMonitoring(ConfigManager::instance()->boolValue(key));
     } else if (key == Keys::clipboardDelayMs) {
         m_clipboardTimer->setInterval(ConfigManager::instance()->intValue(key));
-    } else if (key == Keys::hotkeyEnabled || key == Keys::hotkeySequence) {
-        applyHotkeyFromConfig();
     } else if (key == Keys::historyMaxRecords) {
         m_history.setMaxRecords(ConfigManager::instance()->intValue(key));
     } else if (key == Keys::translationSourceLang || key == Keys::translationTargetLang) {
@@ -645,18 +635,6 @@ void MainWindow::syncLanguageMenu()
     for (QAction* action : actions) {
         QSignalBlocker blocker(action);
         action->setChecked(action->data().toString() == current);
-    }
-}
-
-void MainWindow::applyHotkeyFromConfig()
-{
-    ConfigManager* config = ConfigManager::instance();
-    m_hotkey.setSequence(config->stringValue(Keys::hotkeySequence));
-    if (config->boolValue(Keys::hotkeyEnabled)) {
-        if (!m_hotkey.isActive() && !m_hotkey.setActive(true))
-            setStatusMessage(m_hotkey.lastError(), true);
-    } else {
-        m_hotkey.setActive(false);
     }
 }
 
@@ -783,7 +761,6 @@ void MainWindow::retranslateUi()
 
     m_toolsMenu->setTitle(tr("&Tools"));
     m_clipboardAction->setText(tr("Monitor clipboard"));
-    m_hotkeySettingsAction->setText(tr("Global hotkey..."));
     m_settingsAction->setText(tr("Settings..."));
 
     m_helpMenu->setTitle(tr("&Help"));

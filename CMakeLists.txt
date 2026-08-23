@@ -39,17 +39,6 @@ add_library(riip_core STATIC ${CORE_SOURCES} ${CORE_HEADERS})
 target_include_directories(riip_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(riip_core PUBLIC Qt6::Core Qt6::Network)
 
-# Platform integration layer (global hotkeys).
-add_library(riip_platform STATIC
-    src/platform/GlobalHotkey.cpp
-    src/platform/GlobalHotkey.h
-)
-target_include_directories(riip_platform PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(riip_platform
-    PUBLIC Qt6::Core
-    PRIVATE Qt6::Gui
-)
-
 # Shared helpers used by the app shell and the test suite.
 add_library(riip_utils STATIC
     src/utils/JsonUtils.h
@@ -60,17 +49,6 @@ add_library(riip_utils STATIC
 )
 target_include_directories(riip_utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(riip_utils PUBLIC Qt6::Core Qt6::Network)
-
-if(APPLE)
-    find_library(CARBON_FRAMEWORK Carbon REQUIRED)
-    target_link_libraries(riip_platform PRIVATE ${CARBON_FRAMEWORK})
-elseif(UNIX)
-    find_package(X11 QUIET)
-    if(X11_FOUND)
-        target_link_libraries(riip_platform PRIVATE X11::X11)
-        target_compile_definitions(riip_platform PRIVATE RIIP_HAVE_X11)
-    endif()
-endif()
 
 set(UI_SOURCES
     src/main.cpp
@@ -114,7 +92,7 @@ qt_add_executable(RiipL
     ${I18N_QRC}
     ${QM_FILES}
 )
-target_link_libraries(RiipL PRIVATE riip_core riip_platform riip_utils Qt6::Widgets)
+target_link_libraries(RiipL PRIVATE riip_core riip_utils Qt6::Widgets)
 target_compile_definitions(RiipL PRIVATE RIIP_VERSION="${PROJECT_VERSION}")
 
 add_custom_target(update_translations

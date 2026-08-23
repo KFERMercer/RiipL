@@ -37,7 +37,6 @@ DeepL 仅向会员开放的功能，RiipL 完全免费：
 - 🧩 **提示词模板管线**：多种可自定义 Prompt 模板：术语、语气、风格、背景、个性化等。支持占位符注入、实时预览。
 - 📖 **术语表**：自定义专业术语翻译，支持 JSON 导入导出。
 - 🗣 **语气、风格与背景**：13 种预设语气加自定义语气，支持自定义风格与背景信息。
-- ⌨️ **全局热键**：随时呼出隐藏窗口、剪贴板即时翻译。
 - 📋 **剪贴板监听**：自动翻译剪贴板文本，支持复制结果回写。
 - 🕘 **翻译历史**：搜索、重用以往翻译历史。
 
@@ -112,7 +111,6 @@ RiipL/
 │   │   ├── translation/  # PromptBuilder、TranslationEngine、语言与语气
 │   │   ├── models/       # Glossary
 │   │   └── history/      # HistoryManager
-│   ├── platform/         # GlobalHotkey（Win / macOS / Linux X11）
 │   ├── ui/               # MainWindow、配置绑定控件、各对话框
 │   └── utils/            # JsonUtils、TextUtils、SingleInstance
 └── tests/                # 核心层 QTest 单元测试
@@ -120,5 +118,4 @@ RiipL/
 
 ## 限制
 
-- Linux 全局热键需要 X11 会话，Wayland 暂不支持。
 - 候选替换与分词质量取决于所连接的模型。

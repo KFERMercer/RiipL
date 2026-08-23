@@ -4,7 +4,6 @@
 
 #include "core/history/HistoryManager.h"
 #include "core/translation/TranslationEngine.h"
-#include "platform/GlobalHotkey.h"
 #include "ui/widgets/TranslationEdit.h"
 
 class QComboBox;
@@ -49,7 +48,6 @@ private:
     void setBusy(bool busy);
     void setStatusMessage(const QString& message, bool isError);
     void applyClipboardMonitoring(bool enabled);
-    void applyHotkeyFromConfig();
     void applyAlwaysOnTop(bool onTop);
     void applyEditorFonts();
     void syncLanguageMenu();
@@ -77,7 +75,6 @@ private:
     QAction* m_exportAction = nullptr;
     QAction* m_historyAction = nullptr;
     QAction* m_settingsAction = nullptr;
-    QAction* m_hotkeySettingsAction = nullptr;
     QAction* m_glossaryAction = nullptr;
     QAction* m_toneAction = nullptr;
     QAction* m_swapAction = nullptr;
@@ -102,7 +99,6 @@ private:
     QTimer* m_clipboardTimer = nullptr;
     TranslationEngine m_engine;
     HistoryManager m_history;
-    GlobalHotkey m_hotkey;
     QSystemTrayIcon* m_tray = nullptr;
     CandidatePopup* m_popup = nullptr;
     QString m_lastClipboard;

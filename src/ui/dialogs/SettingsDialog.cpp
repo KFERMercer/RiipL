@@ -9,7 +9,6 @@
 #include "core/translation/Language.h"
 #include "core/translation/PromptBuilder.h"
 #include "core/translation/Tone.h"
-#include "platform/GlobalHotkey.h"
 #include "ui/widgets/ConfigEditors.h"
 #include "utils/JsonUtils.h"
 
@@ -21,7 +20,6 @@
 #include <QFormLayout>
 #include <QHBoxLayout>
 #include <QJsonDocument>
-#include <QKeySequenceEdit>
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
@@ -147,7 +145,7 @@ private:
     QPlainTextEdit* m_output = nullptr;
 };
 
-SettingsDialog::SettingsDialog(GlobalHotkey* hotkey, int initialTab, QWidget* parent)
+SettingsDialog::SettingsDialog(QWidget* parent)
     : QDialog(parent)
 {
     setWindowTitle(tr("Settings"));
@@ -162,14 +160,9 @@ SettingsDialog::SettingsDialog(GlobalHotkey* hotkey, int initialTab, QWidget* pa
     tabs->addTab(createGlossaryPage(), tr("Glossary"));
     tabs->addTab(createPromptsPage(), tr("Prompt templates"));
     tabs->addTab(createInterfacePage(), tr("Interface"));
-    tabs->addTab(createHotkeyPage(), tr("Hotkey"));
-    if (hotkey && !hotkey->isSupported())
-        tabs->setTabToolTip(tabs->indexOf(tabs->widget(5)), tr("Global hotkeys are limited on this platform"));
     tabs->addTab(createClipboardPage(), tr("Clipboard"));
     tabs->addTab(createHistoryPage(), tr("History"));
     layout->addWidget(tabs, 1);
-    if (initialTab >= 0 && initialTab < tabs->count())
-        tabs->setCurrentIndex(initialTab);
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Apply
                                          | QDialogButtonBox::Cancel, this);
@@ -190,7 +183,6 @@ SettingsDialog::SettingsDialog(GlobalHotkey* hotkey, int initialTab, QWidget* pa
 
     for (ConfigEditor* editor : findChildren<ConfigEditor*>())
         connect(editor, &ConfigEditor::edited, this, &SettingsDialog::markDirty);
-    connect(m_hotkeySequence, &QKeySequenceEdit::keySequenceChanged, this, &SettingsDialog::markDirty);
     connect(m_glossaryTable, &GlossaryTable::entriesChanged, this, &SettingsDialog::markDirty);
 }
 
@@ -202,10 +194,6 @@ void SettingsDialog::markDirty()
 void SettingsDialog::applyChanges()
 {
     ConfigManager* config = ConfigManager::instance();
-
-    const QString sequence = m_hotkeySequence->keySequence().toString(QKeySequence::PortableText);
-    if (sequence != config->stringValue(Keys::hotkeySequence))
-        config->setValue(Keys::hotkeySequence, sequence);
 
     if (!JsonUtils::equals(m_customTones, config->value(Keys::translationCustomTones)))
         config->setValue(Keys::translationCustomTones, m_customTones);
@@ -420,26 +408,6 @@ QWidget* SettingsDialog::createInterfacePage()
     form->addRow(QString(), trayCheck);
 
     form->addRow(tr("Font size"), new ConfigSpinBox(Keys::uiFontSize, 8, 24, 1, page));
-    return page;
-}
-
-QWidget* SettingsDialog::createHotkeyPage()
-{
-    auto* page = new QWidget(this);
-    auto* form = new QFormLayout(page);
-
-    auto* enabledCheck = new ConfigCheckBox(Keys::hotkeyEnabled, page);
-    enabledCheck->box()->setText(tr("Enable global hotkey"));
-    form->addRow(QString(), enabledCheck);
-
-    m_hotkeySequence = new QKeySequenceEdit(QKeySequence(ConfigManager::instance()->stringValue(Keys::hotkeySequence),
-                                                         QKeySequence::PortableText), page);
-    form->addRow(tr("Hotkey sequence"), m_hotkeySequence);
-
-    auto* hint = new QLabel(tr("Requires Ctrl/Alt/Meta modifiers. On Wayland, global hotkeys may not work."), page);
-    hint->setWordWrap(true);
-    hint->setStyleSheet(QStringLiteral("color: gray;"));
-    form->addRow(QString(), hint);
     return page;
 }
 
