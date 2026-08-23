@@ -60,6 +60,7 @@ set(UI_SOURCES
     src/ui/dialogs/ToneDialog.cpp
     src/ui/dialogs/HistoryDialog.cpp
     src/ui/dialogs/DocumentDialog.cpp
+    src/ui/dialogs/AboutDialog.cpp
 )
 set(UI_HEADERS
     src/ui/mainwindow/MainWindow.h
@@ -72,6 +73,7 @@ set(UI_HEADERS
     src/ui/dialogs/ToneDialog.h
     src/ui/dialogs/HistoryDialog.h
     src/ui/dialogs/DocumentDialog.h
+    src/ui/dialogs/AboutDialog.h
 )
 
 set(TS_FILES resources/i18n/riip_en.ts resources/i18n/riip_zh.ts)

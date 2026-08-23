@@ -1,6 +1,7 @@
 #include "MainWindow.h"
 
 #include "ui/widgets/CandidatePopup.h"
+#include "ui/dialogs/AboutDialog.h"
 #include "ui/dialogs/DocumentDialog.h"
 #include "ui/dialogs/GlossaryDialog.h"
 #include "ui/dialogs/HistoryDialog.h"
@@ -20,8 +21,6 @@
 #include <QCloseEvent>
 #include <QComboBox>
 #include <QCursor>
-#include <QDesktopServices>
-#include <QDesktopServices>
 #include <QDebug>
 #include <QDateTime>
 #include <QFile>
@@ -32,7 +31,6 @@
 #include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
-#include <QMessageBox>
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QScreen>
@@ -44,12 +42,6 @@
 #include <QToolBar>
 #include <QToolButton>
 #include <QVBoxLayout>
-
-namespace {
-
-constexpr char kProjectUrl[] = "https://github.com/KFERMercer/RiipL";
-
-}
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
@@ -357,17 +349,8 @@ void MainWindow::buildMenus()
         dialog.exec();
     });
     connect(aboutAction, &QAction::triggered, this, [this]() {
-        QMessageBox box(QMessageBox::Information, tr("About RiipL"),
-                        tr("<b>RiipL %1</b><br/>An AI-powered desktop translator.<br/>Built with Qt %2.")
-                            .arg(QCoreApplication::applicationVersion(), QString::fromLatin1(qVersion())),
-                        QMessageBox::Ok, this);
-        box.setInformativeText(tr("Project homepage: <a href=\"%1\">%1</a>")
-                                   .arg(QString::fromLatin1(kProjectUrl)));
-        box.setTextFormat(Qt::RichText);
-        box.setTextInteractionFlags(Qt::TextBrowserInteraction);
-        for (QLabel* label : box.findChildren<QLabel*>())
-            label->setOpenExternalLinks(true);
-        box.exec();
+        AboutDialog dialog(this);
+        dialog.exec();
     });
 }
 
