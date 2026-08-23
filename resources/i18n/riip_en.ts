@@ -773,33 +773,33 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="222"/>
-        <source>Default source language</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="232"/>
-        <source>Default target language</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="254"/>
         <source>Manage...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="222"/>
+        <source>Source language</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="232"/>
+        <source>Target language</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="261"/>
-        <source>Default tone</source>
+        <source>Tone</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="263"/>
-        <source>Default style</source>
+        <source>Style</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="264"/>
-        <source>Default background</source>
+        <source>Background</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -948,14 +948,6 @@
     <message>
         <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="62"/>
         <source>Remove</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>TranslationEngine</name>
-    <message>
-        <location filename="../../src/core/translation/TranslationEngine.cpp" line="62"/>
-        <source>Nothing to translate</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

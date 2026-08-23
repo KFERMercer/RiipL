@@ -219,7 +219,7 @@ QWidget* SettingsDialog::createTranslationPage()
     for (const LangItem& lang : Languages::all())
         sourceItems.append({Languages::displayName(lang.code, uiLanguage), lang.code});
     sourceCombo->setItems(sourceItems);
-    form->addRow(tr("Default source language"), sourceCombo);
+    form->addRow(tr("Source language"), sourceCombo);
 
     auto* targetCombo = new ConfigComboBox(Keys::translationTargetLang, page);
     QList<QPair<QString, QString>> targetItems;
@@ -229,7 +229,7 @@ QWidget* SettingsDialog::createTranslationPage()
         targetItems.append({Languages::displayName(lang.code, uiLanguage), lang.code});
     }
     targetCombo->setItems(targetItems);
-    form->addRow(tr("Default target language"), targetCombo);
+    form->addRow(tr("Target language"), targetCombo);
 
     auto* toneRow = new QHBoxLayout();
     auto* toneCombo = new ConfigComboBox(Keys::translationTone, page);
@@ -258,10 +258,10 @@ QWidget* SettingsDialog::createTranslationPage()
     });
     toneRow->addWidget(toneCombo, 1);
     toneRow->addWidget(manageTones);
-    form->addRow(tr("Default tone"), toneRow);
+    form->addRow(tr("Tone"), toneRow);
 
-    form->addRow(tr("Default style"), new ConfigLineEdit(Keys::translationStyle, false, page));
-    form->addRow(tr("Default background"), new ConfigTextEdit(Keys::translationBackground, 3, page));
+    form->addRow(tr("Style"), new ConfigLineEdit(Keys::translationStyle, false, page));
+    form->addRow(tr("Background"), new ConfigTextEdit(Keys::translationBackground, 3, page));
 
     auto* autoTranslateCheck = new ConfigCheckBox(Keys::uiAutoTranslate, page);
     autoTranslateCheck->box()->setText(tr("Auto translate after typing"));

@@ -15,19 +15,19 @@ namespace Tones {
 inline const QVector<ToneItem>& presets()
 {
     static const QVector<ToneItem> list = {
-        {QStringLiteral("formal"), QStringLiteral("Formal style"), QStringLiteral("正式风格")},
-        {QStringLiteral("casual"), QStringLiteral("Casual style"), QStringLiteral("口语风格")},
-        {QStringLiteral("neutral"), QStringLiteral("Neutral style"), QStringLiteral("中性风格")},
-        {QStringLiteral("technical"), QStringLiteral("Technical style"), QStringLiteral("技术风格")},
-        {QStringLiteral("marketing"), QStringLiteral("Marketing style"), QStringLiteral("营销风格")},
-        {QStringLiteral("literary"), QStringLiteral("Literary style"), QStringLiteral("文学风格")},
-        {QStringLiteral("academic"), QStringLiteral("Academic style"), QStringLiteral("学术风格")},
-        {QStringLiteral("legal"), QStringLiteral("Legal style"), QStringLiteral("法律风格")},
-        {QStringLiteral("literal"), QStringLiteral("Literal style"), QStringLiteral("直译风格")},
-        {QStringLiteral("idiomatic"), QStringLiteral("Idiomatic style"), QStringLiteral("意译风格")},
-        {QStringLiteral("transcreation"), QStringLiteral("Transcreation"), QStringLiteral("创译风格")},
-        {QStringLiteral("machine-like"), QStringLiteral("Machine-like style"), QStringLiteral("机器风格")},
-        {QStringLiteral("concise"), QStringLiteral("Concise style"), QStringLiteral("简明风格")}
+        {QStringLiteral("formal"), QStringLiteral("Formal"), QStringLiteral("正式")},
+        {QStringLiteral("casual"), QStringLiteral("Casual"), QStringLiteral("口语")},
+        {QStringLiteral("neutral"), QStringLiteral("Neutral"), QStringLiteral("中性")},
+        {QStringLiteral("technical"), QStringLiteral("Technical"), QStringLiteral("技术")},
+        {QStringLiteral("marketing"), QStringLiteral("Marketing"), QStringLiteral("营销")},
+        {QStringLiteral("literary"), QStringLiteral("Literary"), QStringLiteral("文学")},
+        {QStringLiteral("academic"), QStringLiteral("Academic"), QStringLiteral("学术")},
+        {QStringLiteral("legal"), QStringLiteral("Legal"), QStringLiteral("法律")},
+        {QStringLiteral("literal"), QStringLiteral("Literal"), QStringLiteral("直译")},
+        {QStringLiteral("idiomatic"), QStringLiteral("Idiomatic"), QStringLiteral("意译")},
+        {QStringLiteral("transcreation"), QStringLiteral("Transcreation"), QStringLiteral("创译")},
+        {QStringLiteral("machine-like"), QStringLiteral("Machine-like"), QStringLiteral("机器")},
+        {QStringLiteral("concise"), QStringLiteral("Concise"), QStringLiteral("简明")}
     };
     return list;
 }
