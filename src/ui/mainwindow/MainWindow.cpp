@@ -26,6 +26,7 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QFont>
 #include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -148,6 +149,8 @@ MainWindow::MainWindow(QWidget* parent)
     m_history.setMaxRecords(ConfigManager::instance()->intValue(Keys::historyMaxRecords));
 
     applyAlwaysOnTop(ConfigManager::instance()->boolValue(Keys::uiAlwaysOnTop));
+
+    applyEditorFonts();
 
     retranslateUi();
 }
@@ -614,6 +617,8 @@ void MainWindow::onConfigChanged(const QString& key)
         QSignalBlocker blocker(m_onTopAction);
         m_onTopAction->setChecked(ConfigManager::instance()->boolValue(key));
         applyAlwaysOnTop(ConfigManager::instance()->boolValue(key));
+    } else if (key == Keys::uiFontSize) {
+        applyEditorFonts();
     } else if (key == Keys::clipboardMonitor) {
         QSignalBlocker blocker(m_clipboardAction);
         m_clipboardAction->setChecked(ConfigManager::instance()->boolValue(key));
@@ -666,6 +671,16 @@ void MainWindow::applyAlwaysOnTop(bool onTop)
     setWindowFlag(Qt::WindowStaysOnTopHint, onTop);
     if (wasVisible)
         show();
+}
+
+void MainWindow::applyEditorFonts()
+{
+    // The source and result panes always render one point larger than the
+    // main application font, regardless of the propagated widget font.
+    QFont editorFont = QApplication::font();
+    editorFont.setPointSize(ConfigManager::instance()->intValue(Keys::uiFontSize) + 1);
+    m_sourceEdit->setFont(editorFont);
+    m_resultEdit->setFont(editorFont);
 }
 
 void MainWindow::applyClipboardMonitoring(bool enabled)

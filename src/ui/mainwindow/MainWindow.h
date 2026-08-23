@@ -51,6 +51,7 @@ private:
     void applyClipboardMonitoring(bool enabled);
     void applyHotkeyFromConfig();
     void applyAlwaysOnTop(bool onTop);
+    void applyEditorFonts();
     void syncLanguageMenu();
     void pushResultSnapshot();
     void undoResult();
