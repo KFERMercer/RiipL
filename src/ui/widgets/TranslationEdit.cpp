@@ -4,7 +4,9 @@
 
 #include <limits>
 
+#include <QAbstractTextDocumentLayout>
 #include <QMouseEvent>
+#include <QScrollBar>
 #include <QTextDocument>
 
 TranslationEdit::TranslationEdit(QWidget* parent)
@@ -67,8 +69,27 @@ void TranslationEdit::mousePressEvent(QMouseEvent* event)
     m_pressValid = false;
     m_pressPos = event->pos();
     if (event->button() == Qt::LeftButton) {
-        const int position = cursorForPosition(event->pos()).position();
-        const TextUtils::WordSpan span = TextUtils::wordSpanAt(toPlainText(), position);
+        const QTextCursor hitCursor = cursorForPosition(event->pos());
+        const int position = hitCursor.position();
+        // Fuzzy hits snap blank clicks (below or past the text) to the end of
+        // the document, so require an exact hit on an actual character.
+        const QPointF docPos(event->pos().x() + horizontalScrollBar()->value(),
+                             event->pos().y() + verticalScrollBar()->value());
+        const int exactPosition = document()->documentLayout()->hitTest(
+            docPos, Qt::ExactHit);
+        const bool onCharacter = exactPosition != -1;
+
+        int charPosition = -1;
+        if (onCharacter) {
+            // The insertion point lands before the clicked character on
+            // left-half clicks only; pick the character under the point.
+            const qreal boundaryX = cursorRect(hitCursor).center().x();
+            const bool beforeBoundary = event->pos().x() < boundaryX;
+            charPosition = beforeBoundary ? position - 1 : position;
+        }
+        const TextUtils::WordSpan span = onCharacter && charPosition >= 0
+            ? TextUtils::wordSpanAt(toPlainText(), charPosition)
+            : TextUtils::WordSpan{};
         if (span.valid()) {
             QTextCursor cursor(document());
             cursor.setPosition(span.start);
