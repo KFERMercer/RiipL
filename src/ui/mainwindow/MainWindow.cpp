@@ -435,7 +435,6 @@ void MainWindow::populateToneCombo()
     if (!m_tone)
         return;
     const QString uiLanguage = ConfigManager::instance()->resolvedUiLanguage();
-    const QString current = m_tone->currentData().toString();
     QSignalBlocker blocker(m_tone);
     m_tone->clear();
     for (const ToneItem& tone : Tones::presets())
@@ -445,7 +444,7 @@ void MainWindow::populateToneCombo()
         const QJsonObject object = value.toObject();
         m_tone->addItem(object.value(QStringLiteral("name")).toString(), object.value(QStringLiteral("key")).toString());
     }
-    const QString wanted = current.isEmpty() ? ConfigManager::instance()->stringValue(Keys::translationTone) : current;
+    const QString wanted = ConfigManager::instance()->stringValue(Keys::translationTone);
     const int index = m_tone->findData(wanted);
     m_tone->setCurrentIndex(index < 0 ? 0 : index);
 }
