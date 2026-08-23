@@ -109,11 +109,11 @@ void ApiClient::onReadyRead()
 {
     if (!m_reply)
         return;
+    const QByteArray data = m_reply->readAll();
+    m_rawBuffer += data;
     if (m_streaming) {
-        m_streamBuffer += m_reply->readAll();
+        m_streamBuffer += data;
         handleStreamData(m_streamBuffer);
-    } else {
-        m_rawBuffer += m_reply->readAll();
     }
 }
 
@@ -172,12 +172,11 @@ void ApiClient::onFinished()
     m_reply = nullptr;
 
     const QByteArray remaining = reply->readAll();
+    m_rawBuffer += remaining;
     if (m_streaming && !remaining.isEmpty()) {
         m_streamBuffer += remaining;
         handleStreamData(m_streamBuffer);
         m_streamBuffer.clear();
-    } else if (!m_streaming) {
-        m_rawBuffer += remaining;
     }
 
     const QVariant statusAttribute = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute);
