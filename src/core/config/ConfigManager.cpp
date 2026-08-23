@@ -163,15 +163,6 @@ void ConfigManager::removeValue(const QString& key)
     emit changed(key);
 }
 
-void ConfigManager::resetTo(const QJsonObject& doc)
-{
-    m_user = doc;
-    scheduleSave();
-    const QStringList keys = Defaults::allKeys();
-    for (const QString& key : keys)
-        emit changed(key);
-}
-
 void ConfigManager::flush()
 {
     if (m_saveTimer.isActive()) {

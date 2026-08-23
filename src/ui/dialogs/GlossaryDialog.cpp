@@ -2,7 +2,6 @@
 
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
-#include "ui/widgets/ConfigEditors.h"
 
 #include <QDialogButtonBox>
 #include <QCheckBox>
@@ -205,8 +204,8 @@ GlossaryDialog::GlossaryDialog(QWidget* parent)
     resize(560, 480);
 
     auto* layout = new QVBoxLayout(this);
-    auto* enabledCheck = new ConfigCheckBox(Keys::glossaryEnabled, this);
-    enabledCheck->box()->setText(tr("Enable glossary"));
+    auto* enabledCheck = new QCheckBox(tr("Enable glossary"), this);
+    enabledCheck->setChecked(ConfigManager::instance()->boolValue(Keys::glossaryEnabled));
     layout->addWidget(enabledCheck);
 
     m_table = new GlossaryTable(this);
@@ -216,7 +215,8 @@ GlossaryDialog::GlossaryDialog(QWidget* parent)
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
     layout->addWidget(buttons);
 
-    connect(buttons, &QDialogButtonBox::accepted, this, [this]() {
+    connect(buttons, &QDialogButtonBox::accepted, this, [this, enabledCheck]() {
+        ConfigManager::instance()->setValue(Keys::glossaryEnabled, enabledCheck->isChecked());
         Glossary glossary;
         glossary.entries = m_table->entries();
         glossary.saveToConfig();

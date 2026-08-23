@@ -1,16 +1,19 @@
 #pragma once
 
 #include <QDialog>
-#include <QJsonObject>
+#include <QJsonArray>
 
-class QComboBox;
-class QLabel;
-class QListWidget;
-class QStackedWidget;
 class QKeySequenceEdit;
+class QPushButton;
+class ConfigCheckBox;
+class ConfigComboBox;
 class GlossaryTable;
+
 class GlobalHotkey;
 
+// Form-style settings dialog following Qt's canonical pattern: editors are
+// populated once on construction and nothing is written back until the user
+// activates Apply (or OK). Cancel simply discards pending edits.
 class SettingsDialog : public QDialog
 {
     Q_OBJECT
@@ -18,8 +21,9 @@ class SettingsDialog : public QDialog
 public:
     explicit SettingsDialog(GlobalHotkey* hotkey, int initialTab = 0, QWidget* parent = nullptr);
 
-protected:
-    void reject() override;
+private slots:
+    void markDirty();
+    void applyChanges();
 
 private:
     QWidget* createApiPage();
@@ -31,5 +35,11 @@ private:
     QWidget* createClipboardPage();
     QWidget* createHistoryPage();
 
-    QJsonObject m_snapshot;
+    QKeySequenceEdit* m_hotkeySequence = nullptr;
+    ConfigComboBox* m_targetLangCombo = nullptr;
+    ConfigComboBox* m_toneCombo = nullptr;
+    ConfigCheckBox* m_glossaryEnabled = nullptr;
+    GlossaryTable* m_glossaryTable = nullptr;
+    QJsonArray m_customTones;
+    QPushButton* m_applyButton = nullptr;
 };

@@ -2,12 +2,12 @@
 
 #include <QDialog>
 
+#include <QJsonArray>
 #include <QVector>
 
 #include "core/translation/Tone.h"
 
 class QListWidget;
-class QLineEdit;
 class QTableWidget;
 
 class ToneDialog : public QDialog
@@ -15,14 +15,18 @@ class ToneDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit ToneDialog(QWidget* parent = nullptr);
+    explicit ToneDialog(const QJsonArray& customTones, const QString& uiLanguage,
+                        QWidget* parent = nullptr);
+
+    QVector<ToneItem> customTones() const;
+    static QJsonArray toJson(const QVector<ToneItem>& tones);
 
 private slots:
     void addTone();
     void removeTone();
 
 private:
-    QVector<ToneItem> customTones() const;
+    void loadTones(const QJsonArray& stored);
 
     QListWidget* m_presets = nullptr;
     QTableWidget* m_custom = nullptr;

@@ -11,7 +11,9 @@
 #include "core/translation/Tone.h"
 #include "platform/GlobalHotkey.h"
 #include "ui/widgets/ConfigEditors.h"
+#include "utils/JsonUtils.h"
 
+#include <QAbstractButton>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDialogButtonBox>
@@ -55,8 +57,12 @@ const QVector<TemplateInfo>& templateInfos()
 class PromptPreviewDialog : public QDialog
 {
 public:
-    explicit PromptPreviewDialog(QWidget* parent)
+    PromptPreviewDialog(const QString& targetLang, const QString& tone,
+                        bool glossaryEnabled, const QVector<GlossaryEntry>& glossary,
+                        QWidget* parent)
         : QDialog(parent)
+        , m_glossaryEnabled(glossaryEnabled)
+        , m_glossary(glossary)
     {
         setWindowTitle(tr("Prompt preview"));
         resize(680, 560);
@@ -73,11 +79,11 @@ public:
                 continue;
             m_target->addItem(Languages::displayName(lang.code, uiLanguage), lang.code);
         }
-        m_target->setCurrentIndex(m_target->findData(ConfigManager::instance()->stringValue(Keys::translationTargetLang)));
+        m_target->setCurrentIndex(m_target->findData(targetLang));
         m_tone = new QComboBox(this);
-        for (const ToneItem& tone : Tones::presets())
-            m_tone->addItem(Tones::presetDisplayName(tone.key, uiLanguage), tone.key);
-        m_tone->setCurrentIndex(m_tone->findData(ConfigManager::instance()->stringValue(Keys::translationTone)));
+        for (const ToneItem& item : Tones::presets())
+            m_tone->addItem(Tones::presetDisplayName(item.key, uiLanguage), item.key);
+        m_tone->setCurrentIndex(m_tone->findData(tone));
         m_style = new QLineEdit(this);
         m_background = new QLineEdit(this);
         form->addRow(tr("Sample text"), m_source);
@@ -113,13 +119,15 @@ private slots:
         context.tone = m_tone->currentData().toString();
         context.style = m_style->text().trimmed();
         context.background = m_background->text().trimmed();
-        context.glossaryEnabled = config->boolValue(Keys::glossaryEnabled);
-        context.glossary = Glossary::loadFromConfig().entries;
+        context.glossaryEnabled = m_glossaryEnabled;
+        context.glossary = m_glossary;
         context.uiLanguage = config->resolvedUiLanguage();
         const PromptBuilder::Result result = PromptBuilder::build(context);
         m_output->setPlainText(result.user.isEmpty() ? tr("(empty prompt)") : result.user);
     }
 
+    bool m_glossaryEnabled = false;
+    QVector<GlossaryEntry> m_glossary;
     QPlainTextEdit* m_source = nullptr;
     QComboBox* m_target = nullptr;
     QComboBox* m_tone = nullptr;
@@ -136,8 +144,7 @@ SettingsDialog::SettingsDialog(GlobalHotkey* hotkey, int initialTab, QWidget* pa
     setWindowTitle(tr("Settings"));
     resize(760, 620);
 
-    ConfigManager* config = ConfigManager::instance();
-    m_snapshot = config->userDocument();
+    m_customTones = ConfigManager::instance()->value(Keys::translationCustomTones).toArray();
 
     auto* layout = new QVBoxLayout(this);
     auto* tabs = new QTabWidget(this);
@@ -155,16 +162,56 @@ SettingsDialog::SettingsDialog(GlobalHotkey* hotkey, int initialTab, QWidget* pa
     if (initialTab >= 0 && initialTab < tabs->count())
         tabs->setCurrentIndex(initialTab);
 
-    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
+    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Apply
+                                         | QDialogButtonBox::Cancel, this);
+    m_applyButton = buttons->button(QDialogButtonBox::Apply);
+    m_applyButton->setEnabled(false);
     layout->addWidget(buttons);
-    connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
+
+    connect(buttons, &QDialogButtonBox::accepted, this, [this]() {
+        applyChanges();
+        accept();
+    });
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
+    connect(buttons, &QDialogButtonBox::clicked, this,
+            [this, buttons](QAbstractButton* button) {
+                if (buttons->buttonRole(button) == QDialogButtonBox::ApplyRole)
+                    applyChanges();
+            });
+
+    for (ConfigEditor* editor : findChildren<ConfigEditor*>())
+        connect(editor, &ConfigEditor::edited, this, &SettingsDialog::markDirty);
+    connect(m_hotkeySequence, &QKeySequenceEdit::keySequenceChanged, this, &SettingsDialog::markDirty);
+    connect(m_glossaryTable, &GlossaryTable::entriesChanged, this, &SettingsDialog::markDirty);
 }
 
-void SettingsDialog::reject()
+void SettingsDialog::markDirty()
 {
-    ConfigManager::instance()->resetTo(m_snapshot);
-    QDialog::reject();
+    m_applyButton->setEnabled(true);
+}
+
+void SettingsDialog::applyChanges()
+{
+    ConfigManager* config = ConfigManager::instance();
+
+    const QString sequence = m_hotkeySequence->keySequence().toString(QKeySequence::PortableText);
+    if (sequence != config->stringValue(Keys::hotkeySequence))
+        config->setValue(Keys::hotkeySequence, sequence);
+
+    if (!JsonUtils::equals(m_customTones, config->value(Keys::translationCustomTones)))
+        config->setValue(Keys::translationCustomTones, m_customTones);
+
+    const QJsonArray entries = Glossary::toJson(m_glossaryTable->entries());
+    if (!JsonUtils::equals(entries, config->value(Keys::glossaryEntries)))
+        config->setValue(Keys::glossaryEntries, entries);
+
+    for (ConfigEditor* editor : findChildren<ConfigEditor*>()) {
+        const QJsonValue editorValue = editor->value();
+        if (!JsonUtils::equals(editorValue, config->value(editor->key())))
+            config->setValue(editor->key(), editorValue);
+    }
+
+    m_applyButton->setEnabled(false);
 }
 
 QWidget* SettingsDialog::createApiPage()
@@ -219,42 +266,41 @@ QWidget* SettingsDialog::createTranslationPage()
     sourceCombo->setItems(sourceItems);
     form->addRow(tr("Source language"), sourceCombo);
 
-    auto* targetCombo = new ConfigComboBox(Keys::translationTargetLang, page);
+    m_targetLangCombo = new ConfigComboBox(Keys::translationTargetLang, page);
     QList<QPair<QString, QString>> targetItems;
     for (const LangItem& lang : Languages::all()) {
         if (lang.code == QLatin1String("auto"))
             continue;
         targetItems.append({Languages::displayName(lang.code, uiLanguage), lang.code});
     }
-    targetCombo->setItems(targetItems);
-    form->addRow(tr("Target language"), targetCombo);
+    m_targetLangCombo->setItems(targetItems);
+    form->addRow(tr("Target language"), m_targetLangCombo);
 
     auto* toneRow = new QHBoxLayout();
-    auto* toneCombo = new ConfigComboBox(Keys::translationTone, page);
-    auto reloadTones = [toneCombo, uiLanguage]() {
-        QSignalBlocker blocker(toneCombo->box());
-        toneCombo->box()->clear();
+    m_toneCombo = new ConfigComboBox(Keys::translationTone, page);
+    auto rebuildToneItems = [this, uiLanguage]() {
+        QList<QPair<QString, QString>> items;
         for (const ToneItem& tone : Tones::presets())
-            toneCombo->box()->addItem(Tones::presetDisplayName(tone.key, uiLanguage), tone.key);
-        const QJsonArray custom = ConfigManager::instance()->value(Keys::translationCustomTones).toArray();
-        for (const QJsonValue& value : custom) {
+            items.append({Tones::presetDisplayName(tone.key, uiLanguage), tone.key});
+        for (const QJsonValue& value : std::as_const(m_customTones)) {
             const QJsonObject object = value.toObject();
             const QString key = object.value(QStringLiteral("key")).toString();
-            toneCombo->box()->addItem(object.value(QStringLiteral("name")).toString(key), key);
+            items.append({object.value(QStringLiteral("name")).toString(key), key});
         }
-        toneCombo->reload();
+        m_toneCombo->setItems(items);
     };
-    reloadTones();
-    connect(ConfigManager::instance(), &ConfigManager::changed, page, [reloadTones](const QString& key) {
-        if (key == Keys::translationCustomTones)
-            reloadTones();
-    });
+    rebuildToneItems();
+
     auto* manageTones = new QPushButton(tr("Manage..."), page);
-    connect(manageTones, &QPushButton::clicked, page, [page]() {
-        ToneDialog dialog(page);
-        dialog.exec();
+    connect(manageTones, &QPushButton::clicked, page, [this, rebuildToneItems, page]() {
+        ToneDialog dialog(m_customTones, ConfigManager::instance()->resolvedUiLanguage(), page);
+        if (dialog.exec() == QDialog::Accepted) {
+            m_customTones = ToneDialog::toJson(dialog.customTones());
+            rebuildToneItems();
+            markDirty();
+        }
     });
-    toneRow->addWidget(toneCombo, 1);
+    toneRow->addWidget(m_toneCombo, 1);
     toneRow->addWidget(manageTones);
     form->addRow(tr("Tone"), toneRow);
 
@@ -272,22 +318,13 @@ QWidget* SettingsDialog::createGlossaryPage()
 {
     auto* page = new QWidget(this);
     auto* layout = new QVBoxLayout(page);
-    auto* enabledCheck = new ConfigCheckBox(Keys::glossaryEnabled, page);
-    enabledCheck->box()->setText(tr("Enable glossary"));
-    layout->addWidget(enabledCheck);
+    m_glossaryEnabled = new ConfigCheckBox(Keys::glossaryEnabled, page);
+    m_glossaryEnabled->box()->setText(tr("Enable glossary"));
+    layout->addWidget(m_glossaryEnabled);
 
-    auto* table = new GlossaryTable(page);
-    table->setEntries(Glossary::loadFromConfig().entries);
-    layout->addWidget(table, 1);
-    connect(table, &GlossaryTable::entriesChanged, page, [table]() {
-        Glossary glossary;
-        glossary.entries = table->entries();
-        glossary.saveToConfig();
-    });
-    connect(ConfigManager::instance(), &ConfigManager::changed, page, [table](const QString& key) {
-        if (key == Keys::glossaryEntries)
-            table->setEntries(Glossary::loadFromConfig().entries);
-    });
+    m_glossaryTable = new GlossaryTable(page);
+    m_glossaryTable->setEntries(Glossary::loadFromConfig().entries);
+    layout->addWidget(m_glossaryTable, 1);
     return page;
 }
 
@@ -327,8 +364,13 @@ QWidget* SettingsDialog::createPromptsPage()
     auto* buttonRow = new QHBoxLayout();
     buttonRow->addStretch(1);
     auto* testButton = new QPushButton(tr("Preview prompt..."), page);
-    connect(testButton, &QPushButton::clicked, page, []() {
-        PromptPreviewDialog dialog(nullptr);
+    connect(testButton, &QPushButton::clicked, page, [this, page]() {
+        PromptPreviewDialog dialog(
+            m_targetLangCombo->box()->currentData().toString(),
+            m_toneCombo->box()->currentData().toString(),
+            m_glossaryEnabled->box()->isChecked(),
+            m_glossaryTable->entries(),
+            page);
         dialog.exec();
     });
     buttonRow->addWidget(testButton);
@@ -370,18 +412,9 @@ QWidget* SettingsDialog::createHotkeyPage()
     enabledCheck->box()->setText(tr("Enable global hotkey"));
     form->addRow(QString(), enabledCheck);
 
-    auto* sequenceEdit = new QKeySequenceEdit(QKeySequence(ConfigManager::instance()->stringValue(Keys::hotkeySequence),
-                                                           QKeySequence::PortableText), page);
-    connect(sequenceEdit, &QKeySequenceEdit::keySequenceChanged, page, [sequenceEdit](const QKeySequence& sequence) {
-        ConfigManager::instance()->setValue(Keys::hotkeySequence, sequence.toString(QKeySequence::PortableText));
-    });
-    connect(ConfigManager::instance(), &ConfigManager::changed, page, [sequenceEdit](const QString& key) {
-        if (key == Keys::hotkeySequence) {
-            QSignalBlocker blocker(sequenceEdit);
-            sequenceEdit->setKeySequence(QKeySequence(ConfigManager::instance()->stringValue(key), QKeySequence::PortableText));
-        }
-    });
-    form->addRow(tr("Hotkey sequence"), sequenceEdit);
+    m_hotkeySequence = new QKeySequenceEdit(QKeySequence(ConfigManager::instance()->stringValue(Keys::hotkeySequence),
+                                                         QKeySequence::PortableText), page);
+    form->addRow(tr("Hotkey sequence"), m_hotkeySequence);
 
     auto* hint = new QLabel(tr("Requires Ctrl/Alt/Meta modifiers. On Wayland, global hotkeys may not work."), page);
     hint->setWordWrap(true);

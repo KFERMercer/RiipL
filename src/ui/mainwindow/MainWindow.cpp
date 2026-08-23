@@ -349,8 +349,11 @@ void MainWindow::buildMenus()
         populateToneCombo();
     });
     connect(m_toneAction, &QAction::triggered, this, [this]() {
-        ToneDialog dialog(this);
-        dialog.exec();
+        ConfigManager* config = ConfigManager::instance();
+        ToneDialog dialog(config->value(Keys::translationCustomTones).toArray(),
+                          config->resolvedUiLanguage(), this);
+        if (dialog.exec() == QDialog::Accepted)
+            config->setValue(Keys::translationCustomTones, ToneDialog::toJson(dialog.customTones()));
         populateToneCombo();
     });
     connect(m_historyAction, &QAction::triggered, this, &MainWindow::showHistoryDialog);

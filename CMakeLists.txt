@@ -93,7 +93,7 @@ target_link_options(RiipL PRIVATE -pie)
 target_compile_definitions(RiipL PRIVATE RIIP_VERSION="${PROJECT_VERSION}")
 
 add_custom_target(update_translations
-    COMMAND Qt6::lupdate ${CMAKE_CURRENT_SOURCE_DIR}/src -ts ${TS_FILES}
+    COMMAND Qt6::lupdate -no-obsolete ${CMAKE_CURRENT_SOURCE_DIR}/src -ts ${TS_FILES}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Updating translation source files"
     VERBATIM

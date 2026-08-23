@@ -25,7 +25,6 @@ public:
     void removeValue(const QString& key);
 
     QJsonObject userDocument() const { return m_user; }
-    void resetTo(const QJsonObject& doc);
     void flush();
 
     QString configDir() const { return m_dir; }

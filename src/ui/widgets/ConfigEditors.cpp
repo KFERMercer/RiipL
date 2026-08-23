@@ -3,8 +3,8 @@
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
 #include "ui/widgets/AppIcons.h"
+#include "utils/JsonUtils.h"
 
-#include <QApplication>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDoubleSpinBox>
@@ -40,117 +40,125 @@ void markModified(QWidget* widget, bool modified)
 
 }
 
-ConfigLineEdit::ConfigLineEdit(const QString& key, bool password, QWidget* parent)
+ConfigEditor::ConfigEditor(const QString& key, QWidget* parent)
     : QWidget(parent)
     , m_key(key)
+{
+}
+
+void ConfigEditor::setupDisplay(QWidget* displayWidget, QToolButton* resetButton)
+{
+    m_display = displayWidget;
+    m_reset = resetButton;
+    connect(m_reset, &QToolButton::clicked, this, [this]() {
+        m_guard = true;
+        setControlValue(Defaults::value(m_key));
+        m_guard = false;
+        refreshModifiedState();
+        emit edited();
+    });
+}
+
+void ConfigEditor::loadConfigValue()
+{
+    m_guard = true;
+    setControlValue(ConfigManager::instance()->value(m_key));
+    m_guard = false;
+    refreshModifiedState();
+}
+
+void ConfigEditor::handleControlChange()
+{
+    if (!m_guard)
+        emit edited();
+    refreshModifiedState();
+}
+
+void ConfigEditor::refreshModifiedState()
+{
+    if (!m_display || !m_reset)
+        return;
+    const bool modified = !JsonUtils::equals(value(), Defaults::value(m_key));
+    m_reset->setVisible(modified);
+    markModified(m_display, modified);
+}
+
+ConfigLineEdit::ConfigLineEdit(const QString& key, bool password, QWidget* parent)
+    : ConfigEditor(key, parent)
 {
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     m_edit = new QLineEdit(this);
     if (password)
         m_edit->setEchoMode(QLineEdit::Password);
-    m_reset = createResetButton(this);
+    auto* reset = createResetButton(this);
     layout->addWidget(m_edit, 1);
-    layout->addWidget(m_reset);
+    layout->addWidget(reset);
 
-    connect(m_reset, &QToolButton::clicked, this, [this]() {
-        ConfigManager::instance()->removeValue(m_key);
-    });
-    connect(m_edit, &QLineEdit::textEdited, this, [this](const QString& text) {
-        ConfigManager::instance()->setValue(m_key, text);
-        applyState();
-    });
-    connect(ConfigManager::instance(), &ConfigManager::changed,
-            this, &ConfigLineEdit::syncFromConfig);
-
-    m_guard = true;
-    m_edit->setText(ConfigManager::instance()->stringValue(m_key));
-    m_guard = false;
-    applyState();
+    connect(m_edit, &QLineEdit::textEdited, this, [this]() { handleControlChange(); });
+    setupDisplay(m_edit, reset);
+    loadConfigValue();
 }
 
-void ConfigLineEdit::syncFromConfig(const QString& changedKey)
+QJsonValue ConfigLineEdit::value() const
 {
-    if (changedKey != m_key)
-        return;
-    const QString text = ConfigManager::instance()->stringValue(m_key);
-    if (text != m_edit->text()) {
-        m_guard = true;
-        m_edit->setText(text);
-        m_guard = false;
-    }
-    applyState();
+    return m_edit->text();
 }
 
-void ConfigLineEdit::applyState()
+void ConfigLineEdit::setControlValue(const QJsonValue& v)
 {
-    const bool modified = !ConfigManager::instance()->isDefault(m_key);
-    m_reset->setVisible(modified);
-    markModified(m_edit, modified);
+    m_edit->setText(v.toString());
 }
 
 ConfigComboBox::ConfigComboBox(const QString& key, QWidget* parent)
-    : QWidget(parent)
-    , m_key(key)
+    : ConfigEditor(key, parent)
 {
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     m_box = new QComboBox(this);
-    m_reset = createResetButton(this);
+    auto* reset = createResetButton(this);
     layout->addWidget(m_box);
-    layout->addWidget(m_reset);
+    layout->addWidget(reset);
     layout->addStretch(1);
 
-    connect(m_reset, &QToolButton::clicked, this, [this]() {
-        ConfigManager::instance()->removeValue(m_key);
-    });
-    connect(m_box, &QComboBox::currentIndexChanged, this, [this](int index) {
-        if (m_guard || index < 0)
-            return;
-        ConfigManager::instance()->setValue(m_key, m_box->itemData(index).toString());
-        applyState();
-    });
-    connect(ConfigManager::instance(), &ConfigManager::changed,
-            this, &ConfigComboBox::onConfigChanged);
-
-    reload();
+    connect(m_box, &QComboBox::currentIndexChanged, this, [this](int) { handleControlChange(); });
+    // The initial selection is applied by setItems(); the item list must be
+    // populated by the caller first.
+    setupDisplay(m_box, reset);
 }
 
-void ConfigComboBox::onConfigChanged(const QString& key)
+QJsonValue ConfigComboBox::value() const
 {
-    if (key == m_key)
-        reload();
+    return m_box->currentData().toString();
 }
 
-void ConfigComboBox::reload()
+void ConfigComboBox::setControlValue(const QJsonValue& v)
 {
-    const QString current = ConfigManager::instance()->value(m_key).toString();
-    const int index = m_box->findData(current);
-    m_guard = true;
+    const int index = m_box->findData(v.toString());
     m_box->setCurrentIndex(index < 0 ? 0 : index);
-    m_guard = false;
-    applyState();
 }
 
 void ConfigComboBox::setItems(const QList<QPair<QString, QString>>& items)
 {
+    const bool initialSelection = m_box->count() == 0;
+    const QString wanted = initialSelection
+        ? ConfigManager::instance()->value(key()).toString()
+        : m_box->currentData().toString();
+
     QSignalBlocker blocker(m_box);
     m_box->clear();
     for (const QPair<QString, QString>& item : items)
         m_box->addItem(item.first, item.second);
-    reload();
-}
 
-void ConfigComboBox::applyState()
-{
-    const bool modified = !ConfigManager::instance()->isDefault(m_key);
-    m_reset->setVisible(modified);
-    markModified(m_box, modified);
+    int index = m_box->findData(wanted);
+    if (index < 0)
+        index = 0;
+    m_box->setCurrentIndex(index);
+    refreshModifiedState();
 }
 
 ConfigTextEdit::ConfigTextEdit(const QString& key, int rows, QWidget* parent)
-    : QWidget(parent)
-    , m_key(key)
+    : ConfigEditor(key, parent)
 {
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -159,103 +167,58 @@ ConfigTextEdit::ConfigTextEdit(const QString& key, int rows, QWidget* parent)
     m_edit->setMinimumHeight(rows * lineHeight + 12);
     auto* bottomRow = new QHBoxLayout();
     bottomRow->addStretch(1);
-    m_reset = createResetButton(this);
-    bottomRow->addWidget(m_reset);
+    auto* reset = createResetButton(this);
+    bottomRow->addWidget(reset);
     layout->addWidget(m_edit, 1);
     layout->addLayout(bottomRow);
 
-    connect(m_reset, &QToolButton::clicked, this, [this]() {
-        ConfigManager::instance()->removeValue(m_key);
-    });
-    connect(m_edit, &QPlainTextEdit::textChanged, this, [this]() {
-        if (m_guard)
-            return;
-        ConfigManager::instance()->setValue(m_key, m_edit->toPlainText());
-        applyState();
-    });
-    connect(ConfigManager::instance(), &ConfigManager::changed,
-            this, &ConfigTextEdit::syncFromConfig);
-
-    m_guard = true;
-    m_edit->setPlainText(ConfigManager::instance()->stringValue(m_key));
-    m_guard = false;
-    applyState();
+    connect(m_edit, &QPlainTextEdit::textChanged, this, [this]() { handleControlChange(); });
+    setupDisplay(m_edit, reset);
+    loadConfigValue();
 }
 
-void ConfigTextEdit::syncFromConfig(const QString& changedKey)
+QJsonValue ConfigTextEdit::value() const
 {
-    if (changedKey != m_key)
-        return;
-    const QString text = ConfigManager::instance()->stringValue(m_key);
-    if (text != m_edit->toPlainText()) {
-        m_guard = true;
-        m_edit->setPlainText(text);
-        m_guard = false;
-    }
-    applyState();
+    return m_edit->toPlainText();
 }
 
-void ConfigTextEdit::applyState()
+void ConfigTextEdit::setControlValue(const QJsonValue& v)
 {
-    const bool modified = !ConfigManager::instance()->isDefault(m_key);
-    m_reset->setVisible(modified);
-    markModified(m_edit, modified);
+    m_edit->setPlainText(v.toString());
 }
 
 ConfigSpinBox::ConfigSpinBox(const QString& key, int minimum, int maximum, int step,
                              QWidget* parent)
-    : QWidget(parent)
-    , m_key(key)
+    : ConfigEditor(key, parent)
 {
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     m_edit = new QSpinBox(this);
     m_edit->setRange(minimum, maximum);
     m_edit->setSingleStep(step);
-    m_reset = createResetButton(this);
+    auto* reset = createResetButton(this);
     layout->addWidget(m_edit);
-    layout->addWidget(m_reset);
+    layout->addWidget(reset);
     layout->addStretch(1);
 
-    connect(m_reset, &QToolButton::clicked, this, [this]() {
-        ConfigManager::instance()->removeValue(m_key);
-    });
-    connect(m_edit, &QSpinBox::valueChanged, this, [this](int value) {
-        if (m_guard)
-            return;
-        ConfigManager::instance()->setValue(m_key, value);
-        applyState();
-    });
-    connect(ConfigManager::instance(), &ConfigManager::changed,
-            this, &ConfigSpinBox::syncFromConfig);
-
-    m_guard = true;
-    m_edit->setValue(ConfigManager::instance()->intValue(m_key));
-    m_guard = false;
-    applyState();
+    connect(m_edit, &QSpinBox::valueChanged, this, [this](int) { handleControlChange(); });
+    setupDisplay(m_edit, reset);
+    loadConfigValue();
 }
 
-void ConfigSpinBox::syncFromConfig(const QString& changedKey)
+QJsonValue ConfigSpinBox::value() const
 {
-    if (changedKey != m_key)
-        return;
-    m_guard = true;
-    m_edit->setValue(ConfigManager::instance()->intValue(m_key));
-    m_guard = false;
-    applyState();
+    return m_edit->value();
 }
 
-void ConfigSpinBox::applyState()
+void ConfigSpinBox::setControlValue(const QJsonValue& v)
 {
-    const bool modified = !ConfigManager::instance()->isDefault(m_key);
-    m_reset->setVisible(modified);
-    markModified(m_edit, modified);
+    m_edit->setValue(v.toInt());
 }
 
 ConfigDoubleSpinBox::ConfigDoubleSpinBox(const QString& key, double minimum, double maximum,
                                          double step, int decimals, QWidget* parent)
-    : QWidget(parent)
-    , m_key(key)
+    : ConfigEditor(key, parent)
 {
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -263,88 +226,48 @@ ConfigDoubleSpinBox::ConfigDoubleSpinBox(const QString& key, double minimum, dou
     m_edit->setRange(minimum, maximum);
     m_edit->setSingleStep(step);
     m_edit->setDecimals(decimals);
-    m_reset = createResetButton(this);
+    auto* reset = createResetButton(this);
     layout->addWidget(m_edit);
-    layout->addWidget(m_reset);
+    layout->addWidget(reset);
     layout->addStretch(1);
 
-    connect(m_reset, &QToolButton::clicked, this, [this]() {
-        ConfigManager::instance()->removeValue(m_key);
-    });
-    connect(m_edit, &QDoubleSpinBox::valueChanged, this, [this](double value) {
-        if (m_guard)
-            return;
-        ConfigManager::instance()->setValue(m_key, value);
-        applyState();
-    });
-    connect(ConfigManager::instance(), &ConfigManager::changed,
-            this, &ConfigDoubleSpinBox::syncFromConfig);
-
-    m_guard = true;
-    m_edit->setValue(ConfigManager::instance()->doubleValue(m_key));
-    m_guard = false;
-    applyState();
+    connect(m_edit, &QDoubleSpinBox::valueChanged, this, [this](double) { handleControlChange(); });
+    setupDisplay(m_edit, reset);
+    loadConfigValue();
 }
 
-void ConfigDoubleSpinBox::syncFromConfig(const QString& changedKey)
+QJsonValue ConfigDoubleSpinBox::value() const
 {
-    if (changedKey != m_key)
-        return;
-    m_guard = true;
-    m_edit->setValue(ConfigManager::instance()->doubleValue(m_key));
-    m_guard = false;
-    applyState();
+    return m_edit->value();
 }
 
-void ConfigDoubleSpinBox::applyState()
+void ConfigDoubleSpinBox::setControlValue(const QJsonValue& v)
 {
-    const bool modified = !ConfigManager::instance()->isDefault(m_key);
-    m_reset->setVisible(modified);
-    markModified(m_edit, modified);
+    m_edit->setValue(v.toDouble());
 }
 
 ConfigCheckBox::ConfigCheckBox(const QString& key, QWidget* parent)
-    : QWidget(parent)
-    , m_key(key)
+    : ConfigEditor(key, parent)
 {
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     m_box = new QCheckBox(this);
-    m_reset = createResetButton(this);
+    auto* reset = createResetButton(this);
     layout->addWidget(m_box);
-    layout->addWidget(m_reset);
+    layout->addWidget(reset);
     layout->addStretch(1);
 
-    connect(m_reset, &QToolButton::clicked, this, [this]() {
-        ConfigManager::instance()->removeValue(m_key);
-    });
-    connect(m_box, &QCheckBox::toggled, this, [this](bool checked) {
-        if (m_guard)
-            return;
-        ConfigManager::instance()->setValue(m_key, checked);
-        applyState();
-    });
-    connect(ConfigManager::instance(), &ConfigManager::changed,
-            this, &ConfigCheckBox::syncFromConfig);
-
-    m_guard = true;
-    m_box->setChecked(ConfigManager::instance()->boolValue(m_key));
-    m_guard = false;
-    applyState();
+    connect(m_box, &QCheckBox::toggled, this, [this](bool) { handleControlChange(); });
+    setupDisplay(m_box, reset);
+    loadConfigValue();
 }
 
-void ConfigCheckBox::syncFromConfig(const QString& changedKey)
+QJsonValue ConfigCheckBox::value() const
 {
-    if (changedKey != m_key)
-        return;
-    m_guard = true;
-    m_box->setChecked(ConfigManager::instance()->boolValue(m_key));
-    m_guard = false;
-    applyState();
+    return m_box->isChecked();
 }
 
-void ConfigCheckBox::applyState()
+void ConfigCheckBox::setControlValue(const QJsonValue& v)
 {
-    const bool modified = !ConfigManager::instance()->isDefault(m_key);
-    m_reset->setVisible(modified);
+    m_box->setChecked(v.toBool());
 }
