@@ -99,7 +99,7 @@ inline const bool uiAutoTranslate = false;
 inline const int uiAutoTranslateDelay = 800;
 inline const QString uiWindowGeometry = QString();
 inline const bool uiAlwaysOnTop = false;
-inline const bool uiMinimizeToTray = false;
+inline const bool uiMinimizeToTray = true;
 inline const int uiFontSize = 10;
 
 inline const QString translationSourceLang = QStringLiteral("auto");

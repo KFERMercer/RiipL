@@ -80,6 +80,12 @@ int main(int argc, char* argv[])
     MainWindow window;
     window.show();
 
+    // With a StatusNotifierItem tray icon (KDE plasma-integration), Qt's
+    // built-in quit-on-last-window-closed leaves the process running even
+    // though lastWindowClosed is emitted; wire the signal to quit() explicitly.
+    QObject::connect(&app, &QGuiApplication::lastWindowClosed,
+                     &app, &QCoreApplication::quit);
+
     QObject::connect(&singleInstance, &SingleInstance::activationRequested, &window,
         [&window]() {
             window.show();
