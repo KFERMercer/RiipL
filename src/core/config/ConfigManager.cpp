@@ -8,7 +8,6 @@
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonParseError>
-#include <QSaveFile>
 #include <QStandardPaths>
 
 ConfigManager* ConfigManager::s_instance = nullptr;
@@ -93,11 +92,10 @@ void ConfigManager::load()
 
 void ConfigManager::save()
 {
-    QSaveFile file(configFilePath());
-    if (!file.open(QIODevice::WriteOnly))
+    QFile file(configFilePath());
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
         return;
     file.write(QJsonDocument(m_user).toJson(QJsonDocument::Indented));
-    file.commit();
 }
 
 void ConfigManager::scheduleSave()
