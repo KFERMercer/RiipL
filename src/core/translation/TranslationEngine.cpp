@@ -185,8 +185,10 @@ QStringList TranslationEngine::cleanCandidates(const QStringList& candidates)
 
 void TranslationEngine::stop()
 {
-    if (m_translateApi.busy())
-        m_translateApi.cancel();
-    else
+    if (!m_translateApi.busy()) {
         setBusy(false);
+        return;
+    }
+    m_translateApi.cancel();
+    emit stopped();
 }

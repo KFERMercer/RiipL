@@ -42,6 +42,7 @@ signals:
     void partialResult(const QString& text);
     void finished(const QString& text);
     void error(const QString& message);
+    void stopped();
     void stateChanged(bool busy);
 
 private:

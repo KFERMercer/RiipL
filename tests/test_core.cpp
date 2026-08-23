@@ -11,6 +11,8 @@
 #include "utils/TextUtils.h"
 
 #include <QJsonDocument>
+#include <QHostAddress>
+#include <QTcpServer>
 #include <QTemporaryDir>
 
 class TestCore : public QObject
@@ -37,6 +39,9 @@ private slots:
     void resolveAutoExcludesTarget();
     void requestBodyParameterHandling();
     void customHeaderLineParsing();
+    void stopCancelsActiveRequest();
+    void failedDispatchReturnsToIdle();
+    void stopWhenIdleIsNoOp();
 
 private:
     QString tempDir()
@@ -405,6 +410,75 @@ void TestCore::customHeaderLineParsing()
     QCOMPARE(headers.at(1).second, QStringLiteral("Bearer secret"));
     QCOMPARE(headers.at(2).first, QStringLiteral("X-Retry"));
     QCOMPARE(headers.at(2).second, QStringLiteral("3"));
+}
+
+void TestCore::stopCancelsActiveRequest()
+{
+    QDir().mkpath(tempDir());
+    ConfigManager::createInstance(tempDir());
+
+    // A listening server that never answers keeps the request in flight.
+    QTcpServer server;
+    QVERIFY(server.listen(QHostAddress::LocalHost));
+    ConfigManager::instance()->setValue(Keys::apiBaseUrl,
+        QStringLiteral("http://127.0.0.1:%1").arg(server.serverPort()));
+
+    TranslationEngine engine;
+    QSignalSpy stoppedSpy(&engine, &TranslationEngine::stopped);
+    QSignalSpy errorSpy(&engine, &TranslationEngine::error);
+    QSignalSpy stateSpy(&engine, &TranslationEngine::stateChanged);
+
+    TranslationContext context;
+    context.sourceText = QStringLiteral("Hello");
+    context.targetLang = QStringLiteral("zh");
+    context.uiLanguage = QStringLiteral("en");
+    engine.translateText(context);
+    QVERIFY(engine.busy());
+
+    engine.stop();
+
+    QCOMPARE(stoppedSpy.count(), 1);
+    QCOMPARE(errorSpy.count(), 0);
+    QVERIFY(!engine.busy());
+    QVERIFY(!stateSpy.isEmpty());
+    QCOMPARE(stateSpy.last().last().toBool(), false);
+}
+
+void TestCore::failedDispatchReturnsToIdle()
+{
+    QDir().mkpath(tempDir());
+    ConfigManager::createInstance(tempDir());
+    ConfigManager::instance()->setValue(Keys::apiBaseUrl, QString());
+
+    TranslationEngine engine;
+    QSignalSpy stoppedSpy(&engine, &TranslationEngine::stopped);
+    QSignalSpy errorSpy(&engine, &TranslationEngine::error);
+    QSignalSpy stateSpy(&engine, &TranslationEngine::stateChanged);
+
+    TranslationContext context;
+    context.sourceText = QStringLiteral("Hello");
+    context.targetLang = QStringLiteral("zh");
+    context.uiLanguage = QStringLiteral("en");
+    engine.translateText(context);
+
+    QCOMPARE(errorSpy.count(), 1);
+    QVERIFY(!errorSpy.first().first().toString().isEmpty());
+    QCOMPARE(stoppedSpy.count(), 0);
+    QVERIFY(!engine.busy());
+    QCOMPARE(stateSpy.last().last().toBool(), false);
+}
+
+void TestCore::stopWhenIdleIsNoOp()
+{
+    TranslationEngine engine;
+    QSignalSpy stoppedSpy(&engine, &TranslationEngine::stopped);
+    QSignalSpy stateSpy(&engine, &TranslationEngine::stateChanged);
+
+    engine.stop();
+
+    QCOMPARE(stoppedSpy.count(), 0);
+    QVERIFY(!engine.busy());
+    QVERIFY(stateSpy.isEmpty());
 }
 
 QTEST_MAIN(TestCore)

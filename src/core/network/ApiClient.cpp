@@ -61,6 +61,7 @@ void ApiClient::sendChatRequest(const QJsonObject& body,
     if (baseUrl.isEmpty()) {
         if (onError)
             onError(tr("API base URL is not configured"));
+        emit requestFinished();
         return;
     }
     const QString apiKeyValue = config->stringValue(Keys::apiKey).trimmed();

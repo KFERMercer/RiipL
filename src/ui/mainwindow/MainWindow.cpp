@@ -93,7 +93,6 @@ MainWindow::MainWindow(QWidget* parent)
     });
     connect(&m_engine, &TranslationEngine::finished, this, [this](const QString& text) {
         m_resultEdit->setResult(text);
-        setBusy(false);
         setStatusMessage(tr("Translation finished"), false);
         if (ConfigManager::instance()->boolValue(Keys::historyEnabled)) {
             TranslationRecord record;
@@ -107,12 +106,15 @@ MainWindow::MainWindow(QWidget* parent)
         }
     });
     connect(&m_engine, &TranslationEngine::error, this, [this](const QString& message) {
-        setBusy(false);
         setStatusMessage(message, true);
     });
     connect(&m_engine, &TranslationEngine::stateChanged, this, [this](bool busy) {
+        setBusy(busy);
         if (busy)
             setStatusMessage(tr("Translating..."), false);
+    });
+    connect(&m_engine, &TranslationEngine::stopped, this, [this]() {
+        setStatusMessage(tr("Translation cancelled"), false);
     });
 
     m_debounce = new QTimer(this);
@@ -482,7 +484,6 @@ void MainWindow::translateNow()
         return;
     }
     pushResultSnapshot();
-    setBusy(true);
     m_engine.translateText(currentContext());
 }
 
