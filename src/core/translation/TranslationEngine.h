@@ -30,6 +30,11 @@ public:
     void stop();
     bool busy() const;
 
+    // Assembles a chat-completions request body from the current configuration.
+    // A negative configured temperature omits the parameter from the body.
+    static QJsonObject buildRequestBody(const QString& userContent, bool stream,
+                                        const QString& systemContent = QString());
+
     static QStringList cleanCandidates(const QStringList& candidates);
     static CandidateResult parseCandidateResponse(const QString& raw);
 
@@ -40,8 +45,6 @@ signals:
     void stateChanged(bool busy);
 
 private:
-    QJsonObject buildRequestBody(const QString& userContent, bool stream, const QString& systemContent = QString()) const;
-
     ApiClient m_translateApi;
     ApiClient m_candidateApi;
     QString m_accumulated;

@@ -50,9 +50,9 @@ inline const QString apiModel = QStringLiteral("api.model");
 inline const QString apiTimeoutMs = QStringLiteral("api.timeout_ms");
 inline const QString apiTemperature = QStringLiteral("api.temperature");
 inline const QString apiMaxTokens = QStringLiteral("api.max_tokens");
-inline const QString apiTopP = QStringLiteral("api.top_p");
 inline const QString apiStream = QStringLiteral("api.stream");
 inline const QString apiExtraBody = QStringLiteral("api.extra_body");
+inline const QString apiCustomHeaders = QStringLiteral("api.custom_headers");
 
 inline const QString uiLanguage = QStringLiteral("ui.language");
 inline const QString uiAutoTranslate = QStringLiteral("ui.auto_translate");
@@ -90,11 +90,12 @@ inline const QString apiBaseUrl = QStringLiteral("https://api.openai.com/v1");
 inline const QString apiKey = QString();
 inline const QString apiModel = QStringLiteral("gpt-4o-mini");
 inline const int apiTimeoutMs = 10000;
-inline const double apiTemperature = 0.3;
+// Negative values keep the temperature parameter out of API requests.
+inline const double apiTemperature = -1.0;
 inline const int apiMaxTokens = 4096;
-inline const double apiTopP = 1.0;
 inline const bool apiStream = true;
 inline const QString apiExtraBody = QString();
+inline const QString apiCustomHeaders = QString();
 
 inline const QString uiLanguage = QStringLiteral("auto");
 inline const bool uiAutoTranslate = false;
@@ -217,8 +218,8 @@ inline QStringList allKeys()
 {
     static const QStringList keys = {
         Keys::apiBaseUrl, Keys::apiKey, Keys::apiModel, Keys::apiTemperature,
-        Keys::apiMaxTokens, Keys::apiTopP, Keys::apiStream, Keys::apiExtraBody,
-        Keys::apiTimeoutMs,
+        Keys::apiMaxTokens, Keys::apiStream, Keys::apiExtraBody,
+        Keys::apiCustomHeaders, Keys::apiTimeoutMs,
         Keys::uiLanguage, Keys::uiAutoTranslate, Keys::uiAutoTranslateDelay,
         Keys::uiWindowGeometry, Keys::uiAlwaysOnTop, Keys::uiMinimizeToTray, Keys::uiFontSize,
         Keys::translationSourceLang, Keys::translationTargetLang, Keys::translationTone,
@@ -248,9 +249,9 @@ inline QJsonValue value(const QString& key)
     if (key == Keys::apiTimeoutMs) return QJsonValue(apiTimeoutMs);
     if (key == Keys::apiTemperature) return QJsonValue(apiTemperature);
     if (key == Keys::apiMaxTokens) return QJsonValue(apiMaxTokens);
-    if (key == Keys::apiTopP) return QJsonValue(apiTopP);
     if (key == Keys::apiStream) return QJsonValue(apiStream);
     if (key == Keys::apiExtraBody) return QJsonValue(apiExtraBody);
+    if (key == Keys::apiCustomHeaders) return QJsonValue(apiCustomHeaders);
     if (key == Keys::uiLanguage) return QJsonValue(uiLanguage);
     if (key == Keys::uiAutoTranslate) return QJsonValue(uiAutoTranslate);
     if (key == Keys::uiAutoTranslateDelay) return QJsonValue(uiAutoTranslateDelay);

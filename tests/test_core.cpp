@@ -35,6 +35,8 @@ private slots:
     void singleInstanceArbitration();
     void guessFromScriptDetection();
     void resolveAutoExcludesTarget();
+    void requestBodyParameterHandling();
+    void customHeaderLineParsing();
 
 private:
     QString tempDir()
@@ -371,6 +373,39 @@ void TestCore::resolveAutoExcludesTarget()
     QVERIFY(indexOf(latinFallback) > 0);
     QVERIFY(resolveAuto(QStringLiteral("你好"), QStringLiteral("zh")) != QStringLiteral("zh"));
     QVERIFY(resolveAuto(QString(), QStringLiteral("ja")) != QStringLiteral("ja"));
+}
+
+void TestCore::requestBodyParameterHandling()
+{
+    QDir().mkpath(tempDir());
+    ConfigManager::createInstance(tempDir());
+
+    QCOMPARE(Defaults::apiTemperature, -1.0);
+    const QJsonObject body = TranslationEngine::buildRequestBody(QStringLiteral("Hello"), false);
+    QVERIFY(!body.contains(QStringLiteral("temperature")));
+    QVERIFY(!body.contains(QStringLiteral("top_p")));
+
+    ConfigManager::instance()->setValue(Keys::apiTemperature, 0.7);
+    const QJsonObject tuned = TranslationEngine::buildRequestBody(QStringLiteral("Hello"), false);
+    QCOMPARE(tuned.value(QStringLiteral("temperature")).toDouble(), 0.7);
+}
+
+void TestCore::customHeaderLineParsing()
+{
+    QVERIFY(ApiClient::parseCustomHeaders(QString()).isEmpty());
+    QVERIFY(ApiClient::parseCustomHeaders(QStringLiteral("\n   \n")).isEmpty());
+    QVERIFY(ApiClient::parseCustomHeaders(QStringLiteral("InvalidHeader\n:Nameless")).isEmpty());
+
+    const QList<QPair<QString, QString>> headers = ApiClient::parseCustomHeaders(
+        QStringLiteral("X-Title: RiipL\nAuthorization: Bearer secret\n  X-Retry : 3 \nBroken line"));
+
+    QCOMPARE(headers.size(), 3);
+    QCOMPARE(headers.at(0).first, QStringLiteral("X-Title"));
+    QCOMPARE(headers.at(0).second, QStringLiteral("RiipL"));
+    QCOMPARE(headers.at(1).first, QStringLiteral("Authorization"));
+    QCOMPARE(headers.at(1).second, QStringLiteral("Bearer secret"));
+    QCOMPARE(headers.at(2).first, QStringLiteral("X-Retry"));
+    QCOMPARE(headers.at(2).second, QStringLiteral("3"));
 }
 
 QTEST_MAIN(TestCore)

@@ -32,6 +32,24 @@ void ApiClient::cancel()
     emit requestFinished();
 }
 
+// Splits user-configured multi-line text into raw header pairs. Lines without
+// a "Name: value" shape or with an empty header name are skipped.
+QList<QPair<QString, QString>> ApiClient::parseCustomHeaders(const QString& raw)
+{
+    QList<QPair<QString, QString>> headers;
+    const QStringList lines = raw.split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+    for (const QString& line : lines) {
+        const qsizetype colon = line.indexOf(QLatin1Char(':'));
+        if (colon <= 0)
+            continue;
+        const QString name = line.left(colon).trimmed();
+        if (name.isEmpty())
+            continue;
+        headers.append({name, line.mid(colon + 1).trimmed()});
+    }
+    return headers;
+}
+
 void ApiClient::sendChatRequest(const QJsonObject& body,
                                 DoneCallback onDone,
                                 DeltaCallback onStream,
@@ -56,6 +74,11 @@ void ApiClient::sendChatRequest(const QJsonObject& body,
     request.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
     if (!apiKeyValue.isEmpty())
         request.setRawHeader("Authorization", "Bearer " + apiKeyValue.toUtf8());
+    // Applied last so custom headers can intentionally override built-ins.
+    const QList<QPair<QString, QString>> customHeaders =
+        parseCustomHeaders(config->stringValue(Keys::apiCustomHeaders));
+    for (const QPair<QString, QString>& header : customHeaders)
+        request.setRawHeader(header.first.toUtf8(), header.second.toUtf8());
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                          QNetworkRequest::NoLessSafeRedirectPolicy);
     // Abort the request when the server exchanges no data within the

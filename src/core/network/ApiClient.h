@@ -1,7 +1,9 @@
 #pragma once
 
 #include <QJsonObject>
+#include <QList>
 #include <QObject>
+#include <QPair>
 #include <QString>
 #include <functional>
 
@@ -25,6 +27,10 @@ public:
                          ErrorCallback onError);
     void cancel();
     bool busy() const { return m_reply != nullptr; }
+
+    // Parses user-configured header lines of the form "Name: value";
+    // malformed lines are ignored.
+    static QList<QPair<QString, QString>> parseCustomHeaders(const QString& raw);
 
 signals:
     void requestFinished();

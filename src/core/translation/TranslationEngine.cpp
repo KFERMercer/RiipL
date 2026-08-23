@@ -33,7 +33,7 @@ bool TranslationEngine::busy() const
     return m_busy;
 }
 
-QJsonObject TranslationEngine::buildRequestBody(const QString& userContent, bool stream, const QString& systemContent) const
+QJsonObject TranslationEngine::buildRequestBody(const QString& userContent, bool stream, const QString& systemContent)
 {
     ConfigManager* config = ConfigManager::instance();
     QJsonArray messages;
@@ -51,9 +51,11 @@ QJsonObject TranslationEngine::buildRequestBody(const QString& userContent, bool
     QJsonObject body;
     body.insert(QStringLiteral("model"), config->stringValue(Keys::apiModel));
     body.insert(QStringLiteral("messages"), messages);
-    body.insert(QStringLiteral("temperature"), config->doubleValue(Keys::apiTemperature));
+    // A negative configured temperature leaves sampling to the provider default.
+    const double temperature = config->doubleValue(Keys::apiTemperature);
+    if (temperature >= 0.0)
+        body.insert(QStringLiteral("temperature"), temperature);
     body.insert(QStringLiteral("max_tokens"), config->intValue(Keys::apiMaxTokens));
-    body.insert(QStringLiteral("top_p"), config->doubleValue(Keys::apiTopP));
     body.insert(QStringLiteral("stream"), stream);
     return body;
 }
