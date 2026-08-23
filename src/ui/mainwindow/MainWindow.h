@@ -50,6 +50,7 @@ private:
     void setStatusMessage(const QString& message, bool isError);
     void applyClipboardMonitoring(bool enabled);
     void applyHotkeyFromConfig();
+    void applyAlwaysOnTop(bool onTop);
     void syncLanguageMenu();
     void pushResultSnapshot();
     void undoResult();

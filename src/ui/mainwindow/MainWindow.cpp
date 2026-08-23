@@ -155,9 +155,7 @@ MainWindow::MainWindow(QWidget* parent)
     applyClipboardMonitoring(ConfigManager::instance()->boolValue(Keys::clipboardMonitor));
     m_history.setMaxRecords(ConfigManager::instance()->intValue(Keys::historyMaxRecords));
 
-    if (ConfigManager::instance()->boolValue(Keys::uiAlwaysOnTop)) {
-        setWindowFlag(Qt::WindowStaysOnTopHint, true);
-    }
+    applyAlwaysOnTop(ConfigManager::instance()->boolValue(Keys::uiAlwaysOnTop));
 
     retranslateUi();
 }
@@ -322,12 +320,8 @@ void MainWindow::buildMenus()
             ConfigManager::instance()->setValue(Keys::uiAutoTranslate, checked);
     });
     connect(m_onTopAction, &QAction::toggled, this, [this](bool checked) {
-        if (m_guard)
-            return;
-        ConfigManager::instance()->setValue(Keys::uiAlwaysOnTop, checked);
-        setWindowFlag(Qt::WindowStaysOnTopHint, checked);
-        if (isVisible())
-            show();
+        if (!m_guard)
+            ConfigManager::instance()->setValue(Keys::uiAlwaysOnTop, checked);
     });
     connect(m_clipboardAction, &QAction::toggled, this, [this](bool checked) {
         if (!m_guard)
@@ -636,9 +630,7 @@ void MainWindow::onConfigChanged(const QString& key)
     } else if (key == Keys::uiAlwaysOnTop) {
         QSignalBlocker blocker(m_onTopAction);
         m_onTopAction->setChecked(ConfigManager::instance()->boolValue(key));
-        setWindowFlag(Qt::WindowStaysOnTopHint, ConfigManager::instance()->boolValue(key));
-        if (isVisible())
-            show();
+        applyAlwaysOnTop(ConfigManager::instance()->boolValue(key));
     } else if (key == Keys::clipboardMonitor) {
         QSignalBlocker blocker(m_clipboardAction);
         m_clipboardAction->setChecked(ConfigManager::instance()->boolValue(key));
@@ -682,6 +674,15 @@ void MainWindow::applyHotkeyFromConfig()
     } else {
         m_hotkey.setActive(false);
     }
+}
+
+void MainWindow::applyAlwaysOnTop(bool onTop)
+{
+    // QWidget hides a visible window when its flags change; restore visibility afterwards.
+    const bool wasVisible = isVisible();
+    setWindowFlag(Qt::WindowStaysOnTopHint, onTop);
+    if (wasVisible)
+        show();
 }
 
 void MainWindow::applyClipboardMonitoring(bool enabled)
