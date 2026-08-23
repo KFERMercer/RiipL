@@ -52,7 +52,7 @@ QJsonObject TranslationEngine::buildRequestBody(const QString& userContent, bool
     return body;
 }
 
-void TranslationEngine::translate(const TranslationContext& context)
+void TranslationEngine::translateText(const TranslationContext& context)
 {
     if (m_translateApi.busy())
         m_translateApi.cancel();

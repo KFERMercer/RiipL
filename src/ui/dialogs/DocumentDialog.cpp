@@ -168,7 +168,7 @@ void DocumentDialog::translateNextChunk()
 {
     TranslationContext context = m_baseContext;
     context.sourceText = m_chunks.at(m_currentChunk);
-    m_engine.translate(context);
+    m_engine.translateText(context);
 }
 
 void DocumentDialog::cancel()

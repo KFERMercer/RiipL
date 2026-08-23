@@ -518,7 +518,7 @@ void MainWindow::translateNow()
     }
     pushResultSnapshot();
     setBusy(true);
-    m_engine.translate(currentContext());
+    m_engine.translateText(currentContext());
 }
 
 void MainWindow::setBusy(bool busy)

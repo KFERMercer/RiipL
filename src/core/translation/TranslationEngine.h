@@ -20,7 +20,7 @@ public:
 
     explicit TranslationEngine(QObject* parent = nullptr);
 
-    void translate(const TranslationContext& context);
+    void translateText(const TranslationContext& context);
     void requestCandidates(const QString& sourceText,
                            const QString& translatedText,
                            const QString& word,

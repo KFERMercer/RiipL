@@ -54,8 +54,12 @@ const QVector<TemplateInfo>& templateInfos()
     return list;
 }
 
+}
+
 class PromptPreviewDialog : public QDialog
 {
+    Q_OBJECT
+
 public:
     PromptPreviewDialog(const QString& targetLang, const QString& tone,
                         bool glossaryEnabled, const QVector<GlossaryEntry>& glossary,
@@ -126,6 +130,7 @@ private slots:
         m_output->setPlainText(result.user.isEmpty() ? tr("(empty prompt)") : result.user);
     }
 
+private:
     bool m_glossaryEnabled = false;
     QVector<GlossaryEntry> m_glossary;
     QPlainTextEdit* m_source = nullptr;
@@ -135,8 +140,6 @@ private slots:
     QLineEdit* m_background = nullptr;
     QPlainTextEdit* m_output = nullptr;
 };
-
-}
 
 SettingsDialog::SettingsDialog(GlobalHotkey* hotkey, int initialTab, QWidget* parent)
     : QDialog(parent)
@@ -455,3 +458,5 @@ QWidget* SettingsDialog::createHistoryPage()
     form->addRow(QString(), clearButton);
     return page;
 }
+
+#include "SettingsDialog.moc"
