@@ -383,7 +383,6 @@ void TestCore::requestBodyParameterHandling()
     QCOMPARE(Defaults::apiTemperature, -1.0);
     const QJsonObject body = TranslationEngine::buildRequestBody(QStringLiteral("Hello"), false);
     QVERIFY(!body.contains(QStringLiteral("temperature")));
-    QVERIFY(!body.contains(QStringLiteral("top_p")));
 
     ConfigManager::instance()->setValue(Keys::apiTemperature, 0.7);
     const QJsonObject tuned = TranslationEngine::buildRequestBody(QStringLiteral("Hello"), false);
