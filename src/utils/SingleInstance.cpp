@@ -61,10 +61,7 @@ void SingleInstance::notifyExistingInstance()
 {
     QLocalSocket socket;
     socket.connectToServer(instanceKey());
-    if (socket.waitForConnected(kConnectTimeoutMs)) {
-        socket.write("activate\n");
-        socket.flush();
-        socket.waitForBytesWritten(kConnectTimeoutMs);
-    }
+    if (!socket.waitForConnected(kConnectTimeoutMs))
+        return;
     socket.disconnectFromServer();
 }
