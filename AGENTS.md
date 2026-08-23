@@ -26,7 +26,8 @@ RiipL/
 
 ```bash
 # 构建时必须使用 --clean-first 进行清洁构建
-cmake -S . -B build
+# -DBUILD_TESTING=ON 启用测试套件
+cmake -S . -B build -DBUILD_TESTING=ON
 cmake --build build -j$(nproc) --clean-first
 ```
 

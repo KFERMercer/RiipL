@@ -8,7 +8,11 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+add_compile_options(
+    "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>"
+    "$<$<CXX_COMPILER_ID:MSVC>:/W4>"
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall;-Wextra>"
+)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network LinguistTools)
 
@@ -19,9 +23,6 @@ set(CORE_SOURCES
     src/core/translation/TranslationEngine.cpp
     src/core/models/Glossary.cpp
     src/core/history/HistoryManager.cpp
-    src/platform/GlobalHotkey.cpp
-    src/utils/SingleInstance.cpp
-    src/utils/TextUtils.cpp
 )
 set(CORE_HEADERS
     src/core/config/Defaults.h
@@ -33,23 +34,41 @@ set(CORE_HEADERS
     src/core/translation/TranslationEngine.h
     src/core/models/Glossary.h
     src/core/history/HistoryManager.h
-    src/utils/JsonUtils.h
-    src/utils/TextUtils.h
-    src/platform/GlobalHotkey.h
-    src/utils/SingleInstance.h
 )
 add_library(riip_core STATIC ${CORE_SOURCES} ${CORE_HEADERS})
 target_include_directories(riip_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(riip_core PUBLIC Qt6::Core Qt6::Gui Qt6::Network)
+target_link_libraries(riip_core PUBLIC Qt6::Core Qt6::Network)
+
+# Platform integration layer (global hotkeys).
+add_library(riip_platform STATIC
+    src/platform/GlobalHotkey.cpp
+    src/platform/GlobalHotkey.h
+)
+target_include_directories(riip_platform PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(riip_platform
+    PUBLIC Qt6::Core
+    PRIVATE Qt6::Gui
+)
+
+# Shared helpers used by the app shell and the test suite.
+add_library(riip_utils STATIC
+    src/utils/JsonUtils.h
+    src/utils/SingleInstance.cpp
+    src/utils/SingleInstance.h
+    src/utils/TextUtils.cpp
+    src/utils/TextUtils.h
+)
+target_include_directories(riip_utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(riip_utils PUBLIC Qt6::Core Qt6::Network)
 
 if(APPLE)
     find_library(CARBON_FRAMEWORK Carbon REQUIRED)
-    target_link_libraries(riip_core PUBLIC ${CARBON_FRAMEWORK})
+    target_link_libraries(riip_platform PRIVATE ${CARBON_FRAMEWORK})
 elseif(UNIX)
     find_package(X11 QUIET)
     if(X11_FOUND)
-        target_link_libraries(riip_core PUBLIC X11::X11)
-        target_compile_definitions(riip_core PUBLIC RIIP_HAVE_X11)
+        target_link_libraries(riip_platform PRIVATE X11::X11)
+        target_compile_definitions(riip_platform PRIVATE RIIP_HAVE_X11)
     endif()
 endif()
 
@@ -95,7 +114,7 @@ qt_add_executable(RiipL
     ${I18N_QRC}
     ${QM_FILES}
 )
-target_link_libraries(RiipL PRIVATE riip_core Qt6::Widgets Qt6::Network)
+target_link_libraries(RiipL PRIVATE riip_core riip_platform riip_utils Qt6::Widgets)
 target_compile_definitions(RiipL PRIVATE RIIP_VERSION="${PROJECT_VERSION}")
 
 add_custom_target(update_translations
@@ -105,11 +124,14 @@ add_custom_target(update_translations
     VERBATIM
 )
 
-find_package(Qt6 REQUIRED COMPONENTS Test)
-enable_testing()
-add_executable(riip_tests
-    tests/test_core.cpp
-)
-target_include_directories(riip_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(riip_tests PRIVATE riip_core Qt6::Test)
-add_test(NAME core_tests COMMAND riip_tests)
+option(BUILD_TESTING "Build the unit test suite" OFF)
+if(BUILD_TESTING)
+    find_package(Qt6 REQUIRED COMPONENTS Test)
+    enable_testing()
+    add_executable(riip_tests
+        tests/test_core.cpp
+    )
+    target_include_directories(riip_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_link_libraries(riip_tests PRIVATE riip_core riip_utils Qt6::Test)
+    add_test(NAME core_tests COMMAND riip_tests)
+endif()

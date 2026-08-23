@@ -69,13 +69,6 @@ cmake --build build --clean-first -j$(nproc)
 
 编译成功后的可执行文件位于 `./build/RiipL`
 
-### 测试
-
-```bash
-cmake --build build --target riip_tests
-cd build && QT_QPA_PLATFORM=offscreen ./riip_tests
-```
-
 ## 使用技巧
 
 ### 接入自定义模型

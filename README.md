@@ -68,13 +68,6 @@ cmake --build build --clean-first -j$(nproc)
 
 After a successful build the executable lives at `./build/RiipL`.
 
-### Test
-
-```bash
-cmake --build build --target riip_tests
-cd build && QT_QPA_PLATFORM=offscreen ./riip_tests
-```
-
 ## Usage Tips
 
 ### Connecting a custom model
