@@ -258,7 +258,7 @@ QWidget* SettingsDialog::createTranslationPage()
     toneRow->addWidget(manageTones);
     form->addRow(tr("Tone"), toneRow);
 
-    form->addRow(tr("Style"), new ConfigLineEdit(Keys::translationStyle, false, page));
+    form->addRow(tr("Style"), new ConfigTextEdit(Keys::translationStyle, 3, page));
     form->addRow(tr("Background"), new ConfigTextEdit(Keys::translationBackground, 3, page));
 
     auto* autoTranslateCheck = new ConfigCheckBox(Keys::uiAutoTranslate, page);

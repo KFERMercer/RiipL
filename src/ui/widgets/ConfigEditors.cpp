@@ -78,9 +78,12 @@ void ConfigLineEdit::syncFromConfig(const QString& changedKey)
 {
     if (changedKey != m_key)
         return;
-    m_guard = true;
-    m_edit->setText(ConfigManager::instance()->stringValue(m_key));
-    m_guard = false;
+    const QString text = ConfigManager::instance()->stringValue(m_key);
+    if (text != m_edit->text()) {
+        m_guard = true;
+        m_edit->setText(text);
+        m_guard = false;
+    }
     applyState();
 }
 
@@ -193,9 +196,12 @@ void ConfigTextEdit::syncFromConfig(const QString& changedKey)
 {
     if (changedKey != m_key)
         return;
-    m_guard = true;
-    m_edit->setPlainText(ConfigManager::instance()->stringValue(m_key));
-    m_guard = false;
+    const QString text = ConfigManager::instance()->stringValue(m_key);
+    if (text != m_edit->toPlainText()) {
+        m_guard = true;
+        m_edit->setPlainText(text);
+        m_guard = false;
+    }
     applyState();
 }
 
