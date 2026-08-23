@@ -27,11 +27,6 @@
 <context>
     <name>ApiClient</name>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="47"/>
-        <source>Internal error: configuration is not initialized</source>
-        <translation>内部错误：配置未初始化</translation>
-    </message>
-    <message>
         <location filename="../../src/core/network/ApiClient.cpp" line="54"/>
         <source>API base URL is not configured</source>
         <translation>未配置 API 基础地址</translation>
