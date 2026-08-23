@@ -3,7 +3,7 @@ project(RiipL VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-add_compile_options(-fPIC)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
@@ -91,7 +91,6 @@ qt_add_executable(RiipL
     ${QM_FILES}
 )
 target_link_libraries(RiipL PRIVATE riip_core Qt6::Widgets Qt6::Network)
-target_link_options(RiipL PRIVATE -pie)
 target_compile_definitions(RiipL PRIVATE RIIP_VERSION="${PROJECT_VERSION}")
 
 add_custom_target(update_translations
