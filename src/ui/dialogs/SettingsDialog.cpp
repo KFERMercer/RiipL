@@ -229,6 +229,8 @@ QWidget* SettingsDialog::createApiPage()
     form->addRow(tr("Base URL"), new ConfigLineEdit(Keys::apiBaseUrl, false, page));
     form->addRow(tr("API key"), new ConfigLineEdit(Keys::apiKey, true, page));
     form->addRow(tr("Model"), new ConfigLineEdit(Keys::apiModel, false, page));
+    form->addRow(tr("Server connection timeout (ms)"),
+                 new ConfigSpinBox(Keys::apiTimeoutMs, 1000, 300000, 1000, page));
     form->addRow(tr("Temperature"), new ConfigDoubleSpinBox(Keys::apiTemperature, 0.0, 2.0, 0.1, 2, page));
     form->addRow(tr("Max tokens"), new ConfigSpinBox(Keys::apiMaxTokens, 1, 1000000, 256, page));
     form->addRow(tr("Top P"), new ConfigDoubleSpinBox(Keys::apiTopP, 0.0, 1.0, 0.05, 2, page));

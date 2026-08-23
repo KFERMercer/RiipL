@@ -7,7 +7,6 @@
 
 class QNetworkAccessManager;
 class QNetworkReply;
-class QTimer;
 
 class ApiClient : public QObject
 {
@@ -43,7 +42,7 @@ private:
     QString m_accumulated;
     bool m_streaming = false;
     bool m_doneSent = false;
-    bool m_idleTimedOut = false;
+    bool m_userCancelled = false;
     DoneCallback m_onDone;
     DeltaCallback m_onDelta;
     ErrorCallback m_onError;

@@ -46,6 +46,7 @@ void TestCore::configFallsBackToDefaults()
     ConfigManager::createInstance(tempDir());
     QCOMPARE(ConfigManager::instance()->stringValue(Keys::apiModel), Defaults::apiModel);
     QCOMPARE(ConfigManager::instance()->doubleValue(Keys::apiTemperature), Defaults::apiTemperature);
+    QCOMPARE(ConfigManager::instance()->intValue(Keys::apiTimeoutMs), Defaults::apiTimeoutMs);
     QVERIFY(ConfigManager::instance()->isDefault(Keys::apiModel));
     QFile file(ConfigManager::instance()->configFilePath());
     QVERIFY(file.open(QIODevice::ReadOnly));

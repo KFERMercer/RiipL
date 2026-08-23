@@ -47,6 +47,7 @@ inline const QString promptCandidateEn = promptKey(Prompts::candidateTemplate, Q
 inline const QString apiBaseUrl = QStringLiteral("api.base_url");
 inline const QString apiKey = QStringLiteral("api.api_key");
 inline const QString apiModel = QStringLiteral("api.model");
+inline const QString apiTimeoutMs = QStringLiteral("api.timeout_ms");
 inline const QString apiTemperature = QStringLiteral("api.temperature");
 inline const QString apiMaxTokens = QStringLiteral("api.max_tokens");
 inline const QString apiTopP = QStringLiteral("api.top_p");
@@ -88,6 +89,7 @@ namespace Defaults {
 inline const QString apiBaseUrl = QStringLiteral("https://api.openai.com/v1");
 inline const QString apiKey = QString();
 inline const QString apiModel = QStringLiteral("gpt-4o-mini");
+inline const int apiTimeoutMs = 10000;
 inline const double apiTemperature = 0.3;
 inline const int apiMaxTokens = 4096;
 inline const double apiTopP = 1.0;
@@ -216,6 +218,7 @@ inline QStringList allKeys()
     static const QStringList keys = {
         Keys::apiBaseUrl, Keys::apiKey, Keys::apiModel, Keys::apiTemperature,
         Keys::apiMaxTokens, Keys::apiTopP, Keys::apiStream, Keys::apiExtraBody,
+        Keys::apiTimeoutMs,
         Keys::uiLanguage, Keys::uiAutoTranslate, Keys::uiAutoTranslateDelay,
         Keys::uiWindowGeometry, Keys::uiAlwaysOnTop, Keys::uiMinimizeToTray, Keys::uiFontSize,
         Keys::translationSourceLang, Keys::translationTargetLang, Keys::translationTone,
@@ -242,6 +245,7 @@ inline QJsonValue value(const QString& key)
     if (key == Keys::apiBaseUrl) return QJsonValue(apiBaseUrl);
     if (key == Keys::apiKey) return QJsonValue(apiKey);
     if (key == Keys::apiModel) return QJsonValue(apiModel);
+    if (key == Keys::apiTimeoutMs) return QJsonValue(apiTimeoutMs);
     if (key == Keys::apiTemperature) return QJsonValue(apiTemperature);
     if (key == Keys::apiMaxTokens) return QJsonValue(apiMaxTokens);
     if (key == Keys::apiTopP) return QJsonValue(apiTopP);

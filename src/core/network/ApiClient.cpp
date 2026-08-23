@@ -9,11 +9,6 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
-#include <QTimer>
-
-namespace {
-constexpr int kIdleTimeoutMs = 60000;
-}
 
 ApiClient::ApiClient(QObject* parent)
     : QObject(parent)
@@ -25,6 +20,7 @@ void ApiClient::cancel()
 {
     if (!m_reply)
         return;
+    m_userCancelled = true;
     QNetworkReply* reply = m_reply;
     m_reply = nullptr;
     disconnect(reply, nullptr, this, nullptr);
@@ -62,6 +58,9 @@ void ApiClient::sendChatRequest(const QJsonObject& body,
         request.setRawHeader("Authorization", "Bearer " + apiKeyValue.toUtf8());
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                          QNetworkRequest::NoLessSafeRedirectPolicy);
+    // Abort the request when the server exchanges no data within the
+    // user-configured window, covering both connection and idle phases.
+    request.setTransferTimeout(qMax(1000, config->intValue(Keys::apiTimeoutMs)));
 
     QJsonObject payload = body;
     const QString extra = config->stringValue(Keys::apiExtraBody).trimmed();
@@ -81,7 +80,7 @@ void ApiClient::sendChatRequest(const QJsonObject& body,
     m_rawBuffer.clear();
     m_accumulated.clear();
     m_doneSent = false;
-    m_idleTimedOut = false;
+    m_userCancelled = false;
     m_onDone = std::move(onDone);
     m_onDelta = std::move(onStream);
     m_onError = std::move(onError);
@@ -89,19 +88,6 @@ void ApiClient::sendChatRequest(const QJsonObject& body,
     m_reply = m_nam->post(request, QJsonDocument(payload).toJson(QJsonDocument::Compact));
     connect(m_reply, &QNetworkReply::readyRead, this, &ApiClient::onReadyRead);
     connect(m_reply, &QNetworkReply::finished, this, &ApiClient::onFinished);
-
-    QTimer* idleTimer = new QTimer(m_reply);
-    idleTimer->setSingleShot(true);
-    idleTimer->setInterval(kIdleTimeoutMs);
-    QNetworkReply* watchedReply = m_reply;
-    connect(idleTimer, &QTimer::timeout, this, [this, watchedReply]() {
-        if (m_reply == watchedReply) {
-            m_idleTimedOut = true;
-            watchedReply->abort();
-        }
-    });
-    connect(m_reply, &QNetworkReply::readyRead, idleTimer, [idleTimer]() { idleTimer->start(); });
-    idleTimer->start();
 }
 
 void ApiClient::onReadyRead()
@@ -182,7 +168,7 @@ void ApiClient::onFinished()
     const bool aborted = reply->error() == QNetworkReply::OperationCanceledError;
     if (aborted && !m_doneSent) {
         if (errorCb)
-            errorCb(m_idleTimedOut ? tr("Translation timed out") : tr("Translation cancelled"));
+            errorCb(m_userCancelled ? tr("Translation cancelled") : tr("Translation timed out"));
         emit requestFinished();
         return;
     }
