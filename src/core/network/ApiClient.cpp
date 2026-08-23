@@ -81,6 +81,7 @@ void ApiClient::sendChatRequest(const QJsonObject& body,
     m_rawBuffer.clear();
     m_accumulated.clear();
     m_doneSent = false;
+    m_idleTimedOut = false;
     m_onDone = std::move(onDone);
     m_onDelta = std::move(onStream);
     m_onError = std::move(onError);
@@ -92,9 +93,12 @@ void ApiClient::sendChatRequest(const QJsonObject& body,
     QTimer* idleTimer = new QTimer(m_reply);
     idleTimer->setSingleShot(true);
     idleTimer->setInterval(kIdleTimeoutMs);
-    connect(idleTimer, &QTimer::timeout, this, [this]() {
-        if (m_reply)
-            m_reply->abort();
+    QNetworkReply* watchedReply = m_reply;
+    connect(idleTimer, &QTimer::timeout, this, [this, watchedReply]() {
+        if (m_reply == watchedReply) {
+            m_idleTimedOut = true;
+            watchedReply->abort();
+        }
     });
     connect(m_reply, &QNetworkReply::readyRead, idleTimer, [idleTimer]() { idleTimer->start(); });
     idleTimer->start();
@@ -148,21 +152,6 @@ void ApiClient::consumeStreamBuffer()
         m_streamBuffer.remove(0, start);
 }
 
-void ApiClient::emitError(const QString& message)
-{
-    auto onError = m_onError;
-    m_onDone = nullptr;
-    m_onDelta = nullptr;
-    m_onError = nullptr;
-    if (m_reply) {
-        m_reply->deleteLater();
-        m_reply = nullptr;
-    }
-    if (onError)
-        onError(message);
-    emit requestFinished();
-}
-
 void ApiClient::onFinished()
 {
     if (!m_reply)
@@ -193,7 +182,7 @@ void ApiClient::onFinished()
     const bool aborted = reply->error() == QNetworkReply::OperationCanceledError;
     if (aborted && !m_doneSent) {
         if (errorCb)
-            errorCb(tr("Translation cancelled"));
+            errorCb(m_idleTimedOut ? tr("Translation timed out") : tr("Translation cancelled"));
         emit requestFinished();
         return;
     }

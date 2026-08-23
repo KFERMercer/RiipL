@@ -34,7 +34,6 @@ private:
     void onReadyRead();
     void onFinished();
     void consumeStreamBuffer();
-    void emitError(const QString& message);
     QString apiErrorMessage(const QString& body) const;
 
     QNetworkAccessManager* m_nam = nullptr;
@@ -44,6 +43,7 @@ private:
     QString m_accumulated;
     bool m_streaming = false;
     bool m_doneSent = false;
+    bool m_idleTimedOut = false;
     DoneCallback m_onDone;
     DeltaCallback m_onDelta;
     ErrorCallback m_onError;
