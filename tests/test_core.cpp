@@ -240,7 +240,7 @@ void TestCore::wordSpanAtBoundaries()
     const TextUtils::WordSpan span = TextUtils::wordSpanAt(cjk, shiIndex);
     QVERIFY(span.valid());
     const QString segment = cjk.mid(span.start, span.length());
-    QVERIFY(!segment.contains(QLatin1Char('\uff0c')));
+    QVERIFY(!segment.contains(QChar(0xFF0C)));
     QVERIFY(segment.size() <= 8);
 
     const QString longRun = QStringLiteral("\u8fd9\u662f\u4e00\u6bb5\u6ca1\u6709\u4efb\u4f55\u6807\u70b9\u7684\u5f88\u957f\u4e2d\u6587\u6587\u672c");
