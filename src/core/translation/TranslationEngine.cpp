@@ -33,10 +33,16 @@ bool TranslationEngine::busy() const
     return m_busy;
 }
 
-QJsonObject TranslationEngine::buildRequestBody(const QString& userContent, bool stream) const
+QJsonObject TranslationEngine::buildRequestBody(const QString& userContent, bool stream, const QString& systemContent) const
 {
     ConfigManager* config = ConfigManager::instance();
     QJsonArray messages;
+    if (!systemContent.isEmpty()) {
+        messages.append(QJsonObject{
+            {QStringLiteral("role"), QStringLiteral("system")},
+            {QStringLiteral("content"), systemContent}
+        });
+    }
     messages.append(QJsonObject{
         {QStringLiteral("role"), QStringLiteral("user")},
         {QStringLiteral("content"), userContent}
@@ -63,7 +69,7 @@ void TranslationEngine::translateText(const TranslationContext& context)
         return;
     }
 
-    QJsonObject body = buildRequestBody(prompt.user, ConfigManager::instance()->boolValue(Keys::apiStream));
+    QJsonObject body = buildRequestBody(prompt.user, ConfigManager::instance()->boolValue(Keys::apiStream), prompt.system);
 
     m_accumulated.clear();
     setBusy(true);

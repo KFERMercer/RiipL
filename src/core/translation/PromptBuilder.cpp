@@ -74,6 +74,7 @@ PromptBuilder::Result PromptBuilder::build(const TranslationContext& context)
     fragments << templateFor(QStringLiteral("default"), context.uiLanguage);
 
     Result result;
+    result.system = substitute(templateFor(QStringLiteral("system"), context.uiLanguage), variables);
     for (const QString& fragment : std::as_const(fragments)) {
         if (fragment.isEmpty())
             continue;

@@ -37,6 +37,8 @@ inline const QString glossaryEntries = QStringLiteral("glossary.entries");
 
 inline const QString promptDefaultZh = QStringLiteral("prompts.default_zh");
 inline const QString promptDefaultEn = QStringLiteral("prompts.default_en");
+inline const QString promptSystemZh = QStringLiteral("prompts.system_zh");
+inline const QString promptSystemEn = QStringLiteral("prompts.system_en");
 inline const QString promptGlossaryZh = QStringLiteral("prompts.glossary_zh");
 inline const QString promptGlossaryEn = QStringLiteral("prompts.glossary_en");
 inline const QString promptToneZh = QStringLiteral("prompts.tone_zh");
@@ -103,6 +105,9 @@ inline const QString promptDefaultZh = R"TXT(将以下文本翻译为 {target_la
 inline const QString promptDefaultEn = R"TXT(Translate the following text into {target_lang}. Note that you should **only output the translated result without any additional explanation**:
 
 {source_text})TXT";
+
+inline const QString promptSystemZh = QStringLiteral("你是一位翻译专家。");
+inline const QString promptSystemEn = QStringLiteral("You are a professional translator.");
 
 inline const QString promptGlossaryZh = R"TXT(*参考下面的翻译：*
 {glossary}
@@ -198,6 +203,7 @@ inline QStringList allKeys()
         Keys::translationPreferences,
         Keys::glossaryEnabled, Keys::glossaryEntries,
         Keys::promptDefaultZh, Keys::promptDefaultEn,
+        Keys::promptSystemZh, Keys::promptSystemEn,
         Keys::promptGlossaryZh, Keys::promptGlossaryEn,
         Keys::promptToneZh, Keys::promptToneEn,
         Keys::promptStyleZh, Keys::promptStyleEn,
@@ -239,6 +245,8 @@ inline QJsonValue value(const QString& key)
     if (key == Keys::glossaryEntries) return QJsonArray();
     if (key == Keys::promptDefaultZh) return QJsonValue(promptDefaultZh);
     if (key == Keys::promptDefaultEn) return QJsonValue(promptDefaultEn);
+    if (key == Keys::promptSystemZh) return QJsonValue(promptSystemZh);
+    if (key == Keys::promptSystemEn) return QJsonValue(promptSystemEn);
     if (key == Keys::promptGlossaryZh) return QJsonValue(promptGlossaryZh);
     if (key == Keys::promptGlossaryEn) return QJsonValue(promptGlossaryEn);
     if (key == Keys::promptToneZh) return QJsonValue(promptToneZh);

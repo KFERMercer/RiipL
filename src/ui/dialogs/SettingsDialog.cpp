@@ -44,6 +44,7 @@ const QVector<TemplateInfo>& templateInfos()
 {
     static const QVector<TemplateInfo> list = {
         {QStringLiteral("default"), QStringLiteral("Default"), QStringLiteral("默认指令")},
+        {QStringLiteral("system"), QStringLiteral("System prompt"), QStringLiteral("系统提示词")},
         {QStringLiteral("glossary"), QStringLiteral("Glossary"), QStringLiteral("术语表")},
         {QStringLiteral("tone"), QStringLiteral("Tone"), QStringLiteral("语气")},
         {QStringLiteral("style"), QStringLiteral("Style"), QStringLiteral("风格")},
@@ -127,7 +128,11 @@ private slots:
         context.glossary = m_glossary;
         context.uiLanguage = config->resolvedUiLanguage();
         const PromptBuilder::Result result = PromptBuilder::build(context);
-        m_output->setPlainText(result.user.isEmpty() ? tr("(empty prompt)") : result.user);
+        QString text;
+        if (!result.system.isEmpty())
+            text += QStringLiteral("[system]\n%1\n\n").arg(result.system);
+        text += result.user;
+        m_output->setPlainText(text.isEmpty() ? tr("(empty prompt)") : text);
     }
 
 private:

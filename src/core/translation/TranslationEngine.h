@@ -40,7 +40,7 @@ signals:
     void stateChanged(bool busy);
 
 private:
-    QJsonObject buildRequestBody(const QString& userContent, bool stream) const;
+    QJsonObject buildRequestBody(const QString& userContent, bool stream, const QString& systemContent = QString()) const;
 
     ApiClient m_translateApi;
     ApiClient m_candidateApi;

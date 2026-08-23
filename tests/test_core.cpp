@@ -101,13 +101,21 @@ void TestCore::promptSubstitution()
     TranslationContext context;
     context.sourceText = QStringLiteral("Hello");
     context.targetLang = QStringLiteral("zh");
+    context.uiLanguage = QStringLiteral("zh");
+    QCOMPARE(PromptBuilder::build(context).system, Defaults::promptSystemZh);
+
     context.uiLanguage = QStringLiteral("en");
-    const PromptBuilder::Result result = PromptBuilder::build(context);
-    QVERIFY(result.system.isEmpty());
+    PromptBuilder::Result result = PromptBuilder::build(context);
+    QCOMPARE(result.system, Defaults::promptSystemEn);
     QVERIFY(result.user.contains(QStringLiteral("Chinese")));
     QVERIFY(result.user.contains(QStringLiteral("Hello")));
     QVERIFY(!result.user.contains(QStringLiteral("{target_lang}")));
     QVERIFY(!result.user.contains(QStringLiteral("{source_text}")));
+
+    // A configured template overrides the built-in default system prompt.
+    ConfigManager::instance()->setValue(Keys::promptSystemEn, QStringLiteral("You are an expert translator."));
+    result = PromptBuilder::build(context);
+    QCOMPARE(result.system, QStringLiteral("You are an expert translator."));
 }
 
 void TestCore::promptGlossaryFormatting()
