@@ -329,7 +329,6 @@ void MainWindow::buildMenus()
     connect(m_glossaryAction, &QAction::triggered, this, [this]() {
         GlossaryDialog dialog(this);
         dialog.exec();
-        populateToneCombo();
     });
     connect(m_toneAction, &QAction::triggered, this, [this]() {
         ConfigManager* config = ConfigManager::instance();
@@ -337,7 +336,6 @@ void MainWindow::buildMenus()
                           config->resolvedUiLanguage(), this);
         if (dialog.exec() == QDialog::Accepted)
             config->setValue(Keys::translationCustomTones, ToneDialog::toJson(dialog.customTones()));
-        populateToneCombo();
     });
     connect(m_historyAction, &QAction::triggered, this, &MainWindow::showHistoryDialog);
     connect(m_settingsAction, &QAction::triggered, this, &MainWindow::showSettingsDialog);
