@@ -418,14 +418,6 @@
         <translation type="vanished">标准</translation>
     </message>
     <message>
-        <source>Keep delimiters</source>
-        <translation type="vanished">保留分隔符</translation>
-    </message>
-    <message>
-        <source>Structured data</source>
-        <translation type="vanished">结构化数据</translation>
-    </message>
-    <message>
         <source>Auto</source>
         <translation type="vanished">自动</translation>
     </message>
@@ -864,24 +856,12 @@
         <translation type="vanished">标准</translation>
     </message>
     <message>
-        <source>Keep delimiters</source>
-        <translation type="vanished">保留分隔符</translation>
-    </message>
-    <message>
-        <source>Structured data</source>
-        <translation type="vanished">结构化数据</translation>
-    </message>
-    <message>
         <source>Default mode</source>
         <translation type="vanished">默认模式</translation>
     </message>
     <message>
         <source>Auto detect</source>
         <translation type="vanished">自动检测</translation>
-    </message>
-    <message>
-        <source>Structured format</source>
-        <translation type="vanished">结构化格式</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="278"/>
@@ -900,8 +880,8 @@
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="319"/>
-        <source>Available placeholders: {source_text} {target_lang} {source_lang} {tone} {target_style} {background_text} {glossary} {user_preferences} {format_type} {word} {translated_text}</source>
-        <translation>可用占位符：{source_text} {target_lang} {source_lang} {tone} {target_style} {background_text} {glossary} {user_preferences} {format_type} {word} {translated_text}</translation>
+        <source>Available placeholders: {source_text} {target_lang} {source_lang} {tone} {target_style} {background_text} {glossary} {user_preferences} {word} {translated_text}</source>
+        <translation>可用占位符：{source_text} {target_lang} {source_lang} {tone} {target_style} {background_text} {glossary} {user_preferences} {word} {translated_text}</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="331"/>

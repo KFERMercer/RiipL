@@ -47,8 +47,6 @@ const QVector<TemplateInfo>& templateInfos()
         {QStringLiteral("style"), QStringLiteral("Style"), QStringLiteral("风格")},
         {QStringLiteral("background"), QStringLiteral("Background"), QStringLiteral("背景信息")},
         {QStringLiteral("personalization"), QStringLiteral("Personalization"), QStringLiteral("个性化偏好")},
-        {QStringLiteral("delimiters"), QStringLiteral("Delimiters"), QStringLiteral("保留分隔符")},
-        {QStringLiteral("structured"), QStringLiteral("Structured data"), QStringLiteral("结构化数据")},
         {QStringLiteral("candidate"), QStringLiteral("Candidate wording"), QStringLiteral("候选遣词")}
     };
     return list;
@@ -316,7 +314,7 @@ QWidget* SettingsDialog::createPromptsPage()
         langTabs->addTab(enEditor, tr("English template"));
         pageLayout->addWidget(langTabs);
 
-        auto* hint = new QLabel(tr("Available placeholders: {source_text} {target_lang} {source_lang} {tone} {target_style} {background_text} {glossary} {user_preferences} {format_type} {word} {translated_text}"), pageWidget);
+        auto* hint = new QLabel(tr("Available placeholders: {source_text} {target_lang} {source_lang} {tone} {target_style} {background_text} {glossary} {user_preferences} {word} {translated_text}"), pageWidget);
         hint->setWordWrap(true);
         hint->setStyleSheet(QStringLiteral("color: gray;"));
         pageLayout->addWidget(hint);
