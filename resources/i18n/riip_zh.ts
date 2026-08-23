@@ -160,7 +160,7 @@
         <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="155"/>
         <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="197"/>
         <source>RiipL</source>
-        <translation type="unfinished"></translation>
+        <translation>RiipL</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="105"/>
@@ -304,7 +304,7 @@
         <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="178"/>
         <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="194"/>
         <source>RiipL</source>
-        <translation type="unfinished"></translation>
+        <translation>RiipL</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="172"/>
@@ -672,7 +672,7 @@
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="154"/>
         <source>API</source>
-        <translation type="unfinished"></translation>
+        <translation>API</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="155"/>
@@ -742,7 +742,7 @@
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="229"/>
         <source>Top P</source>
-        <translation type="unfinished"></translation>
+        <translation>Top P</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="231"/>
@@ -902,7 +902,7 @@
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="451"/>
         <source>RiipL</source>
-        <translation type="unfinished"></translation>
+        <translation>RiipL</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="451"/>
