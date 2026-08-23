@@ -550,9 +550,8 @@ void MainWindow::copyResult()
     const QString text = m_resultEdit->result();
     if (text.isEmpty())
         return;
-    m_clipboardSelf = true;
+    m_lastClipboard = text.trimmed();
     QApplication::clipboard()->setText(text);
-    QTimer::singleShot(300, this, [this]() { m_clipboardSelf = false; });
     setStatusMessage(tr("Translation copied to clipboard"), false);
 }
 
@@ -688,11 +687,11 @@ void MainWindow::applyClipboardMonitoring(bool enabled)
     m_clipboardTimer->stop();
     if (enabled) {
         connect(QApplication::clipboard(), &QClipboard::dataChanged, this, [this]() {
-            if (m_clipboardSelf)
+            if (QApplication::clipboard()->text().trimmed() == m_lastClipboard)
                 return;
             m_clipboardTimer->start();
         });
-        m_lastClipboard = QApplication::clipboard()->text();
+        m_lastClipboard = QApplication::clipboard()->text().trimmed();
     }
 }
 
@@ -718,7 +717,8 @@ void MainWindow::toggleVisible()
     if (const QScreen* screen = QGuiApplication::screenAt(QCursor::pos()))
         move(screen->geometry().center() - rect().center());
     const QString clipboardText = QApplication::clipboard()->text().trimmed();
-    if (!clipboardText.isEmpty() && clipboardText != m_sourceEdit->toPlainText().trimmed()) {
+    if (!clipboardText.isEmpty() && clipboardText != m_lastClipboard
+        && clipboardText != m_sourceEdit->toPlainText().trimmed()) {
         m_sourceEdit->setPlainText(clipboardText);
         translateNow();
     }

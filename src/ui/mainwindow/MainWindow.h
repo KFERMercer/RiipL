@@ -107,5 +107,4 @@ private:
     CandidatePopup* m_popup = nullptr;
     QString m_lastClipboard;
     QStringList m_resultSnapshots;
-    bool m_clipboardSelf = false;
 };
