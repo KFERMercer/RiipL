@@ -8,6 +8,8 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
+add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network LinguistTools)
 
 set(CORE_SOURCES
