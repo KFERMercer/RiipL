@@ -99,5 +99,4 @@ private:
     QString m_lastClipboard;
     QStringList m_resultSnapshots;
     bool m_clipboardSelf = false;
-    bool m_guard = false;
 };

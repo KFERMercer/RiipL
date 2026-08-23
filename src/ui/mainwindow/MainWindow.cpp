@@ -130,16 +130,13 @@ MainWindow::MainWindow(QWidget* parent)
     populateToneCombo();
 
     connect(m_sourceLang, &QComboBox::currentIndexChanged, this, [this](int index) {
-        if (!m_guard)
-            ConfigManager::instance()->setValue(Keys::translationSourceLang, m_sourceLang->itemData(index).toString());
+        ConfigManager::instance()->setValue(Keys::translationSourceLang, m_sourceLang->itemData(index).toString());
     });
     connect(m_targetLang, &QComboBox::currentIndexChanged, this, [this](int index) {
-        if (!m_guard)
-            ConfigManager::instance()->setValue(Keys::translationTargetLang, m_targetLang->itemData(index).toString());
+        ConfigManager::instance()->setValue(Keys::translationTargetLang, m_targetLang->itemData(index).toString());
     });
     connect(m_tone, &QComboBox::currentIndexChanged, this, [this](int index) {
-        if (!m_guard)
-            ConfigManager::instance()->setValue(Keys::translationTone, m_tone->itemData(index).toString());
+        ConfigManager::instance()->setValue(Keys::translationTone, m_tone->itemData(index).toString());
     });
 
     m_hotkey.setSequence(ConfigManager::instance()->stringValue(Keys::hotkeySequence));
@@ -311,16 +308,13 @@ void MainWindow::buildMenus()
     connect(m_translateAction, &QAction::triggered, this, &MainWindow::translateNow);
     connect(m_stopAction, &QAction::triggered, this, [this]() { m_engine.stop(); });
     connect(m_autoTranslateAction, &QAction::toggled, this, [this](bool checked) {
-        if (!m_guard)
-            ConfigManager::instance()->setValue(Keys::uiAutoTranslate, checked);
+        ConfigManager::instance()->setValue(Keys::uiAutoTranslate, checked);
     });
     connect(m_onTopAction, &QAction::toggled, this, [this](bool checked) {
-        if (!m_guard)
-            ConfigManager::instance()->setValue(Keys::uiAlwaysOnTop, checked);
+        ConfigManager::instance()->setValue(Keys::uiAlwaysOnTop, checked);
     });
     connect(m_clipboardAction, &QAction::toggled, this, [this](bool checked) {
-        if (!m_guard)
-            ConfigManager::instance()->setValue(Keys::clipboardMonitor, checked);
+        ConfigManager::instance()->setValue(Keys::clipboardMonitor, checked);
     });
     connect(m_documentAction, &QAction::triggered, this, [this]() {
         DocumentDialog dialog(currentContext(), this);
