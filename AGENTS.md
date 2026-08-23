@@ -8,7 +8,7 @@ RiipL 是一款基于 Qt 构建的跨平台桌面翻译应用，目标是复制 
 
 ```text
 RiipL/
-├── resources/            # app icon, .qrc bundles, .ts/.qm translations
+├── resources/            # app icon, .qrc bundles, i18n .ts sources (resources/i18n/)
 ├── src/
 │   ├── core/             # framework-free logic (unit-tested)
 │   │   ├── config/       # Defaults.h (source of truth) + ConfigManager (fallback store)
@@ -31,9 +31,25 @@ cmake --build build -j$(nproc) --clean-first
 ```
 
 ```bash
+# 重新生成翻译源文件（扫描 src/，-no-obsolete 自动移除已失效条目）
+cmake --build build --target update_translations
+```
+
+### 测试
+
+```bash
 # 运行应用（限时 5 秒，用于快速验证启动是否正常）
 timeout 5 ./build/RiipL 2>&1; echo "exit: $?"
 ```
+
+```bash
+ctest --test-dir build --output-on-failure
+# 或直接运行测试可执行文件
+./build/riip_tests
+```
+
+> [!IMPORTANT]
+> src/core 与 src/utils 的改动必须保证全部测试通过；新增核心功能需同步补充 QTest 用例。
 
 ## 代码风格
 
@@ -50,4 +66,4 @@ timeout 5 ./build/RiipL 2>&1; echo "exit: $?"
 - **严禁读取、写入或查找项目目录以外的文件。**
 - **必须使用相对路径**操作项目根目录下的文件。
 - 执行破坏性操作（如删除文件、覆盖关键配置等）前**必须先行确认**，除非任务本身已明确要求且范围清晰。
-- 当内置工具与命令行功能等价时，**必须优先调用内置工具，禁止使用 shell 命令**。此优先级可保证可靠性、跨平台安全性，并规避 shell 注入风险。仅当所需操作无法通过工具完成，或组合多个工具调用会显著降低效率时，才允许回退至 shell 命令，且须附加简短注释说明回退原因。
+- 当内置工具与命令行功能等价时，**必须优先调用内置工具，禁止使用 shell 命令**。此优先级可保证可靠性、跨平台安全性，并规避 shell 注入风险。
