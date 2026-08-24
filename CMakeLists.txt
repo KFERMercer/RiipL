@@ -59,6 +59,7 @@ set(UI_SOURCES
     src/ui/widgets/CandidatePopup.cpp
     src/ui/widgets/AppIcons.cpp
     src/ui/widgets/FlowLayout.cpp
+    src/ui/widgets/ThemeColors.cpp
     src/ui/dialogs/SettingsDialog.cpp
     src/ui/dialogs/GlossaryDialog.cpp
     src/ui/dialogs/ToneDialog.cpp
@@ -73,6 +74,7 @@ set(UI_HEADERS
     src/ui/widgets/CandidatePopup.h
     src/ui/widgets/AppIcons.h
     src/ui/widgets/FlowLayout.h
+    src/ui/widgets/ThemeColors.h
     src/ui/dialogs/SettingsDialog.h
     src/ui/dialogs/GlossaryDialog.h
     src/ui/dialogs/ToneDialog.h

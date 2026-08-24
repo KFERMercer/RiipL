@@ -11,6 +11,7 @@
 #include "core/translation/Tone.h"
 #include "ui/widgets/ConfigEditors.h"
 #include "ui/widgets/FlowLayout.h"
+#include "ui/widgets/ThemeColors.h"
 #include "utils/GeometryUtils.h"
 #include "utils/JsonUtils.h"
 
@@ -248,16 +249,16 @@ QWidget* SettingsDialog::createApiPage()
         const QString text = extraEdit->edit()->toPlainText().trimmed();
         if (text.isEmpty()) {
             validation->setText(tr("Empty: no extra parameters"));
-            validation->setStyleSheet(QStringLiteral("color: gray;"));
+            ThemeColors::setTextColor(validation, ThemeColors::neutralText(validation));
             return;
         }
         const QJsonDocument doc = QJsonDocument::fromJson(text.toUtf8());
         if (doc.isObject()) {
             validation->setText(QStringLiteral("\u2713 ") + tr("Valid JSON object"));
-            validation->setStyleSheet(QStringLiteral("color: green;"));
+            ThemeColors::setTextColor(validation, ThemeColors::successText(validation));
         } else {
             validation->setText(QStringLiteral("\u2717 ") + tr("Invalid JSON: an object with key-value pairs is expected"));
-            validation->setStyleSheet(QStringLiteral("color: red;"));
+            ThemeColors::setTextColor(validation, ThemeColors::errorText(validation));
         }
     };
     connect(extraEdit->edit(), &QPlainTextEdit::textChanged, page, updateValidation);

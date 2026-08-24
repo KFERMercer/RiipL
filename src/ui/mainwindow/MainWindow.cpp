@@ -8,6 +8,7 @@
 #include "ui/dialogs/SettingsDialog.h"
 #include "ui/dialogs/ToneDialog.h"
 #include "ui/widgets/AppIcons.h"
+#include "ui/widgets/ThemeColors.h"
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
 #include "core/models/Glossary.h"
@@ -30,6 +31,7 @@
 #include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
+#include <QPalette>
 #include <QPlainTextEdit>
 #include <QResizeEvent>
 #include <QScreen>
@@ -628,7 +630,11 @@ void MainWindow::setBusy(bool busy)
 void MainWindow::setStatusMessage(const QString& message, bool isError)
 {
     m_statusLabel->setText(message);
-    m_statusLabel->setStyleSheet(isError ? QStringLiteral("color: red;") : QString());
+    if (isError) {
+        ThemeColors::setTextColor(m_statusLabel, ThemeColors::errorText(m_statusLabel));
+    } else {
+        m_statusLabel->setPalette(QPalette());
+    }
 }
 
 void MainWindow::swapLanguages()
