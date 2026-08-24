@@ -108,7 +108,7 @@ inline const QString translationTone = QStringLiteral("neutral");
 inline const QString translationStyle = QString();
 inline const QString translationBackground = QString();
 
-inline const bool glossaryEnabled = true;
+inline const bool glossaryEnabled = false;
 
 inline const bool clipboardMonitor = false;
 inline const int clipboardDelayMs = 500;

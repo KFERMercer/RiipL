@@ -6,6 +6,7 @@
 #include "core/models/Glossary.h"
 
 class QLineEdit;
+class QShowEvent;
 class QTableWidget;
 
 class GlossaryTable : public QWidget
@@ -21,6 +22,9 @@ public:
 signals:
     void entriesChanged();
 
+protected:
+    void showEvent(QShowEvent* event) override;
+
 private slots:
     void addRow();
     void removeSelected();
@@ -34,6 +38,7 @@ private:
     QTableWidget* m_table = nullptr;
     QLineEdit* m_filter = nullptr;
     bool m_guard = false;
+    bool m_columnsInitialized = false;
 };
 
 class GlossaryDialog : public QDialog

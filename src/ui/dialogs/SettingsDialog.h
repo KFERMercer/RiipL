@@ -6,7 +6,6 @@
 class QPushButton;
 class ConfigCheckBox;
 class ConfigComboBox;
-class GlossaryTable;
 class HistoryManager;
 
 // Form-style settings dialog following Qt's canonical pattern: editors are
@@ -31,7 +30,6 @@ private slots:
 private:
     QWidget* createApiPage();
     QWidget* createTranslationPage();
-    QWidget* createGlossaryPage();
     QWidget* createPromptsPage();
     QWidget* createInterfacePage();
     QWidget* createClipboardPage();
@@ -42,7 +40,6 @@ private:
     ConfigComboBox* m_targetLangCombo = nullptr;
     ConfigComboBox* m_toneCombo = nullptr;
     ConfigCheckBox* m_glossaryEnabled = nullptr;
-    GlossaryTable* m_glossaryTable = nullptr;
     QJsonArray m_customTones;
     QPushButton* m_applyButton = nullptr;
     HistoryManager* m_history = nullptr;

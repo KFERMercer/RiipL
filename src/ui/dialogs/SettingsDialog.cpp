@@ -166,7 +166,6 @@ SettingsDialog::SettingsDialog(HistoryManager* history, QWidget* parent)
     auto* tabs = new QTabWidget(this);
     tabs->addTab(createApiPage(), tr("API"));
     tabs->addTab(createTranslationPage(), tr("Translation"));
-    tabs->addTab(createGlossaryPage(), tr("Glossary"));
     tabs->addTab(createPromptsPage(), tr("Prompt templates"));
     tabs->addTab(createInterfacePage(), tr("Interface"));
     tabs->addTab(createClipboardPage(), tr("Clipboard"));
@@ -192,7 +191,6 @@ SettingsDialog::SettingsDialog(HistoryManager* history, QWidget* parent)
 
     for (ConfigEditor* editor : findChildren<ConfigEditor*>())
         connect(editor, &ConfigEditor::edited, this, &SettingsDialog::updateDirtyState);
-    connect(m_glossaryTable, &GlossaryTable::entriesChanged, this, &SettingsDialog::updateDirtyState);
 
     resize(GeometryUtils::dialogInitialSize(this));
 }
@@ -222,9 +220,6 @@ bool SettingsDialog::isDirty() const
     ConfigManager* config = ConfigManager::instance();
     if (!JsonUtils::equals(m_customTones, config->value(Keys::translationCustomTones)))
         return true;
-    if (!JsonUtils::equals(Glossary::toJson(m_glossaryTable->entries()),
-                           config->value(Keys::glossaryEntries)))
-        return true;
     for (const ConfigEditor* editor : findChildren<ConfigEditor*>()) {
         if (editor->isModified())
             return true;
@@ -238,10 +233,6 @@ void SettingsDialog::applyChanges()
 
     if (!JsonUtils::equals(m_customTones, config->value(Keys::translationCustomTones)))
         config->setValue(Keys::translationCustomTones, m_customTones);
-
-    const QJsonArray entries = Glossary::toJson(m_glossaryTable->entries());
-    if (!JsonUtils::equals(entries, config->value(Keys::glossaryEntries)))
-        config->setValue(Keys::glossaryEntries, entries);
 
     for (ConfigEditor* editor : findChildren<ConfigEditor*>()) {
         const QJsonValue editorValue = editor->value();
@@ -355,27 +346,23 @@ QWidget* SettingsDialog::createTranslationPage()
     toneRow->addWidget(manageTones);
     form->addRow(tr("Tone"), toneRow);
 
+    auto* glossaryRow = new QHBoxLayout();
+    m_glossaryEnabled = new ConfigCheckBox(Keys::glossaryEnabled, page);
+    auto* manageGlossary = new QPushButton(tr("Manage..."), page);
+    connect(manageGlossary, &QPushButton::clicked, page, [page]() {
+        GlossaryDialog dialog(page);
+        dialog.exec();
+    });
+    glossaryRow->addWidget(m_glossaryEnabled, 1);
+    glossaryRow->addWidget(manageGlossary);
+    form->addRow(tr("Glossary"), glossaryRow);
+
     form->addRow(tr("Style"), new ConfigTextEdit(Keys::translationStyle, 3, page));
     form->addRow(tr("Background"), new ConfigTextEdit(Keys::translationBackground, 3, page));
 
     auto* autoTranslateCheck = new ConfigCheckBox(Keys::uiAutoTranslate, page);
     form->addRow(tr("Auto translate after typing"), autoTranslateCheck);
     form->addRow(tr("Auto translate delay (ms)"), new ConfigSpinBox(Keys::uiAutoTranslateDelay, 100, 10000, 100, page));
-    return page;
-}
-
-QWidget* SettingsDialog::createGlossaryPage()
-{
-    auto* page = new QWidget(this);
-    auto* layout = new QVBoxLayout(page);
-    auto* form = new QFormLayout;
-    layout->addLayout(form);
-    m_glossaryEnabled = new ConfigCheckBox(Keys::glossaryEnabled, page);
-    form->addRow(tr("Enable glossary"), m_glossaryEnabled);
-
-    m_glossaryTable = new GlossaryTable(page);
-    m_glossaryTable->setEntries(Glossary::loadFromConfig().entries);
-    layout->addWidget(m_glossaryTable, 1);
     return page;
 }
 
@@ -435,7 +422,7 @@ QWidget* SettingsDialog::createPromptsPage()
             m_targetLangCombo->box()->currentData().toString(),
             m_toneCombo->box()->currentData().toString(),
             m_glossaryEnabled->box()->isChecked(),
-            m_glossaryTable->entries(),
+            Glossary::loadFromConfig().entries,
             page);
         dialog.exec();
     });

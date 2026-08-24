@@ -1,15 +1,12 @@
 #include "GlossaryDialog.h"
 
-#include "core/config/ConfigManager.h"
-#include "core/config/Defaults.h"
+#include "core/models/Glossary.h"
 #include "ui/widgets/AppIcons.h"
 #include "utils/GeometryUtils.h"
 
 #include <QDialogButtonBox>
-#include <QCheckBox>
 #include <QFile>
 #include <QFileDialog>
-#include <QFormLayout>
 #include <QHeaderView>
 #include <QHBoxLayout>
 #include <QJsonArray>
@@ -47,7 +44,6 @@ GlossaryTable::GlossaryTable(QWidget* parent)
     m_table->verticalHeader()->setVisible(false);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_table->setSelectionMode(QAbstractItemView::SingleSelection);
-    m_table->horizontalHeader()->setSectionResizeMode(kSourceColumn, QHeaderView::ResizeToContents);
     layout->addWidget(m_table, 1);
 
     auto* buttonRow = new QHBoxLayout();
@@ -82,6 +78,18 @@ GlossaryTable::GlossaryTable(QWidget* parent)
             emit entriesChanged();
         applyFilter();
     });
+}
+
+void GlossaryTable::showEvent(QShowEvent* event)
+{
+    QWidget::showEvent(event);
+    if (!m_columnsInitialized) {
+        const int half = m_table->viewport()->width() / 2;
+        if (half > 0) {
+            m_table->setColumnWidth(kSourceColumn, half);
+            m_columnsInitialized = true;
+        }
+    }
 }
 
 void GlossaryTable::setEntries(const QVector<GlossaryEntry>& entries)
@@ -208,12 +216,6 @@ GlossaryDialog::GlossaryDialog(QWidget* parent)
     setWindowTitle(tr("Glossary"));
 
     auto* layout = new QVBoxLayout(this);
-    auto* form = new QFormLayout;
-    layout->addLayout(form);
-    auto* enabledCheck = new QCheckBox(this);
-    enabledCheck->setChecked(ConfigManager::instance()->boolValue(Keys::glossaryEnabled));
-    form->addRow(tr("Enable glossary"), enabledCheck);
-
     m_table = new GlossaryTable(this);
     m_table->setEntries(Glossary::loadFromConfig().entries);
     layout->addWidget(m_table, 1);
@@ -221,8 +223,7 @@ GlossaryDialog::GlossaryDialog(QWidget* parent)
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
     layout->addWidget(buttons);
 
-    connect(buttons, &QDialogButtonBox::accepted, this, [this, enabledCheck]() {
-        ConfigManager::instance()->setValue(Keys::glossaryEnabled, enabledCheck->isChecked());
+    connect(buttons, &QDialogButtonBox::accepted, this, [this]() {
         Glossary glossary;
         glossary.entries = m_table->entries();
         glossary.saveToConfig();
