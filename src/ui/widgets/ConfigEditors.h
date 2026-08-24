@@ -14,10 +14,13 @@ class QSpinBox;
 class QToolButton;
 
 // Base class for settings editor widgets following the form-dialog pattern:
-// an editor loads the current config value once on construction, holds it in
-// a plain Qt control, exposes it via value(), and reports user modifications
-// through edited(). Nothing is written back automatically; dialogs collect
-// values and commit them explicitly.
+// an editor loads the current config value once on construction, keeps that
+// value as its baseline, holds it in a plain Qt control, exposes it via
+// value(), and reports user modifications through edited(). Nothing is
+// written back automatically; dialogs collect values and commit them
+// explicitly. isModified() compares against the baseline so dirty state can
+// be tracked precisely; refreshBaseline() re-anchors it after an explicit
+// commit.
 class ConfigEditor : public QWidget
 {
     Q_OBJECT
@@ -27,6 +30,8 @@ public:
 
     QString key() const { return m_key; }
     virtual QJsonValue value() const = 0;
+    bool isModified() const;
+    void refreshBaseline();
 
 signals:
     void edited();
@@ -37,6 +42,8 @@ protected:
 
     void setupDisplay(QToolButton* resetButton);
     void loadConfigValue();
+    // Re-anchors the dirty-tracking baseline to the current config value.
+    void captureBaseline();
     // Forwards wrapped-control change notifications; suppresses programmatic echoes.
     void handleControlChange();
     void refreshModifiedState();
@@ -45,6 +52,7 @@ private:
     QString m_key;
     QToolButton* m_reset = nullptr;
     bool m_guard = false;
+    QJsonValue m_baseline;
 };
 
 class ConfigLineEdit : public ConfigEditor

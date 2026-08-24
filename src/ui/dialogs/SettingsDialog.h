@@ -10,7 +10,10 @@ class GlossaryTable;
 
 // Form-style settings dialog following Qt's canonical pattern: editors are
 // populated once on construction and nothing is written back until the user
-// activates Apply (or OK). Cancel simply discards pending edits.
+// activates Apply (or OK). Dirty state is derived precisely by comparing
+// every editor against its loaded baseline, so reverting an edit disables
+// Apply again. Cancel discards pending edits, asking for confirmation when
+// any change is pending.
 class SettingsDialog : public QDialog
 {
     Q_OBJECT
@@ -18,8 +21,10 @@ class SettingsDialog : public QDialog
 public:
     explicit SettingsDialog(QWidget* parent = nullptr);
 
+    void reject() override;
+
 private slots:
-    void markDirty();
+    void updateDirtyState();
     void applyChanges();
 
 private:
@@ -30,6 +35,8 @@ private:
     QWidget* createInterfacePage();
     QWidget* createClipboardPage();
     QWidget* createHistoryPage();
+
+    bool isDirty() const;
 
     ConfigComboBox* m_targetLangCombo = nullptr;
     ConfigComboBox* m_toneCombo = nullptr;

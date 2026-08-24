@@ -50,11 +50,28 @@ void ConfigEditor::setupDisplay(QToolButton* resetButton)
     });
 }
 
+void ConfigEditor::captureBaseline()
+{
+    m_baseline = ConfigManager::instance()->value(m_key);
+}
+
 void ConfigEditor::loadConfigValue()
 {
     m_guard = true;
     setControlValue(ConfigManager::instance()->value(m_key));
     m_guard = false;
+    captureBaseline();
+    refreshModifiedState();
+}
+
+bool ConfigEditor::isModified() const
+{
+    return !JsonUtils::equals(value(), m_baseline);
+}
+
+void ConfigEditor::refreshBaseline()
+{
+    m_baseline = ConfigManager::instance()->value(m_key);
     refreshModifiedState();
 }
 
@@ -142,7 +159,11 @@ void ConfigComboBox::setItems(const QList<QPair<QString, QString>>& items)
     if (index < 0)
         index = 0;
     m_box->setCurrentIndex(index);
+    if (initialSelection)
+        captureBaseline();
     refreshModifiedState();
+    if (!initialSelection && m_box->currentData().toString() != wanted)
+        handleControlChange();
 }
 
 ConfigTextEdit::ConfigTextEdit(const QString& key, int rows, QWidget* parent)

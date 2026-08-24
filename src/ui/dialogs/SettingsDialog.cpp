@@ -190,15 +190,45 @@ SettingsDialog::SettingsDialog(QWidget* parent)
             });
 
     for (ConfigEditor* editor : findChildren<ConfigEditor*>())
-        connect(editor, &ConfigEditor::edited, this, &SettingsDialog::markDirty);
-    connect(m_glossaryTable, &GlossaryTable::entriesChanged, this, &SettingsDialog::markDirty);
+        connect(editor, &ConfigEditor::edited, this, &SettingsDialog::updateDirtyState);
+    connect(m_glossaryTable, &GlossaryTable::entriesChanged, this, &SettingsDialog::updateDirtyState);
 
     resize(GeometryUtils::dialogInitialSize(this));
 }
 
-void SettingsDialog::markDirty()
+void SettingsDialog::reject()
 {
-    m_applyButton->setEnabled(true);
+    if (isDirty()) {
+        QMessageBox box(this);
+        box.setIcon(QMessageBox::Warning);
+        box.setWindowTitle(tr("Unsaved changes"));
+        box.setText(tr("Your changes have not been applied yet."));
+        box.setStandardButtons(QMessageBox::Discard | QMessageBox::Cancel);
+        box.setDefaultButton(QMessageBox::Cancel);
+        if (box.exec() != QMessageBox::Discard)
+            return;
+    }
+    QDialog::reject();
+}
+
+void SettingsDialog::updateDirtyState()
+{
+    m_applyButton->setEnabled(isDirty());
+}
+
+bool SettingsDialog::isDirty() const
+{
+    ConfigManager* config = ConfigManager::instance();
+    if (!JsonUtils::equals(m_customTones, config->value(Keys::translationCustomTones)))
+        return true;
+    if (!JsonUtils::equals(Glossary::toJson(m_glossaryTable->entries()),
+                           config->value(Keys::glossaryEntries)))
+        return true;
+    for (const ConfigEditor* editor : findChildren<ConfigEditor*>()) {
+        if (editor->isModified())
+            return true;
+    }
+    return false;
 }
 
 void SettingsDialog::applyChanges()
@@ -216,9 +246,9 @@ void SettingsDialog::applyChanges()
         const QJsonValue editorValue = editor->value();
         if (!JsonUtils::equals(editorValue, config->value(editor->key())))
             config->setValue(editor->key(), editorValue);
+        editor->refreshBaseline();
     }
-
-    m_applyButton->setEnabled(false);
+    updateDirtyState();
 }
 
 QWidget* SettingsDialog::createApiPage()
@@ -317,7 +347,7 @@ QWidget* SettingsDialog::createTranslationPage()
         if (dialog.exec() == QDialog::Accepted) {
             m_customTones = ToneDialog::toJson(dialog.customTones());
             rebuildToneItems();
-            markDirty();
+            updateDirtyState();
         }
     });
     toneRow->addWidget(m_toneCombo, 1);
