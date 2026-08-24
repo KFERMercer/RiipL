@@ -166,10 +166,10 @@ SettingsDialog::SettingsDialog(HistoryManager* history, QWidget* parent)
     auto* tabs = new QTabWidget(this);
     tabs->addTab(createApiPage(), tr("API"));
     tabs->addTab(createTranslationPage(), tr("Translation"));
-    tabs->addTab(createPromptsPage(), tr("Prompt templates"));
     tabs->addTab(createInterfacePage(), tr("Interface"));
     tabs->addTab(createClipboardPage(), tr("Clipboard"));
     tabs->addTab(createHistoryPage(), tr("History"));
+    tabs->addTab(createPromptsPage(), tr("Prompt templates"));
     layout->addWidget(tabs, 1);
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Apply
@@ -366,6 +366,57 @@ QWidget* SettingsDialog::createTranslationPage()
     return page;
 }
 
+QWidget* SettingsDialog::createInterfacePage()
+{
+    auto* page = new QWidget(this);
+    auto* form = new QFormLayout(page);
+
+    auto* languageCombo = new ConfigComboBox(Keys::uiLanguage, page);
+    languageCombo->setItems({
+        {tr("Follow system"), QStringLiteral("auto")},
+        {QStringLiteral("English"), QStringLiteral("en")},
+        {QStringLiteral("简体中文"), QStringLiteral("zh")}
+    });
+    form->addRow(tr("Interface language"), languageCombo);
+
+    auto* onTopCheck = new ConfigCheckBox(Keys::uiAlwaysOnTop, page);
+    form->addRow(tr("Keep window on top"), onTopCheck);
+
+    auto* trayCheck = new ConfigCheckBox(Keys::uiMinimizeToTray, page);
+    form->addRow(tr("Minimize to tray on close"), trayCheck);
+
+    form->addRow(tr("Font size"), new ConfigSpinBox(Keys::uiFontSize, 8, 24, 1, page));
+    return page;
+}
+
+QWidget* SettingsDialog::createClipboardPage()
+{
+    auto* page = new QWidget(this);
+    auto* form = new QFormLayout(page);
+    auto* monitorCheck = new ConfigCheckBox(Keys::clipboardMonitor, page);
+    form->addRow(tr("Monitor clipboard and translate automatically"), monitorCheck);
+    form->addRow(tr("Monitor delay (ms)"), new ConfigSpinBox(Keys::clipboardDelayMs, 100, 5000, 50, page));
+    return page;
+}
+
+QWidget* SettingsDialog::createHistoryPage()
+{
+    auto* page = new QWidget(this);
+    auto* form = new QFormLayout(page);
+    auto* enabledCheck = new ConfigCheckBox(Keys::historyEnabled, page);
+    form->addRow(tr("Save translation history"), enabledCheck);
+    form->addRow(tr("Max records"), new ConfigSpinBox(Keys::historyMaxRecords, 10, 100000, 10, page));
+
+    auto* clearButton = new QPushButton(tr("Clear history now"), page);
+    connect(clearButton, &QPushButton::clicked, this, [this]() {
+        if (QMessageBox::question(this, tr("RiipL"), tr("Delete all history records?"))
+            == QMessageBox::Yes)
+            m_history->clear();
+    });
+    form->addRow(QString(), clearButton);
+    return page;
+}
+
 QWidget* SettingsDialog::createPromptsPage()
 {
     auto* page = new QWidget(this);
@@ -428,57 +479,6 @@ QWidget* SettingsDialog::createPromptsPage()
     });
     buttonRow->addWidget(testButton);
     layout->addLayout(buttonRow);
-    return page;
-}
-
-QWidget* SettingsDialog::createInterfacePage()
-{
-    auto* page = new QWidget(this);
-    auto* form = new QFormLayout(page);
-
-    auto* languageCombo = new ConfigComboBox(Keys::uiLanguage, page);
-    languageCombo->setItems({
-        {tr("Follow system"), QStringLiteral("auto")},
-        {QStringLiteral("English"), QStringLiteral("en")},
-        {QStringLiteral("简体中文"), QStringLiteral("zh")}
-    });
-    form->addRow(tr("Interface language"), languageCombo);
-
-    auto* onTopCheck = new ConfigCheckBox(Keys::uiAlwaysOnTop, page);
-    form->addRow(tr("Keep window on top"), onTopCheck);
-
-    auto* trayCheck = new ConfigCheckBox(Keys::uiMinimizeToTray, page);
-    form->addRow(tr("Minimize to tray on close"), trayCheck);
-
-    form->addRow(tr("Font size"), new ConfigSpinBox(Keys::uiFontSize, 8, 24, 1, page));
-    return page;
-}
-
-QWidget* SettingsDialog::createClipboardPage()
-{
-    auto* page = new QWidget(this);
-    auto* form = new QFormLayout(page);
-    auto* monitorCheck = new ConfigCheckBox(Keys::clipboardMonitor, page);
-    form->addRow(tr("Monitor clipboard and translate automatically"), monitorCheck);
-    form->addRow(tr("Monitor delay (ms)"), new ConfigSpinBox(Keys::clipboardDelayMs, 100, 5000, 50, page));
-    return page;
-}
-
-QWidget* SettingsDialog::createHistoryPage()
-{
-    auto* page = new QWidget(this);
-    auto* form = new QFormLayout(page);
-    auto* enabledCheck = new ConfigCheckBox(Keys::historyEnabled, page);
-    form->addRow(tr("Save translation history"), enabledCheck);
-    form->addRow(tr("Max records"), new ConfigSpinBox(Keys::historyMaxRecords, 10, 100000, 10, page));
-
-    auto* clearButton = new QPushButton(tr("Clear history now"), page);
-    connect(clearButton, &QPushButton::clicked, this, [this]() {
-        if (QMessageBox::question(this, tr("RiipL"), tr("Delete all history records?"))
-            == QMessageBox::Yes)
-            m_history->clear();
-    });
-    form->addRow(QString(), clearButton);
     return page;
 }
 

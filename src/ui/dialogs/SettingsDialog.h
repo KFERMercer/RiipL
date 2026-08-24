@@ -30,10 +30,10 @@ private slots:
 private:
     QWidget* createApiPage();
     QWidget* createTranslationPage();
-    QWidget* createPromptsPage();
     QWidget* createInterfacePage();
     QWidget* createClipboardPage();
     QWidget* createHistoryPage();
+    QWidget* createPromptsPage();
 
     bool isDirty() const;
 
