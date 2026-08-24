@@ -103,10 +103,10 @@ cmake --build build --clean-first -j$(nproc)
 
 ```text
 RiipL/
-├── resources/            # 应用图标、.qrc 资源、.ts/.qm 翻译
+├── resources/            # 应用图标、.qrc 资源、.ts 国际化文件
 ├── src/
 │   ├── core/             # 不依赖界面的核心逻辑（已做单元测试）
-│   │   ├── config/       # Defaults.h（默认值真理之源）+ ConfigManager（回落存储）
+│   │   ├── config/       # Defaults.h（默认配置定义）+ ConfigManager（回落存储）
 │   │   ├── network/      # ApiClient：SSE 流式解析、超时、错误映射
 │   │   ├── translation/  # PromptBuilder、TranslationEngine、语言与语气
 │   │   ├── models/       # Glossary

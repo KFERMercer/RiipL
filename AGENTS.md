@@ -8,10 +8,10 @@ RiipL 是一款基于 Qt 构建的跨平台桌面翻译应用，目标是复制 
 
 ```text
 RiipL/
-├── resources/            # app icon, .qrc bundles, i18n .ts sources (resources/i18n/)
+├── resources/            # app icon, .qrc bundles, i18n .ts sources
 ├── src/
 │   ├── core/             # framework-free logic (unit-tested)
-│   │   ├── config/       # Defaults.h (source of truth) + ConfigManager (fallback store)
+│   │   ├── config/       # Defaults.h (default configuration) + ConfigManager (fallback store)
 │   │   ├── network/      # ApiClient: SSE streaming, timeouts, error mapping
 │   │   ├── translation/  # PromptBuilder, TranslationEngine, languages & tones
 │   │   ├── models/       # Glossary

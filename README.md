@@ -103,10 +103,10 @@ Anything inside `extra_body` is merged straight into the request body, so vendor
 
 ```text
 RiipL/
-├── resources/            # app icon, .qrc bundles, .ts/.qm translations
+├── resources/            # app icon, .qrc bundles, i18n .ts sources
 ├── src/
 │   ├── core/             # framework-free logic (unit-tested)
-│   │   ├── config/       # Defaults.h (source of truth) + ConfigManager (fallback store)
+│   │   ├── config/       # Defaults.h (default configuration) + ConfigManager (fallback store)
 │   │   ├── network/      # ApiClient: SSE streaming, timeouts, error mapping
 │   │   ├── translation/  # PromptBuilder, TranslationEngine, languages & tones
 │   │   ├── models/       # Glossary
