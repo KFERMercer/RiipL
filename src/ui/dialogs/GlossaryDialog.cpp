@@ -7,6 +7,7 @@
 #include <QCheckBox>
 #include <QFile>
 #include <QFileDialog>
+#include <QFormLayout>
 #include <QHeaderView>
 #include <QHBoxLayout>
 #include <QJsonArray>
@@ -204,9 +205,11 @@ GlossaryDialog::GlossaryDialog(QWidget* parent)
     resize(560, 480);
 
     auto* layout = new QVBoxLayout(this);
-    auto* enabledCheck = new QCheckBox(tr("Enable glossary"), this);
+    auto* form = new QFormLayout;
+    layout->addLayout(form);
+    auto* enabledCheck = new QCheckBox(this);
     enabledCheck->setChecked(ConfigManager::instance()->boolValue(Keys::glossaryEnabled));
-    layout->addWidget(enabledCheck);
+    form->addRow(tr("Enable glossary"), enabledCheck);
 
     m_table = new GlossaryTable(this);
     m_table->setEntries(Glossary::loadFromConfig().entries);

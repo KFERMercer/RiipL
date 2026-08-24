@@ -236,8 +236,7 @@ QWidget* SettingsDialog::createApiPage()
     form->addRow(tr("Temperature"), temperatureSpin);
 
     auto* streamCheck = new ConfigCheckBox(Keys::apiStream, page);
-    streamCheck->box()->setText(tr("Stream responses"));
-    form->addRow(QString(), streamCheck);
+    form->addRow(tr("Stream responses"), streamCheck);
 
     auto* headersEdit = new ConfigTextEdit(Keys::apiCustomHeaders, 4, page);
     headersEdit->edit()->setPlaceholderText(tr("One per line: Header-Name: value"));
@@ -323,8 +322,7 @@ QWidget* SettingsDialog::createTranslationPage()
     form->addRow(tr("Background"), new ConfigTextEdit(Keys::translationBackground, 3, page));
 
     auto* autoTranslateCheck = new ConfigCheckBox(Keys::uiAutoTranslate, page);
-    autoTranslateCheck->box()->setText(tr("Auto translate after typing"));
-    form->addRow(QString(), autoTranslateCheck);
+    form->addRow(tr("Auto translate after typing"), autoTranslateCheck);
     form->addRow(tr("Auto translate delay (ms)"), new ConfigSpinBox(Keys::uiAutoTranslateDelay, 100, 10000, 100, page));
     return page;
 }
@@ -333,9 +331,10 @@ QWidget* SettingsDialog::createGlossaryPage()
 {
     auto* page = new QWidget(this);
     auto* layout = new QVBoxLayout(page);
+    auto* form = new QFormLayout;
+    layout->addLayout(form);
     m_glossaryEnabled = new ConfigCheckBox(Keys::glossaryEnabled, page);
-    m_glossaryEnabled->box()->setText(tr("Enable glossary"));
-    layout->addWidget(m_glossaryEnabled);
+    form->addRow(tr("Enable glossary"), m_glossaryEnabled);
 
     m_glossaryTable = new GlossaryTable(page);
     m_glossaryTable->setEntries(Glossary::loadFromConfig().entries);
@@ -419,12 +418,10 @@ QWidget* SettingsDialog::createInterfacePage()
     form->addRow(tr("Interface language"), languageCombo);
 
     auto* onTopCheck = new ConfigCheckBox(Keys::uiAlwaysOnTop, page);
-    onTopCheck->box()->setText(tr("Keep window on top"));
-    form->addRow(QString(), onTopCheck);
+    form->addRow(tr("Keep window on top"), onTopCheck);
 
     auto* trayCheck = new ConfigCheckBox(Keys::uiMinimizeToTray, page);
-    trayCheck->box()->setText(tr("Minimize to tray on close"));
-    form->addRow(QString(), trayCheck);
+    form->addRow(tr("Minimize to tray on close"), trayCheck);
 
     form->addRow(tr("Font size"), new ConfigSpinBox(Keys::uiFontSize, 8, 24, 1, page));
     return page;
@@ -435,8 +432,7 @@ QWidget* SettingsDialog::createClipboardPage()
     auto* page = new QWidget(this);
     auto* form = new QFormLayout(page);
     auto* monitorCheck = new ConfigCheckBox(Keys::clipboardMonitor, page);
-    monitorCheck->box()->setText(tr("Monitor clipboard and translate automatically"));
-    form->addRow(QString(), monitorCheck);
+    form->addRow(tr("Monitor clipboard and translate automatically"), monitorCheck);
     form->addRow(tr("Monitor delay (ms)"), new ConfigSpinBox(Keys::clipboardDelayMs, 100, 5000, 50, page));
     return page;
 }
@@ -446,8 +442,7 @@ QWidget* SettingsDialog::createHistoryPage()
     auto* page = new QWidget(this);
     auto* form = new QFormLayout(page);
     auto* enabledCheck = new ConfigCheckBox(Keys::historyEnabled, page);
-    enabledCheck->box()->setText(tr("Save translation history"));
-    form->addRow(QString(), enabledCheck);
+    form->addRow(tr("Save translation history"), enabledCheck);
     form->addRow(tr("Max records"), new ConfigSpinBox(Keys::historyMaxRecords, 10, 100000, 10, page));
 
     auto* clearButton = new QPushButton(tr("Clear history now"), page);
