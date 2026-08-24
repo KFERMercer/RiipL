@@ -2,6 +2,7 @@
 
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
+#include "ui/widgets/AppIcons.h"
 #include "utils/GeometryUtils.h"
 
 #include <QDialogButtonBox>
@@ -53,9 +54,11 @@ GlossaryTable::GlossaryTable(QWidget* parent)
     auto addButton = new QPushButton(tr("Add"), this);
     auto removeButton = new QPushButton(tr("Remove"), this);
     auto upButton = new QToolButton(this);
-    upButton->setText(QStringLiteral("\u2191"));
+    upButton->setIcon(AppIcons::moveUp());
+    upButton->setToolTip(tr("Move up"));
     auto downButton = new QToolButton(this);
-    downButton->setText(QStringLiteral("\u2193"));
+    downButton->setIcon(AppIcons::moveDown());
+    downButton->setToolTip(tr("Move down"));
     auto importButton = new QPushButton(tr("Import JSON..."), this);
     auto exportButton = new QPushButton(tr("Export JSON..."), this);
     buttonRow->addWidget(addButton);

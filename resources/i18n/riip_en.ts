@@ -201,12 +201,12 @@
 <context>
     <name>GlossaryDialog</name>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="205"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="208"/>
         <source>Glossary</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="212"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="215"/>
         <source>Enable glossary</source>
         <translation type="unfinished"></translation>
     </message>
@@ -214,80 +214,90 @@
 <context>
     <name>GlossaryTable</name>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="37"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="38"/>
         <source>Search:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="44"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="45"/>
         <source>Source term</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="44"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="45"/>
         <source>Translation (leave empty to keep source)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="53"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="54"/>
         <source>Add</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="54"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="55"/>
         <source>Remove</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="59"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="58"/>
+        <source>Move up</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="61"/>
+        <source>Move down</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="62"/>
         <source>Import JSON...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="60"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="63"/>
         <source>Export JSON...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="91"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="94"/>
         <source>Leave empty to keep the term untranslated</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="168"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="171"/>
         <source>Import glossary</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="169"/>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="191"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="172"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="194"/>
         <source>JSON files (*.json)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="174"/>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="180"/>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="196"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="177"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="183"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="199"/>
         <source>RiipL</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="174"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="177"/>
         <source>Cannot open file: %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="180"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="183"/>
         <source>Invalid glossary JSON format</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="189"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="192"/>
         <source>Export glossary</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="196"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="199"/>
         <source>Cannot write file: %1</source>
         <translation type="unfinished"></translation>
     </message>

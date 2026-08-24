@@ -1,14 +1,18 @@
 #include "AppIcons.h"
 
-#include <cmath>
-
 #include <QApplication>
-#include <QPalette>
 #include <QPainter>
+#include <QPainterPath>
+#include <QPalette>
 #include <QPen>
-#include <QPolygonF>
+#include <QStyle>
 
 namespace {
+
+QIcon standardIcon(QStyle::StandardPixmap id)
+{
+    return QApplication::style()->standardIcon(id);
+}
 
 QIcon build(const std::function<void(QPainter&, const QRectF&)>& render)
 {
@@ -29,86 +33,61 @@ QIcon build(const std::function<void(QPainter&, const QRectF&)>& render)
     return icon;
 }
 
-void drawArrowHead(QPainter& p, const QPointF& tip, const QPointF& direction, qreal size)
-{
-    const QPointF dir = direction / std::hypot(direction.x(), direction.y());
-    const QPointF normal(-dir.y(), dir.x());
-    const qreal base = size * 0.9;
-    QPolygonF head;
-    head << tip
-         << tip - dir * size + normal * base * 0.5
-         << tip - dir * size - normal * base * 0.5;
-    p.drawPolygon(head);
-}
-
-void renderArcArrow(QPainter& p, const QRectF& r)
-{
-    const qreal margin = r.width() * 0.14;
-    const QRectF circle = r.adjusted(margin, margin, -margin, -margin);
-    const QPointF center = circle.center();
-    const qreal radius = circle.width() / 2;
-
-    QPen pen(p.brush(), r.width() * 0.09);
-    pen.setCapStyle(Qt::RoundCap);
-    p.setPen(pen);
-    p.setBrush(Qt::NoBrush);
-    const int startAngle = 40 * 16;
-    const int spanAngle = 290 * 16;
-    p.drawArc(circle, startAngle, spanAngle);
-
-    p.setBrush(p.pen().brush());
-    const qreal theta = qDegreesToRadians(40.0);
-    const QPointF tip(center.x() + radius * std::cos(theta),
-                      center.y() - radius * std::sin(theta));
-    const QPointF tangent(std::sin(theta), std::cos(theta));
-    drawArrowHead(p, tip, tangent, r.width() * 0.20);
-}
-
 }
 
 QIcon AppIcons::swapHorizontal()
 {
-    return build([](QPainter& p, const QRectF& r) {
-        const qreal head = r.width() * 0.18;
-        const qreal y1 = r.top() + r.height() * 0.30;
-        const qreal y2 = r.top() + r.height() * 0.70;
-        const qreal xL = r.left() + r.width() * 0.12;
-        const qreal xR = r.right() - r.width() * 0.12;
+    constexpr qreal kStagger = 2.0;
+    return build([kStagger](QPainter& p, const QRectF& r) {
+        const qreal u = r.width() / 24;
+        const auto point = [&](qreal gx, qreal gy) {
+            return QPointF(r.left() + gx * u, r.top() + gy * u);
+        };
 
         QPen pen(p.brush(), r.width() * 0.085);
         pen.setCapStyle(Qt::RoundCap);
-        p.setPen(pen);
-        p.drawLine(QPointF(xL, y1), QPointF(xR - head * 0.6, y1));
-        p.drawLine(QPointF(xR, y2), QPointF(xL + head * 0.6, y2));
+        pen.setJoinStyle(Qt::RoundJoin);
 
-        p.setPen(Qt::NoPen);
-        drawArrowHead(p, QPointF(xR, y1), QPointF(1, 0), head);
-        drawArrowHead(p, QPointF(xL, y2), QPointF(-1, 0), head);
+        QPainterPath path;
+        path.moveTo(point(4 + kStagger, 7));
+        path.lineTo(point(20 + kStagger, 7));
+        path.moveTo(point(16 + kStagger, 11));
+        path.lineTo(point(20 + kStagger, 7));
+        path.lineTo(point(16 + kStagger, 3));
+
+        path.moveTo(point(20 - kStagger, 17));
+        path.lineTo(point(4 - kStagger, 17));
+        path.moveTo(point(8 - kStagger, 13));
+        path.lineTo(point(4 - kStagger, 17));
+        path.lineTo(point(8 - kStagger, 21));
+
+        p.setPen(pen);
+        p.setBrush(Qt::NoBrush);
+        p.drawPath(path);
     });
+}
+
+QIcon AppIcons::moveUp()
+{
+    return standardIcon(QStyle::SP_ArrowUp);
+}
+
+QIcon AppIcons::moveDown()
+{
+    return standardIcon(QStyle::SP_ArrowDown);
 }
 
 QIcon AppIcons::reset()
 {
-    return build([](QPainter& p, const QRectF& r) {
-        renderArcArrow(p, r);
-    });
+    return standardIcon(QStyle::SP_DialogResetButton);
 }
 
 QIcon AppIcons::undo()
 {
-    return build([](QPainter& p, const QRectF& r) {
-        p.save();
-        p.translate(r.center().x(), 0);
-        p.scale(-1, 1);
-        p.translate(-r.center().x(), 0);
-        renderArcArrow(p, r);
-        p.restore();
-    });
+    return standardIcon(QStyle::SP_ArrowBack);
 }
 
 QIcon AppIcons::redo()
 {
-    return build([](QPainter& p, const QRectF& r) {
-        renderArcArrow(p, r);
-    });
+    return standardIcon(QStyle::SP_ArrowForward);
 }
