@@ -832,6 +832,7 @@ void MainWindow::retranslateUi()
     m_glossaryAction->setText(tr("Glossary..."));
     m_glossaryAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+G")));
     m_toneAction->setText(tr("Manage tones..."));
+    m_toneAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+T")));
     m_historyAction->setText(tr("History..."));
     m_historyAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+H")));
 
