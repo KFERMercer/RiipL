@@ -919,27 +919,29 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="40"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="44"/>
         <source>Custom tones</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="42"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="31"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="46"/>
         <source>Key</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="42"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="31"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="46"/>
         <source>Display name</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="51"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="54"/>
         <source>Add</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="52"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="55"/>
         <source>Remove</source>
         <translation type="unfinished"></translation>
     </message>

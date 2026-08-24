@@ -918,27 +918,29 @@
         <translation>预设语气</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="40"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="44"/>
         <source>Custom tones</source>
         <translation>自定义语气</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="42"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="31"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="46"/>
         <source>Key</source>
         <translation>键名</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="42"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="31"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="46"/>
         <source>Display name</source>
         <translation>显示名称</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="51"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="54"/>
         <source>Add</source>
         <translation>添加</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="52"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="55"/>
         <source>Remove</source>
         <translation>删除</translation>
     </message>

@@ -9,14 +9,14 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QLabel>
-#include <QListWidget>
 #include <QPushButton>
 #include <QTableWidget>
+#include <QTreeWidget>
 #include <QVBoxLayout>
 
 namespace {
-constexpr int kKeyColumn = 0;
-constexpr int kNameColumn = 1;
+constexpr int kNameColumn = 0;
+constexpr int kKeyColumn = 1;
 }
 
 ToneDialog::ToneDialog(const QJsonArray& customTones, const QString& uiLanguage, QWidget* parent)
@@ -27,10 +27,14 @@ ToneDialog::ToneDialog(const QJsonArray& customTones, const QString& uiLanguage,
     auto* layout = new QVBoxLayout(this);
 
     layout->addWidget(new QLabel(tr("Preset tones"), this));
-    m_presets = new QListWidget(this);
+    m_presets = new QTreeWidget(this);
+    m_presets->setHeaderLabels({tr("Display name"), tr("Key")});
+    m_presets->setRootIsDecorated(false);
+    m_presets->header()->setSectionResizeMode(QHeaderView::Stretch);
     for (const ToneItem& item : Tones::presets()) {
-        const QString name = Tones::presetDisplayName(item.key, uiLanguage);
-        auto* presetItem = new QListWidgetItem(QStringLiteral("%1  (%2)").arg(name, item.key), m_presets);
+        auto* presetItem = new QTreeWidgetItem(m_presets);
+        presetItem->setText(kNameColumn, Tones::presetDisplayName(item.key, uiLanguage));
+        presetItem->setText(kKeyColumn, item.key);
         presetItem->setFlags(Qt::NoItemFlags);
     }
     m_presets->setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
@@ -39,10 +43,9 @@ ToneDialog::ToneDialog(const QJsonArray& customTones, const QString& uiLanguage,
 
     layout->addWidget(new QLabel(tr("Custom tones"), this));
     m_custom = new QTableWidget(0, 2, this);
-    m_custom->setHorizontalHeaderLabels({tr("Key"), tr("Display name")});
+    m_custom->setHorizontalHeaderLabels({tr("Display name"), tr("Key")});
     m_custom->horizontalHeader()->setStretchLastSection(true);
     m_custom->verticalHeader()->setVisible(false);
-    m_custom->horizontalHeader()->setSectionResizeMode(kKeyColumn, QHeaderView::ResizeToContents);
     layout->addWidget(m_custom, 1);
 
     loadTones(customTones);
@@ -105,13 +108,25 @@ QVector<ToneItem> ToneDialog::customTones() const
     return result;
 }
 
+void ToneDialog::showEvent(QShowEvent* event)
+{
+    QDialog::showEvent(event);
+    if (!m_columnsInitialized) {
+        const int half = m_custom->viewport()->width() / 2;
+        if (half > 0) {
+            m_custom->setColumnWidth(kNameColumn, half);
+            m_columnsInitialized = true;
+        }
+    }
+}
+
 void ToneDialog::addTone()
 {
     const int row = m_custom->rowCount();
     m_custom->insertRow(row);
-    m_custom->setItem(row, kKeyColumn, new QTableWidgetItem());
     m_custom->setItem(row, kNameColumn, new QTableWidgetItem());
-    m_custom->editItem(m_custom->item(row, kKeyColumn));
+    m_custom->setItem(row, kKeyColumn, new QTableWidgetItem());
+    m_custom->editItem(m_custom->item(row, kNameColumn));
 }
 
 void ToneDialog::removeTone()

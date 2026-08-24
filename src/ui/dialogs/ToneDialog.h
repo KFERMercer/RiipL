@@ -7,8 +7,9 @@
 
 #include "core/translation/Tone.h"
 
-class QListWidget;
+class QShowEvent;
 class QTableWidget;
+class QTreeWidget;
 
 class ToneDialog : public QDialog
 {
@@ -21,6 +22,9 @@ public:
     QVector<ToneItem> customTones() const;
     static QJsonArray toJson(const QVector<ToneItem>& tones);
 
+protected:
+    void showEvent(QShowEvent* event) override;
+
 private slots:
     void addTone();
     void removeTone();
@@ -28,6 +32,7 @@ private slots:
 private:
     void loadTones(const QJsonArray& stored);
 
-    QListWidget* m_presets = nullptr;
+    QTreeWidget* m_presets = nullptr;
     QTableWidget* m_custom = nullptr;
+    bool m_columnsInitialized = false;
 };
