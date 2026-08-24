@@ -783,7 +783,7 @@ void MainWindow::exportTranslation()
 
 void MainWindow::showSettingsDialog()
 {
-    SettingsDialog dialog(this);
+    SettingsDialog dialog(&m_history, this);
     dialog.exec();
 }
 

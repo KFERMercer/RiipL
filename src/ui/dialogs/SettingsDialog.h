@@ -7,6 +7,7 @@ class QPushButton;
 class ConfigCheckBox;
 class ConfigComboBox;
 class GlossaryTable;
+class HistoryManager;
 
 // Form-style settings dialog following Qt's canonical pattern: editors are
 // populated once on construction and nothing is written back until the user
@@ -19,7 +20,7 @@ class SettingsDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit SettingsDialog(QWidget* parent = nullptr);
+    explicit SettingsDialog(HistoryManager* history, QWidget* parent = nullptr);
 
     void reject() override;
 
@@ -44,4 +45,5 @@ private:
     GlossaryTable* m_glossaryTable = nullptr;
     QJsonArray m_customTones;
     QPushButton* m_applyButton = nullptr;
+    HistoryManager* m_history = nullptr;
 };

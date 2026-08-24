@@ -154,8 +154,9 @@ private:
     QPlainTextEdit* m_output = nullptr;
 };
 
-SettingsDialog::SettingsDialog(QWidget* parent)
+SettingsDialog::SettingsDialog(HistoryManager* history, QWidget* parent)
     : QDialog(parent)
+    , m_history(history)
 {
     setWindowTitle(tr("Settings"));
 
@@ -485,13 +486,10 @@ QWidget* SettingsDialog::createHistoryPage()
     form->addRow(tr("Max records"), new ConfigSpinBox(Keys::historyMaxRecords, 10, 100000, 10, page));
 
     auto* clearButton = new QPushButton(tr("Clear history now"), page);
-    connect(clearButton, &QPushButton::clicked, page, []() {
-        if (QMessageBox::question(nullptr, tr("RiipL"), tr("Delete all history records?"))
-            == QMessageBox::Yes) {
-            HistoryManager manager(ConfigManager::instance()->historyFilePath());
-            manager.setMaxRecords(ConfigManager::instance()->intValue(Keys::historyMaxRecords));
-            manager.clear();
-        }
+    connect(clearButton, &QPushButton::clicked, this, [this]() {
+        if (QMessageBox::question(this, tr("RiipL"), tr("Delete all history records?"))
+            == QMessageBox::Yes)
+            m_history->clear();
     });
     form->addRow(QString(), clearButton);
     return page;
