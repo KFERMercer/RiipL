@@ -13,7 +13,6 @@
 #include <QPlainTextEdit>
 #include <QSpinBox>
 #include <QToolButton>
-#include <QVBoxLayout>
 
 namespace {
 
@@ -149,18 +148,15 @@ void ConfigComboBox::setItems(const QList<QPair<QString, QString>>& items)
 ConfigTextEdit::ConfigTextEdit(const QString& key, int rows, QWidget* parent)
     : ConfigEditor(key, parent)
 {
-    auto* layout = new QVBoxLayout(this);
+    auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     m_edit = new QPlainTextEdit(this);
     m_edit->setMinimumHeight(rows * m_edit->fontMetrics().lineSpacing()
                              + 2 * m_edit->frameWidth()
                              + 2 * m_edit->document()->documentMargin());
-    auto* bottomRow = new QHBoxLayout();
-    bottomRow->addStretch(1);
     auto* reset = createResetButton(this);
-    bottomRow->addWidget(reset);
     layout->addWidget(m_edit, 1);
-    layout->addLayout(bottomRow);
+    layout->addWidget(reset);
 
     connect(m_edit, &QPlainTextEdit::textChanged, this, [this]() { handleControlChange(); });
     setupDisplay(reset);

@@ -262,8 +262,13 @@ QWidget* SettingsDialog::createApiPage()
         }
     };
     connect(extraEdit->edit(), &QPlainTextEdit::textChanged, page, updateValidation);
-    form->addRow(tr("Extra body (JSON)"), extraEdit);
-    form->addRow(QString(), validation);
+    auto* extraField = new QWidget(page);
+    auto* extraLayout = new QVBoxLayout(extraField);
+    extraLayout->setContentsMargins(0, 0, 0, 0);
+    extraLayout->setSpacing(0);
+    extraLayout->addWidget(extraEdit);
+    extraLayout->addWidget(validation);
+    form->addRow(tr("Extra body (JSON)"), extraField);
     updateValidation();
     return page;
 }
@@ -346,7 +351,8 @@ QWidget* SettingsDialog::createGlossaryPage()
 QWidget* SettingsDialog::createPromptsPage()
 {
     auto* page = new QWidget(this);
-    auto* layout = new QHBoxLayout(page);
+    auto* layout = new QVBoxLayout(page);
+    auto* contentRow = new QHBoxLayout();
 
     auto* list = new QListWidget(page);
     list->setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
@@ -354,7 +360,7 @@ QWidget* SettingsDialog::createPromptsPage()
     const QString uiLanguage = ConfigManager::instance()->resolvedUiLanguage();
     for (const TemplateInfo& info : templateInfos())
         list->addItem(uiLanguage == QLatin1String("zh") ? info.labelZh : info.labelEn);
-    layout->addWidget(list);
+    contentRow->addWidget(list);
 
     auto* stack = new QStackedWidget(page);
     for (const TemplateInfo& info : templateInfos()) {
@@ -387,7 +393,8 @@ QWidget* SettingsDialog::createPromptsPage()
     }
     connect(list, &QListWidget::currentRowChanged, stack, &QStackedWidget::setCurrentIndex);
     list->setCurrentRow(0);
-    layout->addWidget(stack, 1);
+    contentRow->addWidget(stack, 1);
+    layout->addLayout(contentRow, 1);
 
     auto* buttonRow = new QHBoxLayout();
     buttonRow->addStretch(1);
