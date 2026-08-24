@@ -35,7 +35,7 @@ protected:
     // Writes v into the wrapped control. Implementations must not emit edited().
     virtual void setControlValue(const QJsonValue& v) = 0;
 
-    void setupDisplay(QWidget* displayWidget, QToolButton* resetButton);
+    void setupDisplay(QToolButton* resetButton);
     void loadConfigValue();
     // Forwards wrapped-control change notifications; suppresses programmatic echoes.
     void handleControlChange();
@@ -43,7 +43,6 @@ protected:
 
 private:
     QString m_key;
-    QWidget* m_display = nullptr;
     QToolButton* m_reset = nullptr;
     bool m_guard = false;
 };

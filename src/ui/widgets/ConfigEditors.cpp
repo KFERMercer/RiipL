@@ -31,13 +31,6 @@ QToolButton* createResetButton(QWidget* parent)
     return button;
 }
 
-void markModified(QWidget* widget, bool modified)
-{
-    QFont font = widget->font();
-    font.setBold(modified);
-    widget->setFont(font);
-}
-
 }
 
 ConfigEditor::ConfigEditor(const QString& key, QWidget* parent)
@@ -46,9 +39,8 @@ ConfigEditor::ConfigEditor(const QString& key, QWidget* parent)
 {
 }
 
-void ConfigEditor::setupDisplay(QWidget* displayWidget, QToolButton* resetButton)
+void ConfigEditor::setupDisplay(QToolButton* resetButton)
 {
-    m_display = displayWidget;
     m_reset = resetButton;
     connect(m_reset, &QToolButton::clicked, this, [this]() {
         m_guard = true;
@@ -76,11 +68,10 @@ void ConfigEditor::handleControlChange()
 
 void ConfigEditor::refreshModifiedState()
 {
-    if (!m_display || !m_reset)
+    if (!m_reset)
         return;
     const bool modified = !JsonUtils::equals(value(), Defaults::value(m_key));
     m_reset->setVisible(modified);
-    markModified(m_display, modified);
 }
 
 ConfigLineEdit::ConfigLineEdit(const QString& key, bool password, QWidget* parent)
@@ -96,7 +87,7 @@ ConfigLineEdit::ConfigLineEdit(const QString& key, bool password, QWidget* paren
     layout->addWidget(reset);
 
     connect(m_edit, &QLineEdit::textEdited, this, [this]() { handleControlChange(); });
-    setupDisplay(m_edit, reset);
+    setupDisplay(reset);
     loadConfigValue();
 }
 
@@ -122,9 +113,7 @@ ConfigComboBox::ConfigComboBox(const QString& key, QWidget* parent)
     layout->addStretch(1);
 
     connect(m_box, &QComboBox::currentIndexChanged, this, [this](int) { handleControlChange(); });
-    // The initial selection is applied by setItems(); the item list must be
-    // populated by the caller first.
-    setupDisplay(m_box, reset);
+    setupDisplay(reset);
 }
 
 QJsonValue ConfigComboBox::value() const
@@ -173,7 +162,7 @@ ConfigTextEdit::ConfigTextEdit(const QString& key, int rows, QWidget* parent)
     layout->addLayout(bottomRow);
 
     connect(m_edit, &QPlainTextEdit::textChanged, this, [this]() { handleControlChange(); });
-    setupDisplay(m_edit, reset);
+    setupDisplay(reset);
     loadConfigValue();
 }
 
@@ -202,7 +191,7 @@ ConfigSpinBox::ConfigSpinBox(const QString& key, int minimum, int maximum, int s
     layout->addStretch(1);
 
     connect(m_edit, &QSpinBox::valueChanged, this, [this](int) { handleControlChange(); });
-    setupDisplay(m_edit, reset);
+    setupDisplay(reset);
     loadConfigValue();
 }
 
@@ -232,7 +221,7 @@ ConfigDoubleSpinBox::ConfigDoubleSpinBox(const QString& key, double minimum, dou
     layout->addStretch(1);
 
     connect(m_edit, &QDoubleSpinBox::valueChanged, this, [this](double) { handleControlChange(); });
-    setupDisplay(m_edit, reset);
+    setupDisplay(reset);
     loadConfigValue();
 }
 
@@ -258,7 +247,7 @@ ConfigCheckBox::ConfigCheckBox(const QString& key, QWidget* parent)
     layout->addStretch(1);
 
     connect(m_box, &QCheckBox::toggled, this, [this](bool) { handleControlChange(); });
-    setupDisplay(m_box, reset);
+    setupDisplay(reset);
     loadConfigValue();
 }
 
