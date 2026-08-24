@@ -1,6 +1,7 @@
 #include "ToneDialog.h"
 
 #include "core/translation/Tone.h"
+#include "utils/GeometryUtils.h"
 
 #include <QDialogButtonBox>
 #include <QHBoxLayout>
@@ -22,7 +23,6 @@ ToneDialog::ToneDialog(const QJsonArray& customTones, const QString& uiLanguage,
     : QDialog(parent)
 {
     setWindowTitle(tr("Manage tones"));
-    resize(520, 460);
 
     auto* layout = new QVBoxLayout(this);
 
@@ -33,7 +33,8 @@ ToneDialog::ToneDialog(const QJsonArray& customTones, const QString& uiLanguage,
         auto* presetItem = new QListWidgetItem(QStringLiteral("%1  (%2)").arg(name, item.key), m_presets);
         presetItem->setFlags(Qt::NoItemFlags);
     }
-    m_presets->setFixedHeight(140);
+    m_presets->setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
+    m_presets->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
     layout->addWidget(m_presets);
 
     layout->addWidget(new QLabel(tr("Custom tones"), this));
@@ -41,7 +42,7 @@ ToneDialog::ToneDialog(const QJsonArray& customTones, const QString& uiLanguage,
     m_custom->setHorizontalHeaderLabels({tr("Key"), tr("Display name")});
     m_custom->horizontalHeader()->setStretchLastSection(true);
     m_custom->verticalHeader()->setVisible(false);
-    m_custom->setColumnWidth(kKeyColumn, 180);
+    m_custom->horizontalHeader()->setSectionResizeMode(kKeyColumn, QHeaderView::ResizeToContents);
     layout->addWidget(m_custom, 1);
 
     loadTones(customTones);
@@ -61,6 +62,8 @@ ToneDialog::ToneDialog(const QJsonArray& customTones, const QString& uiLanguage,
     connect(removeButton, &QPushButton::clicked, this, &ToneDialog::removeTone);
     connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
+
+    resize(GeometryUtils::dialogInitialSize(this));
 }
 
 void ToneDialog::loadTones(const QJsonArray& stored)

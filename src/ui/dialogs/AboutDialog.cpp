@@ -1,5 +1,7 @@
 #include "AboutDialog.h"
 
+#include "utils/GeometryUtils.h"
+
 #include <QCoreApplication>
 #include <QDialogButtonBox>
 #include <QHBoxLayout>
@@ -18,7 +20,6 @@ AboutDialog::AboutDialog(QWidget* parent)
 {
     setWindowTitle(tr("About RiipL"));
     setWindowIcon(QIcon(QStringLiteral(":/icons/app.svg")));
-    setMinimumWidth(360);
 
     auto* layout = new QVBoxLayout(this);
 
@@ -53,4 +54,6 @@ AboutDialog::AboutDialog(QWidget* parent)
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok, this);
     connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     layout->addWidget(buttons);
+
+    resize(GeometryUtils::dialogInitialSize(this));
 }

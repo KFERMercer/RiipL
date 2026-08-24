@@ -1,5 +1,7 @@
 #include "DocumentDialog.h"
 
+#include "utils/GeometryUtils.h"
+
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -21,7 +23,6 @@ DocumentDialog::DocumentDialog(const TranslationContext& baseContext, QWidget* p
     , m_baseContext(baseContext)
 {
     setWindowTitle(tr("Document translation"));
-    resize(720, 560);
 
     auto* layout = new QVBoxLayout(this);
 
@@ -83,6 +84,8 @@ DocumentDialog::DocumentDialog(const TranslationContext& baseContext, QWidget* p
         m_startButton->setEnabled(true);
         m_status->setText(tr("Error: %1").arg(message));
     });
+
+    resize(GeometryUtils::dialogInitialSize(this));
 }
 
 void DocumentDialog::browse()

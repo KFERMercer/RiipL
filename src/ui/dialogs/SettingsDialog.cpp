@@ -11,6 +11,7 @@
 #include "core/translation/Tone.h"
 #include "ui/widgets/ConfigEditors.h"
 #include "ui/widgets/FlowLayout.h"
+#include "utils/GeometryUtils.h"
 #include "utils/JsonUtils.h"
 
 #include <QAbstractButton>
@@ -76,12 +77,11 @@ public:
         , m_glossary(glossary)
     {
         setWindowTitle(tr("Prompt preview"));
-        resize(680, 560);
         auto* layout = new QVBoxLayout(this);
 
         auto* form = new QFormLayout();
         m_source = new QPlainTextEdit(this);
-        m_source->setFixedHeight(72);
+        m_source->setMinimumHeight(m_source->fontMetrics().lineSpacing() * 3);
         m_source->setPlainText(QStringLiteral("Hello, world! RiipL is a translation tool."));
         m_target = new QComboBox(this);
         const QString uiLanguage = ConfigManager::instance()->resolvedUiLanguage();
@@ -118,6 +118,7 @@ public:
         connect(m_style, &QLineEdit::textChanged, this, &PromptPreviewDialog::refresh);
         connect(m_background, &QLineEdit::textChanged, this, &PromptPreviewDialog::refresh);
         refresh();
+        resize(GeometryUtils::dialogInitialSize(this));
     }
 
 private slots:
@@ -156,7 +157,6 @@ SettingsDialog::SettingsDialog(QWidget* parent)
     : QDialog(parent)
 {
     setWindowTitle(tr("Settings"));
-    resize(760, 620);
 
     m_customTones = ConfigManager::instance()->value(Keys::translationCustomTones).toArray();
 
@@ -191,6 +191,8 @@ SettingsDialog::SettingsDialog(QWidget* parent)
     for (ConfigEditor* editor : findChildren<ConfigEditor*>())
         connect(editor, &ConfigEditor::edited, this, &SettingsDialog::markDirty);
     connect(m_glossaryTable, &GlossaryTable::entriesChanged, this, &SettingsDialog::markDirty);
+
+    resize(GeometryUtils::dialogInitialSize(this));
 }
 
 void SettingsDialog::markDirty()
@@ -346,7 +348,8 @@ QWidget* SettingsDialog::createPromptsPage()
     auto* layout = new QHBoxLayout(page);
 
     auto* list = new QListWidget(page);
-    list->setFixedWidth(170);
+    list->setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
+    list->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Expanding);
     const QString uiLanguage = ConfigManager::instance()->resolvedUiLanguage();
     for (const TemplateInfo& info : templateInfos())
         list->addItem(uiLanguage == QLatin1String("zh") ? info.labelZh : info.labelEn);

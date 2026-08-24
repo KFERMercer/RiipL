@@ -45,7 +45,6 @@ void CandidatePopup::openFor(const QString& word,
     m_cursor = cursor;
     m_header->setText(word);
     move(globalPos + QPoint(8, 10));
-    resize(280, sizeHint().height());
     show();
     raise();
     setFocus();

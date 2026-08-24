@@ -2,6 +2,7 @@
 
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
+#include "utils/GeometryUtils.h"
 
 #include <QDialogButtonBox>
 #include <QCheckBox>
@@ -45,7 +46,7 @@ GlossaryTable::GlossaryTable(QWidget* parent)
     m_table->verticalHeader()->setVisible(false);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_table->setSelectionMode(QAbstractItemView::SingleSelection);
-    m_table->setColumnWidth(kSourceColumn, 220);
+    m_table->horizontalHeader()->setSectionResizeMode(kSourceColumn, QHeaderView::ResizeToContents);
     layout->addWidget(m_table, 1);
 
     auto* buttonRow = new QHBoxLayout();
@@ -202,7 +203,6 @@ GlossaryDialog::GlossaryDialog(QWidget* parent)
     : QDialog(parent)
 {
     setWindowTitle(tr("Glossary"));
-    resize(560, 480);
 
     auto* layout = new QVBoxLayout(this);
     auto* form = new QFormLayout;
@@ -226,4 +226,6 @@ GlossaryDialog::GlossaryDialog(QWidget* parent)
         accept();
     });
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
+
+    resize(GeometryUtils::dialogInitialSize(this));
 }

@@ -41,6 +41,7 @@ target_link_libraries(riip_core PUBLIC Qt6::Core Qt6::Network)
 
 # Shared helpers used by the app shell and the test suite.
 add_library(riip_utils STATIC
+    src/utils/GeometryUtils.h
     src/utils/JsonUtils.h
     src/utils/SingleInstance.cpp
     src/utils/SingleInstance.h

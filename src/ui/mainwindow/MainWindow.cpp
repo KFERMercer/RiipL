@@ -800,14 +800,19 @@ void MainWindow::showHistoryDialog()
 
 void MainWindow::restoreGeometryFromConfig()
 {
+    const auto applyDefaultGeometry = [this]() {
+        const QRect available = screen()->availableGeometry();
+        resize(available.width() * 2 / 5, available.height() / 2);
+    };
+
     const QString encoded = ConfigManager::instance()->stringValue(Keys::uiWindowGeometry);
     if (encoded.isEmpty()) {
-        resize(1080, 680);
+        applyDefaultGeometry();
         return;
     }
     const QByteArray data = QByteArray::fromBase64(encoded.toLatin1());
     if (!restoreGeometry(data))
-        resize(1080, 680);
+        applyDefaultGeometry();
 }
 
 void MainWindow::saveGeometryToConfig()
