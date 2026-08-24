@@ -396,7 +396,7 @@ void TestCore::requestBodyParameterHandling()
     QDir().mkpath(tempDir());
     ConfigManager::createInstance(tempDir());
 
-    QCOMPARE(Defaults::apiTemperature, -1.0);
+    QCOMPARE(Defaults::apiTemperature, -0.1);
     const QJsonObject body = TranslationEngine::buildRequestBody(QStringLiteral("Hello"), false);
     QVERIFY(!body.contains(QStringLiteral("temperature")));
 

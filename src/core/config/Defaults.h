@@ -88,7 +88,7 @@ inline const QString apiKey = QString();
 inline const QString apiModel = QStringLiteral("gpt-4o-mini");
 inline const int apiTimeoutMs = 10000;
 // Negative values keep the temperature parameter out of API requests.
-inline const double apiTemperature = -1.0;
+inline const double apiTemperature = -0.1;
 inline const int apiMaxTokens = 4096;
 inline const bool apiStream = true;
 inline const QString apiExtraBody = QString();

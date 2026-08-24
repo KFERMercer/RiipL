@@ -229,10 +229,8 @@ QWidget* SettingsDialog::createApiPage()
                  new ConfigSpinBox(Keys::apiTimeoutMs, 1000, 300000, 1000, page));
     form->addRow(tr("Max tokens"), new ConfigSpinBox(Keys::apiMaxTokens, 1, 1000000, 256, page));
 
-    auto* temperatureSpin = new ConfigDoubleSpinBox(Keys::apiTemperature, -1.0, 2.0, 0.1, 2, page);
-    temperatureSpin->edit()->setSpecialValueText(tr("Auto (not sent)"));
-    temperatureSpin->edit()->setToolTip(
-        tr("The minimum value of -1 omits the temperature parameter from API requests."));
+    auto* temperatureSpin = new ConfigDoubleSpinBox(Keys::apiTemperature, -0.1, 2.0, 0.1, 2, page);
+    temperatureSpin->edit()->setSpecialValueText(tr("API default"));
     form->addRow(tr("Temperature"), temperatureSpin);
 
     auto* streamCheck = new ConfigCheckBox(Keys::apiStream, page);
