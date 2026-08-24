@@ -35,6 +35,7 @@ public:
                                    const QString& word,
                                    const QString& targetLang,
                                    const QString& uiLanguage);
+    static QStringList knownPlaceholders();
     static QString substitute(QString text, const QHash<QString, QString>& variables);
     static QStringList glossaryLines(const QVector<GlossaryEntry>& entries);
 

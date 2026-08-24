@@ -10,14 +10,19 @@
 #include "core/translation/PromptBuilder.h"
 #include "core/translation/Tone.h"
 #include "ui/widgets/ConfigEditors.h"
+#include "ui/widgets/FlowLayout.h"
 #include "utils/JsonUtils.h"
 
 #include <QAbstractButton>
+#include <QApplication>
 #include <QCheckBox>
+#include <QClipboard>
 #include <QComboBox>
+#include <QCursor>
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
+#include <QGroupBox>
 #include <QHBoxLayout>
 #include <QJsonDocument>
 #include <QLabel>
@@ -28,6 +33,8 @@
 #include <QPushButton>
 #include <QStackedWidget>
 #include <QTabWidget>
+#include <QToolButton>
+#include <QToolTip>
 #include <QVBoxLayout>
 
 namespace {
@@ -359,10 +366,22 @@ QWidget* SettingsDialog::createPromptsPage()
         langTabs->addTab(enEditor, tr("English template"));
         pageLayout->addWidget(langTabs);
 
-        auto* hint = new QLabel(tr("Available placeholders: {source_text} {target_lang} {source_lang} {tone} {target_style} {background_text} {glossary} {user_preferences} {word} {translated_text}"), pageWidget);
-        hint->setWordWrap(true);
-        hint->setStyleSheet(QStringLiteral("color: gray;"));
-        pageLayout->addWidget(hint);
+        auto* placeholderGroup = new QGroupBox(tr("Available placeholders"), pageWidget);
+        auto* hintLayout = new FlowLayout(placeholderGroup);
+        for (const QString& placeholder : PromptBuilder::knownPlaceholders()) {
+            const QString token = QLatin1Char('{') + placeholder + QLatin1Char('}');
+            auto* chip = new QToolButton(placeholderGroup);
+            chip->setText(token);
+            chip->setToolTip(tr("Click to copy"));
+            chip->setCursor(Qt::PointingHandCursor);
+            chip->setAutoRaise(true);
+            connect(chip, &QToolButton::clicked, chip, [chip, token]() {
+                QApplication::clipboard()->setText(token);
+                QToolTip::showText(QCursor::pos(), tr("Copied"), chip);
+            });
+            hintLayout->addWidget(chip);
+        }
+        pageLayout->addWidget(placeholderGroup);
         stack->addWidget(pageWidget);
     }
     connect(list, &QListWidget::currentRowChanged, stack, &QStackedWidget::setCurrentIndex);

@@ -32,6 +32,22 @@ QStringList PromptBuilder::glossaryLines(const QVector<GlossaryEntry>& entries)
     return lines;
 }
 
+QStringList PromptBuilder::knownPlaceholders()
+{
+    return {
+        QStringLiteral("source_text"),
+        QStringLiteral("target_lang"),
+        QStringLiteral("source_lang"),
+        QStringLiteral("tone"),
+        QStringLiteral("target_style"),
+        QStringLiteral("background_text"),
+        QStringLiteral("glossary"),
+        QStringLiteral("user_preferences"),
+        QStringLiteral("word"),
+        QStringLiteral("translated_text")
+    };
+}
+
 QString PromptBuilder::substitute(QString text, const QHash<QString, QString>& variables)
 {
     for (auto it = variables.constBegin(); it != variables.constEnd(); ++it) {

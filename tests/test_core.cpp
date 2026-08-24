@@ -27,6 +27,7 @@ private slots:
     void promptSubstitution();
     void promptGlossaryFormatting();
     void candidatePromptSubstitution();
+    void knownPlaceholdersCoverVariables();
     void glossaryRoundTrip();
     void historyTrimming();
     void uiLanguageResolution();
@@ -176,6 +177,16 @@ void TestCore::candidatePromptSubstitution()
     QVERIFY(prompt.contains(QStringLiteral("alternative")));
     QVERIFY(prompt.contains(QStringLiteral("Chinese")));
     QVERIFY(!prompt.contains(QStringLiteral("{target_lang}")));
+}
+
+void TestCore::knownPlaceholdersCoverVariables()
+{
+    const QStringList placeholders = PromptBuilder::knownPlaceholders();
+    QCOMPARE(placeholders.size(), QSet<QString>(placeholders.cbegin(), placeholders.cend()).size());
+
+    for (const QString& name : placeholders)
+        QVERIFY(PromptBuilder::substitute(QStringLiteral("{%1}").arg(name),
+                                          {{name, QStringLiteral("x")}}) == QStringLiteral("x"));
 }
 
 void TestCore::glossaryRoundTrip()
