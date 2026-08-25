@@ -13,7 +13,7 @@
 
 [English](README.md) | **中文**
 
-[简介](#简介) · [功能](#功能) · [构建](#构建与运行) · [技巧](#使用技巧) · [架构](#架构) · [限制](#限制)
+[简介](#简介) · [功能](#功能) · [安装](#安装) · [构建](#手动构建) · [架构](#架构) · [须知](#使用须知)
 
 ![APP 截图](img/APP_zh-CN.png)
 
@@ -40,7 +40,27 @@ DeepL 仅向会员开放的功能，RiipL 完全免费：
 - 📋 **剪贴板监听**：自动翻译剪贴板文本，支持复制结果回写。
 - 🕘 **翻译历史**：搜索、重用以往翻译历史。
 
-## 构建与运行
+## 安装
+
+### Linux (Arch based)
+
+- 发布分支：
+
+  ```shell
+  yay -S riipl
+  ```
+
+- 主线分支：
+
+  ```shell
+  yay -S riipl-git
+  ```
+
+### 其他 Linux 发行版 / macOS / Windows
+
+见[手动构建](#手动构建)。
+
+## 手动构建
 
 ### 环境要求
 
@@ -68,37 +88,6 @@ cmake --build build --clean-first -j$(nproc)
 
 编译成功后的可执行文件位于 `./build/RiipL`
 
-## 使用技巧
-
-### 接入自定义模型
-
-编译`config.json`：
-
-| 平台 | 位置 |
-| :- | :- |
-| Linux | `~/.config/RiipL/config.json` |
-| Windows | `%APPDATA%\\RiipL\\config.json` |
-| macOS | `~/Library/Preferences/RiipL/config.json` |
-
-以接入 Ollama 为例:
-
-```json
-{
-  "api": {
-    "base_url": "http://localhost:11434/v1",
-    "api_key": "",
-    "model": "hf.co/unsloth/Hy-MT2-7B-GGUF:UD-Q8_K_XL",
-    "temperature": 0,
-    "extra_body": "{\"top_p\": 0.6, \"top_k\": 20, \"repetition_penalty\": 1.05}"
-  }
-}
-```
-
-`extra_body` 中的内容会直接合并进请求体，各家特有的采样参数开箱即用。
-
-> [!NOTE]
-> API 密钥以明文形式与其他设置存放在一起，如有需要请自行保护该文件。
-
 ## 架构
 
 ```text
@@ -116,6 +105,7 @@ RiipL/
 └── tests/                # 核心层 QTest 单元测试
 ```
 
-## 限制
+## 使用须知
 
-- 候选替换与分词质量取决于所连接的模型。
+- 翻译质量以及部分功能的稳定工作取决于所连接的模型质量。
+- API 密钥以明文形式存放在 `config.json`，如有必要请自行保护该文件。

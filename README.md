@@ -13,7 +13,7 @@
 
 **English** | [中文](README.zh-CN.md)
 
-[Introduction](#introduction) · [Features](#features) · [Build](#build--run) · [Tips](#usage-tips) · [Architecture](#architecture) · [Limitations](#limitations)
+[Introduction](#introduction) · [Features](#features) · [Installation](#installation) · [Build](#manual-build) · [Architecture](#architecture) · [Notes](#usage-notes)
 
 ![APP Screenshot](img/APP.png)
 
@@ -40,7 +40,27 @@ What DeepL reserves for paying members, RiipL gives you completely free:
 - 📋 **Clipboard monitoring** — clipboard text is translated automatically, with copy-back of results.
 - 🕘 **Translation history** — search and reuse past translations.
 
-## Build & Run
+## Installation
+
+### Linux (Arch based)
+
+- Release branch:
+
+  ```shell
+  yay -S riipl
+  ```
+
+- Mainline branch:
+
+  ```shell
+  yay -S riipl-git
+  ```
+
+### Other Linux distros / macOS / Windows
+
+See [Manual Build](#manual-build).
+
+## Manual Build
 
 ### Prerequisites
 
@@ -67,38 +87,6 @@ cmake --build build --clean-first -j$(nproc)
 
 After a successful build the executable lives at `./build/RiipL`.
 
-## Usage Tips
-
-### Connecting a custom model
-
-Where `config.json` lives:
-
-| Platform | Location |
-| :- | :- |
-| Linux | `~/.config/RiipL/config.json` |
-| Windows | `%APPDATA%\\RiipL\\config.json` |
-| macOS | `~/Library/Preferences/RiipL/config.json` |
-
-Taking Ollama as an example:
-
-```json
-{
-  "api": {
-    "base_url": "http://localhost:11434/v1",
-    "api_key": "",
-    "model": "hf.co/unsloth/Hy-MT2-7B-GGUF:UD-Q8_K_XL",
-    "temperature": 0,
-    "extra_body": "{\"top_p\": 0.6, \"top_k\": 20, \"repetition_penalty\": 1.05}"
-  }
-}
-```
-
-Anything inside `extra_body` is merged straight into the request body, so vendor-specific sampling parameters work out of the box.
-
-> [!NOTE]
-> The API key is stored in plain text next to your other settings. Keep the file private
-> yourself if that matters to you.
-
 ## Architecture
 
 ```text
@@ -116,6 +104,7 @@ RiipL/
 └── tests/                # QTest suite for the core layer
 ```
 
-## Limitations
+## Usage Notes
 
-- Alternative-wording and tokenization quality depend on the connected model.
+- Translation quality and the stable operation of some features depend on the connected model.
+- The API key is stored in plain text inside `config.json`; protect the file yourself if necessary.
