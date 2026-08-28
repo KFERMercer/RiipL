@@ -13,7 +13,7 @@
 #include "ui/widgets/FlowLayout.h"
 #include "ui/widgets/ThemeColors.h"
 #include "utils/GeometryUtils.h"
-#include "utils/JsonUtils.h"
+#include "core/json/JsonUtils.h"
 
 #include <QAbstractButton>
 #include <QApplication>

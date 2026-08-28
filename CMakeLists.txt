@@ -34,6 +34,7 @@ set(CORE_HEADERS
     src/core/translation/TranslationEngine.h
     src/core/models/Glossary.h
     src/core/history/HistoryManager.h
+    src/core/json/JsonUtils.h
 )
 add_library(riip_core STATIC ${CORE_SOURCES} ${CORE_HEADERS})
 target_include_directories(riip_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -42,7 +43,6 @@ target_link_libraries(riip_core PUBLIC Qt6::Core Qt6::Network)
 # Shared helpers used by the app shell and the test suite.
 add_library(riip_utils STATIC
     src/utils/GeometryUtils.h
-    src/utils/JsonUtils.h
     src/utils/SingleInstance.cpp
     src/utils/SingleInstance.h
     src/utils/TextUtils.cpp

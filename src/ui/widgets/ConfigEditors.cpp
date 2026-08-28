@@ -3,7 +3,7 @@
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
 #include "ui/widgets/AppIcons.h"
-#include "utils/JsonUtils.h"
+#include "core/json/JsonUtils.h"
 
 #include <QCheckBox>
 #include <QComboBox>

@@ -99,9 +99,10 @@ RiipL/
 │   │   ├── network/      # ApiClient：SSE 流式解析、超时、错误映射
 │   │   ├── translation/  # PromptBuilder、TranslationEngine、语言与语气
 │   │   ├── models/       # Glossary
+│   │   ├── json/         # JsonUtils
 │   │   └── history/      # HistoryManager
 │   ├── ui/               # MainWindow、配置绑定控件、各对话框
-│   └── utils/            # JsonUtils、TextUtils、SingleInstance
+│   └── utils/            # TextUtils、SingleInstance
 └── tests/                # 核心层 QTest 单元测试
 ```
 

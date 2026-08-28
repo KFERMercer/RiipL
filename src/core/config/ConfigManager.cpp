@@ -1,6 +1,6 @@
 #include "ConfigManager.h"
 #include "Defaults.h"
-#include "utils/JsonUtils.h"
+#include "core/json/JsonUtils.h"
 
 #include <QCoreApplication>
 #include <QDir>

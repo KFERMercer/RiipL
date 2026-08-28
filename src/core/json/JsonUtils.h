@@ -1,7 +1,6 @@
 #pragma once
 
 #include <QJsonArray>
-#include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonValue>
 #include <QString>
@@ -106,28 +105,6 @@ inline bool equals(const QJsonValue& a, const QJsonValue& b)
     }
     default:
         return true;
-    }
-}
-
-inline QString compactJson(const QJsonValue& value)
-{
-    switch (value.type()) {
-    case QJsonValue::Object:
-        return QString::fromUtf8(QJsonDocument(value.toObject()).toJson(QJsonDocument::Compact));
-    case QJsonValue::Array:
-        return QString::fromUtf8(QJsonDocument(value.toArray()).toJson(QJsonDocument::Compact));
-    case QJsonValue::String:
-        return value.toString();
-    case QJsonValue::Bool:
-        return value.toBool() ? QStringLiteral("true") : QStringLiteral("false");
-    case QJsonValue::Double: {
-        const double d = value.toDouble();
-        if (double(int(d)) == d && qAbs(d) < 1e15)
-            return QString::number(int(d));
-        return QString::number(d);
-    }
-    default:
-        return QString();
     }
 }
 

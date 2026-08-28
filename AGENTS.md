@@ -15,9 +15,10 @@ RiipL/
 │   │   ├── network/      # ApiClient: SSE streaming, timeouts, error mapping
 │   │   ├── translation/  # PromptBuilder, TranslationEngine, languages & tones
 │   │   ├── models/       # Glossary
+│   │   ├── json/         # JsonUtils
 │   │   └── history/      # HistoryManager
 │   ├── ui/               # MainWindow, bound editor widgets, dialogs
-│   └── utils/            # JsonUtils, TextUtils, SingleInstance
+│   └── utils/            # TextUtils, SingleInstance
 └── tests/                # QTest suite for the core layer
 ```
 
