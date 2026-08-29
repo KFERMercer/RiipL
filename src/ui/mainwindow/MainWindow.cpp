@@ -866,9 +866,9 @@ void MainWindow::retranslateUi()
 
     m_translateAction->setText(tr("Translate"));
     m_stopAction->setText(tr("Stop"));
-    m_documentAction->setText(tr("Document"));
-    m_historyAction->setText(tr("History"));
-    m_settingsAction->setText(tr("Settings"));
+    m_documentAction->setIconText(tr("Document"));
+    m_historyAction->setIconText(tr("History"));
+    m_settingsAction->setIconText(tr("Settings"));
     m_translateAction->setToolTip(tr("Translate now (Ctrl+Return)"));
     m_stopAction->setToolTip(tr("Stop translation"));
     m_undoAction->setToolTip(tr("Restore previous translation"));
