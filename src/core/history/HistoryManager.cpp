@@ -15,7 +15,15 @@ HistoryManager::HistoryManager(const QString& filePath, QObject* parent)
     : QObject(parent)
     , m_filePath(filePath)
 {
+    m_saveTimer.setSingleShot(true);
+    m_saveTimer.setInterval(400);
+    connect(&m_saveTimer, &QTimer::timeout, this, &HistoryManager::save);
     load();
+}
+
+HistoryManager::~HistoryManager()
+{
+    flush();
 }
 
 void HistoryManager::load()
@@ -40,6 +48,19 @@ void HistoryManager::load()
         record.tone = object.value(QStringLiteral("tone")).toString();
         if (record.isValid())
             m_records.append(record);
+    }
+}
+
+void HistoryManager::scheduleSave()
+{
+    m_saveTimer.start();
+}
+
+void HistoryManager::flush()
+{
+    if (m_saveTimer.isActive()) {
+        m_saveTimer.stop();
+        save();
     }
 }
 
@@ -75,7 +96,7 @@ void HistoryManager::addRecord(const TranslationRecord& record)
         return;
     m_records.prepend(record);
     trim();
-    save();
+    scheduleSave();
     emit changed();
 }
 
@@ -84,14 +105,14 @@ void HistoryManager::removeRecord(int index)
     if (index < 0 || index >= m_records.size())
         return;
     m_records.removeAt(index);
-    save();
+    scheduleSave();
     emit changed();
 }
 
 void HistoryManager::clear()
 {
     m_records.clear();
-    save();
+    scheduleSave();
     emit changed();
 }
 

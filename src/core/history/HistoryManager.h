@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QTimer>
 #include <QVector>
 
 #include "core/models/Glossary.h"
@@ -24,12 +25,14 @@ class HistoryManager : public QObject
 
 public:
     explicit HistoryManager(const QString& filePath, QObject* parent = nullptr);
+    ~HistoryManager() override;
 
     QVector<TranslationRecord> records() const { return m_records; }
     void addRecord(const TranslationRecord& record);
     void removeRecord(int index);
     void clear();
     void setMaxRecords(int maxRecords);
+    void flush();
 
 signals:
     void changed();
@@ -37,9 +40,11 @@ signals:
 private:
     void load();
     void save();
+    void scheduleSave();
     void trim();
 
     QString m_filePath;
     QVector<TranslationRecord> m_records;
     int m_maxRecords = 500;
+    QTimer m_saveTimer;
 };

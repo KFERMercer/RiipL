@@ -11,6 +11,7 @@
 #include "utils/TextUtils.h"
 
 #include <QJsonDocument>
+#include <QFileInfo>
 #include <QHostAddress>
 #include <QTcpServer>
 #include <QTemporaryDir>
@@ -30,6 +31,7 @@ private slots:
     void knownPlaceholdersCoverVariables();
     void glossaryRoundTrip();
     void historyTrimming();
+    void historyDebouncesSavesUntilFlush();
     void uiLanguageResolution();
     void candidateCleaning();
     void wordSpanAtBoundaries();
@@ -226,6 +228,34 @@ void TestCore::historyTrimming()
     HistoryManager reloaded(path);
     reloaded.setMaxRecords(500);
     QCOMPARE(reloaded.records().size(), 3);
+}
+
+void TestCore::historyDebouncesSavesUntilFlush()
+{
+    QDir().mkpath(tempDir());
+    const QString path = tempDir() + QStringLiteral("/history.json");
+
+    HistoryManager manager(path);
+    TranslationRecord record;
+    record.timestamp = 1;
+    record.source = QStringLiteral("hello");
+    record.target = QStringLiteral("你好");
+    record.sourceLang = QStringLiteral("auto");
+    record.targetLang = QStringLiteral("zh");
+    manager.addRecord(record);
+
+    QVERIFY(!QFileInfo::exists(path));
+
+    manager.flush();
+
+    {
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::ReadOnly));
+        const QJsonArray array = QJsonDocument::fromJson(file.readAll()).array();
+        QCOMPARE(array.size(), 1);
+        QCOMPARE(array.first().toObject().value(QStringLiteral("source")).toString(),
+                 QStringLiteral("hello"));
+    }
 }
 
 void TestCore::uiLanguageResolution()
