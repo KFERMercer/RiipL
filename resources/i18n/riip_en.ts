@@ -27,42 +27,42 @@
 <context>
     <name>ApiClient</name>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="90"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="83"/>
         <source>API base URL is not configured</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="224"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="217"/>
         <source>Translation cancelled</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="224"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="217"/>
         <source>Translation timed out</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="230"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="223"/>
         <source>Network request failed: %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="237"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="230"/>
         <source>Request failed with status %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="251"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="244"/>
         <source>Failed to parse API response</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="258"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="251"/>
         <source>API response contains no choices</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="239"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="232"/>
         <source>Network request failed</source>
         <translation type="unfinished"></translation>
     </message>
@@ -201,7 +201,7 @@
 <context>
     <name>GlossaryDialog</name>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="197"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="202"/>
         <source>Glossary</source>
         <translation type="unfinished"></translation>
     </message>
@@ -259,40 +259,40 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="161"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="166"/>
         <source>Import glossary</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="162"/>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="183"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="167"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="188"/>
         <source>JSON files (*.json)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="167"/>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="173"/>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="188"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="172"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="178"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="193"/>
         <source>RiipL</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="167"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="172"/>
         <source>Cannot open file: %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="173"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="178"/>
         <source>Invalid glossary JSON format</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="181"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="186"/>
         <source>Export glossary</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="188"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="193"/>
         <source>Cannot write file: %1</source>
         <translation type="unfinished"></translation>
     </message>

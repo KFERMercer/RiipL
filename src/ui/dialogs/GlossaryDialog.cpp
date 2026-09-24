@@ -97,8 +97,11 @@ QVector<GlossaryEntry> GlossaryTable::entries() const
     result.reserve(m_table->rowCount());
     for (int i = 0; i < m_table->rowCount(); ++i) {
         GlossaryEntry entry;
-        entry.source = m_table->item(i, kSourceColumn)->text().trimmed();
-        entry.target = m_table->item(i, kTargetColumn)->text().trimmed();
+        if (const QTableWidgetItem* source = m_table->item(i, kSourceColumn))
+            entry.source = source->text().trimmed();
+        if (const QTableWidgetItem* target = m_table->item(i, kTargetColumn))
+            entry.target = target->text().trimmed();
+        // Rows without a source term carry no glossary mapping and are dropped.
         if (!entry.source.isEmpty())
             result.append(entry);
     }
@@ -131,9 +134,11 @@ void GlossaryTable::moveRow(int offset)
     const int target = row + offset;
     if (target < 0 || target >= m_table->rowCount())
         return;
-    QVector<GlossaryEntry> current = entries();
-    std::swap(current[row], current[target]);
-    setEntries(current);
+    // Rows are moved through the model, which keeps the row data and the view's
+    // own state (selection, visibility) consistent; destinationChild is the
+    // index the row is inserted before, so a downward move lands past the row
+    // it swaps with.
+    m_table->model()->moveRows(QModelIndex(), row, 1, QModelIndex(), offset < 0 ? target : target + 1);
     m_table->selectRow(target);
 }
 

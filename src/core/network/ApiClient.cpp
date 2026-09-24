@@ -70,13 +70,6 @@ QUrl ApiClient::normalizedBaseUrl(const QString& baseUrl)
     return endpoint;
 }
 
-QUrl ApiClient::chatCompletionsUrl(const QString& baseUrl)
-{
-    return QNetworkRequestFactory{normalizedBaseUrl(baseUrl)}
-        .createRequest(kChatCompletionsPath)
-        .url();
-}
-
 void ApiClient::sendChatRequest(const QJsonObject& body,
                                 DoneCallback onDone,
                                 DeltaCallback onStream,

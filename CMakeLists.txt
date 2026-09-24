@@ -100,7 +100,6 @@ target_compile_definitions(RiipL PRIVATE RIIP_VERSION="${PROJECT_VERSION}")
 qt_add_translations(RiipL
     TS_FILES ${TS_FILES}
     SOURCE_TARGETS riip_core riip_utils RiipL
-    RESOURCE_PREFIX "/i18n"
     LUPDATE_OPTIONS -no-obsolete
 )
 

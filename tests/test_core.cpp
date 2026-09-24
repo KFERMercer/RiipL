@@ -41,10 +41,13 @@ private slots:
     void singleInstanceArbitration();
     void guessFromScriptDetection();
     void scriptDetectionCoversSupplementaryPlanes();
+    void scriptDetectionIgnoresScriptlessAttachments();
+    void wordSpanCountsSupplementaryIdeographs();
     void resolveAutoExcludesTarget();
     void requestBodyParameterHandling();
     void customHeaderLineParsing();
-    void chatCompletionsUrlDerivation();
+    void baseUrlNormalization();
+    void requestTargetsDerivedEndpoint();
     void configValueEqualityMatchesDefaults();
     void stopCancelsActiveRequest();
     void failedDispatchReturnsToIdle();
@@ -430,14 +433,52 @@ void TestCore::scriptDetectionCoversSupplementaryPlanes()
 
     // Unassigned code points inside an assigned block are not a script.
     QCOMPARE(guessFromScript(QStringLiteral("\u0B80\u0B81")), QString());
-    // Shared punctuation carries no script of its own.
-    QCOMPARE(guessFromScript(QStringLiteral("\u3001\u3002")), QString());
+    // Scriptless code points are not counted, so a lone punctuation mark or
+    // combining mark carries no language.
+    QCOMPARE(guessFromScript(QStringLiteral("\u3001")), QString());
+    QCOMPARE(guessFromScript(QStringLiteral("\u060C")), QString());
+    QCOMPARE(guessFromScript(QStringLiteral("\u064B\u064C\u064D")), QString());
+    QCOMPARE(guessFromScript(QStringLiteral("\u30FC")), QString());
+    QCOMPARE(guessFromScript(QStringLiteral("   ")), QString());
+}
 
-    // A word-span lookup over supplementary ideographs stays within the run.
-    const QString extB = QString::fromUcs4(U"\U00020000\U00020001\U00020002", 3);
-    const TextUtils::WordSpan span = TextUtils::wordSpanAt(extB, 0);
-    QVERIFY(span.valid());
-    QVERIFY(span.length() <= 8);
+void TestCore::scriptDetectionIgnoresScriptlessAttachments()
+{
+    using namespace Languages;
+    // Punctuation and combining marks attached to script-bearing letters do not
+    // outvote them, so fully vocalized text keeps its language.
+    QCOMPARE(guessFromScript(QStringLiteral("\u0628\u0650\u0633\u0652\u0645\u0650 \u0627\u0644\u0644\u0651\u064e\u0647\u0650")),
+             QStringLiteral("ar"));
+    QCOMPARE(guessFromScript(QStringLiteral("\u0928\u092e\u0938\u094d\u0924\u0947 \u0926\u0941\u0928\u093f\u092f\u093e")),
+             QStringLiteral("hi"));
+    QCOMPARE(guessFromScript(QStringLiteral("\u0e2a\u0e27\u0e31\u0e2a\u0e14\u0e35\u0e04\u0e23\u0e31\u0e1a")),
+             QStringLiteral("th"));
+    QCOMPARE(guessFromScript(QStringLiteral("\u30ab\u30bf\u30ab\u30ca\u30fb\u30c6\u30ad\u30b9\u30c8")), QStringLiteral("ja"));
+    QCOMPARE(guessFromScript(QStringLiteral("\u4e2d\u6587\u3002\u6d4b\u8bd5")), QStringLiteral("zh"));
+    QCOMPARE(guessFromScript(QStringLiteral("\u0645\u0631\u062d\u0628\u0627 abc")), QStringLiteral("ar"));
+}
+
+void TestCore::wordSpanCountsSupplementaryIdeographs()
+{
+    const QString ideograph = QString::fromUcs4(U"\U00020000", 1);
+
+    // One supplementary ideograph occupies two UTF-16 units; classifying by
+    // unit rather than by code point misreports the run length.
+    const TextUtils::WordSpan single = TextUtils::wordSpanAt(ideograph, 0);
+    QVERIFY(single.valid());
+    QCOMPARE(single.length(), 2);
+
+    const QString run = ideograph.repeated(3);
+    const TextUtils::WordSpan first = TextUtils::wordSpanAt(run, 0);
+    QVERIFY(first.valid());
+    QCOMPARE(run.mid(first.start, first.length()), ideograph);
+
+    // Hangul Jamo Extended-A carries the Hangul script, so a run of nine is
+    // rejected for length exactly as nine Hangul syllables are. The code-unit
+    // range table did not treat it as CJK and accepted the run instead.
+    QCOMPARE(TextUtils::wordSpanAt(QStringLiteral("\uA960").repeated(8), 0).valid(), true);
+    QCOMPARE(TextUtils::wordSpanAt(QStringLiteral("\uA960").repeated(9), 0).valid(), false);
+    QCOMPARE(TextUtils::wordSpanAt(QStringLiteral("\u11A8").repeated(9), 0).valid(), false);
 }
 
 void TestCore::resolveAutoExcludesTarget()
@@ -466,27 +507,67 @@ void TestCore::requestBodyParameterHandling()
     QCOMPARE(tuned.value(QStringLiteral("temperature")).toDouble(), 0.7);
 }
 
-void TestCore::chatCompletionsUrlDerivation()
+void TestCore::baseUrlNormalization()
 {
-    const auto url = [](const char* base) {
-        return ApiClient::chatCompletionsUrl(QString::fromLatin1(base)).toString();
-    };
-    QCOMPARE(url("https://api.openai.com/v1"),
-             QStringLiteral("https://api.openai.com/v1/chat/completions"));
-    QCOMPARE(url("https://api.openai.com/v1/"),
-             QStringLiteral("https://api.openai.com/v1/chat/completions"));
-    // Redundant trailing slashes collapse instead of doubling in the path.
-    QCOMPARE(url("https://api.openai.com/v1///"),
-             QStringLiteral("https://api.openai.com/v1/chat/completions"));
-    QCOMPARE(url("http://localhost:11434"),
-             QStringLiteral("http://localhost:11434/chat/completions"));
-    QCOMPARE(url("http://localhost:11434/"),
-             QStringLiteral("http://localhost:11434/chat/completions"));
-    QCOMPARE(url("https://example.com/a/b/"),
-             QStringLiteral("https://example.com/a/b/chat/completions"));
+    QCOMPARE(ApiClient::normalizedBaseUrl(QStringLiteral("https://api.example.com/v1///")).toString(),
+             QStringLiteral("https://api.example.com/v1"));
+    QCOMPARE(ApiClient::normalizedBaseUrl(QStringLiteral("http://localhost:11434")).toString(),
+             QStringLiteral("http://localhost:11434"));
+    QCOMPARE(ApiClient::normalizedBaseUrl(QStringLiteral("https://example.com/a/b/")).path(),
+             QStringLiteral("/a/b"));
+}
 
-    QCOMPARE(ApiClient::normalizedBaseUrl(QStringLiteral("https://api.example.com/v1///")).path(),
-             QStringLiteral("/v1"));
+// Exercises the path the client actually sends, including the trailing-slash
+// collapse that normalizedBaseUrl performs before the endpoint is derived.
+void TestCore::requestTargetsDerivedEndpoint()
+{
+    QDir().mkpath(tempDir());
+    ConfigManager::createInstance(tempDir());
+
+    QTcpServer server;
+    QVERIFY(server.listen(QHostAddress::LocalHost));
+    ConfigManager::instance()->setValue(
+        Keys::apiBaseUrl, QStringLiteral("http://127.0.0.1:%1/v1///").arg(server.serverPort()));
+
+    QString requestLine;
+    QByteArray authorization;
+    QObject::connect(&server, &QTcpServer::newConnection, this, [&]() {
+        QTcpSocket* socket = server.nextPendingConnection();
+        QObject::connect(socket, &QTcpSocket::readyRead, socket, [&, socket]() {
+            const QByteArray data = socket->readAll();
+            if (!requestLine.isEmpty())
+                return;
+            const QList<QByteArray> lines = data.split('\n');
+            requestLine = lines.first().trimmed();
+            for (const QByteArray& line : lines) {
+                if (line.toLower().startsWith("authorization:"))
+                    authorization = line.mid(int(line.indexOf(':')) + 1).trimmed();
+            }
+            const QByteArray body = R"({"choices":[{"message":{"content":"ok"}}]})";
+            socket->write("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: "
+                          + QByteArray::number(body.size()) + "\r\n\r\n" + body);
+            socket->flush();
+        });
+    });
+
+    ConfigManager::instance()->setValue(Keys::apiKey, QStringLiteral("secret"));
+
+    ApiClient client;
+    QSignalSpy finishedSpy(&client, &ApiClient::requestFinished);
+    QString result;
+    QString error;
+    QJsonObject body;
+    body.insert(QStringLiteral("stream"), false);
+    client.sendChatRequest(body,
+                           [&](const QString& text) { result = text; },
+                           nullptr,
+                           [&](const QString& message) { error = message; });
+
+    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 5000);
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+    QCOMPARE(result, QStringLiteral("ok"));
+    QCOMPARE(requestLine, QStringLiteral("POST /v1/chat/completions HTTP/1.1"));
+    QCOMPARE(authorization, QByteArrayLiteral("Bearer secret"));
 }
 
 void TestCore::customHeaderLineParsing()
@@ -527,11 +608,17 @@ void TestCore::configValueEqualityMatchesDefaults()
     config->setValue(Keys::translationCustomTones, QJsonArray());
     QVERIFY(config->isDefault(Keys::translationCustomTones));
 
-    // Integer and equal-valued double representations stay interchangeable.
+    // A stored integer compares equal to the default that stores the same
+    // number as a double, so the override is dropped instead of persisting.
+    QCOMPARE(Defaults::value(Keys::uiFontSize).type(), QJsonValue::Double);
+    config->setValue(Keys::uiFontSize, QJsonValue(int(Defaults::uiFontSize)));
+    QVERIFY(config->isDefault(Keys::uiFontSize));
+    QCOMPARE(config->value(Keys::uiFontSize).toInt(), Defaults::uiFontSize);
+
     config->setValue(Keys::uiFontSize, 14);
     QCOMPARE(config->value(Keys::uiFontSize).toInt(), 14);
     QVERIFY(!config->isDefault(Keys::uiFontSize));
-    config->setValue(Keys::uiFontSize, 10);
+    config->setValue(Keys::uiFontSize, Defaults::uiFontSize);
     QVERIFY(config->isDefault(Keys::uiFontSize));
 
     // Values of different JSON types are never treated as equal.

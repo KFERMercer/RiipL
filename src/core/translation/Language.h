@@ -87,9 +87,12 @@ inline QString displayName(const QString& code, const QString& uiLanguage)
 }
 
 // Returns the code of the dominant Unicode script in \p text among the
-// supported languages, or an empty string when the text contains none of
-// those scripts. Latin-script languages share one alphabet and cannot be
-// told apart here.
+// supported languages, or an empty string when the text contains none of those
+// scripts. Only code points that carry a script of their own count: spaces,
+// punctuation and combining marks report Common or Inherited (an Arabic comma,
+// a Devanagari danda, the katakana prolonged sound mark), so text made up
+// solely of them yields no language. Latin-script languages share one alphabet
+// and cannot be told apart here.
 inline QString guessFromScript(const QString& text)
 {
     QMap<QString, int> counts;

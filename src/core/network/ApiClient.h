@@ -35,8 +35,6 @@ public:
 
     // Base URL with redundant trailing path slashes removed.
     static QUrl normalizedBaseUrl(const QString& baseUrl);
-    // Absolute chat-completions endpoint derived from a configured base URL.
-    static QUrl chatCompletionsUrl(const QString& baseUrl);
 
 signals:
     void requestFinished();
