@@ -1,5 +1,6 @@
 #include "SettingsDialog.h"
 
+#include "ApiPresetDialog.h"
 #include "GlossaryDialog.h"
 #include "ToneDialog.h"
 #include "core/config/ConfigManager.h"
@@ -25,6 +26,7 @@
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QInputDialog>
 #include <QJsonDocument>
 #include <QLabel>
 #include <QLineEdit>
@@ -160,6 +162,7 @@ SettingsDialog::SettingsDialog(HistoryManager* history, QWidget* parent)
     setWindowTitle(tr("Settings"));
 
     m_customTones = ConfigManager::instance()->value(Keys::translationCustomTones).toArray();
+    m_apiPresets = ApiPresets::fromJson(ConfigManager::instance()->value(Keys::apiPresets).toArray());
 
     auto* layout = new QVBoxLayout(this);
     auto* tabs = new QTabWidget(this);
@@ -188,8 +191,13 @@ SettingsDialog::SettingsDialog(HistoryManager* history, QWidget* parent)
                     applyChanges();
             });
 
-    for (ConfigEditor* editor : findChildren<ConfigEditor*>())
+    for (ConfigEditor* editor : findChildren<ConfigEditor*>()) {
         connect(editor, &ConfigEditor::edited, this, &SettingsDialog::updateDirtyState);
+        // Editing any captured field can take the settings off a preset, so the
+        // selector is re-matched as the user types.
+        if (Keys::apiPresetFields().contains(editor->key()))
+            connect(editor, &ConfigEditor::edited, this, &SettingsDialog::reloadPresets);
+    }
 
     resize(GeometryUtils::dialogInitialSize(this));
 }
@@ -219,6 +227,8 @@ bool SettingsDialog::isDirty() const
     ConfigManager* config = ConfigManager::instance();
     if (QJsonValue(m_customTones) != config->value(Keys::translationCustomTones))
         return true;
+    if (QJsonValue(ApiPresets::toJson(m_apiPresets)) != config->value(Keys::apiPresets))
+        return true;
     for (const ConfigEditor* editor : findChildren<ConfigEditor*>()) {
         if (editor->isModified())
             return true;
@@ -233,6 +243,9 @@ void SettingsDialog::applyChanges()
     if (QJsonValue(m_customTones) != config->value(Keys::translationCustomTones))
         config->setValue(Keys::translationCustomTones, m_customTones);
 
+    if (QJsonValue(ApiPresets::toJson(m_apiPresets)) != config->value(Keys::apiPresets))
+        config->setValue(Keys::apiPresets, ApiPresets::toJson(m_apiPresets));
+
     for (ConfigEditor* editor : findChildren<ConfigEditor*>()) {
         const QJsonValue editorValue = editor->value();
         if (editorValue != config->value(editor->key()))
@@ -246,6 +259,23 @@ QWidget* SettingsDialog::createApiPage()
 {
     auto* page = new QWidget(this);
     auto* form = new QFormLayout(page);
+
+    // Presets switch every field below at once, so they sit above the editors
+    // they replace rather than inside the tab's form proper.
+    auto* presetRow = new QWidget(page);
+    auto* presetLayout = new QHBoxLayout(presetRow);
+    presetLayout->setContentsMargins(0, 0, 0, 0);
+    m_presetCombo = new QComboBox(presetRow);
+    m_presetCombo->setPlaceholderText(tr("Custom settings"));
+    auto* savePresetButton = new QPushButton(tr("Save as preset..."), presetRow);
+    auto* managePresetButton = new QPushButton(tr("Manage..."), presetRow);
+    savePresetButton->setToolTip(tr("Save the current API settings under a name"));
+    managePresetButton->setToolTip(tr("Rename, reorder, delete or load API presets"));
+    presetLayout->addWidget(m_presetCombo, 1);
+    presetLayout->addWidget(savePresetButton);
+    presetLayout->addWidget(managePresetButton);
+    form->addRow(tr("API preset"), presetRow);
+
     form->addRow(tr("Base URL"), new ConfigLineEdit(Keys::apiBaseUrl, false, page));
     form->addRow(tr("API key"), new ConfigLineEdit(Keys::apiKey, true, page));
     form->addRow(tr("Model"), new ConfigLineEdit(Keys::apiModel, false, page));
@@ -291,7 +321,96 @@ QWidget* SettingsDialog::createApiPage()
     extraLayout->addWidget(validation);
     form->addRow(tr("Extra body (JSON)"), extraField);
     updateValidation();
+
+    connect(m_presetCombo, &QComboBox::activated, this, &SettingsDialog::applySelectedPreset);
+    connect(savePresetButton, &QPushButton::clicked, this, &SettingsDialog::savePreset);
+    connect(managePresetButton, &QPushButton::clicked, this, &SettingsDialog::managePresets);
+    reloadPresets();
     return page;
+}
+
+// Rebuilds the selector from the in-memory list. The entry whose fields still
+// match the pending settings is selected; when none does, the selector clears
+// to its placeholder.
+void SettingsDialog::reloadPresets()
+{
+    if (!m_presetCombo)
+        return;
+    QSignalBlocker blocker(m_presetCombo);
+    m_presetCombo->clear();
+    for (const ApiPreset& preset : std::as_const(m_apiPresets))
+        m_presetCombo->addItem(preset.name);
+    m_presetCombo->setCurrentIndex(ApiPresets::matchValues(m_apiPresets, editedApiValues()));
+}
+
+// API fields as currently shown by the editors, so a preset records pending
+// edits rather than what has already been applied.
+QJsonObject SettingsDialog::editedApiValues() const
+{
+    QJsonObject values;
+    for (ConfigEditor* editor : findChildren<ConfigEditor*>()) {
+        if (Keys::apiPresetFields().contains(editor->key()))
+            values.insert(editor->key(), editor->value());
+    }
+    return values;
+}
+
+void SettingsDialog::applyPresetValues(const ApiPreset& preset)
+{
+    for (ConfigEditor* editor : findChildren<ConfigEditor*>()) {
+        if (!Keys::apiPresetFields().contains(editor->key()))
+            continue;
+        const QJsonValue stored = preset.values.value(editor->key());
+        editor->setUserValue(stored.isUndefined() ? Defaults::value(editor->key()) : stored);
+    }
+}
+
+void SettingsDialog::applySelectedPreset(int index)
+{
+    if (index < 0 || index >= m_apiPresets.size())
+        return;
+    applyPresetValues(m_apiPresets.at(index));
+    updateDirtyState();
+}
+
+void SettingsDialog::savePreset()
+{
+    bool accepted = false;
+    const QString name = QInputDialog::getText(this, tr("Save API preset"), tr("Preset name"),
+                                              QLineEdit::Normal, m_presetCombo->currentText(),
+                                              &accepted).trimmed();
+    if (!accepted || name.isEmpty())
+        return;
+
+    ApiPreset preset;
+    preset.name = name;
+    preset.values = editedApiValues();
+
+    const int existing = ApiPresets::indexOf(m_apiPresets, name);
+    if (existing >= 0)
+        m_apiPresets[existing] = preset;
+    else
+        m_apiPresets.append(preset);
+    reloadPresets();
+    updateDirtyState();
+}
+
+void SettingsDialog::managePresets()
+{
+    // The settings the user is looking at decide the initial highlight, since
+    // they may hold edits that have not been applied yet.
+    const int selected = ApiPresets::matchValues(m_apiPresets, editedApiValues());
+    ApiPresetDialog dialog(m_apiPresets, selected, this);
+    if (dialog.exec() != QDialog::Accepted)
+        return;
+    m_apiPresets = dialog.presets();
+    // A load request inside the dialog replaces the pending API edits, which
+    // the selector is then re-matched against.
+    const int loaded = dialog.loadedIndex();
+    if (loaded >= 0 && loaded < m_apiPresets.size())
+        applyPresetValues(m_apiPresets.at(loaded));
+    reloadPresets();
+    updateDirtyState();
 }
 
 QWidget* SettingsDialog::createTranslationPage()

@@ -3,6 +3,7 @@
 #include <QJsonArray>
 #include <QJsonValue>
 #include <QString>
+#include <QStringList>
 
 namespace Prompts {
 
@@ -52,6 +53,17 @@ inline const QString apiMaxTokens = QStringLiteral("api.max_tokens");
 inline const QString apiStream = QStringLiteral("api.stream");
 inline const QString apiExtraBody = QStringLiteral("api.extra_body");
 inline const QString apiCustomHeaders = QStringLiteral("api.custom_headers");
+inline const QString apiPresets = QStringLiteral("api.presets");
+
+// Fields a named API preset captures, in settings-page order.
+inline const QStringList& apiPresetFields()
+{
+    static const QStringList fields = {
+        apiBaseUrl, apiKey, apiModel, apiTimeoutMs, apiTemperature,
+        apiMaxTokens, apiStream, apiExtraBody, apiCustomHeaders,
+    };
+    return fields;
+}
 
 inline const QString uiLanguage = QStringLiteral("ui.language");
 inline const QString uiAutoTranslate = QStringLiteral("ui.auto_translate");
@@ -218,6 +230,7 @@ inline QJsonValue value(const QString& key)
     if (key == Keys::apiStream) return QJsonValue(apiStream);
     if (key == Keys::apiExtraBody) return QJsonValue(apiExtraBody);
     if (key == Keys::apiCustomHeaders) return QJsonValue(apiCustomHeaders);
+    if (key == Keys::apiPresets) return QJsonArray();
     if (key == Keys::uiLanguage) return QJsonValue(uiLanguage);
     if (key == Keys::uiAutoTranslate) return QJsonValue(uiAutoTranslate);
     if (key == Keys::uiAutoTranslateDelay) return QJsonValue(uiAutoTranslateDelay);

@@ -33,6 +33,9 @@ public:
     virtual QJsonValue value() const = 0;
     bool isModified() const;
     void refreshBaseline();
+    // Applies v as if the user had typed it, so pending edits are tracked
+    // against the loaded baseline exactly like direct interaction.
+    void setUserValue(const QJsonValue& v);
 
 signals:
     void edited();

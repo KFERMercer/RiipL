@@ -62,6 +62,7 @@ set(UI_SOURCES
     src/ui/widgets/FlowLayout.cpp
     src/ui/widgets/ThemeColors.cpp
     src/ui/dialogs/SettingsDialog.cpp
+    src/ui/dialogs/ApiPresetDialog.cpp
     src/ui/dialogs/GlossaryDialog.cpp
     src/ui/dialogs/ToneDialog.cpp
     src/ui/dialogs/HistoryDialog.cpp
@@ -77,6 +78,7 @@ set(UI_HEADERS
     src/ui/widgets/FlowLayout.h
     src/ui/widgets/ThemeColors.h
     src/ui/dialogs/SettingsDialog.h
+    src/ui/dialogs/ApiPresetDialog.h
     src/ui/dialogs/GlossaryDialog.h
     src/ui/dialogs/ToneDialog.h
     src/ui/dialogs/HistoryDialog.h

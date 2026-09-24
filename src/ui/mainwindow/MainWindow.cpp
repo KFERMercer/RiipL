@@ -3,6 +3,7 @@
 #include "ui/widgets/CandidatePopup.h"
 #include "ui/dialogs/AboutDialog.h"
 #include "ui/dialogs/DocumentDialog.h"
+#include "ui/dialogs/ApiPresetDialog.h"
 #include "ui/dialogs/GlossaryDialog.h"
 #include "ui/dialogs/HistoryDialog.h"
 #include "ui/dialogs/SettingsDialog.h"
@@ -302,6 +303,7 @@ void MainWindow::buildMenus()
     m_glossaryAction = m_editMenu->addAction(QString());
     m_toneAction = m_editMenu->addAction(QString());
     m_historyAction = m_editMenu->addAction(QString());
+    m_apiPresetAction = m_editMenu->addAction(QString());
 
     m_viewMenu = menuBar()->addMenu(QString());
     m_autoTranslateAction = m_viewMenu->addAction(QString());
@@ -402,6 +404,8 @@ void MainWindow::buildMenus()
             config->setValue(Keys::translationCustomTones, ToneDialog::toJson(dialog.customTones()));
     });
     connect(m_historyAction, &QAction::triggered, this, &MainWindow::showHistoryDialog);
+    connect(m_apiPresetAction, &QAction::triggered, this,
+            [this]() { ApiPresetDialog::manage(this); });
     connect(m_settingsAction, &QAction::triggered, this, &MainWindow::showSettingsDialog);
     connect(m_aboutAction, &QAction::triggered, this, [this]() {
         AboutDialog dialog(this);
@@ -848,6 +852,8 @@ void MainWindow::retranslateUi()
     m_toneAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+T")));
     m_historyAction->setText(tr("History..."));
     m_historyAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+H")));
+    m_apiPresetAction->setText(tr("Manage API presets..."));
+    m_apiPresetAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+P")));
 
     m_viewMenu->setTitle(tr("&View"));
     m_autoTranslateAction->setText(tr("Auto translate"));

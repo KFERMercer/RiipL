@@ -40,13 +40,8 @@ ConfigEditor::ConfigEditor(const QString& key, QWidget* parent)
 void ConfigEditor::setupDisplay(QToolButton* resetButton)
 {
     m_reset = resetButton;
-    connect(m_reset, &QToolButton::clicked, this, [this]() {
-        m_guard = true;
-        setControlValue(Defaults::value(m_key));
-        m_guard = false;
-        refreshModifiedState();
-        emit edited();
-    });
+    connect(m_reset, &QToolButton::clicked, this,
+            [this]() { setUserValue(Defaults::value(m_key)); });
 }
 
 void ConfigEditor::captureBaseline()
@@ -72,6 +67,17 @@ void ConfigEditor::refreshBaseline()
 {
     m_baseline = ConfigManager::instance()->value(m_key);
     refreshModifiedState();
+}
+
+void ConfigEditor::setUserValue(const QJsonValue& v)
+{
+    if (value() == v)
+        return;
+    m_guard = true;
+    setControlValue(v);
+    m_guard = false;
+    refreshModifiedState();
+    emit edited();
 }
 
 void ConfigEditor::handleControlChange()

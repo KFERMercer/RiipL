@@ -2,7 +2,12 @@
 
 #include <QDialog>
 #include <QJsonArray>
+#include <QJsonObject>
+#include <QVector>
 
+#include "core/config/ApiPreset.h"
+
+class QComboBox;
 class QPushButton;
 class ConfigCheckBox;
 class ConfigComboBox;
@@ -26,6 +31,10 @@ public:
 private slots:
     void updateDirtyState();
     void applyChanges();
+    void reloadPresets();
+    void applySelectedPreset(int index);
+    void savePreset();
+    void managePresets();
 
 private:
     QWidget* createApiPage();
@@ -36,11 +45,15 @@ private:
     QWidget* createPromptsPage();
 
     bool isDirty() const;
+    QJsonObject editedApiValues() const;
+    void applyPresetValues(const ApiPreset& preset);
 
     ConfigComboBox* m_targetLangCombo = nullptr;
     ConfigComboBox* m_toneCombo = nullptr;
     ConfigCheckBox* m_glossaryEnabled = nullptr;
+    QComboBox* m_presetCombo = nullptr;
     QJsonArray m_customTones;
+    QVector<ApiPreset> m_apiPresets;
     QPushButton* m_applyButton = nullptr;
     HistoryManager* m_history = nullptr;
 };
