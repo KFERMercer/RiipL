@@ -13,7 +13,6 @@
 #include "ui/widgets/FlowLayout.h"
 #include "ui/widgets/ThemeColors.h"
 #include "utils/GeometryUtils.h"
-#include "core/json/JsonUtils.h"
 
 #include <QAbstractButton>
 #include <QApplication>
@@ -218,7 +217,7 @@ void SettingsDialog::updateDirtyState()
 bool SettingsDialog::isDirty() const
 {
     ConfigManager* config = ConfigManager::instance();
-    if (!JsonUtils::equals(m_customTones, config->value(Keys::translationCustomTones)))
+    if (QJsonValue(m_customTones) != config->value(Keys::translationCustomTones))
         return true;
     for (const ConfigEditor* editor : findChildren<ConfigEditor*>()) {
         if (editor->isModified())
@@ -231,12 +230,12 @@ void SettingsDialog::applyChanges()
 {
     ConfigManager* config = ConfigManager::instance();
 
-    if (!JsonUtils::equals(m_customTones, config->value(Keys::translationCustomTones)))
+    if (QJsonValue(m_customTones) != config->value(Keys::translationCustomTones))
         config->setValue(Keys::translationCustomTones, m_customTones);
 
     for (ConfigEditor* editor : findChildren<ConfigEditor*>()) {
         const QJsonValue editorValue = editor->value();
-        if (!JsonUtils::equals(editorValue, config->value(editor->key())))
+        if (editorValue != config->value(editor->key()))
             config->setValue(editor->key(), editorValue);
         editor->refreshBaseline();
     }

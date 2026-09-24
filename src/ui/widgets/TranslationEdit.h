@@ -15,7 +15,6 @@ public:
 
 signals:
     void wordRequested(const QString& word, const QPoint& globalPos, const QTextCursor& cursor);
-    void replacementSkipped(const QString& targetText);
 
 protected:
     void mousePressEvent(QMouseEvent* event) override;

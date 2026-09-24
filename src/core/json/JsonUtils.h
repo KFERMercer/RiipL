@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QJsonArray>
 #include <QJsonObject>
 #include <QJsonValue>
 #include <QString>
@@ -66,46 +65,6 @@ inline void removeByPath(QJsonObject& root, const QString& key)
     if (parts.isEmpty())
         return;
     root = removeRecursive(root, parts, 0);
-}
-
-inline bool equals(const QJsonValue& a, const QJsonValue& b)
-{
-    if (a.type() != b.type())
-        return false;
-    switch (a.type()) {
-    case QJsonValue::Bool:
-        return a.toBool() == b.toBool();
-    case QJsonValue::Double:
-        if (a.toDouble() == b.toDouble())
-            return true;
-        return qFuzzyCompare(a.toDouble(), b.toDouble());
-    case QJsonValue::String:
-        return a.toString() == b.toString();
-    case QJsonValue::Array: {
-        const QJsonArray aa = a.toArray();
-        const QJsonArray ba = b.toArray();
-        if (aa.size() != ba.size())
-            return false;
-        for (int i = 0; i < aa.size(); ++i) {
-            if (!equals(aa.at(i), ba.at(i)))
-                return false;
-        }
-        return true;
-    }
-    case QJsonValue::Object: {
-        const QJsonObject ao = a.toObject();
-        const QJsonObject bo = b.toObject();
-        if (ao.keys() != bo.keys())
-            return false;
-        for (const QString& k : ao.keys()) {
-            if (!equals(ao.value(k), bo.value(k)))
-                return false;
-        }
-        return true;
-    }
-    default:
-        return true;
-    }
 }
 
 }

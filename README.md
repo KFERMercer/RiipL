@@ -7,7 +7,7 @@
 **Local DeepL Rip-off.**
 
 ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-cce5ff)
-![Qt](https://img.shields.io/badge/Qt-6.2%2B-41CD52?logo=qt&logoColor=white)
+![Qt](https://img.shields.io/badge/Qt-6.8%2B-41CD52?logo=qt&logoColor=white)
 ![C++](https://img.shields.io/badge/C%2B%2B-17-00599C?logo=cplusplus&logoColor=white)
 ![CMake](https://img.shields.io/badge/CMake-3.21%2B-064F8C?logo=cmake&logoColor=white)
 
@@ -66,7 +66,7 @@ See [Manual Build](#manual-build).
 
 | Dependency | Version |
 | :- | :- |
-| Qt 6 (Widgets, Network, LinguistTools) | 6.2+ |
+| Qt 6 (Widgets, Network, LinguistTools) | 6.8+ |
 | CMake | 3.21+ |
 | C++ compiler | C++17 capable (GCC, Clang, MSVC) |
 

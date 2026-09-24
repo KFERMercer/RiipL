@@ -90,11 +90,12 @@ void HistoryDialog::reload()
     QStringList headers = {tr("Time"), tr("Direction"), tr("Source"), tr("Translation"), tr("Tone")};
     m_tree->setColumnCount(headers.size());
     m_tree->setHeaderLabels(headers);
-    m_tree->header()->resizeSection(0, 150);
-    m_tree->header()->resizeSection(1, 120);
-    m_tree->header()->resizeSection(2, 200);
-    m_tree->header()->resizeSection(3, 200);
-    m_tree->header()->setStretchLastSection(true);
+    QHeaderView* header = m_tree->header();
+    header->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+    header->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+    header->setSectionResizeMode(2, QHeaderView::Stretch);
+    header->setSectionResizeMode(3, QHeaderView::Stretch);
+    header->setSectionResizeMode(4, QHeaderView::ResizeToContents);
 
     const QString uiLanguage = ConfigManager::instance()->resolvedUiLanguage();
     m_tree->clear();

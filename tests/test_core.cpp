@@ -13,6 +13,7 @@
 #include <QJsonDocument>
 #include <QFileInfo>
 #include <QHostAddress>
+#include <QHttpHeaders>
 #include <QTcpServer>
 #include <QTemporaryDir>
 
@@ -39,9 +40,12 @@ private slots:
     void replaceTargetsCompleteWord();
     void singleInstanceArbitration();
     void guessFromScriptDetection();
+    void scriptDetectionCoversSupplementaryPlanes();
     void resolveAutoExcludesTarget();
     void requestBodyParameterHandling();
     void customHeaderLineParsing();
+    void chatCompletionsUrlDerivation();
+    void configValueEqualityMatchesDefaults();
     void stopCancelsActiveRequest();
     void failedDispatchReturnsToIdle();
     void stopWhenIdleIsNoOp();
@@ -409,6 +413,33 @@ void TestCore::guessFromScriptDetection()
     QCOMPARE(guessFromScript(QStringLiteral("Hello 你好")), QStringLiteral("zh"));
 }
 
+void TestCore::scriptDetectionCoversSupplementaryPlanes()
+{
+    using namespace Languages;
+    // Supplementary-plane ideographs are classified through their surrogate
+    // pair rather than by inspecting the packed UTF-16 code unit.
+    QCOMPARE(guessFromScript(QString::fromUcs4(U"\U00020000", 1)), QStringLiteral("zh"));
+    QCOMPARE(guessFromScript(QString::fromUcs4(U"\U0002A6DF", 1)), QStringLiteral("zh"));
+    QCOMPARE(guessFromScript(QString::fromUcs4(U"\U00020000\U00020001", 2)), QStringLiteral("zh"));
+    // Hangul Jamo Extended-A, which a code-point range table that stops at the
+    // Hangul syllables fails to cover.
+    QCOMPARE(guessFromScript(QStringLiteral("\uA960\uA961")), QStringLiteral("ko"));
+    // Halfwidth katakana and Katakana Phonetic Extensions are both Japanese.
+    QCOMPARE(guessFromScript(QStringLiteral("\uFF66\uFF67")), QStringLiteral("ja"));
+    QCOMPARE(guessFromScript(QStringLiteral("\u31F0\u31F1")), QStringLiteral("ja"));
+
+    // Unassigned code points inside an assigned block are not a script.
+    QCOMPARE(guessFromScript(QStringLiteral("\u0B80\u0B81")), QString());
+    // Shared punctuation carries no script of its own.
+    QCOMPARE(guessFromScript(QStringLiteral("\u3001\u3002")), QString());
+
+    // A word-span lookup over supplementary ideographs stays within the run.
+    const QString extB = QString::fromUcs4(U"\U00020000\U00020001\U00020002", 3);
+    const TextUtils::WordSpan span = TextUtils::wordSpanAt(extB, 0);
+    QVERIFY(span.valid());
+    QVERIFY(span.length() <= 8);
+}
+
 void TestCore::resolveAutoExcludesTarget()
 {
     using namespace Languages;
@@ -435,22 +466,77 @@ void TestCore::requestBodyParameterHandling()
     QCOMPARE(tuned.value(QStringLiteral("temperature")).toDouble(), 0.7);
 }
 
+void TestCore::chatCompletionsUrlDerivation()
+{
+    const auto url = [](const char* base) {
+        return ApiClient::chatCompletionsUrl(QString::fromLatin1(base)).toString();
+    };
+    QCOMPARE(url("https://api.openai.com/v1"),
+             QStringLiteral("https://api.openai.com/v1/chat/completions"));
+    QCOMPARE(url("https://api.openai.com/v1/"),
+             QStringLiteral("https://api.openai.com/v1/chat/completions"));
+    // Redundant trailing slashes collapse instead of doubling in the path.
+    QCOMPARE(url("https://api.openai.com/v1///"),
+             QStringLiteral("https://api.openai.com/v1/chat/completions"));
+    QCOMPARE(url("http://localhost:11434"),
+             QStringLiteral("http://localhost:11434/chat/completions"));
+    QCOMPARE(url("http://localhost:11434/"),
+             QStringLiteral("http://localhost:11434/chat/completions"));
+    QCOMPARE(url("https://example.com/a/b/"),
+             QStringLiteral("https://example.com/a/b/chat/completions"));
+
+    QCOMPARE(ApiClient::normalizedBaseUrl(QStringLiteral("https://api.example.com/v1///")).path(),
+             QStringLiteral("/v1"));
+}
+
 void TestCore::customHeaderLineParsing()
 {
     QVERIFY(ApiClient::parseCustomHeaders(QString()).isEmpty());
     QVERIFY(ApiClient::parseCustomHeaders(QStringLiteral("\n   \n")).isEmpty());
     QVERIFY(ApiClient::parseCustomHeaders(QStringLiteral("InvalidHeader\n:Nameless")).isEmpty());
+    // Duplicate names are preserved in order; the request layer resolves them.
+    QCOMPARE(ApiClient::parseCustomHeaders(QStringLiteral("X-A: 1\nX-A: 2")).size(), 2);
 
-    const QList<QPair<QString, QString>> headers = ApiClient::parseCustomHeaders(
+    const QHttpHeaders headers = ApiClient::parseCustomHeaders(
         QStringLiteral("X-Title: RiipL\nAuthorization: Bearer secret\n  X-Retry : 3 \nBroken line"));
 
     QCOMPARE(headers.size(), 3);
-    QCOMPARE(headers.at(0).first, QStringLiteral("X-Title"));
-    QCOMPARE(headers.at(0).second, QStringLiteral("RiipL"));
-    QCOMPARE(headers.at(1).first, QStringLiteral("Authorization"));
-    QCOMPARE(headers.at(1).second, QStringLiteral("Bearer secret"));
-    QCOMPARE(headers.at(2).first, QStringLiteral("X-Retry"));
-    QCOMPARE(headers.at(2).second, QStringLiteral("3"));
+    QCOMPARE(headers.nameAt(0), QByteArrayView("x-title"));
+    QCOMPARE(headers.valueAt(0), QByteArrayView("RiipL"));
+    QCOMPARE(headers.nameAt(1), QByteArrayView("authorization"));
+    QCOMPARE(headers.valueAt(1), QByteArrayView("Bearer secret"));
+    QCOMPARE(headers.nameAt(2), QByteArrayView("x-retry"));
+    QCOMPARE(headers.valueAt(2), QByteArrayView("3"));
+}
+
+void TestCore::configValueEqualityMatchesDefaults()
+{
+    QDir().mkpath(tempDir());
+    ConfigManager::createInstance(tempDir());
+    ConfigManager* config = ConfigManager::instance();
+
+    // Non-default values, including nested ones, are detected as changes.
+    config->setValue(Keys::translationCustomTones,
+                     QJsonArray{QJsonObject{{QStringLiteral("key"), QStringLiteral("x")}}});
+    QVERIFY(!config->isDefault(Keys::translationCustomTones));
+    // A structurally identical value compares equal to the loaded one.
+    config->setValue(Keys::translationCustomTones, config->value(Keys::translationCustomTones));
+    QCOMPARE(config->value(Keys::translationCustomTones).toArray().size(), 1);
+
+    // Restoring a default drops the stored override again.
+    config->setValue(Keys::translationCustomTones, QJsonArray());
+    QVERIFY(config->isDefault(Keys::translationCustomTones));
+
+    // Integer and equal-valued double representations stay interchangeable.
+    config->setValue(Keys::uiFontSize, 14);
+    QCOMPARE(config->value(Keys::uiFontSize).toInt(), 14);
+    QVERIFY(!config->isDefault(Keys::uiFontSize));
+    config->setValue(Keys::uiFontSize, 10);
+    QVERIFY(config->isDefault(Keys::uiFontSize));
+
+    // Values of different JSON types are never treated as equal.
+    config->setValue(Keys::apiKey, QJsonValue(QStringLiteral("10")));
+    QVERIFY(!config->isDefault(Keys::apiKey));
 }
 
 void TestCore::stopCancelsActiveRequest()

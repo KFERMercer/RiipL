@@ -40,7 +40,7 @@ GlossaryTable::GlossaryTable(QWidget* parent)
 
     m_table = new QTableWidget(0, 2, this);
     m_table->setHorizontalHeaderLabels({tr("Source term"), tr("Translation (leave empty to keep source)")});
-    m_table->horizontalHeader()->setStretchLastSection(true);
+    m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_table->verticalHeader()->setVisible(false);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_table->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -74,27 +74,12 @@ GlossaryTable::GlossaryTable(QWidget* parent)
     connect(exportButton, &QPushButton::clicked, this, &GlossaryTable::exportJson);
     connect(m_filter, &QLineEdit::textChanged, this, [this]() { applyFilter(); });
     connect(m_table, &QTableWidget::itemChanged, this, [this](QTableWidgetItem*) {
-        if (!m_guard)
-            emit entriesChanged();
         applyFilter();
     });
 }
 
-void GlossaryTable::showEvent(QShowEvent* event)
-{
-    QWidget::showEvent(event);
-    if (!m_columnsInitialized) {
-        const int half = m_table->viewport()->width() / 2;
-        if (half > 0) {
-            m_table->setColumnWidth(kSourceColumn, half);
-            m_columnsInitialized = true;
-        }
-    }
-}
-
 void GlossaryTable::setEntries(const QVector<GlossaryEntry>& entries)
 {
-    m_guard = true;
     m_table->setRowCount(entries.size());
     for (int i = 0; i < entries.size(); ++i) {
         auto* sourceItem = new QTableWidgetItem(entries.at(i).source);
@@ -103,7 +88,6 @@ void GlossaryTable::setEntries(const QVector<GlossaryEntry>& entries)
         m_table->setItem(i, kSourceColumn, sourceItem);
         m_table->setItem(i, kTargetColumn, targetItem);
     }
-    m_guard = false;
     applyFilter();
 }
 
@@ -137,7 +121,6 @@ void GlossaryTable::removeSelected()
     if (row < 0)
         return;
     m_table->removeRow(row);
-    emit entriesChanged();
 }
 
 void GlossaryTable::moveRow(int offset)
@@ -152,7 +135,6 @@ void GlossaryTable::moveRow(int offset)
     std::swap(current[row], current[target]);
     setEntries(current);
     m_table->selectRow(target);
-    emit entriesChanged();
 }
 
 void GlossaryTable::applyFilter()
@@ -192,7 +174,6 @@ void GlossaryTable::importJson()
         return;
     }
     setEntries(Glossary::fromJson(doc.array()));
-    emit entriesChanged();
 }
 
 void GlossaryTable::exportJson()

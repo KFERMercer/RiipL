@@ -1,13 +1,20 @@
 #include "ThemeColors.h"
 
+#include <QGuiApplication>
 #include <QPalette>
+#include <QStyleHints>
 #include <QWidget>
 
 namespace {
 
-bool isDarkScheme(const QPalette& palette)
+// QStyleHints reports the platform colour scheme, but leaves it Unknown on
+// platforms without theme integration, so fall back to palette lightness.
+bool isDarkScheme(const QWidget* widget)
 {
-    return palette.color(QPalette::Window).lightness() < 128;
+    const Qt::ColorScheme scheme = QGuiApplication::styleHints()->colorScheme();
+    if (scheme != Qt::ColorScheme::Unknown)
+        return scheme == Qt::ColorScheme::Dark;
+    return widget->palette().color(QPalette::Window).lightness() < 128;
 }
 
 } // namespace
@@ -18,15 +25,16 @@ QColor ThemeColors::neutralText(const QWidget* widget)
 }
 
 // QPalette has no success/error roles, so semantic hues are defined here and
-// selected by scheme darkness to stay legible on both light and dark themes.
+// selected by the active colour scheme to stay legible on both light and dark
+// themes.
 QColor ThemeColors::successText(const QWidget* widget)
 {
-    return isDarkScheme(widget->palette()) ? QColor(0x66, 0xbb, 0x6a) : QColor(0x2e, 0x7d, 0x32);
+    return isDarkScheme(widget) ? QColor(0x66, 0xbb, 0x6a) : QColor(0x2e, 0x7d, 0x32);
 }
 
 QColor ThemeColors::errorText(const QWidget* widget)
 {
-    return isDarkScheme(widget->palette()) ? QColor(0xef, 0x53, 0x50) : QColor(0xc6, 0x28, 0x28);
+    return isDarkScheme(widget) ? QColor(0xef, 0x53, 0x50) : QColor(0xc6, 0x28, 0x28);
 }
 
 void ThemeColors::setTextColor(QWidget* widget, const QColor& color)

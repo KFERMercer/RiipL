@@ -92,56 +92,28 @@ inline QString displayName(const QString& code, const QString& uiLanguage)
 // told apart here.
 inline QString guessFromScript(const QString& text)
 {
-    struct ScriptRange
-    {
-        char16_t from;
-        char16_t to;
-        const char* code;
-    };
-    static const ScriptRange ranges[] = {
-        {0x0400, 0x052F, "ru"},  // Cyrillic + Supplement
-        {0x0590, 0x05FF, "he"},  // Hebrew
-        {0x0600, 0x06FF, "ar"},  // Arabic
-        {0x0750, 0x077F, "ar"},  // Arabic Supplement
-        {0x0900, 0x097F, "hi"},  // Devanagari
-        {0x0980, 0x09FF, "bn"},  // Bengali
-        {0x0A80, 0x0AFF, "gu"},  // Gujarati
-        {0x0B80, 0x0BFF, "ta"},  // Tamil
-        {0x0C00, 0x0C7F, "te"},  // Telugu
-        {0x0E00, 0x0E7F, "th"},  // Thai
-        {0x0F00, 0x0FFF, "bo"},  // Tibetan
-        {0x1000, 0x109F, "my"},  // Myanmar
-        {0x1100, 0x11FF, "ko"},  // Hangul Jamo
-        {0x1780, 0x17FF, "km"},  // Khmer
-        {0x1800, 0x18AF, "mn"},  // Mongolian
-        {0x3040, 0x30FF, "ja"},  // Hiragana + Katakana
-        {0x3130, 0x318F, "ko"},  // Hangul Compatibility Jamo
-        {0x31F0, 0x31FF, "ja"},  // Katakana Phonetic Extensions
-        {0x3400, 0x4DBF, "zh"},  // CJK Extension A
-        {0x4E00, 0x9FFF, "zh"},  // CJK Unified Ideographs
-        {0xAC00, 0xD7AF, "ko"},  // Hangul Syllables
-        {0xF900, 0xFAFF, "zh"},  // CJK Compatibility Ideographs
-        {0xFB50, 0xFDFF, "ar"},  // Arabic Presentation Forms-A
-        {0xFE70, 0xFEFF, "ar"},  // Arabic Presentation Forms-B
-        {0xFF65, 0xFF9F, "ja"}   // Halfwidth Katakana
-    };
-
     QMap<QString, int> counts;
-    for (int i = 0; i < text.size(); ++i) {
-        const char16_t unit = text.at(i).unicode();
-        if (QChar::isHighSurrogate(unit)) {
-            const bool paired = ++i < text.size() && QChar::isLowSurrogate(text.at(i).unicode());
-            const uint supplementary =
-                paired ? QChar::surrogateToUcs4(unit, text.at(i).unicode()) : 0;
-            if (supplementary >= 0x20000 && supplementary <= 0x2A6DF)
-                ++counts[QStringLiteral("zh")];  // CJK Extension B
-            continue;
-        }
-        for (const ScriptRange& range : ranges) {
-            if (unit >= range.from && unit <= range.to) {
-                ++counts[QString::fromLatin1(range.code)];
-                break;
-            }
+    const QList<uint> codePoints = text.toUcs4();
+    for (uint codePoint : codePoints) {
+        switch (QChar::script(codePoint)) {
+        case QChar::Script_Cyrillic: ++counts[QStringLiteral("ru")]; break;
+        case QChar::Script_Hebrew: ++counts[QStringLiteral("he")]; break;
+        case QChar::Script_Arabic: ++counts[QStringLiteral("ar")]; break;
+        case QChar::Script_Devanagari: ++counts[QStringLiteral("hi")]; break;
+        case QChar::Script_Bengali: ++counts[QStringLiteral("bn")]; break;
+        case QChar::Script_Gujarati: ++counts[QStringLiteral("gu")]; break;
+        case QChar::Script_Tamil: ++counts[QStringLiteral("ta")]; break;
+        case QChar::Script_Telugu: ++counts[QStringLiteral("te")]; break;
+        case QChar::Script_Thai: ++counts[QStringLiteral("th")]; break;
+        case QChar::Script_Tibetan: ++counts[QStringLiteral("bo")]; break;
+        case QChar::Script_Myanmar: ++counts[QStringLiteral("my")]; break;
+        case QChar::Script_Hangul: ++counts[QStringLiteral("ko")]; break;
+        case QChar::Script_Khmer: ++counts[QStringLiteral("km")]; break;
+        case QChar::Script_Mongolian: ++counts[QStringLiteral("mn")]; break;
+        case QChar::Script_Hiragana:
+        case QChar::Script_Katakana: ++counts[QStringLiteral("ja")]; break;
+        case QChar::Script_Han: ++counts[QStringLiteral("zh")]; break;
+        default: break;
         }
     }
 

@@ -44,7 +44,7 @@ ToneDialog::ToneDialog(const QJsonArray& customTones, const QString& uiLanguage,
     layout->addWidget(new QLabel(tr("Custom tones"), this));
     m_custom = new QTableWidget(0, 2, this);
     m_custom->setHorizontalHeaderLabels({tr("Display name"), tr("Key")});
-    m_custom->horizontalHeader()->setStretchLastSection(true);
+    m_custom->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_custom->verticalHeader()->setVisible(false);
     layout->addWidget(m_custom, 1);
 
@@ -106,18 +106,6 @@ QVector<ToneItem> ToneDialog::customTones() const
         result.append(tone);
     }
     return result;
-}
-
-void ToneDialog::showEvent(QShowEvent* event)
-{
-    QDialog::showEvent(event);
-    if (!m_columnsInitialized) {
-        const int half = m_custom->viewport()->width() / 2;
-        if (half > 0) {
-            m_custom->setColumnWidth(kNameColumn, half);
-            m_columnsInitialized = true;
-        }
-    }
 }
 
 void ToneDialog::addTone()

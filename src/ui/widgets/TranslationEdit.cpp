@@ -108,10 +108,8 @@ bool TranslationEdit::replaceWordAt(const QTextCursor& hint,
         }
     }
 
-    if (start < 0) {
-        emit replacementSkipped(targetText);
+    if (start < 0)
         return false;
-    }
 
     QTextCursor target(document());
     target.setPosition(start);

@@ -4,17 +4,18 @@ project(RiipL VERSION 0.2 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(CMAKE_AUTOMOC ON)
+
+find_package(Qt6 6.8 REQUIRED COMPONENTS Widgets Network LinguistTools)
+qt_standard_project_setup(REQUIRES 6.8)
+
+# qt_standard_project_setup enables MOC and UIC but not RCC.
 set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
 
 add_compile_options(
     "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>"
     "$<$<CXX_COMPILER_ID:MSVC>:/W4>"
     "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall;-Wextra>"
 )
-
-find_package(Qt6 REQUIRED COMPONENTS Widgets Network LinguistTools)
 
 set(CORE_SOURCES
     src/core/config/ConfigManager.cpp
@@ -84,32 +85,28 @@ set(UI_HEADERS
 )
 
 set(TS_FILES resources/i18n/riip_en.ts resources/i18n/riip_zh.ts)
-qt6_add_translation(QM_FILES ${TS_FILES})
-set(QM_EN ${CMAKE_CURRENT_BINARY_DIR}/riip_en.qm)
-set(QM_ZH ${CMAKE_CURRENT_BINARY_DIR}/riip_zh.qm)
-set(I18N_QRC ${CMAKE_CURRENT_BINARY_DIR}/i18n.qrc)
-configure_file(resources/i18n.qrc.in ${I18N_QRC} @ONLY)
 
 qt_add_executable(RiipL
     ${UI_SOURCES}
     ${UI_HEADERS}
     resources/riipL.qrc
-    ${I18N_QRC}
-    ${QM_FILES}
 )
 target_link_libraries(RiipL PRIVATE riip_core riip_utils Qt6::Widgets)
 target_compile_definitions(RiipL PRIVATE RIIP_VERSION="${PROJECT_VERSION}")
 
-add_custom_target(update_translations
-    COMMAND Qt6::lupdate -no-obsolete ${CMAKE_CURRENT_SOURCE_DIR}/src -ts ${TS_FILES}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMENT "Updating translation source files"
-    VERBATIM
+# Compiles the .ts catalogs into .qm files and embeds them at :/i18n, and
+# exposes the standard update_translations target for refreshing the sources.
+# SOURCE_TARGETS is explicit so the test target is not scanned for strings.
+qt_add_translations(RiipL
+    TS_FILES ${TS_FILES}
+    SOURCE_TARGETS riip_core riip_utils RiipL
+    RESOURCE_PREFIX "/i18n"
+    LUPDATE_OPTIONS -no-obsolete
 )
 
 option(BUILD_TESTING "Build the unit test suite" OFF)
 if(BUILD_TESTING)
-    find_package(Qt6 REQUIRED COMPONENTS Test)
+    find_package(Qt6 6.8 REQUIRED COMPONENTS Test)
     enable_testing()
     add_executable(riip_tests
         tests/test_core.cpp

@@ -27,42 +27,42 @@
 <context>
     <name>ApiClient</name>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="63"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="90"/>
         <source>API base URL is not configured</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="195"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="224"/>
         <source>Translation cancelled</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="195"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="224"/>
         <source>Translation timed out</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="201"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="230"/>
         <source>Network request failed: %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="208"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="237"/>
         <source>Request failed with status %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="222"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="251"/>
         <source>Failed to parse API response</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="229"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="258"/>
         <source>API response contains no choices</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="210"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="239"/>
         <source>Network request failed</source>
         <translation type="unfinished"></translation>
     </message>
@@ -83,7 +83,7 @@
 <context>
     <name>ConfigEditors</name>
     <message>
-        <location filename="../../src/ui/widgets/ConfigEditors.cpp" line="28"/>
+        <location filename="../../src/ui/widgets/ConfigEditors.cpp" line="27"/>
         <source>Reset to default</source>
         <translation type="unfinished"></translation>
     </message>
@@ -201,7 +201,7 @@
 <context>
     <name>GlossaryDialog</name>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="216"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="197"/>
         <source>Glossary</source>
         <translation type="unfinished"></translation>
     </message>
@@ -254,45 +254,45 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="102"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="87"/>
         <source>Leave empty to keep the term untranslated</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="179"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="161"/>
         <source>Import glossary</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="180"/>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="202"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="162"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="183"/>
         <source>JSON files (*.json)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="185"/>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="191"/>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="207"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="167"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="173"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="188"/>
         <source>RiipL</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="185"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="167"/>
         <source>Cannot open file: %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="191"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="173"/>
         <source>Invalid glossary JSON format</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="200"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="181"/>
         <source>Export glossary</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="207"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="188"/>
         <source>Cannot write file: %1</source>
         <translation type="unfinished"></translation>
     </message>
@@ -358,55 +358,55 @@
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="90"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="91"/>
         <source>Ready</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="105"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="106"/>
         <source>Translation has changed; replacement skipped</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="116"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="117"/>
         <source>Translation finished</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="134"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="135"/>
         <source>Translating...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="207"/>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="617"/>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="882"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="208"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="618"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="884"/>
         <source>Enter text to translate</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="317"/>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="856"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="318"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="858"/>
         <source>Follow system</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="865"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="867"/>
         <source>About RiipL</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="730"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="732"/>
         <source>Restored previous translation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="137"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="138"/>
         <source>Translation cancelled</source>
         <translation type="unfinished"></translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="606"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="607"/>
         <source>%n character(s)</source>
         <translation type="unfinished">
             <numerusform></numerusform>
@@ -414,193 +414,193 @@
         </translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="745"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="747"/>
         <source>Re-applied translation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="761"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="763"/>
         <source>Translation copied to clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="768"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="770"/>
         <source>Nothing to export</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="771"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="773"/>
         <source>Export translation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="777"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="779"/>
         <source>Cannot write file: %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="781"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="783"/>
         <source>Exported to %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="832"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="834"/>
         <source>RiipL Translator</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="834"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="836"/>
         <source>&amp;File</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="835"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="837"/>
         <source>Open document...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="837"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="839"/>
         <source>Export translation...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="839"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="841"/>
         <source>Exit</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="842"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="844"/>
         <source>&amp;Edit</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="843"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="845"/>
         <source>Glossary...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="845"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="847"/>
         <source>Manage tones...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="847"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="849"/>
         <source>History...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="850"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="852"/>
         <source>&amp;View</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="851"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="853"/>
         <source>Auto translate</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="852"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="854"/>
         <source>Always on top</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="853"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="855"/>
         <source>Interface language</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="860"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="862"/>
         <source>&amp;Tools</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="861"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="863"/>
         <source>Monitor clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="862"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="864"/>
         <source>Settings...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="864"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="866"/>
         <source>&amp;Help</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="867"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="869"/>
         <source>Translate</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="868"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="870"/>
         <source>Stop</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="869"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="871"/>
         <source>Document</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="870"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="872"/>
         <source>History</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="871"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="873"/>
         <source>Settings</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="872"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="874"/>
         <source>Translate now (Ctrl+Return)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="873"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="875"/>
         <source>Stop translation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="874"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="876"/>
         <source>Restore previous translation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="875"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="877"/>
         <source>Redo translation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="876"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="878"/>
         <source>Swap languages</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="877"/>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="880"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="879"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="882"/>
         <source>Clear</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="878"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="880"/>
         <source>Paste</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="879"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="881"/>
         <source>Copy</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="884"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="886"/>
         <source>Show/Hide window</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="885"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="887"/>
         <source>Translate clipboard</source>
         <translation type="unfinished"></translation>
     </message>
@@ -608,37 +608,37 @@
 <context>
     <name>PromptPreviewDialog</name>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="80"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="79"/>
         <source>Prompt preview</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="101"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="100"/>
         <source>Sample text</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="102"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="101"/>
         <source>Target language</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="103"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="102"/>
         <source>Tone</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="104"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="103"/>
         <source>Style</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="105"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="104"/>
         <source>Background</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="143"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="142"/>
         <source>(empty prompt)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -646,253 +646,253 @@
 <context>
     <name>SettingsDialog</name>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="161"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="160"/>
         <source>Settings</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="167"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="166"/>
         <source>API</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="168"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="167"/>
         <source>Translation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="358"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="357"/>
         <source>Glossary</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="172"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="171"/>
         <source>Prompt templates</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="169"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="168"/>
         <source>Interface</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="170"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="169"/>
         <source>Clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="171"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="170"/>
         <source>History</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="250"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="249"/>
         <source>Base URL</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="251"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="250"/>
         <source>API key</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="252"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="251"/>
         <source>Model</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="258"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="257"/>
         <source>API default</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="259"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="258"/>
         <source>Temperature</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="255"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="254"/>
         <source>Max tokens</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="262"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="261"/>
         <source>Stream responses</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="273"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="272"/>
         <source>Empty: no extra parameters</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="279"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="278"/>
         <source>Valid JSON object</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="282"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="281"/>
         <source>Invalid JSON: an object with key-value pairs is expected</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="293"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="292"/>
         <source>Extra body (JSON)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="336"/>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="351"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="335"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="350"/>
         <source>Manage...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="309"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="308"/>
         <source>Source language</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="203"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="202"/>
         <source>Unsaved changes</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="204"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="203"/>
         <source>Your changes have not been applied yet.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="253"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="252"/>
         <source>Server connection timeout (ms)</source>
         <translation>Server connection timeout (ms)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="265"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="264"/>
         <source>One per line: Header-Name: value</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="266"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="265"/>
         <source>Custom headers</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="319"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="318"/>
         <source>Target language</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="347"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="346"/>
         <source>Tone</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="360"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="359"/>
         <source>Style</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="361"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="360"/>
         <source>Background</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="364"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="363"/>
         <source>Auto translate after typing</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="365"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="364"/>
         <source>Auto translate delay (ms)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="441"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="440"/>
         <source>Chinese template</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="442"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="441"/>
         <source>English template</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="445"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="444"/>
         <source>Available placeholders</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="451"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="450"/>
         <source>Click to copy</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="456"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="455"/>
         <source>Copied</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="470"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="469"/>
         <source>Preview prompt...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="376"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="375"/>
         <source>Follow system</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="380"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="379"/>
         <source>Interface language</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="383"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="382"/>
         <source>Keep window on top</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="386"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="385"/>
         <source>Minimize to tray on close</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="388"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="387"/>
         <source>Font size</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="397"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="396"/>
         <source>Monitor clipboard and translate automatically</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="398"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="397"/>
         <source>Monitor delay (ms)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="407"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="406"/>
         <source>Save translation history</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="408"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="407"/>
         <source>Max records</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="410"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="409"/>
         <source>Clear history now</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="412"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="411"/>
         <source>RiipL</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="412"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="411"/>
         <source>Delete all history records?</source>
         <translation type="unfinished"></translation>
     </message>

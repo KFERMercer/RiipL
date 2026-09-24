@@ -7,15 +7,34 @@
 
 namespace {
 
-bool isCjkChar(const QChar& ch)
+bool isCjkCodePoint(char32_t code)
 {
-    const char32_t code = ch.unicode();
-    return (code >= 0x2E80 && code <= 0x9FFF)
-        || (code >= 0x3400 && code <= 0x4DBF)
-        || (code >= 0xF900 && code <= 0xFAFF)
-        || (code >= 0x20000 && code <= 0x3FFFF)
-        || (code >= 0x3040 && code <= 0x30FF)
-        || (code >= 0xAC00 && code <= 0xD7AF);
+    switch (QChar::script(code)) {
+    case QChar::Script_Han:
+    case QChar::Script_Hiragana:
+    case QChar::Script_Katakana:
+    case QChar::Script_Hangul:
+        return true;
+    default:
+        return false;
+    }
+}
+
+// Counts CJK code points in [from, to), decoding surrogate pairs so
+// supplementary-plane ideographs are classified correctly.
+int countCjkCodePoints(const QString& text, int from, int to)
+{
+    int count = 0;
+    for (int i = from; i < to; ++i) {
+        char32_t code = text.at(i).unicode();
+        if (QChar::isHighSurrogate(code) && i + 1 < to
+            && QChar::isLowSurrogate(text.at(i + 1).unicode())) {
+            code = QChar::surrogateToUcs4(code, text.at(++i).unicode());
+        }
+        if (isCjkCodePoint(code))
+            ++count;
+    }
+    return count;
 }
 
 constexpr int kMaxCjkRunLength = 8;
@@ -68,11 +87,7 @@ WordSpan wordSpanAt(const QString& text, int position)
         if (end <= start)
             continue;
 
-        int cjkCount = 0;
-        for (int i = start; i < end; ++i) {
-            if (isCjkChar(text.at(i)))
-                ++cjkCount;
-        }
+        const int cjkCount = countCjkCodePoints(text, start, end);
         const bool cjkDominant = cjkCount * 2 >= (end - start);
         if (cjkDominant && (end - start) > kMaxCjkRunLength)
             continue;

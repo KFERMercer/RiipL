@@ -1,10 +1,11 @@
 #pragma once
 
+#include <QByteArray>
+#include <QHttpHeaders>
 #include <QJsonObject>
-#include <QList>
 #include <QObject>
-#include <QPair>
 #include <QString>
+#include <QUrl>
 #include <functional>
 
 class QNetworkAccessManager;
@@ -30,7 +31,12 @@ public:
 
     // Parses user-configured header lines of the form "Name: value";
     // malformed lines are ignored.
-    static QList<QPair<QString, QString>> parseCustomHeaders(const QString& raw);
+    static QHttpHeaders parseCustomHeaders(const QString& raw);
+
+    // Base URL with redundant trailing path slashes removed.
+    static QUrl normalizedBaseUrl(const QString& baseUrl);
+    // Absolute chat-completions endpoint derived from a configured base URL.
+    static QUrl chatCompletionsUrl(const QString& baseUrl);
 
 signals:
     void requestFinished();

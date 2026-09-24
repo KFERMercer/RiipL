@@ -9,6 +9,14 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QNetworkRequestFactory>
+#include <QUrl>
+
+#include <chrono>
+
+namespace {
+const QString kChatCompletionsPath = QStringLiteral("/chat/completions");
+}
 
 ApiClient::ApiClient(QObject* parent)
     : QObject(parent)
@@ -34,9 +42,9 @@ void ApiClient::cancel()
 
 // Splits user-configured multi-line text into raw header pairs. Lines without
 // a "Name: value" shape or with an empty header name are skipped.
-QList<QPair<QString, QString>> ApiClient::parseCustomHeaders(const QString& raw)
+QHttpHeaders ApiClient::parseCustomHeaders(const QString& raw)
 {
-    QList<QPair<QString, QString>> headers;
+    QHttpHeaders headers;
     const QStringList lines = raw.split(QLatin1Char('\n'), Qt::SkipEmptyParts);
     for (const QString& line : lines) {
         const qsizetype colon = line.indexOf(QLatin1Char(':'));
@@ -45,9 +53,28 @@ QList<QPair<QString, QString>> ApiClient::parseCustomHeaders(const QString& raw)
         const QString name = line.left(colon).trimmed();
         if (name.isEmpty())
             continue;
-        headers.append({name, line.mid(colon + 1).trimmed()});
+        headers.append(name, line.mid(colon + 1).trimmed());
     }
     return headers;
+}
+
+QUrl ApiClient::normalizedBaseUrl(const QString& baseUrl)
+{
+    // QNetworkRequestFactory appends a relative path as-is, so trailing
+    // slashes on a user-supplied base URL are trimmed to avoid doubling them.
+    QUrl endpoint(baseUrl);
+    QString path = endpoint.path();
+    while (path.endsWith(QLatin1Char('/')))
+        path.chop(1);
+    endpoint.setPath(path);
+    return endpoint;
+}
+
+QUrl ApiClient::chatCompletionsUrl(const QString& baseUrl)
+{
+    return QNetworkRequestFactory{normalizedBaseUrl(baseUrl)}
+        .createRequest(kChatCompletionsPath)
+        .url();
 }
 
 void ApiClient::sendChatRequest(const QJsonObject& body,
@@ -64,27 +91,29 @@ void ApiClient::sendChatRequest(const QJsonObject& body,
         emit requestFinished();
         return;
     }
+
     const QString apiKeyValue = config->stringValue(Keys::apiKey).trimmed();
 
-    QString url = baseUrl;
-    while (url.endsWith(QLatin1Char('/')))
-        url.chop(1);
-    url += QStringLiteral("/chat/completions");
-
-    QNetworkRequest request{QUrl(url)};
-    request.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
+    QNetworkRequestFactory factory{normalizedBaseUrl(baseUrl)};
     if (!apiKeyValue.isEmpty())
-        request.setRawHeader("Authorization", "Bearer " + apiKeyValue.toUtf8());
-    // Applied last so custom headers can intentionally override built-ins.
-    const QList<QPair<QString, QString>> customHeaders =
-        parseCustomHeaders(config->stringValue(Keys::apiCustomHeaders));
-    for (const QPair<QString, QString>& header : customHeaders)
-        request.setRawHeader(header.first.toUtf8(), header.second.toUtf8());
-    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
-                         QNetworkRequest::NoLessSafeRedirectPolicy);
+        factory.setBearerToken(apiKeyValue.toUtf8());
     // Abort the request when the server exchanges no data within the
     // user-configured window, covering both connection and idle phases.
-    request.setTransferTimeout(qMax(1000, config->intValue(Keys::apiTimeoutMs)));
+    factory.setTransferTimeout(std::chrono::milliseconds(qMax(1000, config->intValue(Keys::apiTimeoutMs))));
+    factory.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                         QNetworkRequest::NoLessSafeRedirectPolicy);
+
+    QNetworkRequest request = factory.createRequest(kChatCompletionsPath);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
+    // Applied last so custom headers can intentionally override built-ins.
+    const QHttpHeaders customHeaders =
+        parseCustomHeaders(config->stringValue(Keys::apiCustomHeaders));
+    if (!customHeaders.isEmpty()) {
+        QHttpHeaders headers = request.headers();
+        for (qsizetype i = 0; i < customHeaders.size(); ++i)
+            headers.replaceOrAppend(customHeaders.nameAt(i), customHeaders.valueAt(i));
+        request.setHeaders(std::move(headers));
+    }
 
     QJsonObject payload = body;
     const QString extra = config->stringValue(Keys::apiExtraBody).trimmed();

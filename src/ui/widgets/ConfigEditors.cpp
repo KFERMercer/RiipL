@@ -3,7 +3,6 @@
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
 #include "ui/widgets/AppIcons.h"
-#include "core/json/JsonUtils.h"
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -66,7 +65,7 @@ void ConfigEditor::loadConfigValue()
 
 bool ConfigEditor::isModified() const
 {
-    return !JsonUtils::equals(value(), m_baseline);
+    return value() != m_baseline;
 }
 
 void ConfigEditor::refreshBaseline()
@@ -86,7 +85,7 @@ void ConfigEditor::refreshModifiedState()
 {
     if (!m_reset)
         return;
-    const bool modified = !JsonUtils::equals(value(), Defaults::value(m_key));
+    const bool modified = value() != Defaults::value(m_key);
     m_reset->setVisible(modified);
 }
 

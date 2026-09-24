@@ -3,7 +3,6 @@
 #include <QJsonArray>
 #include <QJsonValue>
 #include <QString>
-#include <QStringList>
 
 namespace Prompts {
 
@@ -207,32 +206,6 @@ and must fit grammatically when substituted back into it. Never use any other la
 
 Output strictly in the following JSON format with no explanation and no code fences:
 {{"replace": "the exact fragment in the translation to be replaced", "options": ["option 1", "option 2", "option 3"]}})TXT";
-
-inline QStringList allKeys()
-{
-    static const QStringList keys = {
-        Keys::apiBaseUrl, Keys::apiKey, Keys::apiModel, Keys::apiTemperature,
-        Keys::apiMaxTokens, Keys::apiStream, Keys::apiExtraBody,
-        Keys::apiCustomHeaders, Keys::apiTimeoutMs,
-        Keys::uiLanguage, Keys::uiAutoTranslate, Keys::uiAutoTranslateDelay,
-        Keys::uiWindowGeometry, Keys::uiAlwaysOnTop, Keys::uiMinimizeToTray, Keys::uiFontSize,
-        Keys::translationSourceLang, Keys::translationTargetLang, Keys::translationTone,
-        Keys::translationCustomTones, Keys::translationStyle, Keys::translationBackground,
-        Keys::translationPreferences,
-        Keys::glossaryEnabled, Keys::glossaryEntries,
-        Keys::promptDefaultZh, Keys::promptDefaultEn,
-        Keys::promptSystemZh, Keys::promptSystemEn,
-        Keys::promptGlossaryZh, Keys::promptGlossaryEn,
-        Keys::promptToneZh, Keys::promptToneEn,
-        Keys::promptStyleZh, Keys::promptStyleEn,
-        Keys::promptBackgroundZh, Keys::promptBackgroundEn,
-        Keys::promptPersonalizationZh, Keys::promptPersonalizationEn,
-        Keys::promptCandidateZh, Keys::promptCandidateEn,
-        Keys::clipboardMonitor, Keys::clipboardDelayMs,
-        Keys::historyEnabled, Keys::historyMaxRecords
-    };
-    return keys;
-}
 
 inline QJsonValue value(const QString& key)
 {

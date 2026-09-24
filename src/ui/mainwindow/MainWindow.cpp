@@ -38,6 +38,7 @@
 #include <QScrollBar>
 #include <QSplitter>
 #include <QStatusBar>
+#include <QStyle>
 #include <QSystemTrayIcon>
 #include <QTimer>
 #include <QToolBar>
@@ -692,7 +693,8 @@ void MainWindow::toggleVisible()
     raise();
     activateWindow();
     if (const QScreen* screen = QGuiApplication::screenAt(QCursor::pos()))
-        move(screen->geometry().center() - rect().center());
+        setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, size(),
+                                        screen->availableGeometry()));
     const QString clipboardText = QApplication::clipboard()->text().trimmed();
     if (!clipboardText.isEmpty() && clipboardText != m_lastClipboard
         && clipboardText != m_sourceEdit->toPlainText().trimmed()) {

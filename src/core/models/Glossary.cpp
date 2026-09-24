@@ -41,9 +41,3 @@ Glossary Glossary::loadFromConfig()
     glossary.entries = fromJson(ConfigManager::instance()->value(Keys::glossaryEntries).toArray());
     return glossary;
 }
-
-bool Glossary::isEnabled() const
-{
-    const ConfigManager* config = ConfigManager::instance();
-    return !config || config->boolValue(Keys::glossaryEnabled);
-}

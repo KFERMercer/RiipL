@@ -26,5 +26,4 @@ public:
 
     void saveToConfig() const;
     static Glossary loadFromConfig();
-    bool isEnabled() const;
 };

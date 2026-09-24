@@ -2,6 +2,7 @@
 
 #include <QJsonValue>
 #include <QList>
+#include <QPair>
 #include <QString>
 #include <QWidget>
 

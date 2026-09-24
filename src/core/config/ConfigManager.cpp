@@ -142,12 +142,12 @@ double ConfigManager::doubleValue(const QString& key) const
 
 bool ConfigManager::isDefault(const QString& key) const
 {
-    return JsonUtils::equals(value(key), Defaults::value(key));
+    return value(key) == Defaults::value(key);
 }
 
 void ConfigManager::setValue(const QString& key, const QJsonValue& value)
 {
-    if (JsonUtils::equals(value, Defaults::value(key))) {
+    if (value == Defaults::value(key)) {
         removeValue(key);
         return;
     }

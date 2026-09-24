@@ -16,21 +16,17 @@ QIcon standardIcon(QStyle::StandardPixmap id)
 
 QIcon build(const std::function<void(QPainter&, const QRectF&)>& render)
 {
-    QIcon icon;
-    const QColor color = QApplication::palette().color(QPalette::ButtonText);
-    for (int size : {16, 24, 32, 48}) {
-        for (qreal dpr : {1.0, 2.0}) {
-            QPixmap pm(int(size * dpr), int(size * dpr));
-            pm.setDevicePixelRatio(dpr);
-            pm.fill(Qt::transparent);
-            QPainter p(&pm);
-            p.setRenderHint(QPainter::Antialiasing);
-            p.setBrush(color);
-            render(p, QRectF(0, 0, size, size));
-            icon.addPixmap(pm);
-        }
-    }
-    return icon;
+    // Rendered once at high resolution; QIcon scales the result down for every
+    // requested logical size and device pixel ratio.
+    constexpr int kSourceSize = 96;
+    QPixmap pixmap(kSourceSize, kSourceSize);
+    pixmap.fill(Qt::transparent);
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setBrush(QApplication::palette().color(QPalette::ButtonText));
+    render(painter, QRectF(0, 0, kSourceSize, kSourceSize));
+    painter.end();
+    return QIcon(pixmap);
 }
 
 }
