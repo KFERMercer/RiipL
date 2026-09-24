@@ -4,7 +4,6 @@
 #include "core/config/Defaults.h"
 #include "core/translation/Language.h"
 #include "core/translation/Tone.h"
-#include "utils/GeometryUtils.h"
 
 #include <QDateTime>
 #include <QHeaderView>
@@ -78,7 +77,6 @@ HistoryDialog::HistoryDialog(HistoryManager* history, QWidget* parent)
     connect(closeButton, &QPushButton::clicked, this, &QDialog::close);
 
     reload();
-    resize(GeometryUtils::dialogInitialSize(this));
 }
 
 void HistoryDialog::reload()

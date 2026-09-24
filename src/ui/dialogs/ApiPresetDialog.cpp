@@ -2,7 +2,6 @@
 
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
-#include "utils/GeometryUtils.h"
 
 #include <QDialogButtonBox>
 #include <QHBoxLayout>
@@ -69,7 +68,6 @@ ApiPresetDialog::ApiPresetDialog(const QVector<ApiPreset>& presets, int selected
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
     refreshButtons();
-    resize(GeometryUtils::dialogInitialSize(this));
 }
 
 void ApiPresetDialog::manage(QWidget* parent)

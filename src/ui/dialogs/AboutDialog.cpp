@@ -1,6 +1,5 @@
 #include "AboutDialog.h"
 
-#include "utils/GeometryUtils.h"
 
 #include <QCoreApplication>
 #include <QDialogButtonBox>
@@ -54,6 +53,4 @@ AboutDialog::AboutDialog(QWidget* parent)
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok, this);
     connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     layout->addWidget(buttons);
-
-    resize(GeometryUtils::dialogInitialSize(this));
 }

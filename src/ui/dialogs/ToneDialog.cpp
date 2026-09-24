@@ -1,7 +1,6 @@
 #include "ToneDialog.h"
 
 #include "core/translation/Tone.h"
-#include "utils/GeometryUtils.h"
 
 #include <QDialogButtonBox>
 #include <QHBoxLayout>
@@ -66,7 +65,6 @@ ToneDialog::ToneDialog(const QJsonArray& customTones, const QString& uiLanguage,
     connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
-    resize(GeometryUtils::dialogInitialSize(this));
 }
 
 void ToneDialog::loadTones(const QJsonArray& stored)

@@ -13,7 +13,6 @@
 #include "ui/widgets/ConfigEditors.h"
 #include "ui/widgets/FlowLayout.h"
 #include "ui/widgets/ThemeColors.h"
-#include "utils/GeometryUtils.h"
 
 #include <QAbstractButton>
 #include <QApplication>
@@ -120,7 +119,6 @@ public:
         connect(m_style, &QLineEdit::textChanged, this, &PromptPreviewDialog::refresh);
         connect(m_background, &QLineEdit::textChanged, this, &PromptPreviewDialog::refresh);
         refresh();
-        resize(GeometryUtils::dialogInitialSize(this));
     }
 
 private slots:
@@ -199,7 +197,6 @@ SettingsDialog::SettingsDialog(HistoryManager* history, QWidget* parent)
             connect(editor, &ConfigEditor::edited, this, &SettingsDialog::reloadPresets);
     }
 
-    resize(GeometryUtils::dialogInitialSize(this));
 }
 
 void SettingsDialog::reject()

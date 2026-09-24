@@ -2,7 +2,6 @@
 
 #include "core/models/Glossary.h"
 #include "ui/widgets/AppIcons.h"
-#include "utils/GeometryUtils.h"
 
 #include <QDialogButtonBox>
 #include <QFile>
@@ -216,6 +215,4 @@ GlossaryDialog::GlossaryDialog(QWidget* parent)
         accept();
     });
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
-
-    resize(GeometryUtils::dialogInitialSize(this));
 }

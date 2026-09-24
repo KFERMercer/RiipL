@@ -1,6 +1,5 @@
 #include "DocumentDialog.h"
 
-#include "utils/GeometryUtils.h"
 
 #include <QFile>
 #include <QFileDialog>
@@ -85,7 +84,6 @@ DocumentDialog::DocumentDialog(const TranslationContext& baseContext, QWidget* p
         m_status->setText(tr("Error: %1").arg(message));
     });
 
-    resize(GeometryUtils::dialogInitialSize(this));
 }
 
 void DocumentDialog::browse()
