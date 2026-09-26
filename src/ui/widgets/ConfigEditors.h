@@ -99,7 +99,7 @@ class ConfigTextEdit : public ConfigEditor
     Q_OBJECT
 
 public:
-    explicit ConfigTextEdit(const QString& key, int rows = 4, QWidget* parent = nullptr);
+    explicit ConfigTextEdit(const QString& key, QWidget* parent = nullptr);
 
     QJsonValue value() const override;
     QPlainTextEdit* edit() const { return m_edit; }

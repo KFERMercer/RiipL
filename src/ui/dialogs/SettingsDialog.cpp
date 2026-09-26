@@ -324,11 +324,11 @@ QWidget* SettingsDialog::createApiPage()
     auto* streamCheck = new ConfigCheckBox(Keys::apiStream, page);
     form->addRow(tr("Stream responses"), streamCheck);
 
-    auto* headersEdit = new ConfigTextEdit(Keys::apiCustomHeaders, 4, page);
+    auto* headersEdit = new ConfigTextEdit(Keys::apiCustomHeaders, page);
     headersEdit->edit()->setPlaceholderText(tr("One per line: Header-Name: value"));
     form->addRow(tr("Custom headers"), headersEdit);
 
-    auto* extraEdit = new ConfigTextEdit(Keys::apiExtraBody, 4, page);
+    auto* extraEdit = new ConfigTextEdit(Keys::apiExtraBody, page);
     auto* validation = new QLabel(page);
     auto updateValidation = [extraEdit, validation]() {
         const QString text = extraEdit->edit()->toPlainText().trimmed();
@@ -495,8 +495,8 @@ QWidget* SettingsDialog::createTranslationPage()
     glossaryRow->addWidget(manageGlossary);
     form->addRow(tr("Glossary"), glossaryRow);
 
-    form->addRow(tr("Style"), new ConfigTextEdit(Keys::translationStyle, 3, page));
-    form->addRow(tr("Background"), new ConfigTextEdit(Keys::translationBackground, 3, page));
+    form->addRow(tr("Style"), new ConfigTextEdit(Keys::translationStyle, page));
+    form->addRow(tr("Background"), new ConfigTextEdit(Keys::translationBackground, page));
 
     auto* autoTranslateCheck = new ConfigCheckBox(Keys::uiAutoTranslate, page);
     form->addRow(tr("Auto translate after typing"), autoTranslateCheck);
@@ -574,8 +574,8 @@ QWidget* SettingsDialog::createPromptsPage()
         auto* pageWidget = new QWidget(stack);
         auto* pageLayout = new QVBoxLayout(pageWidget);
         auto* langTabs = new QTabWidget(pageWidget);
-        auto* zhEditor = new ConfigTextEdit(Keys::promptKey(info.key, QStringLiteral("zh")), 10, pageWidget);
-        auto* enEditor = new ConfigTextEdit(Keys::promptKey(info.key, QStringLiteral("en")), 10, pageWidget);
+        auto* zhEditor = new ConfigTextEdit(Keys::promptKey(info.key, QStringLiteral("zh")), pageWidget);
+        auto* enEditor = new ConfigTextEdit(Keys::promptKey(info.key, QStringLiteral("en")), pageWidget);
         langTabs->addTab(zhEditor, tr("Chinese template"));
         langTabs->addTab(enEditor, tr("English template"));
         pageLayout->addWidget(langTabs);

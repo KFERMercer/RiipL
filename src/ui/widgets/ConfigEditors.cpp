@@ -171,15 +171,12 @@ void ConfigComboBox::setItems(const QList<QPair<QString, QString>>& items)
         handleControlChange();
 }
 
-ConfigTextEdit::ConfigTextEdit(const QString& key, int rows, QWidget* parent)
+ConfigTextEdit::ConfigTextEdit(const QString& key, QWidget* parent)
     : ConfigEditor(key, parent)
 {
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     m_edit = new QPlainTextEdit(this);
-    m_edit->setMinimumHeight(rows * m_edit->fontMetrics().lineSpacing()
-                             + 2 * m_edit->frameWidth()
-                             + 2 * m_edit->document()->documentMargin());
     auto* reset = createResetButton(this);
     layout->addWidget(m_edit, 1);
     layout->addWidget(reset);
