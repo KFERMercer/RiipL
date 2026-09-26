@@ -9,8 +9,6 @@
 
 class QComboBox;
 class QPushButton;
-class ConfigCheckBox;
-class ConfigComboBox;
 class HistoryManager;
 
 // Form-style settings dialog following Qt's canonical pattern: editors are
@@ -48,9 +46,6 @@ private:
     QJsonObject editedApiValues() const;
     void applyPresetValues(const ApiPreset& preset);
 
-    ConfigComboBox* m_targetLangCombo = nullptr;
-    ConfigComboBox* m_toneCombo = nullptr;
-    ConfigCheckBox* m_glossaryEnabled = nullptr;
     QComboBox* m_presetCombo = nullptr;
     QJsonArray m_customTones;
     QVector<ApiPreset> m_apiPresets;

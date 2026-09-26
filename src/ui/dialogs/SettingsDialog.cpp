@@ -22,6 +22,7 @@
 #include <QCursor>
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
+#include <QFontDatabase>
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -66,6 +67,38 @@ const QVector<TemplateInfo>& templateInfos()
     return list;
 }
 
+QList<QPair<QString, QString>> targetLanguageItems(const QString& uiLanguage)
+{
+    QList<QPair<QString, QString>> items;
+    for (const LangItem& lang : Languages::all()) {
+        if (lang.code == QLatin1String("auto"))
+            continue;
+        items.append({Languages::displayName(lang.code, uiLanguage), lang.code});
+    }
+    return items;
+}
+
+QList<QPair<QString, QString>> toneItems(const QString& uiLanguage, const QJsonArray& customTones)
+{
+    QList<QPair<QString, QString>> items;
+    for (const ToneItem& tone : Tones::presets())
+        items.append({Tones::presetDisplayName(tone.key, uiLanguage), tone.key});
+    for (const QJsonValue& value : customTones) {
+        const QJsonObject object = value.toObject();
+        const QString key = object.value(QStringLiteral("key")).toString();
+        items.append({object.value(QStringLiteral("name")).toString(key), key});
+    }
+    return items;
+}
+
+// Keeps the selection on the persisted key; an unknown key falls back to the
+// first entry, mirroring ConfigComboBox.
+void selectItem(QComboBox* box, const QString& key)
+{
+    const int index = box->findData(key);
+    box->setCurrentIndex(index < 0 ? 0 : index);
+}
+
 }
 
 class PromptPreviewDialog : public QDialog
@@ -73,34 +106,34 @@ class PromptPreviewDialog : public QDialog
     Q_OBJECT
 
 public:
-    PromptPreviewDialog(const QString& targetLang, const QString& tone,
-                        bool glossaryEnabled, const QVector<GlossaryEntry>& glossary,
-                        QWidget* parent)
+    explicit PromptPreviewDialog(QWidget* parent = nullptr)
         : QDialog(parent)
-        , m_glossaryEnabled(glossaryEnabled)
-        , m_glossary(glossary)
     {
         setWindowTitle(tr("Prompt preview"));
+        ConfigManager* config = ConfigManager::instance();
+        const QString uiLanguage = config->resolvedUiLanguage();
+        m_glossaryEnabled = config->boolValue(Keys::glossaryEnabled);
+        m_glossary = Glossary::loadFromConfig().entries;
+
         auto* layout = new QVBoxLayout(this);
 
         auto* form = new QFormLayout();
-        m_source = new QPlainTextEdit(this);
-        m_source->setMinimumHeight(m_source->fontMetrics().lineSpacing() * 3);
-        m_source->setPlainText(QStringLiteral("Hello, world! RiipL is a translation tool."));
+        // The sampled options start from the persisted configuration; the dialog
+        // only overrides them for the preview it renders.
+        m_source = new QLineEdit(this);
+        m_source->setText(QStringLiteral("Hello, world! RiipL is a translation tool."));
         m_target = new QComboBox(this);
-        const QString uiLanguage = ConfigManager::instance()->resolvedUiLanguage();
-        for (const LangItem& lang : Languages::all()) {
-            if (lang.code == QLatin1String("auto"))
-                continue;
-            m_target->addItem(Languages::displayName(lang.code, uiLanguage), lang.code);
-        }
-        m_target->setCurrentIndex(m_target->findData(targetLang));
+        for (const QPair<QString, QString>& item : targetLanguageItems(uiLanguage))
+            m_target->addItem(item.first, item.second);
+        selectItem(m_target, config->stringValue(Keys::translationTargetLang));
         m_tone = new QComboBox(this);
-        for (const ToneItem& item : Tones::presets())
-            m_tone->addItem(Tones::presetDisplayName(item.key, uiLanguage), item.key);
-        m_tone->setCurrentIndex(m_tone->findData(tone));
-        m_style = new QLineEdit(this);
-        m_background = new QLineEdit(this);
+        for (const QPair<QString, QString>& item
+             : toneItems(uiLanguage, config->value(Keys::translationCustomTones).toArray())) {
+            m_tone->addItem(item.first, item.second);
+        }
+        selectItem(m_tone, config->stringValue(Keys::translationTone));
+        m_style = new QLineEdit(config->stringValue(Keys::translationStyle), this);
+        m_background = new QLineEdit(config->stringValue(Keys::translationBackground), this);
         form->addRow(tr("Sample text"), m_source);
         form->addRow(tr("Target language"), m_target);
         form->addRow(tr("Tone"), m_tone);
@@ -110,13 +143,14 @@ public:
 
         m_output = new QPlainTextEdit(this);
         m_output->setReadOnly(true);
+        m_output->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
         layout->addWidget(m_output, 1);
 
         auto* buttons = new QDialogButtonBox(QDialogButtonBox::Close, this);
         layout->addWidget(buttons);
         connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::close);
 
-        connect(m_source, &QPlainTextEdit::textChanged, this, &PromptPreviewDialog::refresh);
+        connect(m_source, &QLineEdit::textChanged, this, &PromptPreviewDialog::refresh);
         connect(m_target, &QComboBox::currentIndexChanged, this, &PromptPreviewDialog::refresh);
         connect(m_tone, &QComboBox::currentIndexChanged, this, &PromptPreviewDialog::refresh);
         connect(m_style, &QLineEdit::textChanged, this, &PromptPreviewDialog::refresh);
@@ -129,7 +163,7 @@ private slots:
     {
         ConfigManager* config = ConfigManager::instance();
         TranslationContext context;
-        context.sourceText = m_source->toPlainText();
+        context.sourceText = m_source->text();
         context.targetLang = m_target->currentData().toString();
         context.tone = m_tone->currentData().toString();
         context.style = m_style->text().trimmed();
@@ -148,7 +182,7 @@ private slots:
 private:
     bool m_glossaryEnabled = false;
     QVector<GlossaryEntry> m_glossary;
-    QPlainTextEdit* m_source = nullptr;
+    QLineEdit* m_source = nullptr;
     QComboBox* m_target = nullptr;
     QComboBox* m_tone = nullptr;
     QLineEdit* m_style = nullptr;
@@ -426,28 +460,14 @@ QWidget* SettingsDialog::createTranslationPage()
     sourceCombo->setItems(sourceItems);
     form->addRow(tr("Source language"), sourceCombo);
 
-    m_targetLangCombo = new ConfigComboBox(Keys::translationTargetLang, page);
-    QList<QPair<QString, QString>> targetItems;
-    for (const LangItem& lang : Languages::all()) {
-        if (lang.code == QLatin1String("auto"))
-            continue;
-        targetItems.append({Languages::displayName(lang.code, uiLanguage), lang.code});
-    }
-    m_targetLangCombo->setItems(targetItems);
-    form->addRow(tr("Target language"), m_targetLangCombo);
+    auto* targetCombo = new ConfigComboBox(Keys::translationTargetLang, page);
+    targetCombo->setItems(targetLanguageItems(uiLanguage));
+    form->addRow(tr("Target language"), targetCombo);
 
     auto* toneRow = new QHBoxLayout();
-    m_toneCombo = new ConfigComboBox(Keys::translationTone, page);
-    auto rebuildToneItems = [this, uiLanguage]() {
-        QList<QPair<QString, QString>> items;
-        for (const ToneItem& tone : Tones::presets())
-            items.append({Tones::presetDisplayName(tone.key, uiLanguage), tone.key});
-        for (const QJsonValue& value : std::as_const(m_customTones)) {
-            const QJsonObject object = value.toObject();
-            const QString key = object.value(QStringLiteral("key")).toString();
-            items.append({object.value(QStringLiteral("name")).toString(key), key});
-        }
-        m_toneCombo->setItems(items);
+    auto* toneCombo = new ConfigComboBox(Keys::translationTone, page);
+    auto rebuildToneItems = [this, toneCombo, uiLanguage]() {
+        toneCombo->setItems(toneItems(uiLanguage, m_customTones));
     };
     rebuildToneItems();
 
@@ -460,18 +480,18 @@ QWidget* SettingsDialog::createTranslationPage()
             updateDirtyState();
         }
     });
-    toneRow->addWidget(m_toneCombo, 1);
+    toneRow->addWidget(toneCombo, 1);
     toneRow->addWidget(manageTones);
     form->addRow(tr("Tone"), toneRow);
 
     auto* glossaryRow = new QHBoxLayout();
-    m_glossaryEnabled = new ConfigCheckBox(Keys::glossaryEnabled, page);
+    auto* glossaryEnabled = new ConfigCheckBox(Keys::glossaryEnabled, page);
     auto* manageGlossary = new QPushButton(tr("Manage..."), page);
     connect(manageGlossary, &QPushButton::clicked, page, [page]() {
         GlossaryDialog dialog(page);
         dialog.exec();
     });
-    glossaryRow->addWidget(m_glossaryEnabled, 1);
+    glossaryRow->addWidget(glossaryEnabled, 1);
     glossaryRow->addWidget(manageGlossary);
     form->addRow(tr("Glossary"), glossaryRow);
 
@@ -600,14 +620,8 @@ QWidget* SettingsDialog::createPromptsPage()
     auto* buttonRow = new QHBoxLayout();
     buttonRow->addStretch(1);
     auto* testButton = new QPushButton(tr("Preview prompt..."), page);
-    connect(testButton, &QPushButton::clicked, page, [this, page]() {
-        PromptPreviewDialog dialog(
-            m_targetLangCombo->box()->currentData().toString(),
-            m_toneCombo->box()->currentData().toString(),
-            m_glossaryEnabled->box()->isChecked(),
-            Glossary::loadFromConfig().entries,
-            page);
-        dialog.exec();
+    connect(testButton, &QPushButton::clicked, page, [page]() {
+        PromptPreviewDialog(page).exec();
     });
     buttonRow->addWidget(testButton);
     layout->addLayout(buttonRow);
