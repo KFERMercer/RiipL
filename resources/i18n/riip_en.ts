@@ -681,37 +681,37 @@
 <context>
     <name>PromptPreviewDialog</name>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="80"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="83"/>
         <source>Prompt preview</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="101"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="104"/>
         <source>Sample text</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="102"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="105"/>
         <source>Target language</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="103"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="106"/>
         <source>Tone</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="104"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="107"/>
         <source>Style</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="105"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="108"/>
         <source>Background</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="142"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="145"/>
         <source>(empty prompt)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -719,329 +719,329 @@
 <context>
     <name>SettingsDialog</name>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="160"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="163"/>
         <source>Settings</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="167"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="170"/>
         <source>API</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="168"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="171"/>
         <source>Translation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="473"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="476"/>
         <source>Glossary</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="172"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="175"/>
         <source>Prompt templates</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="169"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="172"/>
         <source>Interface</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="170"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="173"/>
         <source>Clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="171"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="174"/>
         <source>History</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="276"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="279"/>
         <source>Base URL</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="277"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="280"/>
         <source>API key</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="278"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="281"/>
         <source>Model</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="284"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="287"/>
         <source>API default</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="285"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="288"/>
         <source>Temperature</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="281"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="284"/>
         <source>Max tokens</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="288"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="291"/>
         <source>Stream responses</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="299"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="302"/>
         <source>Empty: no extra parameters</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="305"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="308"/>
         <source>Valid JSON object</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="308"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="311"/>
         <source>Invalid JSON: an object with key-value pairs is expected</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="319"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="322"/>
         <source>Extra body (JSON)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="268"/>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="451"/>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="466"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="271"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="454"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="469"/>
         <source>Manage...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="424"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="427"/>
         <source>Source language</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="207"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="210"/>
         <source>Unsaved changes</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="208"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="211"/>
         <source>Your changes have not been applied yet.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="266"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="269"/>
         <source>Custom settings</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="267"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="270"/>
         <source>Save as preset...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="269"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="272"/>
         <source>Save the current API settings under a name</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="270"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="273"/>
         <source>Rename, reorder, delete or load API presets</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="274"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="277"/>
         <source>API preset</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="279"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="282"/>
         <source>Server connection timeout (ms)</source>
         <translation>Server connection timeout (ms)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="291"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="294"/>
         <source>One per line: Header-Name: value</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="292"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="295"/>
         <source>Custom headers</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="376"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="379"/>
         <source>Save API preset</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="376"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="379"/>
         <source>Preset name</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="434"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="437"/>
         <source>Target language</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="462"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="465"/>
         <source>Tone</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="475"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="478"/>
         <source>Style</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="476"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="479"/>
         <source>Background</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="479"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="482"/>
         <source>Auto translate after typing</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="480"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="483"/>
         <source>Auto translate delay (ms)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="556"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="559"/>
         <source>Chinese template</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="557"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="560"/>
         <source>English template</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="560"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="563"/>
         <source>Available placeholders (click to copy)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="565"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="568"/>
         <source>Language of the source text</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="566"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="569"/>
         <source>Language to translate into</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="567"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="570"/>
         <source>Tone applied to the translation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="568"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="571"/>
         <source>Style applied to the translation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="569"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="572"/>
         <source>Background information</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="570"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="573"/>
         <source>Glossary entries, rendered as JSON</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="571"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="574"/>
         <source>Text to be translated</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="572"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="575"/>
         <source>Full translated text, available to the candidate wording prompt</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="573"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="576"/>
         <source>Word the user selected in the translation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="585"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="588"/>
         <source>Copied</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="599"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="602"/>
         <source>Preview prompt...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="491"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="494"/>
         <source>Follow system</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="495"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="498"/>
         <source>Interface language</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="498"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="501"/>
         <source>Keep window on top</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="501"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="504"/>
         <source>Minimize to tray on close</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="503"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="506"/>
         <source>Font size</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="512"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="515"/>
         <source>Monitor clipboard and translate automatically</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="513"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="516"/>
         <source>Monitor delay (ms)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="522"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="525"/>
         <source>Save translation history</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="523"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="526"/>
         <source>Max records</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="525"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="528"/>
         <source>Clear history now</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="527"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="530"/>
         <source>RiipL</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="527"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="530"/>
         <source>Delete all history records?</source>
         <translation type="unfinished"></translation>
     </message>

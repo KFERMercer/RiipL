@@ -50,14 +50,17 @@ struct TemplateInfo
 
 const QVector<TemplateInfo>& templateInfos()
 {
+    // Listed in the order the fragments reach the model: the system prompt
+    // leads the request, the reference block follows it, and the candidate
+    // wording prompt is a separate request that closes the list.
     static const QVector<TemplateInfo> list = {
-        {Prompts::defaultTemplate, QStringLiteral("Default"), QStringLiteral("默认指令")},
         {Prompts::systemTemplate, QStringLiteral("System prompt"), QStringLiteral("系统提示词")},
         {Prompts::referenceTemplate, QStringLiteral("Reference header"), QStringLiteral("参考信息标题")},
-        {Prompts::glossaryTemplate, QStringLiteral("Glossary"), QStringLiteral("术语表")},
         {Prompts::toneTemplate, QStringLiteral("Tone"), QStringLiteral("语气")},
         {Prompts::styleTemplate, QStringLiteral("Style"), QStringLiteral("风格")},
         {Prompts::backgroundTemplate, QStringLiteral("Background"), QStringLiteral("背景信息")},
+        {Prompts::glossaryTemplate, QStringLiteral("Glossary"), QStringLiteral("术语表")},
+        {Prompts::defaultTemplate, QStringLiteral("Default instruction"), QStringLiteral("默认指令")},
         {Prompts::candidateTemplate, QStringLiteral("Candidate wording"), QStringLiteral("候选遣词")}
     };
     return list;

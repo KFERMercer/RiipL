@@ -8,15 +8,16 @@
 namespace Prompts {
 
 // Canonical prompt template identifiers from which per-language config keys derive.
-// The tone, style, background and glossary templates are the labels of the
-// dynamic reference block, not standalone instructions.
-inline const QString defaultTemplate = QStringLiteral("default");
+// Each template owns its labels, fences and placeholders; PromptBuilder only
+// orders them and drops the ones whose variable is empty. The declaration order
+// mirrors the order the fragments reach the model.
 inline const QString systemTemplate = QStringLiteral("system");
 inline const QString referenceTemplate = QStringLiteral("reference");
-inline const QString glossaryTemplate = QStringLiteral("glossary");
 inline const QString toneTemplate = QStringLiteral("tone");
 inline const QString styleTemplate = QStringLiteral("style");
 inline const QString backgroundTemplate = QStringLiteral("background");
+inline const QString glossaryTemplate = QStringLiteral("glossary");
+inline const QString defaultTemplate = QStringLiteral("default");
 inline const QString candidateTemplate = QStringLiteral("candidate");
 
 }
@@ -29,20 +30,20 @@ inline QString promptKey(const QString& name, const QString& language)
     return QStringLiteral("prompts.%1_%2").arg(name, language);
 }
 
-inline const QString promptDefaultZh = promptKey(Prompts::defaultTemplate, QStringLiteral("zh"));
-inline const QString promptDefaultEn = promptKey(Prompts::defaultTemplate, QStringLiteral("en"));
 inline const QString promptSystemZh = promptKey(Prompts::systemTemplate, QStringLiteral("zh"));
 inline const QString promptSystemEn = promptKey(Prompts::systemTemplate, QStringLiteral("en"));
 inline const QString promptReferenceZh = promptKey(Prompts::referenceTemplate, QStringLiteral("zh"));
 inline const QString promptReferenceEn = promptKey(Prompts::referenceTemplate, QStringLiteral("en"));
-inline const QString promptGlossaryZh = promptKey(Prompts::glossaryTemplate, QStringLiteral("zh"));
-inline const QString promptGlossaryEn = promptKey(Prompts::glossaryTemplate, QStringLiteral("en"));
 inline const QString promptToneZh = promptKey(Prompts::toneTemplate, QStringLiteral("zh"));
 inline const QString promptToneEn = promptKey(Prompts::toneTemplate, QStringLiteral("en"));
 inline const QString promptStyleZh = promptKey(Prompts::styleTemplate, QStringLiteral("zh"));
 inline const QString promptStyleEn = promptKey(Prompts::styleTemplate, QStringLiteral("en"));
 inline const QString promptBackgroundZh = promptKey(Prompts::backgroundTemplate, QStringLiteral("zh"));
 inline const QString promptBackgroundEn = promptKey(Prompts::backgroundTemplate, QStringLiteral("en"));
+inline const QString promptGlossaryZh = promptKey(Prompts::glossaryTemplate, QStringLiteral("zh"));
+inline const QString promptGlossaryEn = promptKey(Prompts::glossaryTemplate, QStringLiteral("en"));
+inline const QString promptDefaultZh = promptKey(Prompts::defaultTemplate, QStringLiteral("zh"));
+inline const QString promptDefaultEn = promptKey(Prompts::defaultTemplate, QStringLiteral("en"));
 inline const QString promptCandidateZh = promptKey(Prompts::candidateTemplate, QStringLiteral("zh"));
 inline const QString promptCandidateEn = promptKey(Prompts::candidateTemplate, QStringLiteral("en"));
 
@@ -128,10 +129,63 @@ inline const int clipboardDelayMs = 500;
 inline const bool historyEnabled = true;
 inline const int historyMaxRecords = 500;
 
-// The reference labels head the dynamic reference block assembled by
-// PromptBuilder; only the labels whose value is set are emitted.
-inline const QString promptReferenceZh = QStringLiteral("你需要仔细阅读并严格遵守以下参考信息：");
-inline const QString promptReferenceEn = QStringLiteral("Read the following reference information carefully and follow it strictly:");
+// The default template definitions below follow the order the fragments reach
+// the model: the system prompt leads the request, the reference block follows
+// it, and the candidate wording prompt is a separate request.
+
+inline const QString promptSystemZh = QStringLiteral("你是一位翻译专家。");
+inline const QString promptSystemEn = QStringLiteral("You are a professional translator.");
+
+// The reference templates are self-contained: each one renders its own label,
+// fence and placeholder, and is emitted only while its variable holds a value.
+inline const QString promptReferenceZh = R"TXT(你需要仔细阅读并严格遵守以下参考信息：
+)TXT";
+inline const QString promptReferenceEn = R"TXT(Read the following reference information carefully and follow it strictly:
+)TXT";
+
+inline const QString promptToneZh = R"TXT(- 语气：
+  ```
+  {tone}
+  ```
+)TXT";
+inline const QString promptToneEn = R"TXT(- Tone:
+  ```
+  {tone}
+  ```
+)TXT";
+
+inline const QString promptStyleZh = R"TXT(- 风格：
+  ```
+  {style}
+  ```
+)TXT";
+inline const QString promptStyleEn = R"TXT(- Style:
+  ```
+  {style}
+  ```
+)TXT";
+
+inline const QString promptBackgroundZh = R"TXT(- 背景信息：
+  ```
+  {background}
+  ```
+)TXT";
+inline const QString promptBackgroundEn = R"TXT(- Background:
+  ```
+  {background}
+  ```
+)TXT";
+
+inline const QString promptGlossaryZh = R"TXT(- 术语表：
+  ```json
+  {glossary}
+  ```
+)TXT";
+inline const QString promptGlossaryEn = R"TXT(- Glossary:
+  ```json
+  {glossary}
+  ```
+)TXT";
 
 inline const QString promptDefaultZh = R"TXT(根据以上参考信息，将以下文本翻译为 {target_lang}，注意**只需要输出翻译后的结果，不要额外解释**：
 
@@ -143,21 +197,6 @@ inline const QString promptDefaultEn = R"TXT(Based on the reference information 
 ```
 {source_text}
 ```)TXT";
-
-inline const QString promptSystemZh = QStringLiteral("你是一位翻译专家。");
-inline const QString promptSystemEn = QStringLiteral("You are a professional translator.");
-
-inline const QString promptGlossaryZh = QStringLiteral("术语表：");
-inline const QString promptGlossaryEn = QStringLiteral("Glossary:");
-
-inline const QString promptToneZh = QStringLiteral("语气：");
-inline const QString promptToneEn = QStringLiteral("Tone:");
-
-inline const QString promptStyleZh = QStringLiteral("风格：");
-inline const QString promptStyleEn = QStringLiteral("Style:");
-
-inline const QString promptBackgroundZh = QStringLiteral("背景信息：");
-inline const QString promptBackgroundEn = QStringLiteral("Background:");
 
 inline const QString promptCandidateZh = R"TXT(原文：
 ```
@@ -223,20 +262,20 @@ inline QJsonValue value(const QString& key)
     if (key == Keys::translationBackground) return QJsonValue(translationBackground);
     if (key == Keys::glossaryEnabled) return QJsonValue(glossaryEnabled);
     if (key == Keys::glossaryEntries) return QJsonArray();
-    if (key == Keys::promptDefaultZh) return QJsonValue(promptDefaultZh);
-    if (key == Keys::promptDefaultEn) return QJsonValue(promptDefaultEn);
     if (key == Keys::promptSystemZh) return QJsonValue(promptSystemZh);
     if (key == Keys::promptSystemEn) return QJsonValue(promptSystemEn);
     if (key == Keys::promptReferenceZh) return QJsonValue(promptReferenceZh);
     if (key == Keys::promptReferenceEn) return QJsonValue(promptReferenceEn);
-    if (key == Keys::promptGlossaryZh) return QJsonValue(promptGlossaryZh);
-    if (key == Keys::promptGlossaryEn) return QJsonValue(promptGlossaryEn);
     if (key == Keys::promptToneZh) return QJsonValue(promptToneZh);
     if (key == Keys::promptToneEn) return QJsonValue(promptToneEn);
     if (key == Keys::promptStyleZh) return QJsonValue(promptStyleZh);
     if (key == Keys::promptStyleEn) return QJsonValue(promptStyleEn);
     if (key == Keys::promptBackgroundZh) return QJsonValue(promptBackgroundZh);
     if (key == Keys::promptBackgroundEn) return QJsonValue(promptBackgroundEn);
+    if (key == Keys::promptGlossaryZh) return QJsonValue(promptGlossaryZh);
+    if (key == Keys::promptGlossaryEn) return QJsonValue(promptGlossaryEn);
+    if (key == Keys::promptDefaultZh) return QJsonValue(promptDefaultZh);
+    if (key == Keys::promptDefaultEn) return QJsonValue(promptDefaultEn);
     if (key == Keys::promptCandidateZh) return QJsonValue(promptCandidateZh);
     if (key == Keys::promptCandidateEn) return QJsonValue(promptCandidateEn);
     if (key == Keys::clipboardMonitor) return QJsonValue(clipboardMonitor);

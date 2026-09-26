@@ -20,8 +20,10 @@ struct TranslationContext
 };
 
 // Assembles chat prompts from the user-editable templates in the configuration.
-// The reference block is appended dynamically: a block only appears when its
-// variable holds a value, so an unset option never reaches the model.
+// Each template carries its own labels and fences together with the placeholders
+// it interpolates, so presentation lives in the template rather than here. An
+// entry is emitted only while its variable holds a value, which keeps unset
+// options out of the prompt.
 class PromptBuilder
 {
 public:
@@ -43,11 +45,6 @@ public:
     // model reads the pairs as structured data instead of prose. A term with
     // no target is mapped to itself.
     static QString glossaryData(const QVector<GlossaryEntry>& entries, const QString& uiLanguage);
-    // Renders one dynamic entry of the reference block, indenting wrapped lines
-    // so a multi-line body stays inside its fenced value.
-    static QString referenceEntry(const QString& label, const QString& body, const QString& fenceLanguage = QString());
-    // Joins the non-empty reference entries under the localized header.
-    static QString referenceBlock(const QStringList& entries, const QString& uiLanguage);
 
 private:
     static QString templateFor(const QString& name, const QString& uiLanguage);

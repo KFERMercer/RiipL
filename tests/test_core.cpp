@@ -173,34 +173,31 @@ void TestCore::promptReferenceBlockIsDynamic()
     // No option set: the reference block is omitted entirely, so unset items
     // cannot pollute the prompt.
     QString prompt = PromptBuilder::build(context).user;
-    QVERIFY(!prompt.contains(Defaults::promptReferenceZh));
-    QVERIFY(!prompt.contains(Defaults::promptToneZh));
-    QVERIFY(!prompt.contains(Defaults::promptStyleZh));
-    QVERIFY(!prompt.contains(Defaults::promptBackgroundZh));
-    QVERIFY(!prompt.contains(Defaults::promptGlossaryZh));
+    QVERIFY(!prompt.contains(Defaults::promptReferenceZh.trimmed()));
+    QVERIFY(!prompt.contains(QStringLiteral("- 语气：")));
+    QVERIFY(!prompt.contains(QStringLiteral("- 风格：")));
+    QVERIFY(!prompt.contains(QStringLiteral("- 背景信息：")));
+    QVERIFY(!prompt.contains(QStringLiteral("- 术语表：")));
 
     // The neutral tone is the absence of a tone, not a reference item.
     context.tone = QStringLiteral("neutral");
     prompt = PromptBuilder::build(context).user;
-    QVERIFY(!prompt.contains(Defaults::promptReferenceZh));
-    QVERIFY(!prompt.contains(Defaults::promptToneZh));
+    QVERIFY(!prompt.contains(Defaults::promptReferenceZh.trimmed()));
+    QVERIFY(!prompt.contains(QStringLiteral("- 语气：")));
 
     // Each set option appends exactly its own entry, in reference order.
     context.tone = QStringLiteral("formal");
     context.style = QStringLiteral("concise");
     context.background = QStringLiteral("deployment notes");
     prompt = PromptBuilder::build(context).user;
-    QVERIFY(prompt.startsWith(Defaults::promptReferenceZh));
-    QVERIFY(prompt.contains(Defaults::promptToneZh));
+    QVERIFY(prompt.startsWith(Defaults::promptReferenceZh.trimmed()));
     QVERIFY(prompt.contains(QStringLiteral("formal")));
-    QVERIFY(prompt.contains(Defaults::promptStyleZh));
     QVERIFY(prompt.contains(QStringLiteral("concise")));
-    QVERIFY(prompt.contains(Defaults::promptBackgroundZh));
     QVERIFY(prompt.contains(QStringLiteral("deployment notes")));
-    const int toneAt = prompt.indexOf(Defaults::promptToneZh);
-    const int styleAt = prompt.indexOf(Defaults::promptStyleZh);
-    const int backgroundAt = prompt.indexOf(Defaults::promptBackgroundZh);
-    QVERIFY(toneAt < styleAt && styleAt < backgroundAt);
+    const int toneAt = prompt.indexOf(QStringLiteral("- 语气："));
+    const int styleAt = prompt.indexOf(QStringLiteral("- 风格："));
+    const int backgroundAt = prompt.indexOf(QStringLiteral("- 背景信息："));
+    QVERIFY(toneAt >= 0 && styleAt > toneAt && backgroundAt > styleAt);
 
     // The instruction follows the reference block.
     QVERIFY(prompt.indexOf(QStringLiteral("Hello")) > backgroundAt);
@@ -212,9 +209,9 @@ void TestCore::promptReferenceBlockIsDynamic()
     glossaryContext.uiLanguage = QStringLiteral("zh");
     glossaryContext.glossary = {{QStringLiteral("苹果"), QStringLiteral("Apple")}};
     glossaryContext.glossaryEnabled = false;
-    QVERIFY(!PromptBuilder::build(glossaryContext).user.contains(Defaults::promptGlossaryZh));
+    QVERIFY(!PromptBuilder::build(glossaryContext).user.contains(QStringLiteral("- 术语表：")));
     glossaryContext.glossaryEnabled = true;
-    QVERIFY(PromptBuilder::build(glossaryContext).user.contains(Defaults::promptGlossaryZh));
+    QVERIFY(PromptBuilder::build(glossaryContext).user.contains(QStringLiteral("- 术语表：")));
 }
 
 void TestCore::promptGlossaryFormatting()
@@ -245,7 +242,7 @@ void TestCore::promptGlossaryFormatting()
     context.glossary = entries;
     context.uiLanguage = QStringLiteral("zh");
     PromptBuilder::Result result = PromptBuilder::build(context);
-    QVERIFY(result.user.contains(Defaults::promptGlossaryZh));
+    QVERIFY(result.user.contains(QStringLiteral("- 术语表：")));
     QVERIFY(result.user.contains(QStringLiteral("```json")));
     QVERIFY(result.user.contains(QStringLiteral("\"原文\": \"苹果\"")));
 
@@ -258,20 +255,38 @@ void TestCore::promptGlossaryFormatting()
 
 void TestCore::promptReferenceEntryKeepsBodyIntact()
 {
-    const QString entry = PromptBuilder::referenceEntry(QStringLiteral("Glossary:"),
-                                                        QStringLiteral("[\n  {}\n]"),
-                                                        QStringLiteral("json"));
-    const QStringList lines = entry.split(QLatin1Char('\n'));
-    QCOMPARE(lines.size(), 6);
-    QCOMPARE(lines.at(0), QStringLiteral("- Glossary:"));
-    QCOMPARE(lines.at(1), QStringLiteral("  ```json"));
-    QCOMPARE(lines.at(2), QStringLiteral("  ["));
-    QCOMPARE(lines.at(3), QStringLiteral("    {}"));
-    QCOMPARE(lines.at(4), QStringLiteral("  ]"));
-    QCOMPARE(lines.at(5), QStringLiteral("  ```"));
+    QDir().mkpath(tempDir());
+    ConfigManager::createInstance(tempDir());
 
-    // An empty body appends nothing.
-    QVERIFY(PromptBuilder::referenceEntry(QStringLiteral("Tone:"), QString()).isEmpty());
+    // Labels and fences live in the templates. A multi-line value inherits the
+    // indentation of the placeholder line, so the block stays aligned.
+    TranslationContext context;
+    context.sourceText = QStringLiteral("Hello");
+    context.targetLang = QStringLiteral("de");
+    context.uiLanguage = QStringLiteral("zh");
+    context.tone = QStringLiteral("formal");
+    context.style = QStringLiteral("concise\ntechnical");
+    context.background = QStringLiteral("line one\nline two");
+    context.glossaryEnabled = true;
+    context.glossary = {{QStringLiteral("fox"), QStringLiteral("Fuchs")}};
+
+    const QString prompt = PromptBuilder::build(context).user;
+    QVERIFY(prompt.contains(QStringLiteral("- 语气：\n  ```\n  formal\n  ```")));
+    QVERIFY(prompt.contains(QStringLiteral("- 风格：\n  ```\n  concise\n  technical\n  ```")));
+    QVERIFY(prompt.contains(QStringLiteral("- 背景信息：\n  ```\n  line one\n  line two\n  ```")));
+    QVERIFY(prompt.contains(QStringLiteral("- 术语表：\n  ```json\n  [\n      {\n          \"原文\": \"fox\",")));
+    // One shared header and the instruction last.
+    QCOMPARE(prompt.count(Defaults::promptReferenceZh.trimmed()), 1);
+    QVERIFY(prompt.indexOf(QStringLiteral("Hello")) > prompt.indexOf(Defaults::promptReferenceZh.trimmed()));
+
+    // A single-line value keeps the template's own indentation untouched.
+    TranslationContext single = context;
+    single.style = QStringLiteral("concise");
+    QVERIFY(PromptBuilder::build(single).user.contains(QStringLiteral("  concise")));
+
+    // An unset option removes its whole entry, indentation included.
+    single.style.clear();
+    QVERIFY(!PromptBuilder::build(single).user.contains(QStringLiteral("- 风格：")));
 }
 
 

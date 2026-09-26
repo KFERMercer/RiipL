@@ -61,36 +61,6 @@ QString PromptBuilder::glossaryData(const QVector<GlossaryEntry>& entries, const
     return QString::fromUtf8(QJsonDocument(array).toJson(QJsonDocument::Indented)).trimmed();
 }
 
-QString PromptBuilder::referenceEntry(const QString& label, const QString& body, const QString& fenceLanguage)
-{
-    if (body.isEmpty())
-        return QString();
-    QStringList lines;
-    if (!label.isEmpty())
-        lines << QStringLiteral("- ") + label;
-    lines << QStringLiteral("  ```") + fenceLanguage;
-    const QStringList bodyLines = body.split(QLatin1Char('\n'));
-    lines.reserve(lines.size() + bodyLines.size() + 1);
-    for (const QString& line : bodyLines)
-        lines << QStringLiteral("  ") + line;
-    lines << QStringLiteral("  ```");
-    return lines.join(QLatin1Char('\n'));
-}
-
-QString PromptBuilder::referenceBlock(const QStringList& entries, const QString& uiLanguage)
-{
-    QStringList blocks;
-    for (const QString& entry : entries) {
-        if (!entry.isEmpty())
-            blocks << entry;
-    }
-    if (blocks.isEmpty())
-        return QString();
-    const QString header = templateFor(Prompts::referenceTemplate, uiLanguage);
-    const QString body = blocks.join(QStringLiteral("\n"));
-    return header.isEmpty() ? body : header + QStringLiteral("\n\n") + body;
-}
-
 QStringList PromptBuilder::knownPlaceholders()
 {
     return {
@@ -109,7 +79,30 @@ QStringList PromptBuilder::knownPlaceholders()
 QString PromptBuilder::substitute(QString text, const QHash<QString, QString>& variables)
 {
     for (auto it = variables.constBegin(); it != variables.constEnd(); ++it) {
-        text.replace(QLatin1Char('{') + it.key() + QLatin1Char('}'), it.value());
+        const QString token = QLatin1Char('{') + it.key() + QLatin1Char('}');
+        const QString& value = it.value();
+        if (!value.contains(QLatin1Char('\n'))) {
+            text.replace(token, value);
+            continue;
+        }
+        // A multi-line value inherits the indentation of the line holding its
+        // placeholder, so a template can indent one line and keep every line of
+        // the value aligned under it. Occurrences are rewritten back to front so
+        // earlier positions stay valid, and each one uses its own indentation.
+        int at = text.lastIndexOf(token);
+        while (at >= 0) {
+            int lineStart = text.lastIndexOf(QLatin1Char('\n'), at) + 1;
+            QString indent;
+            while (lineStart < at && text.at(lineStart).isSpace()) {
+                indent += text.at(lineStart);
+                ++lineStart;
+            }
+            QString replacement = value;
+            if (!indent.isEmpty())
+                replacement.replace(QLatin1Char('\n'), QLatin1Char('\n') + indent);
+            text.replace(at, token.size(), replacement);
+            at = text.lastIndexOf(token, at - 1);
+        }
     }
     return text;
 }
@@ -132,33 +125,40 @@ PromptBuilder::Result PromptBuilder::build(const TranslationContext& context)
     variables.insert(QStringLiteral("translated_text"), QString());
     variables.insert(QStringLiteral("selected_word"), QString());
 
-    const auto labelFor = [&variables, &uiLanguage](const QString& name) {
+    const auto render = [&variables, &uiLanguage](const QString& name) {
         return substitute(templateFor(name, uiLanguage), variables);
     };
 
-    // Each reference entry is appended only when its value is set; an unset
-    // option contributes nothing, so it cannot bias the translation.
-    QStringList entries;
+    // Reference entries appear in the order they are listed here, and only
+    // while their variable holds a value, so unset options stay out entirely.
+    QStringList referenceEntries;
     if (!context.tone.isEmpty() && context.tone != QLatin1String("neutral"))
-        entries << referenceEntry(labelFor(Prompts::toneTemplate), context.tone);
+        referenceEntries << render(Prompts::toneTemplate);
     if (!context.style.isEmpty())
-        entries << referenceEntry(labelFor(Prompts::styleTemplate), context.style);
+        referenceEntries << render(Prompts::styleTemplate);
     if (!context.background.isEmpty())
-        entries << referenceEntry(labelFor(Prompts::backgroundTemplate), context.background);
+        referenceEntries << render(Prompts::backgroundTemplate);
     if (!glossary.isEmpty())
-        entries << referenceEntry(labelFor(Prompts::glossaryTemplate), glossary, QStringLiteral("json"));
+        referenceEntries << render(Prompts::glossaryTemplate);
 
     QStringList fragments;
-    const QString reference = referenceBlock(entries, uiLanguage);
-    if (!reference.isEmpty())
-        fragments << reference;
-    const QString instruction = substitute(templateFor(Prompts::defaultTemplate, uiLanguage), variables);
-    if (!instruction.isEmpty())
-        fragments << instruction;
+    if (!referenceEntries.isEmpty()) {
+        const QString header = render(Prompts::referenceTemplate).trimmed();
+        fragments << (header.isEmpty() ? referenceEntries.join(QString())
+                                       : header + QStringLiteral("\n\n") + referenceEntries.join(QString()));
+    }
+    fragments << render(Prompts::defaultTemplate);
+
+    QStringList parts;
+    for (const QString& fragment : fragments) {
+        const QString trimmed = fragment.trimmed();
+        if (!trimmed.isEmpty())
+            parts << trimmed;
+    }
 
     Result result;
-    result.system = substitute(templateFor(Prompts::systemTemplate, uiLanguage), variables);
-    result.user = fragments.join(QStringLiteral("\n\n"));
+    result.system = render(Prompts::systemTemplate).trimmed();
+    result.user = parts.join(QStringLiteral("\n\n"));
     return result;
 }
 
