@@ -8,13 +8,15 @@
 namespace Prompts {
 
 // Canonical prompt template identifiers from which per-language config keys derive.
+// The tone, style, background and glossary templates are the labels of the
+// dynamic reference block, not standalone instructions.
 inline const QString defaultTemplate = QStringLiteral("default");
 inline const QString systemTemplate = QStringLiteral("system");
+inline const QString referenceTemplate = QStringLiteral("reference");
 inline const QString glossaryTemplate = QStringLiteral("glossary");
 inline const QString toneTemplate = QStringLiteral("tone");
 inline const QString styleTemplate = QStringLiteral("style");
 inline const QString backgroundTemplate = QStringLiteral("background");
-inline const QString personalizationTemplate = QStringLiteral("personalization");
 inline const QString candidateTemplate = QStringLiteral("candidate");
 
 }
@@ -31,6 +33,8 @@ inline const QString promptDefaultZh = promptKey(Prompts::defaultTemplate, QStri
 inline const QString promptDefaultEn = promptKey(Prompts::defaultTemplate, QStringLiteral("en"));
 inline const QString promptSystemZh = promptKey(Prompts::systemTemplate, QStringLiteral("zh"));
 inline const QString promptSystemEn = promptKey(Prompts::systemTemplate, QStringLiteral("en"));
+inline const QString promptReferenceZh = promptKey(Prompts::referenceTemplate, QStringLiteral("zh"));
+inline const QString promptReferenceEn = promptKey(Prompts::referenceTemplate, QStringLiteral("en"));
 inline const QString promptGlossaryZh = promptKey(Prompts::glossaryTemplate, QStringLiteral("zh"));
 inline const QString promptGlossaryEn = promptKey(Prompts::glossaryTemplate, QStringLiteral("en"));
 inline const QString promptToneZh = promptKey(Prompts::toneTemplate, QStringLiteral("zh"));
@@ -39,8 +43,6 @@ inline const QString promptStyleZh = promptKey(Prompts::styleTemplate, QStringLi
 inline const QString promptStyleEn = promptKey(Prompts::styleTemplate, QStringLiteral("en"));
 inline const QString promptBackgroundZh = promptKey(Prompts::backgroundTemplate, QStringLiteral("zh"));
 inline const QString promptBackgroundEn = promptKey(Prompts::backgroundTemplate, QStringLiteral("en"));
-inline const QString promptPersonalizationZh = promptKey(Prompts::personalizationTemplate, QStringLiteral("zh"));
-inline const QString promptPersonalizationEn = promptKey(Prompts::personalizationTemplate, QStringLiteral("en"));
 inline const QString promptCandidateZh = promptKey(Prompts::candidateTemplate, QStringLiteral("zh"));
 inline const QString promptCandidateEn = promptKey(Prompts::candidateTemplate, QStringLiteral("en"));
 
@@ -79,7 +81,6 @@ inline const QString translationTone = QStringLiteral("translation.tone");
 inline const QString translationCustomTones = QStringLiteral("translation.custom_tones");
 inline const QString translationStyle = QStringLiteral("translation.style");
 inline const QString translationBackground = QStringLiteral("translation.background");
-inline const QString translationPreferences = QStringLiteral("translation.preferences");
 
 inline const QString glossaryEnabled = QStringLiteral("glossary.enabled");
 inline const QString glossaryEntries = QStringLiteral("glossary.entries");
@@ -127,94 +128,70 @@ inline const int clipboardDelayMs = 500;
 inline const bool historyEnabled = true;
 inline const int historyMaxRecords = 500;
 
-inline const QString promptDefaultZh = R"TXT(将以下文本翻译为 {target_lang}，注意**只需要输出翻译后的结果，不要额外解释**：
+// The reference labels head the dynamic reference block assembled by
+// PromptBuilder; only the labels whose value is set are emitted.
+inline const QString promptReferenceZh = QStringLiteral("你需要仔细阅读并严格遵守以下参考信息：");
+inline const QString promptReferenceEn = QStringLiteral("Read the following reference information carefully and follow it strictly:");
 
-{source_text})TXT";
-inline const QString promptDefaultEn = R"TXT(Translate the following text into {target_lang}. Note that you should **only output the translated result without any additional explanation**:
+inline const QString promptDefaultZh = R"TXT(根据以上参考信息，将以下文本翻译为 {target_lang}，注意**只需要输出翻译后的结果，不要额外解释**：
 
-{source_text})TXT";
+```
+{source_text}
+```)TXT";
+inline const QString promptDefaultEn = R"TXT(Based on the reference information above, translate the following text into {target_lang}. Note that you must **only output the translated result without any additional explanation**:
+
+```
+{source_text}
+```)TXT";
 
 inline const QString promptSystemZh = QStringLiteral("你是一位翻译专家。");
 inline const QString promptSystemEn = QStringLiteral("You are a professional translator.");
 
-inline const QString promptGlossaryZh = R"TXT(*参考下面的翻译：*
-{glossary}
-将以下文本翻译为 {target_lang}，注意**只需要输出翻译后的结果，不要额外解释**：
+inline const QString promptGlossaryZh = QStringLiteral("术语表：");
+inline const QString promptGlossaryEn = QStringLiteral("Glossary:");
 
-{source_text})TXT";
-inline const QString promptGlossaryEn = R"TXT(*Reference the following translations:*
-{glossary}
-Translate the following text into {target_lang}. Note that you must **ONLY output the translated result without any additional explanation**:
+inline const QString promptToneZh = QStringLiteral("语气：");
+inline const QString promptToneEn = QStringLiteral("Tone:");
 
-{source_text})TXT";
+inline const QString promptStyleZh = QStringLiteral("风格：");
+inline const QString promptStyleEn = QStringLiteral("Style:");
 
-inline const QString promptToneZh = R"TXT(请将以下文本翻译为 {target_lang}。
-注意翻译的语气要严格符合【**{tone}**】
+inline const QString promptBackgroundZh = QStringLiteral("背景信息：");
+inline const QString promptBackgroundEn = QStringLiteral("Background:");
 
-{source_text})TXT";
-inline const QString promptToneEn = R"TXT(Please translate the following text into {target_lang}. Note that the translation tone must strictly conform to [**{tone}**]:
-
-{source_text})TXT";
-
-inline const QString promptStyleZh = R"TXT(请将以下文本翻译为 {target_lang}。
-注意翻译的风格要严格符合【**{target_style}**】
-
-{source_text})TXT";
-inline const QString promptStyleEn = R"TXT(Please translate the following text into {target_lang}. Note that the translation style must strictly conform to [**{target_style}**]:
-
-{source_text})TXT";
-
-inline const QString promptBackgroundZh = R"TXT(*【背景信息】*
-{background_text}
-
-请结合背景信息将以下文本翻译为 {target_lang}。
-
-*【待翻译文本】*
-{source_text})TXT";
-inline const QString promptBackgroundEn = R"TXT(*[Background Information]*
-{background_text}
-
-Please translate the following text into {target_lang}, taking the provided background information into consideration.
-
-*[Source Text]*
-{source_text})TXT";
-
-inline const QString promptPersonalizationZh = R"TXT(*【待翻译文本】*
+inline const QString promptCandidateZh = R"TXT(原文：
+```
 {source_text}
-
-*【翻译任务】*
-{user_preferences}
-将【待翻译文本】翻译为 {target_lang}。)TXT";
-inline const QString promptPersonalizationEn = R"TXT(*[Source Text]*
-{source_text}
-
-*[Translation Tasks]*
-{user_preferences}
-Translate the [Source Text] into {target_lang}.)TXT";
-
-
-
-inline const QString promptCandidateZh = R"TXT(原文：{source_text}
-译文：{translated_text}
-用户在译文中选中了：「{word}」
+```
+译文：
+```
+{translated_text}
+```
+用户在译文中选中了：`{word}`
 
 请结合上下文判断选中内容对应的完整词语或短语（必要时可向左右扩展为更完整的词），
 并提供 2-4 个可直接替换该词语的备选表达。
 
-重要：replace 与所有 options 必须使用 {target_lang} 书写，与译文语言保持一致，
-并保证替换回译文后语法通顺，禁止翻译成其他任何语言。
+重要：replace 必须能在译文中原样找到；replace 与所有 options 必须使用 {target_lang} 书写，
+与译文语言保持一致，并保证替换回译文后语法通顺，禁止翻译成其他任何语言。
 
 严格按以下 JSON 格式输出，禁止输出任何解释或代码块标记：
 {{"replace": "译文中需要被替换的完整片段", "options": ["备选一", "备选二", "备选三"]}})TXT";
-inline const QString promptCandidateEn = R"TXT(Source: {source_text}
-Translation: {translated_text}
-The user selected "{word}" in the translation.
+inline const QString promptCandidateEn = R"TXT(Source:
+```
+{source_text}
+```
+Translation:
+```
+{translated_text}
+```
+The user selected `{word}` in the translation.
 
-Determine the complete word or phrase corresponding to the selection in context (expand to the left or right if needed),
-then provide 2-4 alternative expressions that can directly replace it.
+Determine the complete word or phrase that the selection corresponds to in the translation (expand to the left or right if needed),
+then provide 2-4 alternative expressions that can directly replace it. The result must read naturally in context.
 
-Important: "replace" and every entry in "options" MUST be written in {target_lang} — the same language as the translation —
-and must fit grammatically when substituted back into it. Never use any other language.
+Important: "replace" must appear verbatim in the translation; "replace" and every entry in "options" MUST be written in {target_lang},
+the same language as the translation. Never use any other language.
 
 Output strictly in the following JSON format with no explanation and no code fences:
 {{"replace": "the exact fragment in the translation to be replaced", "options": ["option 1", "option 2", "option 3"]}})TXT";
@@ -244,13 +221,14 @@ inline QJsonValue value(const QString& key)
     if (key == Keys::translationCustomTones) return QJsonArray();
     if (key == Keys::translationStyle) return QJsonValue(translationStyle);
     if (key == Keys::translationBackground) return QJsonValue(translationBackground);
-    if (key == Keys::translationPreferences) return QJsonArray();
     if (key == Keys::glossaryEnabled) return QJsonValue(glossaryEnabled);
     if (key == Keys::glossaryEntries) return QJsonArray();
     if (key == Keys::promptDefaultZh) return QJsonValue(promptDefaultZh);
     if (key == Keys::promptDefaultEn) return QJsonValue(promptDefaultEn);
     if (key == Keys::promptSystemZh) return QJsonValue(promptSystemZh);
     if (key == Keys::promptSystemEn) return QJsonValue(promptSystemEn);
+    if (key == Keys::promptReferenceZh) return QJsonValue(promptReferenceZh);
+    if (key == Keys::promptReferenceEn) return QJsonValue(promptReferenceEn);
     if (key == Keys::promptGlossaryZh) return QJsonValue(promptGlossaryZh);
     if (key == Keys::promptGlossaryEn) return QJsonValue(promptGlossaryEn);
     if (key == Keys::promptToneZh) return QJsonValue(promptToneZh);
@@ -259,8 +237,6 @@ inline QJsonValue value(const QString& key)
     if (key == Keys::promptStyleEn) return QJsonValue(promptStyleEn);
     if (key == Keys::promptBackgroundZh) return QJsonValue(promptBackgroundZh);
     if (key == Keys::promptBackgroundEn) return QJsonValue(promptBackgroundEn);
-    if (key == Keys::promptPersonalizationZh) return QJsonValue(promptPersonalizationZh);
-    if (key == Keys::promptPersonalizationEn) return QJsonValue(promptPersonalizationEn);
     if (key == Keys::promptCandidateZh) return QJsonValue(promptCandidateZh);
     if (key == Keys::promptCandidateEn) return QJsonValue(promptCandidateEn);
     if (key == Keys::clipboardMonitor) return QJsonValue(clipboardMonitor);

@@ -28,7 +28,9 @@ private slots:
     void configPersistsAcrossInstances();
     void configFlushesPendingSaveOnRecreate();
     void promptSubstitution();
+    void promptReferenceBlockIsDynamic();
     void promptGlossaryFormatting();
+    void promptReferenceEntryKeepsBodyIntact();
     void candidatePromptSubstitution();
     void knownPlaceholdersCoverVariables();
     void glossaryRoundTrip();
@@ -158,25 +160,118 @@ void TestCore::promptSubstitution()
     QCOMPARE(result.system, QStringLiteral("You are an expert translator."));
 }
 
+void TestCore::promptReferenceBlockIsDynamic()
+{
+    QDir().mkpath(tempDir());
+    ConfigManager::createInstance(tempDir());
+
+    TranslationContext context;
+    context.sourceText = QStringLiteral("Hello");
+    context.targetLang = QStringLiteral("zh");
+    context.uiLanguage = QStringLiteral("zh");
+
+    // No option set: the reference block is omitted entirely, so unset items
+    // cannot pollute the prompt.
+    QString prompt = PromptBuilder::build(context).user;
+    QVERIFY(!prompt.contains(Defaults::promptReferenceZh));
+    QVERIFY(!prompt.contains(Defaults::promptToneZh));
+    QVERIFY(!prompt.contains(Defaults::promptStyleZh));
+    QVERIFY(!prompt.contains(Defaults::promptBackgroundZh));
+    QVERIFY(!prompt.contains(Defaults::promptGlossaryZh));
+
+    // The neutral tone is the absence of a tone, not a reference item.
+    context.tone = QStringLiteral("neutral");
+    prompt = PromptBuilder::build(context).user;
+    QVERIFY(!prompt.contains(Defaults::promptReferenceZh));
+    QVERIFY(!prompt.contains(Defaults::promptToneZh));
+
+    // Each set option appends exactly its own entry, in reference order.
+    context.tone = QStringLiteral("formal");
+    context.style = QStringLiteral("concise");
+    context.background = QStringLiteral("deployment notes");
+    prompt = PromptBuilder::build(context).user;
+    QVERIFY(prompt.startsWith(Defaults::promptReferenceZh));
+    QVERIFY(prompt.contains(Defaults::promptToneZh));
+    QVERIFY(prompt.contains(QStringLiteral("formal")));
+    QVERIFY(prompt.contains(Defaults::promptStyleZh));
+    QVERIFY(prompt.contains(QStringLiteral("concise")));
+    QVERIFY(prompt.contains(Defaults::promptBackgroundZh));
+    QVERIFY(prompt.contains(QStringLiteral("deployment notes")));
+    const int toneAt = prompt.indexOf(Defaults::promptToneZh);
+    const int styleAt = prompt.indexOf(Defaults::promptStyleZh);
+    const int backgroundAt = prompt.indexOf(Defaults::promptBackgroundZh);
+    QVERIFY(toneAt < styleAt && styleAt < backgroundAt);
+
+    // The instruction follows the reference block.
+    QVERIFY(prompt.indexOf(QStringLiteral("Hello")) > backgroundAt);
+
+    // A disabled or empty glossary contributes no entry.
+    TranslationContext glossaryContext;
+    glossaryContext.sourceText = QStringLiteral("Hello");
+    glossaryContext.targetLang = QStringLiteral("en");
+    glossaryContext.uiLanguage = QStringLiteral("zh");
+    glossaryContext.glossary = {{QStringLiteral("苹果"), QStringLiteral("Apple")}};
+    glossaryContext.glossaryEnabled = false;
+    QVERIFY(!PromptBuilder::build(glossaryContext).user.contains(Defaults::promptGlossaryZh));
+    glossaryContext.glossaryEnabled = true;
+    QVERIFY(PromptBuilder::build(glossaryContext).user.contains(Defaults::promptGlossaryZh));
+}
+
 void TestCore::promptGlossaryFormatting()
 {
     QVector<GlossaryEntry> entries;
     entries.append({QStringLiteral("苹果"), QStringLiteral("Apple")});
     entries.append({QStringLiteral("RiipL"), QString()});
 
-    const QStringList lines = PromptBuilder::glossaryLines(entries);
-    QCOMPARE(lines.size(), 2);
-    QCOMPARE(lines.at(0), QStringLiteral("苹果 translates to Apple"));
-    QCOMPARE(lines.at(1), QStringLiteral("RiipL (leave untranslated)"));
+    const QString data = PromptBuilder::glossaryData(entries, QStringLiteral("zh"));
+    const QJsonDocument doc = QJsonDocument::fromJson(data.toUtf8());
+    QVERIFY(doc.isArray());
+    const QJsonArray array = doc.array();
+    QCOMPARE(array.size(), 2);
+    QCOMPARE(array.at(0).toObject().value(QStringLiteral("原文")).toString(), QStringLiteral("苹果"));
+    QCOMPARE(array.at(0).toObject().value(QStringLiteral("译文")).toString(), QStringLiteral("Apple"));
+    QCOMPARE(array.at(1).toObject().value(QStringLiteral("原文")).toString(), QStringLiteral("RiipL"));
+    // A term without a target is mapped to itself, which states "keep as-is"
+    // without a null literal that some models echo verbatim.
+    QCOMPARE(array.at(1).toObject().value(QStringLiteral("译文")).toString(), QStringLiteral("RiipL"));
+
+    // Entries without a source term carry no information and are dropped.
+    QVERIFY(PromptBuilder::glossaryData({{QString(), QStringLiteral("Apple")}},
+                                        QStringLiteral("zh")).isEmpty());
 
     TranslationContext context;
     context.sourceText = QStringLiteral("苹果 is good");
     context.targetLang = QStringLiteral("en");
     context.glossary = entries;
     context.uiLanguage = QStringLiteral("zh");
-    const PromptBuilder::Result result = PromptBuilder::build(context);
-    QVERIFY(result.user.contains(QStringLiteral("translates to")));
-    QVERIFY(result.user.contains(QStringLiteral("(leave untranslated)")));
+    PromptBuilder::Result result = PromptBuilder::build(context);
+    QVERIFY(result.user.contains(Defaults::promptGlossaryZh));
+    QVERIFY(result.user.contains(QStringLiteral("```json")));
+    QVERIFY(result.user.contains(QStringLiteral("\"原文\": \"苹果\"")));
+
+    // The glossary keys follow the UI language of the template.
+    context.uiLanguage = QStringLiteral("en");
+    result = PromptBuilder::build(context);
+    QVERIFY(result.user.contains(QStringLiteral("\"source\": \"苹果\"")));
+    QVERIFY(result.user.contains(QStringLiteral("\"target\": \"Apple\"")));
+}
+
+void TestCore::promptReferenceEntryKeepsBodyIntact()
+{
+    const QString entry = PromptBuilder::referenceEntry(QStringLiteral("Glossary:"),
+                                                        QStringLiteral("[\n  {}\n]"),
+                                                        QStringLiteral("json"));
+    const QStringList lines = entry.split(QLatin1Char('\n'));
+    QCOMPARE(lines.size(), 6);
+    QCOMPARE(lines.at(0), QStringLiteral("- Glossary:"));
+    QCOMPARE(lines.at(1), QStringLiteral("  ```json"));
+    QCOMPARE(lines.at(2), QStringLiteral("  ["));
+    QCOMPARE(lines.at(3), QStringLiteral("    {}"));
+    QCOMPARE(lines.at(4), QStringLiteral("  ]"));
+    QCOMPARE(lines.at(5), QStringLiteral("  ```"));
+
+    // An empty body appends nothing.
+    QVERIFY(PromptBuilder::referenceEntry(QStringLiteral("Tone:"), QString()).isEmpty());
 }
 
 
@@ -191,6 +286,12 @@ void TestCore::candidatePromptSubstitution()
     QVERIFY(prompt.contains(QStringLiteral("alternative")));
     QVERIFY(prompt.contains(QStringLiteral("Chinese")));
     QVERIFY(!prompt.contains(QStringLiteral("{target_lang}")));
+
+    // The source and translation are fenced and the selection is inline code,
+    // so surrounding markup cannot leak into the returned candidates.
+    QVERIFY(prompt.contains(QStringLiteral("```\nHello world\n```")));
+    QVERIFY(prompt.contains(QStringLiteral("```\n你好，世界\n```")));
+    QVERIFY(prompt.contains(QStringLiteral("`世界`")));
 }
 
 void TestCore::knownPlaceholdersCoverVariables()

@@ -53,11 +53,11 @@ const QVector<TemplateInfo>& templateInfos()
     static const QVector<TemplateInfo> list = {
         {Prompts::defaultTemplate, QStringLiteral("Default"), QStringLiteral("默认指令")},
         {Prompts::systemTemplate, QStringLiteral("System prompt"), QStringLiteral("系统提示词")},
+        {Prompts::referenceTemplate, QStringLiteral("Reference header"), QStringLiteral("参考信息标题")},
         {Prompts::glossaryTemplate, QStringLiteral("Glossary"), QStringLiteral("术语表")},
         {Prompts::toneTemplate, QStringLiteral("Tone"), QStringLiteral("语气")},
         {Prompts::styleTemplate, QStringLiteral("Style"), QStringLiteral("风格")},
         {Prompts::backgroundTemplate, QStringLiteral("Background"), QStringLiteral("背景信息")},
-        {Prompts::personalizationTemplate, QStringLiteral("Personalization"), QStringLiteral("个性化偏好")},
         {Prompts::candidateTemplate, QStringLiteral("Candidate wording"), QStringLiteral("候选遣词")}
     };
     return list;

@@ -598,9 +598,6 @@ TranslationContext MainWindow::currentContext() const
     context.background = config->stringValue(Keys::translationBackground);
     context.glossaryEnabled = config->boolValue(Keys::glossaryEnabled);
     context.glossary = Glossary::loadFromConfig().entries;
-    const QJsonArray prefs = config->value(Keys::translationPreferences).toArray();
-    for (const QJsonValue& value : prefs)
-        context.preferences << value.toString();
     context.uiLanguage = config->resolvedUiLanguage();
     return context;
 }

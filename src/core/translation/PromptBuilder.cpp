@@ -4,6 +4,30 @@
 #include "core/config/Defaults.h"
 #include "core/translation/Language.h"
 
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+
+namespace {
+
+// Localized keys of the rendered glossary; they follow the UI language so the
+// data block reads in the same language as the template that labels it.
+const QString& sourceKey(const QString& uiLanguage)
+{
+    static const QString zh = QStringLiteral("原文");
+    static const QString en = QStringLiteral("source");
+    return uiLanguage == QLatin1String("zh") ? zh : en;
+}
+
+const QString& targetKey(const QString& uiLanguage)
+{
+    static const QString zh = QStringLiteral("译文");
+    static const QString en = QStringLiteral("target");
+    return uiLanguage == QLatin1String("zh") ? zh : en;
+}
+
+}
+
 QString PromptBuilder::templateFor(const QString& name, const QString& uiLanguage)
 {
     ConfigManager* config = ConfigManager::instance();
@@ -17,19 +41,54 @@ QString PromptBuilder::templateFor(const QString& name, const QString& uiLanguag
     return QString();
 }
 
-QStringList PromptBuilder::glossaryLines(const QVector<GlossaryEntry>& entries)
+QString PromptBuilder::glossaryData(const QVector<GlossaryEntry>& entries, const QString& uiLanguage)
 {
-    QStringList lines;
-    lines.reserve(entries.size());
+    QJsonArray array;
     for (const GlossaryEntry& entry : entries) {
-        if (entry.source.isEmpty())
+        const QString source = entry.source.trimmed();
+        if (source.isEmpty())
             continue;
-        if (entry.target.isEmpty())
-            lines << QStringLiteral("%1 (leave untranslated)").arg(entry.source);
-        else
-            lines << QStringLiteral("%1 translates to %2").arg(entry.source, entry.target);
+        QJsonObject object;
+        object.insert(sourceKey(uiLanguage), source);
+        // An entry without a target keeps the source term untouched. Emitting
+        // the source as its own target states that directly, whereas a null
+        // value is read as a literal "null" by some models.
+        object.insert(targetKey(uiLanguage), entry.target.trimmed().isEmpty() ? source : entry.target.trimmed());
+        array.append(object);
     }
-    return lines;
+    if (array.isEmpty())
+        return QString();
+    return QString::fromUtf8(QJsonDocument(array).toJson(QJsonDocument::Indented)).trimmed();
+}
+
+QString PromptBuilder::referenceEntry(const QString& label, const QString& body, const QString& fenceLanguage)
+{
+    if (body.isEmpty())
+        return QString();
+    QStringList lines;
+    if (!label.isEmpty())
+        lines << QStringLiteral("- ") + label;
+    lines << QStringLiteral("  ```") + fenceLanguage;
+    const QStringList bodyLines = body.split(QLatin1Char('\n'));
+    lines.reserve(lines.size() + bodyLines.size() + 1);
+    for (const QString& line : bodyLines)
+        lines << QStringLiteral("  ") + line;
+    lines << QStringLiteral("  ```");
+    return lines.join(QLatin1Char('\n'));
+}
+
+QString PromptBuilder::referenceBlock(const QStringList& entries, const QString& uiLanguage)
+{
+    QStringList blocks;
+    for (const QString& entry : entries) {
+        if (!entry.isEmpty())
+            blocks << entry;
+    }
+    if (blocks.isEmpty())
+        return QString();
+    const QString header = templateFor(Prompts::referenceTemplate, uiLanguage);
+    const QString body = blocks.join(QStringLiteral("\n"));
+    return header.isEmpty() ? body : header + QStringLiteral("\n\n") + body;
 }
 
 QStringList PromptBuilder::knownPlaceholders()
@@ -42,7 +101,6 @@ QStringList PromptBuilder::knownPlaceholders()
         QStringLiteral("target_style"),
         QStringLiteral("background_text"),
         QStringLiteral("glossary"),
-        QStringLiteral("user_preferences"),
         QStringLiteral("word"),
         QStringLiteral("translated_text")
     };
@@ -58,6 +116,11 @@ QString PromptBuilder::substitute(QString text, const QHash<QString, QString>& v
 
 PromptBuilder::Result PromptBuilder::build(const TranslationContext& context)
 {
+    const QString uiLanguage = context.uiLanguage;
+    const QString glossary = context.glossaryEnabled
+        ? glossaryData(context.glossary, uiLanguage)
+        : QString();
+
     QHash<QString, QString> variables;
     variables.insert(QStringLiteral("source_text"), context.sourceText);
     variables.insert(QStringLiteral("target_lang"), Languages::englishName(context.targetLang));
@@ -65,38 +128,37 @@ PromptBuilder::Result PromptBuilder::build(const TranslationContext& context)
     variables.insert(QStringLiteral("tone"), context.tone);
     variables.insert(QStringLiteral("target_style"), context.style);
     variables.insert(QStringLiteral("background_text"), context.background);
-    variables.insert(QStringLiteral("glossary"), glossaryLines(context.glossary).join(QLatin1Char('\n')));
-    QStringList numbered;
-    numbered.reserve(context.preferences.size());
-    for (int i = 0; i < context.preferences.size(); ++i)
-        numbered << QStringLiteral("%1. **%2**").arg(i + 1).arg(context.preferences.at(i));
-    variables.insert(QStringLiteral("user_preferences"), numbered.join(QLatin1Char('\n')));
+    variables.insert(QStringLiteral("glossary"), glossary);
     variables.insert(QStringLiteral("word"), QString());
     variables.insert(QStringLiteral("translated_text"), QString());
 
-    QStringList fragments;
+    const auto labelFor = [&variables, &uiLanguage](const QString& name) {
+        return substitute(templateFor(name, uiLanguage), variables);
+    };
 
-    if (!context.background.isEmpty())
-        fragments << templateFor(Prompts::backgroundTemplate, context.uiLanguage);
-    if (context.glossaryEnabled && !context.glossary.isEmpty())
-        fragments << templateFor(Prompts::glossaryTemplate, context.uiLanguage);
+    // Each reference entry is appended only when its value is set; an unset
+    // option contributes nothing, so it cannot bias the translation.
+    QStringList entries;
     if (!context.tone.isEmpty() && context.tone != QLatin1String("neutral"))
-        fragments << templateFor(Prompts::toneTemplate, context.uiLanguage);
+        entries << referenceEntry(labelFor(Prompts::toneTemplate), context.tone);
     if (!context.style.isEmpty())
-        fragments << templateFor(Prompts::styleTemplate, context.uiLanguage);
-    if (!context.preferences.isEmpty())
-        fragments << templateFor(Prompts::personalizationTemplate, context.uiLanguage);
-    fragments << templateFor(Prompts::defaultTemplate, context.uiLanguage);
+        entries << referenceEntry(labelFor(Prompts::styleTemplate), context.style);
+    if (!context.background.isEmpty())
+        entries << referenceEntry(labelFor(Prompts::backgroundTemplate), context.background);
+    if (!glossary.isEmpty())
+        entries << referenceEntry(labelFor(Prompts::glossaryTemplate), glossary, QStringLiteral("json"));
+
+    QStringList fragments;
+    const QString reference = referenceBlock(entries, uiLanguage);
+    if (!reference.isEmpty())
+        fragments << reference;
+    const QString instruction = substitute(templateFor(Prompts::defaultTemplate, uiLanguage), variables);
+    if (!instruction.isEmpty())
+        fragments << instruction;
 
     Result result;
-    result.system = substitute(templateFor(Prompts::systemTemplate, context.uiLanguage), variables);
-    for (const QString& fragment : std::as_const(fragments)) {
-        if (fragment.isEmpty())
-            continue;
-        if (!result.user.isEmpty())
-            result.user += QStringLiteral("\n\n");
-        result.user += substitute(fragment, variables);
-    }
+    result.system = substitute(templateFor(Prompts::systemTemplate, uiLanguage), variables);
+    result.user = fragments.join(QStringLiteral("\n\n"));
     return result;
 }
 
