@@ -94,15 +94,15 @@ QString PromptBuilder::referenceBlock(const QStringList& entries, const QString&
 QStringList PromptBuilder::knownPlaceholders()
 {
     return {
-        QStringLiteral("source_text"),
-        QStringLiteral("target_lang"),
         QStringLiteral("source_lang"),
+        QStringLiteral("target_lang"),
         QStringLiteral("tone"),
-        QStringLiteral("target_style"),
-        QStringLiteral("background_text"),
+        QStringLiteral("style"),
+        QStringLiteral("background"),
         QStringLiteral("glossary"),
-        QStringLiteral("word"),
-        QStringLiteral("translated_text")
+        QStringLiteral("source_text"),
+        QStringLiteral("translated_text"),
+        QStringLiteral("selected_word")
     };
 }
 
@@ -122,15 +122,15 @@ PromptBuilder::Result PromptBuilder::build(const TranslationContext& context)
         : QString();
 
     QHash<QString, QString> variables;
-    variables.insert(QStringLiteral("source_text"), context.sourceText);
-    variables.insert(QStringLiteral("target_lang"), Languages::englishName(context.targetLang));
     variables.insert(QStringLiteral("source_lang"), Languages::englishName(context.sourceLang));
+    variables.insert(QStringLiteral("target_lang"), Languages::englishName(context.targetLang));
     variables.insert(QStringLiteral("tone"), context.tone);
-    variables.insert(QStringLiteral("target_style"), context.style);
-    variables.insert(QStringLiteral("background_text"), context.background);
+    variables.insert(QStringLiteral("style"), context.style);
+    variables.insert(QStringLiteral("background"), context.background);
     variables.insert(QStringLiteral("glossary"), glossary);
-    variables.insert(QStringLiteral("word"), QString());
+    variables.insert(QStringLiteral("source_text"), context.sourceText);
     variables.insert(QStringLiteral("translated_text"), QString());
+    variables.insert(QStringLiteral("selected_word"), QString());
 
     const auto labelFor = [&variables, &uiLanguage](const QString& name) {
         return substitute(templateFor(name, uiLanguage), variables);
@@ -169,10 +169,10 @@ QString PromptBuilder::candidatePrompt(const QString& sourceText,
                                        const QString& uiLanguage)
 {
     QHash<QString, QString> variables;
+    variables.insert(QStringLiteral("target_lang"), Languages::englishName(targetLang));
     variables.insert(QStringLiteral("source_text"), sourceText);
     variables.insert(QStringLiteral("translated_text"), translatedText);
-    variables.insert(QStringLiteral("word"), word);
-    variables.insert(QStringLiteral("target_lang"), Languages::englishName(targetLang));
+    variables.insert(QStringLiteral("selected_word"), word);
     const QString templ = templateFor(Prompts::candidateTemplate, uiLanguage);
     return substitute(templ, variables);
 }

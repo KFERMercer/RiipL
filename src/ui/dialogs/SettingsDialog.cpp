@@ -557,13 +557,27 @@ QWidget* SettingsDialog::createPromptsPage()
         langTabs->addTab(enEditor, tr("English template"));
         pageLayout->addWidget(langTabs);
 
-        auto* placeholderGroup = new QGroupBox(tr("Available placeholders"), pageWidget);
+        auto* placeholderGroup = new QGroupBox(tr("Available placeholders (click to copy)"), pageWidget);
         auto* hintLayout = new FlowLayout(placeholderGroup);
+        // Describes what each placeholder inserts, so the chip tooltip explains
+        // the token instead of repeating the group title.
+        const auto placeholderHint = [](const QString& placeholder) {
+            if (placeholder == QLatin1String("source_lang")) return tr("Language of the source text");
+            if (placeholder == QLatin1String("target_lang")) return tr("Language to translate into");
+            if (placeholder == QLatin1String("tone")) return tr("Tone applied to the translation");
+            if (placeholder == QLatin1String("style")) return tr("Style applied to the translation");
+            if (placeholder == QLatin1String("background")) return tr("Background information");
+            if (placeholder == QLatin1String("glossary")) return tr("Glossary entries, rendered as JSON");
+            if (placeholder == QLatin1String("source_text")) return tr("Text to be translated");
+            if (placeholder == QLatin1String("translated_text")) return tr("Full translated text, available to the candidate wording prompt");
+            if (placeholder == QLatin1String("selected_word")) return tr("Word the user selected in the translation");
+            return QString();
+        };
         for (const QString& placeholder : PromptBuilder::knownPlaceholders()) {
             const QString token = QLatin1Char('{') + placeholder + QLatin1Char('}');
             auto* chip = new QToolButton(placeholderGroup);
             chip->setText(token);
-            chip->setToolTip(tr("Click to copy"));
+            chip->setToolTip(placeholderHint(placeholder));
             chip->setCursor(Qt::PointingHandCursor);
             chip->setAutoRaise(true);
             connect(chip, &QToolButton::clicked, chip, [chip, token]() {

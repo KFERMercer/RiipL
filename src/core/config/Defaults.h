@@ -167,7 +167,7 @@ inline const QString promptCandidateZh = R"TXT(原文：
 ```
 {translated_text}
 ```
-用户在译文中选中了：`{word}`
+用户在译文中选中了：`{selected_word}`
 
 请结合上下文判断选中内容对应的完整词语或短语（必要时可向左右扩展为更完整的词），
 并提供 2-4 个可直接替换该词语的备选表达。
@@ -185,7 +185,7 @@ Translation:
 ```
 {translated_text}
 ```
-The user selected `{word}` in the translation.
+The user selected `{selected_word}` in the translation.
 
 Determine the complete word or phrase that the selection corresponds to in the translation (expand to the left or right if needed),
 then provide 2-4 alternative expressions that can directly replace it. The result must read naturally in context.

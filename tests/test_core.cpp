@@ -299,6 +299,14 @@ void TestCore::knownPlaceholdersCoverVariables()
     const QStringList placeholders = PromptBuilder::knownPlaceholders();
     QCOMPARE(placeholders.size(), QSet<QString>(placeholders.cbegin(), placeholders.cend()).size());
 
+    // The order is the presentation order of the placeholder chips in settings.
+    const QStringList expected = {
+        QStringLiteral("source_lang"), QStringLiteral("target_lang"), QStringLiteral("tone"),
+        QStringLiteral("style"), QStringLiteral("background"), QStringLiteral("glossary"),
+        QStringLiteral("source_text"), QStringLiteral("translated_text"), QStringLiteral("selected_word")
+    };
+    QCOMPARE(placeholders, expected);
+
     for (const QString& name : placeholders)
         QVERIFY(PromptBuilder::substitute(QStringLiteral("{%1}").arg(name),
                                           {{name, QStringLiteral("x")}}) == QStringLiteral("x"));

@@ -823,12 +823,57 @@
         <translation>预设名称</translation>
     </message>
     <message>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="560"/>
+        <source>Available placeholders (click to copy)</source>
+        <translation>可用占位符（点击复制）</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="565"/>
+        <source>Language of the source text</source>
+        <translation>原文语言</translation>
+    </message>
+    <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="566"/>
-        <source>Click to copy</source>
-        <translation>点击复制</translation>
+        <source>Language to translate into</source>
+        <translation>目标语言</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="567"/>
+        <source>Tone applied to the translation</source>
+        <translation>译文语气</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="568"/>
+        <source>Style applied to the translation</source>
+        <translation>译文风格</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="569"/>
+        <source>Background information</source>
+        <translation>背景信息</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="570"/>
+        <source>Glossary entries, rendered as JSON</source>
+        <translation>术语表条目，以 JSON 渲染</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="571"/>
+        <source>Text to be translated</source>
+        <translation>待翻译的文本</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="572"/>
+        <source>Full translated text, available to the candidate wording prompt</source>
+        <translation>完整译文，供候选遣词提示词使用</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="573"/>
+        <source>Word the user selected in the translation</source>
+        <translation>用户在译文中选中的词语</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="585"/>
         <source>Copied</source>
         <translation>已复制</translation>
     </message>
@@ -935,12 +980,7 @@
         <translation>英文模板</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="560"/>
-        <source>Available placeholders</source>
-        <translation>可用占位符</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="585"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="599"/>
         <source>Preview prompt...</source>
         <translation>预览提示词...</translation>
     </message>
