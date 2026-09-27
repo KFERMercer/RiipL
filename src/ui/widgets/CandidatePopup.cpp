@@ -45,7 +45,10 @@ void CandidatePopup::openFor(const QString& word,
     raise();
     setFocus();
 
+    // The status label stays hidden after a rendered list, so a new lookup has
+    // to bring it back.
     m_status->setText(tr("Fetching alternatives..."));
+    m_status->show();
     m_list->clear();
     m_list->hide();
     adjustSize();
