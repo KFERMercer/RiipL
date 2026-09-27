@@ -6,6 +6,7 @@
 #include "core/translation/TranslationEngine.h"
 #include "ui/widgets/TranslationEdit.h"
 
+class QActionGroup;
 class QComboBox;
 class QLabel;
 class QMenu;
@@ -53,6 +54,8 @@ private:
     void populateLanguageCombos();
     void populateToneCombo();
     void syncLanguageMenu();
+    void rebuildApiPresetMenu();
+    void syncApiPresetMenu();
     void applyAlwaysOnTop(bool onTop);
     void applyEditorFonts();
     void applyClipboardMonitoring(bool enabled);
@@ -109,6 +112,8 @@ private:
     QMenu* m_toolsMenu = nullptr;
     QMenu* m_helpMenu = nullptr;
     QMenu* m_languageMenu = nullptr;
+    QMenu* m_apiPresetMenu = nullptr;
+    QActionGroup* m_apiPresetGroup = nullptr;
     QMenu* m_trayMenu = nullptr;
 
     QTimer* m_debounce = nullptr;

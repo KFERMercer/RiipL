@@ -10,6 +10,7 @@
 #include "ui/dialogs/ToneDialog.h"
 #include "ui/widgets/AppIcons.h"
 #include "ui/widgets/ThemeColors.h"
+#include "core/config/ApiPreset.h"
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
 #include "core/models/Glossary.h"
@@ -337,6 +338,11 @@ void MainWindow::buildMenus()
     m_clipboardAction->setCheckable(true);
     m_clipboardAction->setChecked(ConfigManager::instance()->boolValue(Keys::clipboardMonitor));
     m_toolsMenu->addSeparator();
+    m_apiPresetMenu = m_toolsMenu->addMenu(QString());
+    m_apiPresetGroup = new QActionGroup(m_apiPresetMenu);
+    m_apiPresetGroup->setExclusive(true);
+    rebuildApiPresetMenu();
+    m_toolsMenu->addSeparator();
     m_settingsAction = m_toolsMenu->addAction(QString());
 
     m_helpMenu = menuBar()->addMenu(QString());
@@ -515,6 +521,46 @@ void MainWindow::syncLanguageMenu()
     }
 }
 
+void MainWindow::rebuildApiPresetMenu()
+{
+    if (!m_apiPresetMenu)
+        return;
+    m_apiPresetMenu->clear();
+    const QVector<ApiPreset> presets =
+        ApiPresets::fromJson(ConfigManager::instance()->value(Keys::apiPresets).toArray());
+    for (const ApiPreset& preset : presets) {
+        QAction* action = m_apiPresetMenu->addAction(preset.name);
+        action->setData(preset.name);
+        action->setCheckable(true);
+        m_apiPresetGroup->addAction(action);
+        connect(action, &QAction::triggered, this, [preset]() { ApiPresets::apply(preset); });
+    }
+    // An empty submenu opens as a blank popup and reads as a broken control, so
+    // a disabled entry explains the state instead.
+    if (presets.isEmpty()) {
+        QAction* placeholder = m_apiPresetMenu->addAction(tr("No presets"));
+        placeholder->setEnabled(false);
+    }
+    syncApiPresetMenu();
+}
+
+// Mirrors syncLanguageMenu: the entry whose stored values match the applied
+// configuration is checked, and none is when the fields were edited by hand.
+void MainWindow::syncApiPresetMenu()
+{
+    if (!m_apiPresetMenu)
+        return;
+    const QVector<ApiPreset> presets =
+        ApiPresets::fromJson(ConfigManager::instance()->value(Keys::apiPresets).toArray());
+    const int matched = ApiPresets::matchValues(presets, ApiPresets::capture());
+    const QString current = matched >= 0 ? presets.at(matched).name : QString();
+    const auto actions = m_apiPresetMenu->actions();
+    for (QAction* action : actions) {
+        QSignalBlocker blocker(action);
+        action->setChecked(!action->data().toString().isEmpty() && action->data().toString() == current);
+    }
+}
+
 void MainWindow::applyAlwaysOnTop(bool onTop)
 {
     if (QWindow* handle = windowHandle()) {
@@ -584,6 +630,12 @@ void MainWindow::onConfigChanged(const QString& key)
             combo->setCurrentIndex(index);
     } else if (key == Keys::translationTone || key == Keys::translationCustomTones) {
         populateToneCombo();
+    } else if (key == Keys::apiPresets) {
+        rebuildApiPresetMenu();
+    } else if (Keys::apiPresetFields().contains(key)) {
+        // Applying a preset writes one changed() per field; the selection is
+        // re-derived once they have all landed.
+        syncApiPresetMenu();
     }
 }
 
@@ -865,6 +917,7 @@ void MainWindow::retranslateUi()
 
     m_toolsMenu->setTitle(tr("&Tools"));
     m_clipboardAction->setText(tr("Monitor clipboard"));
+    m_apiPresetMenu->setTitle(tr("API preset"));
     m_settingsAction->setText(tr("Settings..."));
 
     m_helpMenu->setTitle(tr("&Help"));
