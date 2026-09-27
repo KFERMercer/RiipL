@@ -158,12 +158,12 @@
 <context>
     <name>CandidatePopup</name>
     <message>
-        <location filename="../../src/ui/widgets/CandidatePopup.cpp" line="48"/>
+        <location filename="../../src/ui/widgets/CandidatePopup.cpp" line="50"/>
         <source>Fetching alternatives...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/widgets/CandidatePopup.cpp" line="71"/>
+        <location filename="../../src/ui/widgets/CandidatePopup.cpp" line="74"/>
         <source>No alternatives found</source>
         <translation type="unfinished"></translation>
     </message>

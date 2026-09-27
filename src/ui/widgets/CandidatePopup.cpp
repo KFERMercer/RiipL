@@ -88,6 +88,12 @@ void CandidatePopup::openFor(const QString& word,
         });
 }
 
+void CandidatePopup::hideEvent(QHideEvent* event)
+{
+    m_engine->cancelCandidates();
+    QWidget::hideEvent(event);
+}
+
 void CandidatePopup::keyPressEvent(QKeyEvent* event)
 {
     if (event->key() == Qt::Key_Escape) {

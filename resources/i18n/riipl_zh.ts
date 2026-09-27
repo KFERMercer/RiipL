@@ -158,12 +158,12 @@
 <context>
     <name>CandidatePopup</name>
     <message>
-        <location filename="../../src/ui/widgets/CandidatePopup.cpp" line="48"/>
+        <location filename="../../src/ui/widgets/CandidatePopup.cpp" line="50"/>
         <source>Fetching alternatives...</source>
         <translation>正在获取候选表达...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/widgets/CandidatePopup.cpp" line="71"/>
+        <location filename="../../src/ui/widgets/CandidatePopup.cpp" line="74"/>
         <source>No alternatives found</source>
         <translation>未找到候选表达</translation>
     </message>

@@ -7,6 +7,7 @@
 
 class QLabel;
 class QListWidget;
+class QHideEvent;
 
 class CandidatePopup : public QWidget
 {
@@ -28,6 +29,7 @@ signals:
 
 protected:
     void keyPressEvent(QKeyEvent* event) override;
+    void hideEvent(QHideEvent* event) override;
 
 private:
     TranslationEngine* m_engine = nullptr;

@@ -33,6 +33,8 @@ public:
                            int selectionEnd,
                            const std::function<void(const QVector<CandidateGroup>&)>& onDone,
                            const std::function<void(const QString&)>& onError);
+    // Drops the in-flight candidate request and reports nothing back.
+    void cancelCandidates();
     void stop();
     bool busy() const;
 
@@ -82,4 +84,5 @@ private:
     // nothing usable.
     void deliverCandidates(const QString& raw);
     void dispatchCandidateRequest();
+    void resetCandidateState();
 };

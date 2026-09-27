@@ -140,6 +140,12 @@ void TranslationEngine::requestCandidates(const TranslationContext& context,
     dispatchCandidateRequest();
 }
 
+void TranslationEngine::cancelCandidates()
+{
+    resetCandidateState();
+    m_candidateApi.cancel();
+}
+
 void TranslationEngine::dispatchCandidateRequest()
 {
     m_candidateApi.sendChatRequest(m_candidateBody,
@@ -161,7 +167,7 @@ void TranslationEngine::dispatchCandidateRequest()
 
 void TranslationEngine::deliverCandidates(const QString& raw)
 {
-    QVector<CandidateGroup> groups = resolveGroups(
+    const QVector<CandidateGroup> groups = resolveGroups(
         parseCandidateResponse(raw), m_candidateText,
         m_candidateSelectionStart, m_candidateSelectionEnd);
 
@@ -171,16 +177,21 @@ void TranslationEngine::deliverCandidates(const QString& raw)
         return;
     }
 
-    m_candidateRetryPending = false;
     const auto onDone = m_candidateDone;
+    resetCandidateState();
+    if (onDone)
+        onDone(groups);
+}
+
+void TranslationEngine::resetCandidateState()
+{
+    m_candidateRetryPending = false;
     m_candidateDone = nullptr;
     m_candidateError = nullptr;
     m_candidateBody = QJsonObject();
     m_candidateText.clear();
     m_candidateSelectionStart = -1;
     m_candidateSelectionEnd = -1;
-    if (onDone)
-        onDone(groups);
 }
 
 QVector<TranslationEngine::CandidateGroup> TranslationEngine::resolveGroups(
