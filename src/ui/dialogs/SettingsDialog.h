@@ -31,6 +31,7 @@ private slots:
     void applyChanges();
     void reloadPresets();
     void applySelectedPreset(int index);
+    void overwritePreset();
     void savePreset();
     void managePresets();
 
@@ -43,10 +44,14 @@ private:
     QWidget* createPromptsPage();
 
     bool isDirty() const;
+    bool canSavePreset() const;
     QJsonObject editedApiValues() const;
     void applyPresetValues(const ApiPreset& preset);
 
     QComboBox* m_presetCombo = nullptr;
+    QPushButton* m_overwriteButton = nullptr;
+    // Preset the API fields belong to, or -1 for custom settings, held across edits.
+    int m_selectedPreset = -1;
     QJsonArray m_customTones;
     QVector<ApiPreset> m_apiPresets;
     QPushButton* m_applyButton = nullptr;

@@ -1,6 +1,7 @@
 #include "ToneDialog.h"
 
 #include "core/translation/Tone.h"
+#include "ui/widgets/AppIcons.h"
 
 #include <QDialogButtonBox>
 #include <QHBoxLayout>
@@ -10,6 +11,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QTableWidget>
+#include <QToolButton>
 #include <QTreeWidget>
 #include <QVBoxLayout>
 
@@ -21,7 +23,7 @@ constexpr int kKeyColumn = 1;
 ToneDialog::ToneDialog(const QJsonArray& customTones, const QString& uiLanguage, QWidget* parent)
     : QDialog(parent)
 {
-    setWindowTitle(tr("Manage tones"));
+    setWindowTitle(tr("Tones"));
 
     auto* layout = new QVBoxLayout(this);
 
@@ -45,26 +47,40 @@ ToneDialog::ToneDialog(const QJsonArray& customTones, const QString& uiLanguage,
     m_custom->setHorizontalHeaderLabels({tr("Display name"), tr("Key")});
     m_custom->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_custom->verticalHeader()->setVisible(false);
+    m_custom->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_custom->setSelectionMode(QAbstractItemView::SingleSelection);
     layout->addWidget(m_custom, 1);
 
     loadTones(customTones);
 
     auto* buttonRow = new QHBoxLayout();
-    auto addButton = new QPushButton(tr("Add"), this);
-    auto removeButton = new QPushButton(tr("Remove"), this);
-    buttonRow->addWidget(addButton);
-    buttonRow->addWidget(removeButton);
+    m_addButton = new QPushButton(tr("Add"), this);
+    m_removeButton = new QPushButton(tr("Remove"), this);
+    m_moveUpButton = new QToolButton(this);
+    m_moveUpButton->setIcon(AppIcons::moveUp());
+    m_moveUpButton->setToolTip(tr("Move up"));
+    m_moveDownButton = new QToolButton(this);
+    m_moveDownButton->setIcon(AppIcons::moveDown());
+    m_moveDownButton->setToolTip(tr("Move down"));
+    buttonRow->addWidget(m_addButton);
+    buttonRow->addWidget(m_removeButton);
+    buttonRow->addWidget(m_moveUpButton);
+    buttonRow->addWidget(m_moveDownButton);
     buttonRow->addStretch(1);
     layout->addLayout(buttonRow);
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
     layout->addWidget(buttons);
 
-    connect(addButton, &QPushButton::clicked, this, &ToneDialog::addTone);
-    connect(removeButton, &QPushButton::clicked, this, &ToneDialog::removeTone);
+    connect(m_addButton, &QPushButton::clicked, this, &ToneDialog::addTone);
+    connect(m_removeButton, &QPushButton::clicked, this, &ToneDialog::removeTone);
+    connect(m_moveUpButton, &QToolButton::clicked, this, [this]() { moveTone(-1); });
+    connect(m_moveDownButton, &QToolButton::clicked, this, [this]() { moveTone(1); });
+    connect(m_custom, &QTableWidget::itemSelectionChanged, this, &ToneDialog::refreshButtons);
     connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
+    refreshButtons();
 }
 
 void ToneDialog::loadTones(const QJsonArray& stored)
@@ -106,6 +122,15 @@ QVector<ToneItem> ToneDialog::customTones() const
     return result;
 }
 
+void ToneDialog::refreshButtons()
+{
+    const int row = m_custom->currentRow();
+    const bool hasSelection = row >= 0;
+    m_removeButton->setEnabled(hasSelection);
+    m_moveUpButton->setEnabled(hasSelection && row > 0);
+    m_moveDownButton->setEnabled(hasSelection && row < m_custom->rowCount() - 1);
+}
+
 void ToneDialog::addTone()
 {
     const int row = m_custom->rowCount();
@@ -113,11 +138,32 @@ void ToneDialog::addTone()
     m_custom->setItem(row, kNameColumn, new QTableWidgetItem());
     m_custom->setItem(row, kKeyColumn, new QTableWidgetItem());
     m_custom->editItem(m_custom->item(row, kNameColumn));
+    m_custom->setCurrentCell(row, kNameColumn);
+    refreshButtons();
 }
 
 void ToneDialog::removeTone()
 {
     const int row = m_custom->currentRow();
-    if (row >= 0)
-        m_custom->removeRow(row);
+    if (row < 0)
+        return;
+    m_custom->removeRow(row);
+    refreshButtons();
+}
+
+void ToneDialog::moveTone(int offset)
+{
+    const int row = m_custom->currentRow();
+    if (row < 0)
+        return;
+    const int target = row + offset;
+    if (target < 0 || target >= m_custom->rowCount())
+        return;
+    // moveRows keeps the row data and view state; destinationChild is the index
+    // the row is inserted before, so a downward move lands past the row it swaps
+    // with.
+    m_custom->model()->moveRows(QModelIndex(), row, 1, QModelIndex(), offset < 0 ? target : target + 1);
+    m_custom->selectRow(target);
+    // The current row is unchanged, so the end-of-list states are refreshed here.
+    refreshButtons();
 }

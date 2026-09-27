@@ -6,7 +6,9 @@
 #include "core/models/Glossary.h"
 
 class QLineEdit;
+class QPushButton;
 class QTableWidget;
+class QToolButton;
 
 class GlossaryTable : public QWidget
 {
@@ -24,12 +26,16 @@ private slots:
     void moveRow(int offset);
     void importJson();
     void exportJson();
+    void refreshButtons();
 
 private:
     void applyFilter();
 
     QTableWidget* m_table = nullptr;
     QLineEdit* m_filter = nullptr;
+    QPushButton* m_removeButton = nullptr;
+    QToolButton* m_moveUpButton = nullptr;
+    QToolButton* m_moveDownButton = nullptr;
 };
 
 class GlossaryDialog : public QDialog

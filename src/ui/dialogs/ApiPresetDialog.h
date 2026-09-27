@@ -7,9 +7,10 @@
 
 class QListWidget;
 class QPushButton;
+class QToolButton;
 
-// Manages the named API presets: rename, reorder, delete, and load the
-// selected preset into the running configuration. Presets themselves are
+// Manages the named API presets: rename, duplicate, reorder, delete, and load
+// the selected preset into the running configuration. Presets themselves are
 // created from the API settings page, which knows the live field values.
 class ApiPresetDialog : public QDialog
 {
@@ -33,17 +34,22 @@ public:
 
 private slots:
     void renameSelected();
+    void copySelected();
     void removeSelected();
     void moveSelected(int offset);
     void loadSelected();
     void refreshButtons();
 
 private:
+    // Name derived from \p base that no other item uses.
+    QString uniqueName(const QString& base) const;
+
     int m_loadedIndex = -1;
     QListWidget* m_list = nullptr;
     QPushButton* m_renameButton = nullptr;
+    QPushButton* m_copyButton = nullptr;
     QPushButton* m_removeButton = nullptr;
     QPushButton* m_loadButton = nullptr;
-    QPushButton* m_moveUpButton = nullptr;
-    QPushButton* m_moveDownButton = nullptr;
+    QToolButton* m_moveUpButton = nullptr;
+    QToolButton* m_moveDownButton = nullptr;
 };

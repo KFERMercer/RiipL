@@ -228,11 +228,8 @@ SettingsDialog::SettingsDialog(HistoryManager* history, QWidget* parent)
 
     for (ConfigEditor* editor : findChildren<ConfigEditor*>()) {
         connect(editor, &ConfigEditor::edited, this, &SettingsDialog::updateDirtyState);
-        // Editing any captured field can take the settings off a preset, so the
-        // selector is re-matched as the user types.
-        if (Keys::apiPresetFields().contains(editor->key()))
-            connect(editor, &ConfigEditor::edited, this, &SettingsDialog::reloadPresets);
     }
+    updateDirtyState();
 
 }
 
@@ -254,6 +251,12 @@ void SettingsDialog::reject()
 void SettingsDialog::updateDirtyState()
 {
     m_applyButton->setEnabled(isDirty());
+    if (!m_overwriteButton)
+        return;
+    m_overwriteButton->setEnabled(canSavePreset());
+    m_overwriteButton->setToolTip(m_selectedPreset >= 0 && m_selectedPreset < m_apiPresets.size()
+            ? tr("Overwrite \"%1\" with the current API settings").arg(m_apiPresets.at(m_selectedPreset).name)
+            : tr("Save the current API settings as a new preset"));
 }
 
 bool SettingsDialog::isDirty() const
@@ -265,6 +268,22 @@ bool SettingsDialog::isDirty() const
         return true;
     for (const ConfigEditor* editor : findChildren<ConfigEditor*>()) {
         if (editor->isModified())
+            return true;
+    }
+    return false;
+}
+
+// Follows the rule Apply uses: the button is offered only while it would change
+// something.
+bool SettingsDialog::canSavePreset() const
+{
+    const QJsonObject edited = editedApiValues();
+    if (m_selectedPreset >= 0 && m_selectedPreset < m_apiPresets.size()) {
+        return ApiPresets::withDefaults(edited)
+            != ApiPresets::withDefaults(m_apiPresets.at(m_selectedPreset).values);
+    }
+    for (const ConfigEditor* editor : findChildren<ConfigEditor*>()) {
+        if (Keys::apiPresetFields().contains(editor->key()) && editor->isModified())
             return true;
     }
     return false;
@@ -286,6 +305,10 @@ void SettingsDialog::applyChanges()
             config->setValue(editor->key(), editorValue);
         editor->refreshBaseline();
     }
+    // The committed fields stand on their own, so the selector stops claiming a
+    // preset they no longer match.
+    m_selectedPreset = ApiPresets::matchValues(m_apiPresets, editedApiValues());
+    reloadPresets();
     updateDirtyState();
 }
 
@@ -294,21 +317,24 @@ QWidget* SettingsDialog::createApiPage()
     auto* page = new QWidget(this);
     auto* form = new QFormLayout(page);
 
-    // Presets switch every field below at once, so they sit above the editors
-    // they replace rather than inside the tab's form proper.
-    auto* presetRow = new QWidget(page);
-    auto* presetLayout = new QHBoxLayout(presetRow);
-    presetLayout->setContentsMargins(0, 0, 0, 0);
-    m_presetCombo = new QComboBox(presetRow);
+    // Presets replace every field below at once, so they are grouped apart from the
+    // editors they replace.
+    auto* presetGroup = new QGroupBox(tr("API preset"), page);
+    auto* presetLayout = new QVBoxLayout(presetGroup);
+    auto* presetRow = new QHBoxLayout();
+    m_presetCombo = new QComboBox(presetGroup);
     m_presetCombo->setPlaceholderText(tr("Custom settings"));
-    auto* savePresetButton = new QPushButton(tr("Save as preset..."), presetRow);
-    auto* managePresetButton = new QPushButton(tr("Manage..."), presetRow);
-    savePresetButton->setToolTip(tr("Save the current API settings under a name"));
-    managePresetButton->setToolTip(tr("Rename, reorder, delete or load API presets"));
-    presetLayout->addWidget(m_presetCombo, 1);
-    presetLayout->addWidget(savePresetButton);
-    presetLayout->addWidget(managePresetButton);
-    form->addRow(tr("API preset"), presetRow);
+    m_overwriteButton = new QPushButton(tr("Save preset"), presetGroup);
+    auto* saveAsPresetButton = new QPushButton(tr("Save as..."), presetGroup);
+    auto* managePresetButton = new QPushButton(tr("Manage..."), presetGroup);
+    saveAsPresetButton->setToolTip(tr("Save the current API settings under a new name"));
+    managePresetButton->setToolTip(tr("Rename, copy, reorder, delete or load API presets"));
+    presetRow->addWidget(m_presetCombo, 1);
+    presetRow->addWidget(m_overwriteButton);
+    presetRow->addWidget(saveAsPresetButton);
+    presetRow->addWidget(managePresetButton);
+    presetLayout->addLayout(presetRow);
+    form->addRow(presetGroup);
 
     form->addRow(tr("Base URL"), new ConfigLineEdit(Keys::apiBaseUrl, false, page));
     form->addRow(tr("API key"), new ConfigLineEdit(Keys::apiKey, true, page));
@@ -357,15 +383,16 @@ QWidget* SettingsDialog::createApiPage()
     updateValidation();
 
     connect(m_presetCombo, &QComboBox::activated, this, &SettingsDialog::applySelectedPreset);
-    connect(savePresetButton, &QPushButton::clicked, this, &SettingsDialog::savePreset);
+    connect(m_overwriteButton, &QPushButton::clicked, this, &SettingsDialog::overwritePreset);
+    connect(saveAsPresetButton, &QPushButton::clicked, this, &SettingsDialog::savePreset);
     connect(managePresetButton, &QPushButton::clicked, this, &SettingsDialog::managePresets);
     reloadPresets();
     return page;
 }
 
-// Rebuilds the selector from the in-memory list. The entry whose fields still
-// match the pending settings is selected; when none does, the selector clears
-// to its placeholder.
+// Rebuilds the selector and points it at the preset in effect. The selection is
+// held across edits, which is what makes overwriting the selected preset
+// possible.
 void SettingsDialog::reloadPresets()
 {
     if (!m_presetCombo)
@@ -374,7 +401,9 @@ void SettingsDialog::reloadPresets()
     m_presetCombo->clear();
     for (const ApiPreset& preset : std::as_const(m_apiPresets))
         m_presetCombo->addItem(preset.name);
-    m_presetCombo->setCurrentIndex(ApiPresets::matchValues(m_apiPresets, editedApiValues()));
+    if (m_selectedPreset < 0 || m_selectedPreset >= m_apiPresets.size())
+        m_selectedPreset = ApiPresets::matchValues(m_apiPresets, editedApiValues());
+    m_presetCombo->setCurrentIndex(m_selectedPreset);
 }
 
 // API fields as currently shown by the editors, so a preset records pending
@@ -403,10 +432,27 @@ void SettingsDialog::applySelectedPreset(int index)
 {
     if (index < 0 || index >= m_apiPresets.size())
         return;
+    m_selectedPreset = index;
     applyPresetValues(m_apiPresets.at(index));
     updateDirtyState();
 }
 
+// Writes the pending API fields into the selected preset. With nothing selected
+// there is no preset to overwrite yet, so the settings are named instead.
+void SettingsDialog::overwritePreset()
+{
+    const int index = m_selectedPreset;
+    if (index < 0 || index >= m_apiPresets.size()) {
+        savePreset();
+        return;
+    }
+    m_apiPresets[index].values = editedApiValues();
+    reloadPresets();
+    updateDirtyState();
+}
+
+// Adds a preset under a name the user picks, replacing the entry when the name
+// is taken.
 void SettingsDialog::savePreset()
 {
     bool accepted = false;
@@ -425,24 +471,33 @@ void SettingsDialog::savePreset()
         m_apiPresets[existing] = preset;
     else
         m_apiPresets.append(preset);
+    // The written fields match that preset, so it becomes the selected one.
+    m_selectedPreset = ApiPresets::indexOf(m_apiPresets, name);
     reloadPresets();
     updateDirtyState();
 }
 
 void SettingsDialog::managePresets()
 {
-    // The settings the user is looking at decide the initial highlight, since
-    // they may hold edits that have not been applied yet.
-    const int selected = ApiPresets::matchValues(m_apiPresets, editedApiValues());
+    // An explicit selection wins over the match, since pending edits may have
+    // taken the fields off it.
+    int selected = m_selectedPreset;
+    if (selected < 0 || selected >= m_apiPresets.size())
+        selected = ApiPresets::matchValues(m_apiPresets, editedApiValues());
     ApiPresetDialog dialog(m_apiPresets, selected, this);
     if (dialog.exec() != QDialog::Accepted)
         return;
     m_apiPresets = dialog.presets();
-    // A load request inside the dialog replaces the pending API edits, which
-    // the selector is then re-matched against.
+    // A load request replaces the pending edits; otherwise the presets may have
+    // moved or disappeared, so the selection is re-derived from the visible
+    // fields.
     const int loaded = dialog.loadedIndex();
-    if (loaded >= 0 && loaded < m_apiPresets.size())
+    if (loaded >= 0 && loaded < m_apiPresets.size()) {
         applyPresetValues(m_apiPresets.at(loaded));
+        m_selectedPreset = loaded;
+    } else {
+        m_selectedPreset = ApiPresets::matchValues(m_apiPresets, editedApiValues());
+    }
     reloadPresets();
     updateDirtyState();
 }

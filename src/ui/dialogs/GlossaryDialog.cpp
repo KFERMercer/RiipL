@@ -47,31 +47,32 @@ GlossaryTable::GlossaryTable(QWidget* parent)
 
     auto* buttonRow = new QHBoxLayout();
     auto addButton = new QPushButton(tr("Add"), this);
-    auto removeButton = new QPushButton(tr("Remove"), this);
-    auto upButton = new QToolButton(this);
-    upButton->setIcon(AppIcons::moveUp());
-    upButton->setToolTip(tr("Move up"));
-    auto downButton = new QToolButton(this);
-    downButton->setIcon(AppIcons::moveDown());
-    downButton->setToolTip(tr("Move down"));
+    m_removeButton = new QPushButton(tr("Remove"), this);
+    m_moveUpButton = new QToolButton(this);
+    m_moveUpButton->setIcon(AppIcons::moveUp());
+    m_moveUpButton->setToolTip(tr("Move up"));
+    m_moveDownButton = new QToolButton(this);
+    m_moveDownButton->setIcon(AppIcons::moveDown());
+    m_moveDownButton->setToolTip(tr("Move down"));
     auto importButton = new QPushButton(tr("Import JSON..."), this);
     auto exportButton = new QPushButton(tr("Export JSON..."), this);
     buttonRow->addWidget(addButton);
-    buttonRow->addWidget(removeButton);
-    buttonRow->addWidget(upButton);
-    buttonRow->addWidget(downButton);
+    buttonRow->addWidget(m_removeButton);
+    buttonRow->addWidget(m_moveUpButton);
+    buttonRow->addWidget(m_moveDownButton);
     buttonRow->addStretch(1);
     buttonRow->addWidget(importButton);
     buttonRow->addWidget(exportButton);
     layout->addLayout(buttonRow);
 
     connect(addButton, &QPushButton::clicked, this, &GlossaryTable::addRow);
-    connect(removeButton, &QPushButton::clicked, this, &GlossaryTable::removeSelected);
-    connect(upButton, &QToolButton::clicked, this, [this]() { moveRow(-1); });
-    connect(downButton, &QToolButton::clicked, this, [this]() { moveRow(1); });
+    connect(m_removeButton, &QPushButton::clicked, this, &GlossaryTable::removeSelected);
+    connect(m_moveUpButton, &QToolButton::clicked, this, [this]() { moveRow(-1); });
+    connect(m_moveDownButton, &QToolButton::clicked, this, [this]() { moveRow(1); });
     connect(importButton, &QPushButton::clicked, this, &GlossaryTable::importJson);
     connect(exportButton, &QPushButton::clicked, this, &GlossaryTable::exportJson);
     connect(m_filter, &QLineEdit::textChanged, this, [this]() { applyFilter(); });
+    connect(m_table, &QTableWidget::itemSelectionChanged, this, &GlossaryTable::refreshButtons);
     connect(m_table, &QTableWidget::itemChanged, this, [this](QTableWidgetItem*) {
         applyFilter();
     });
@@ -88,6 +89,7 @@ void GlossaryTable::setEntries(const QVector<GlossaryEntry>& entries)
         m_table->setItem(i, kTargetColumn, targetItem);
     }
     applyFilter();
+    refreshButtons();
 }
 
 QVector<GlossaryEntry> GlossaryTable::entries() const
@@ -107,6 +109,15 @@ QVector<GlossaryEntry> GlossaryTable::entries() const
     return result;
 }
 
+void GlossaryTable::refreshButtons()
+{
+    const int row = m_table->currentRow();
+    const bool hasSelection = row >= 0;
+    m_removeButton->setEnabled(hasSelection);
+    m_moveUpButton->setEnabled(hasSelection && row > 0);
+    m_moveDownButton->setEnabled(hasSelection && row < m_table->rowCount() - 1);
+}
+
 void GlossaryTable::addRow()
 {
     const int row = m_table->rowCount();
@@ -114,7 +125,9 @@ void GlossaryTable::addRow()
     m_table->setItem(row, kSourceColumn, new QTableWidgetItem());
     m_table->setItem(row, kTargetColumn, new QTableWidgetItem());
     m_table->editItem(m_table->item(row, kSourceColumn));
+    m_table->setCurrentCell(row, kSourceColumn);
     applyFilter();
+    refreshButtons();
 }
 
 void GlossaryTable::removeSelected()
@@ -123,6 +136,7 @@ void GlossaryTable::removeSelected()
     if (row < 0)
         return;
     m_table->removeRow(row);
+    refreshButtons();
 }
 
 void GlossaryTable::moveRow(int offset)
@@ -133,12 +147,13 @@ void GlossaryTable::moveRow(int offset)
     const int target = row + offset;
     if (target < 0 || target >= m_table->rowCount())
         return;
-    // Rows are moved through the model, which keeps the row data and the view's
-    // own state (selection, visibility) consistent; destinationChild is the
-    // index the row is inserted before, so a downward move lands past the row
-    // it swaps with.
+    // moveRows keeps the row data and view state; destinationChild is the index
+    // the row is inserted before, so a downward move lands past the row it swaps
+    // with.
     m_table->model()->moveRows(QModelIndex(), row, 1, QModelIndex(), offset < 0 ? target : target + 1);
     m_table->selectRow(target);
+    // The current row is unchanged, so the end-of-list states are refreshed here.
+    refreshButtons();
 }
 
 void GlossaryTable::applyFilter()
