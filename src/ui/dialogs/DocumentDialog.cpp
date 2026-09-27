@@ -1,5 +1,6 @@
 #include "DocumentDialog.h"
 
+#include "ui/widgets/WindowState.h"
 
 #include <QFile>
 #include <QFileDialog>
@@ -84,6 +85,7 @@ DocumentDialog::DocumentDialog(const TranslationContext& baseContext, QWidget* p
         m_status->setText(tr("Error: %1").arg(message));
     });
 
+    WindowState::track(this, WindowState::Id::document);
 }
 
 void DocumentDialog::browse()

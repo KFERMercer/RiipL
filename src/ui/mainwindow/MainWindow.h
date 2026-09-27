@@ -68,9 +68,6 @@ private:
     void pushResultSnapshot();
     void updateUndoRedoActions();
 
-    void restoreGeometryFromConfig();
-    void saveGeometryToConfig();
-
     QSplitter* m_splitter = nullptr;
     QComboBox* m_sourceLang = nullptr;
     QComboBox* m_targetLang = nullptr;

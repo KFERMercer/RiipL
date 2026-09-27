@@ -1,5 +1,6 @@
 #include "AboutDialog.h"
 
+#include "ui/widgets/WindowState.h"
 
 #include <QCoreApplication>
 #include <QDialogButtonBox>
@@ -53,4 +54,6 @@ AboutDialog::AboutDialog(QWidget* parent)
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok, this);
     connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     layout->addWidget(buttons);
+
+    WindowState::track(this, WindowState::Id::about);
 }

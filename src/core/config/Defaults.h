@@ -81,7 +81,6 @@ inline const QStringList& apiPresetFields()
 inline const QString uiLanguage = QStringLiteral("ui.language");
 inline const QString uiAutoTranslate = QStringLiteral("ui.auto_translate");
 inline const QString uiAutoTranslateDelay = QStringLiteral("ui.auto_translate_delay");
-inline const QString uiWindowGeometry = QStringLiteral("ui.window_geometry");
 inline const QString uiAlwaysOnTop = QStringLiteral("ui.always_on_top");
 inline const QString uiMinimizeToTray = QStringLiteral("ui.minimize_to_tray");
 inline const QString uiFontSize = QStringLiteral("ui.font_size");
@@ -120,7 +119,6 @@ inline const QString apiCustomHeaders = QString();
 inline const QString uiLanguage = QStringLiteral("auto");
 inline const bool uiAutoTranslate = false;
 inline const int uiAutoTranslateDelay = 800;
-inline const QString uiWindowGeometry = QString();
 inline const bool uiAlwaysOnTop = false;
 inline const bool uiMinimizeToTray = true;
 inline const int uiFontSize = 10;
@@ -278,7 +276,6 @@ inline QJsonValue value(const QString& key)
     if (key == Keys::uiLanguage) return QJsonValue(uiLanguage);
     if (key == Keys::uiAutoTranslate) return QJsonValue(uiAutoTranslate);
     if (key == Keys::uiAutoTranslateDelay) return QJsonValue(uiAutoTranslateDelay);
-    if (key == Keys::uiWindowGeometry) return QJsonValue(uiWindowGeometry);
     if (key == Keys::uiAlwaysOnTop) return QJsonValue(uiAlwaysOnTop);
     if (key == Keys::uiMinimizeToTray) return QJsonValue(uiMinimizeToTray);
     if (key == Keys::uiFontSize) return QJsonValue(uiFontSize);

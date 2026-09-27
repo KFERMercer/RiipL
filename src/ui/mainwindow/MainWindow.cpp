@@ -10,6 +10,7 @@
 #include "ui/dialogs/ToneDialog.h"
 #include "ui/widgets/AppIcons.h"
 #include "ui/widgets/ThemeColors.h"
+#include "ui/widgets/WindowState.h"
 #include "core/config/ApiPreset.h"
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
@@ -23,12 +24,10 @@
 #include <QClipboard>
 #include <QCloseEvent>
 #include <QComboBox>
-#include <QCursor>
 #include <QDateTime>
 #include <QFile>
 #include <QFileDialog>
 #include <QFont>
-#include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMenu>
@@ -40,7 +39,6 @@
 #include <QScrollBar>
 #include <QSplitter>
 #include <QStatusBar>
-#include <QStyle>
 #include <QSystemTrayIcon>
 #include <QTimer>
 #include <QToolBar>
@@ -59,7 +57,6 @@ MainWindow::MainWindow(QWidget* parent)
 {
     setWindowIcon(QIcon(QStringLiteral(":/icons/app.svg")));
     setUnifiedTitleAndToolBarOnMac(true);
-    restoreGeometryFromConfig();
 
     auto* centralArea = new QWidget(this);
     auto* centralLayout = new QVBoxLayout(centralArea);
@@ -73,6 +70,11 @@ MainWindow::MainWindow(QWidget* parent)
     m_splitter->setSizes({600, 600});
     centralLayout->addWidget(m_splitter);
     setCentralWidget(centralArea);
+
+    if (!WindowState::track(this, WindowState::Id::main, m_splitter)) {
+        const QRect available = screen()->availableGeometry();
+        resize(available.width() * 2 / 5, available.height() / 2);
+    }
 
     m_swapAction = new QAction(this);
     m_swapAction->setIcon(AppIcons::swapHorizontal());
@@ -183,7 +185,6 @@ void MainWindow::closeEvent(QCloseEvent* event)
         event->ignore();
         return;
     }
-    saveGeometryToConfig();
     ConfigManager::instance()->flush();
     event->accept();
 }
@@ -395,7 +396,6 @@ void MainWindow::buildMenus()
     });
     connect(m_exportAction, &QAction::triggered, this, &MainWindow::exportTranslation);
     connect(m_exitAction, &QAction::triggered, this, [this]() {
-        saveGeometryToConfig();
         ConfigManager::instance()->flush();
         qApp->quit();
     });
@@ -746,9 +746,6 @@ void MainWindow::toggleVisible()
     show();
     raise();
     activateWindow();
-    if (const QScreen* screen = QGuiApplication::screenAt(QCursor::pos()))
-        setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, size(),
-                                        screen->availableGeometry()));
     const QString clipboardText = QApplication::clipboard()->text().trimmed();
     if (!clipboardText.isEmpty() && clipboardText != m_lastClipboard
         && clipboardText != m_sourceEdit->toPlainText().trimmed()) {
@@ -858,29 +855,6 @@ void MainWindow::showHistoryDialog()
         m_resultEdit->setResult(record.target);
     });
     dialog.exec();
-}
-
-void MainWindow::restoreGeometryFromConfig()
-{
-    const auto applyDefaultGeometry = [this]() {
-        const QRect available = screen()->availableGeometry();
-        resize(available.width() * 2 / 5, available.height() / 2);
-    };
-
-    const QString encoded = ConfigManager::instance()->stringValue(Keys::uiWindowGeometry);
-    if (encoded.isEmpty()) {
-        applyDefaultGeometry();
-        return;
-    }
-    const QByteArray data = QByteArray::fromBase64(encoded.toLatin1());
-    if (!restoreGeometry(data))
-        applyDefaultGeometry();
-}
-
-void MainWindow::saveGeometryToConfig()
-{
-    ConfigManager::instance()->setValue(Keys::uiWindowGeometry,
-                                        QString::fromLatin1(saveGeometry().toBase64()));
 }
 
 void MainWindow::retranslateUi()

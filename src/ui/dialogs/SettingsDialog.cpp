@@ -13,6 +13,7 @@
 #include "ui/widgets/ConfigEditors.h"
 #include "ui/widgets/FlowLayout.h"
 #include "ui/widgets/ThemeColors.h"
+#include "ui/widgets/WindowState.h"
 
 #include <QAbstractButton>
 #include <QApplication>
@@ -156,6 +157,7 @@ public:
         connect(m_style, &QLineEdit::textChanged, this, &PromptPreviewDialog::refresh);
         connect(m_background, &QLineEdit::textChanged, this, &PromptPreviewDialog::refresh);
         refresh();
+        WindowState::track(this, WindowState::Id::promptPreview);
     }
 
 private slots:
@@ -231,6 +233,7 @@ SettingsDialog::SettingsDialog(HistoryManager* history, QWidget* parent)
     }
     updateDirtyState();
 
+    WindowState::track(this, WindowState::Id::settings);
 }
 
 void SettingsDialog::reject()

@@ -4,6 +4,7 @@
 #include "core/config/Defaults.h"
 #include "core/translation/Language.h"
 #include "core/translation/Tone.h"
+#include "ui/widgets/WindowState.h"
 
 #include <QDateTime>
 #include <QHeaderView>
@@ -77,6 +78,7 @@ HistoryDialog::HistoryDialog(HistoryManager* history, QWidget* parent)
     connect(closeButton, &QPushButton::clicked, this, &QDialog::close);
 
     reload();
+    WindowState::track(this, WindowState::Id::history);
 }
 
 void HistoryDialog::reload()

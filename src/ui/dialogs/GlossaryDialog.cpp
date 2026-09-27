@@ -2,6 +2,7 @@
 
 #include "core/models/Glossary.h"
 #include "ui/widgets/AppIcons.h"
+#include "ui/widgets/WindowState.h"
 
 #include <QDialogButtonBox>
 #include <QFile>
@@ -230,4 +231,6 @@ GlossaryDialog::GlossaryDialog(QWidget* parent)
         accept();
     });
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
+
+    WindowState::track(this, WindowState::Id::glossary);
 }

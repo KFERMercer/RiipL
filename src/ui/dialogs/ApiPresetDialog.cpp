@@ -3,6 +3,7 @@
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
 #include "ui/widgets/AppIcons.h"
+#include "ui/widgets/WindowState.h"
 
 #include <QDialogButtonBox>
 #include <QHBoxLayout>
@@ -78,6 +79,7 @@ ApiPresetDialog::ApiPresetDialog(const QVector<ApiPreset>& presets, int selected
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
     refreshButtons();
+    WindowState::track(this, WindowState::Id::apiPresets);
 }
 
 void ApiPresetDialog::manage(QWidget* parent)

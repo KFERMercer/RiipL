@@ -2,6 +2,7 @@
 
 #include "core/translation/Tone.h"
 #include "ui/widgets/AppIcons.h"
+#include "ui/widgets/WindowState.h"
 
 #include <QDialogButtonBox>
 #include <QHBoxLayout>
@@ -81,6 +82,7 @@ ToneDialog::ToneDialog(const QJsonArray& customTones, const QString& uiLanguage,
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
     refreshButtons();
+    WindowState::track(this, WindowState::Id::tones);
 }
 
 void ToneDialog::loadTones(const QJsonArray& stored)
