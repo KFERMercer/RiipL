@@ -2,10 +2,8 @@
 #include "Defaults.h"
 #include "core/json/JsonUtils.h"
 
-#include <QCoreApplication>
 #include <QDir>
 #include <QFile>
-#include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QStandardPaths>
@@ -25,12 +23,8 @@ void ConfigManager::createInstance(const QString& configDir)
         s_instance->flush();
     delete s_instance;
     QString dir = configDir;
-    if (dir.isEmpty()) {
-        dir = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation);
-        const QString organization = QCoreApplication::organizationName();
-        if (!organization.isEmpty())
-            dir += QLatin1Char('/') + organization;
-    }
+    if (dir.isEmpty())
+        dir = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
     s_instance = new ConfigManager(dir);
 }
 
@@ -41,25 +35,7 @@ ConfigManager::ConfigManager(const QString& configDir)
     m_saveTimer.setSingleShot(true);
     m_saveTimer.setInterval(400);
     connect(&m_saveTimer, &QTimer::timeout, this, &ConfigManager::save);
-    importLegacyFiles();
     load();
-}
-
-void ConfigManager::importLegacyFiles()
-{
-    const QString legacyDir = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
-    if (legacyDir == m_dir || !QFileInfo(legacyDir).exists())
-        return;
-    const QStringList names = {
-        QStringLiteral("config.json"),
-        QStringLiteral("history.json")
-    };
-    for (const QString& name : names) {
-        const QString source = legacyDir + QLatin1Char('/') + name;
-        const QString target = m_dir + QLatin1Char('/') + name;
-        if (!QFileInfo::exists(target) && QFileInfo::exists(source))
-            QFile::copy(source, target);
-    }
 }
 
 QString ConfigManager::configFilePath() const

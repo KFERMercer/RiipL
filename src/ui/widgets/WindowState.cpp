@@ -1,6 +1,5 @@
 #include "WindowState.h"
 
-#include <QCoreApplication>
 #include <QEvent>
 #include <QSettings>
 #include <QSplitter>
@@ -52,13 +51,8 @@ private:
 
 QString WindowState::filePath()
 {
-    // StateLocation would nest the application name twice; this mirrors how
-    // ConfigManager derives its own directory.
-    QString dir = QStandardPaths::writableLocation(QStandardPaths::GenericStateLocation);
-    const QString organization = QCoreApplication::organizationName();
-    if (!organization.isEmpty())
-        dir += QLatin1Char('/') + organization;
-    return dir + QStringLiteral("/windowstate.ini");
+    return QStandardPaths::writableLocation(QStandardPaths::StateLocation)
+        + QStringLiteral("/windowstate.ini");
 }
 
 bool WindowState::track(QWidget* window, const QString& id, QSplitter* splitter)

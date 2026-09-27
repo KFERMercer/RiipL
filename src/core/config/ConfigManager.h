@@ -35,7 +35,6 @@ signals:
 
 private:
     explicit ConfigManager(const QString& configDir);
-    void importLegacyFiles();
     void load();
     void scheduleSave();
     void save();

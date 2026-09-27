@@ -39,7 +39,6 @@ private:
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
-    QApplication::setOrganizationName(QStringLiteral("RiipL"));
     QApplication::setApplicationName(QStringLiteral("RiipL"));
     QApplication::setApplicationVersion(RIIPL_VERSION);
     QApplication::setWindowIcon(QIcon(QStringLiteral(":/icons/app.svg")));
