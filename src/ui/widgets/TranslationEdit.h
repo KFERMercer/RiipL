@@ -11,10 +11,13 @@ public:
 
     void setResult(const QString& text);
     QString result() const;
-    bool replaceWordAt(const QTextCursor& hint, const QString& targetText, const QString& replacement);
+    // Replaces \p targetText when it still starts at \p start, so a replacement
+    // is rejected outright once the translation has moved on.
+    bool replaceWordAt(int start, const QString& targetText, const QString& replacement);
 
 signals:
-    void wordRequested(const QString& word, const QPoint& globalPos, const QTextCursor& cursor);
+    void wordRequested(const QString& word, int selectionStart, int selectionEnd,
+                       const QPoint& globalPos);
 
 protected:
     void mousePressEvent(QMouseEvent* event) override;

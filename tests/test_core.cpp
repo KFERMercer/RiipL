@@ -37,9 +37,10 @@ private slots:
     void historyTrimming();
     void historyDebouncesSavesUntilFlush();
     void uiLanguageResolution();
-    void candidateCleaning();
     void wordSpanAtBoundaries();
     void candidateResponseParsing();
+    void candidateFragmentWindow();
+    void candidateResolution();
     void replaceTargetsCompleteWord();
     void singleInstanceArbitration();
     void guessFromScriptDetection();
@@ -57,6 +58,7 @@ private slots:
     void apiPresetMatchesAppliedSettings();
     void apiPresetApplyWritesEveryField();
     void stopCancelsActiveRequest();
+    void candidateRequestRetriesEmptyReply();
     void failedDispatchReturnsToIdle();
     void stopWhenIdleIsNoOp();
 
@@ -292,21 +294,35 @@ void TestCore::promptReferenceEntryKeepsBodyIntact()
 
 void TestCore::candidatePromptSubstitution()
 {
+    const QString fragment = QStringLiteral("[[世界]]，你好");
+    const QString full = QStringLiteral("你好，世界！今天天气不错。");
     const QString prompt = PromptBuilder::candidatePrompt(
-        QStringLiteral("Hello world"), QStringLiteral("你好，世界"), QStringLiteral("世界"),
-        QStringLiteral("zh"), QStringLiteral("en"));
-    QVERIFY(prompt.contains(QStringLiteral("Hello world")));
-    QVERIFY(prompt.contains(QStringLiteral("你好，世界")));
+        full, fragment, QStringLiteral("世界"), QStringLiteral("zh"), QStringLiteral("en"));
+    QVERIFY(prompt.contains(fragment));
     QVERIFY(prompt.contains(QStringLiteral("世界")));
-    QVERIFY(prompt.contains(QStringLiteral("alternative")));
     QVERIFY(prompt.contains(QStringLiteral("Chinese")));
+    QVERIFY(prompt.contains(QStringLiteral("JSON")));
     QVERIFY(!prompt.contains(QStringLiteral("{target_lang}")));
+    QVERIFY(!prompt.contains(QStringLiteral("{selected_fragment}")));
+    QVERIFY(!prompt.contains(QStringLiteral("{mark_left}")));
+    QVERIFY(!prompt.contains(QStringLiteral("{mark_right}")));
+    // The rendered markers are the very ones the engine wraps the selection
+    // with, so the prompt and the renderer cannot drift apart.
+    QVERIFY(prompt.contains(CandidateMarks::selectionOpen));
+    QVERIFY(prompt.contains(CandidateMarks::selectionClose));
 
-    // The source and translation are fenced and the selection is inline code,
-    // so surrounding markup cannot leak into the returned candidates.
-    QVERIFY(prompt.contains(QStringLiteral("```\nHello world\n```")));
-    QVERIFY(prompt.contains(QStringLiteral("```\n你好，世界\n```")));
-    QVERIFY(prompt.contains(QStringLiteral("`世界`")));
+    // The fragment is fenced with backticks, so the brackets that mark the
+    // selection cannot be confused with the fence or with JSON syntax.
+    QVERIFY(prompt.contains(QStringLiteral("```\n%1\n```").arg(fragment)));
+
+    // {translated_text} stays the full translation and is only rendered when a
+    // template asks for it, while {selected_fragment} always drives the request.
+    QVERIFY(!prompt.contains(full));
+    const QString withFull = PromptBuilder::substitute(
+        QStringLiteral("整段：{translated_text}\n片段：{selected_fragment}"),
+        {{QStringLiteral("translated_text"), full},
+         {QStringLiteral("selected_fragment"), fragment}});
+    QVERIFY(withFull.contains(full));
 }
 
 void TestCore::knownPlaceholdersCoverVariables()
@@ -318,7 +334,9 @@ void TestCore::knownPlaceholdersCoverVariables()
     const QStringList expected = {
         QStringLiteral("source_lang"), QStringLiteral("target_lang"), QStringLiteral("tone"),
         QStringLiteral("style"), QStringLiteral("background"), QStringLiteral("glossary"),
-        QStringLiteral("source_text"), QStringLiteral("translated_text"), QStringLiteral("selected_word")
+        QStringLiteral("source_text"), QStringLiteral("translated_text"),
+        QStringLiteral("selected_fragment"), QStringLiteral("selected_word"),
+        QStringLiteral("mark_left"), QStringLiteral("mark_right")
     };
     QCOMPARE(placeholders, expected);
 
@@ -409,27 +427,6 @@ void TestCore::uiLanguageResolution()
     QCOMPARE(ConfigManager::instance()->resolvedUiLanguage(), QStringLiteral("en"));
 }
 
-void TestCore::candidateCleaning()
-{
-    const QStringList raw = {
-        QStringLiteral("1. alternative one"),
-        QStringLiteral("- alternative two"),
-        QStringLiteral("* alternative three"),
-        QStringLiteral("`alternative four`"),
-        QStringLiteral("\"alternative five\""),
-        QStringLiteral("   "),
-        QStringLiteral("alternative six")
-    };
-    const QStringList cleaned = TranslationEngine::cleanCandidates(raw);
-    QCOMPARE(cleaned.size(), 6);
-    QCOMPARE(cleaned.at(0), QStringLiteral("alternative one"));
-    QCOMPARE(cleaned.at(1), QStringLiteral("alternative two"));
-    QCOMPARE(cleaned.at(2), QStringLiteral("alternative three"));
-    QCOMPARE(cleaned.at(3), QStringLiteral("alternative four"));
-    QCOMPARE(cleaned.at(4), QStringLiteral("alternative five"));
-    QCOMPARE(cleaned.at(5), QStringLiteral("alternative six"));
-}
-
 void TestCore::wordSpanAtBoundaries()
 {
     const QString english = QStringLiteral("Hello world");
@@ -461,22 +458,118 @@ void TestCore::wordSpanAtBoundaries()
 void TestCore::candidateResponseParsing()
 {
     const QString json = QStringLiteral(
-        "{\"replace\": \"皇帝\", \"options\": [\"君主\", \"统治者\", \"帝王\"]}");
-    const TranslationEngine::CandidateResult parsed = TranslationEngine::parseCandidateResponse(json);
-    QCOMPARE(parsed.replaceTarget, QStringLiteral("皇帝"));
-    QCOMPARE(parsed.options.size(), 3);
-    QCOMPARE(parsed.options.at(0), QStringLiteral("君主"));
+        "[{\"old\": \"皇帝\", \"new\": [\"君主\", \"帝王\"]}, "
+        "{\"old\": \"莫卧儿\", \"new\": [\"蒙兀儿\"]}]");
+    const QVector<TranslationEngine::CandidateGroup> groups =
+        TranslationEngine::parseCandidateResponse(json);
+    QCOMPARE(groups.size(), 2);
+    QCOMPARE(groups.at(0).target, QStringLiteral("皇帝"));
+    QCOMPARE(groups.at(0).options, QStringList({QStringLiteral("君主"), QStringLiteral("帝王")}));
+    QCOMPARE(groups.at(1).target, QStringLiteral("莫卧儿"));
 
-    const QString fenced = QStringLiteral("\n```json\n{\"replace\": \"皇帝\", \"options\": [\"君主\"]}\n```\n");
-    const TranslationEngine::CandidateResult fromFence = TranslationEngine::parseCandidateResponse(fenced);
-    QCOMPARE(fromFence.replaceTarget, QStringLiteral("皇帝"));
-    QCOMPARE(fromFence.options, QStringList{QStringLiteral("君主")});
+    // A fenced reply parses the same way.
+    const QString fenced = QStringLiteral(
+        "\n```json\n[{\"old\": \"皇帝\", \"new\": [\"君主\"]}]\n```\n");
+    QCOMPARE(TranslationEngine::parseCandidateResponse(fenced).size(), 1);
 
-    const QString plain = QStringLiteral("君主\n统治者\n\"帝王\"");
-    const TranslationEngine::CandidateResult fallback = TranslationEngine::parseCandidateResponse(plain);
-    QVERIFY(fallback.replaceTarget.isEmpty());
-    QCOMPARE(fallback.options.size(), 3);
-    QCOMPARE(fallback.options.at(2), QStringLiteral("帝王"));
+    // A bare string in `new` is accepted, a group repeating its own target is
+    // dropped, and a duplicated option is collapsed.
+    const QString loose = QStringLiteral(
+        "[{\"old\": \"皇帝\", \"new\": \"君主\"}, "
+        "{\"old\": \"莫卧儿\", \"new\": [\"莫卧儿\", \"蒙兀儿\", \"蒙兀儿\"]}, "
+        "{\"old\": \"\", \"new\": [\"空\"]}]");
+    const QVector<TranslationEngine::CandidateGroup> parsed =
+        TranslationEngine::parseCandidateResponse(loose);
+    QCOMPARE(parsed.size(), 2);
+    QCOMPARE(parsed.at(0).target, QStringLiteral("皇帝"));
+    QCOMPARE(parsed.at(0).options, QStringList({QStringLiteral("君主")}));
+    QCOMPARE(parsed.at(1).options, QStringList({QStringLiteral("蒙兀儿")}));
+
+    QVERIFY(TranslationEngine::parseCandidateResponse(QStringLiteral("没有 JSON")).isEmpty());
+}
+
+void TestCore::candidateFragmentWindow()
+{
+    const QString text = QStringLiteral(
+        "First sentence with plenty of words in it. Second sentence carries the target word here. "
+        "Third sentence closes the paragraph.");
+
+    const int target = text.indexOf(QStringLiteral("target"));
+    QVERIFY(target > 0);
+    const TextUtils::WordSpan word = TextUtils::wordSpanAt(text, target);
+    QVERIFY(word.valid());
+    QCOMPARE(text.mid(word.start, word.length()), QStringLiteral("target"));
+
+    // Without extra context the fragment stays inside the sentence holding the
+    // selection, and the mark still maps onto the word.
+    const TextUtils::Fragment tight =
+        TextUtils::candidateFragment(text, word.start, word.end, 0);
+    QVERIFY(tight.valid());
+    QVERIFY(!tight.text.contains(QStringLiteral("First sentence")));
+    QVERIFY(!tight.text.contains(QStringLiteral("Third sentence")));
+    QCOMPARE(tight.text.mid(tight.markStart, tight.markEnd - tight.markStart),
+             QStringLiteral("target"));
+
+    // The window only ever grows, and it never cuts a word in half.
+    const TextUtils::Fragment wide =
+        TextUtils::candidateFragment(text, word.start, word.end, 80);
+    QVERIFY(wide.valid());
+    QVERIFY(wide.text.size() >= tight.text.size());
+    QCOMPARE(wide.text.mid(wide.markStart, wide.markEnd - wide.markStart),
+             QStringLiteral("target"));
+    QCOMPARE(text.mid(wide.sourceOffset + wide.markStart,
+                      wide.markEnd - wide.markStart), QStringLiteral("target"));
+    const QChar first = wide.text.front();
+    const QChar last = wide.text.back();
+    QVERIFY(!first.isSpace() && !last.isSpace());
+
+    // The absolute offset maps a fragment occurrence back to the full text.
+    QVERIFY(text.mid(wide.sourceOffset).startsWith(wide.text));
+}
+
+void TestCore::candidateResolution()
+{
+    const QString text = QStringLiteral("The old man told the old story again.");
+    const int manAt = text.indexOf(QStringLiteral("The old man"));
+    const int storyAt = text.indexOf(QStringLiteral("the old story"));
+    QVERIFY(manAt >= 0 && storyAt > manAt);
+
+    // Two occurrences of the same word, each covered by a different candidate,
+    // resolve to their own span.
+    const TextUtils::WordSpan man = TextUtils::resolveCandidate(
+        text, manAt + 4, manAt + 7, QStringLiteral("the old man"));
+    QCOMPARE(man.start, manAt);
+    QCOMPARE(man.end, manAt + 11);
+    const TextUtils::WordSpan story = TextUtils::resolveCandidate(
+        text, storyAt + 4, storyAt + 7, QStringLiteral("the old story"));
+    QCOMPARE(story.start, storyAt);
+    QCOMPARE(story.end, storyAt + 13);
+
+    // A candidate that does not cover the selection is rejected even though it
+    // appears in the text, which keeps the replacement off an unrelated word.
+    QVERIFY(!TextUtils::resolveCandidate(text, manAt + 4, manAt + 7,
+                                         QStringLiteral("the old story")).valid());
+
+    // A dropped sentence-initial capital still resolves, case-insensitively.
+    const QString sentence = QStringLiteral("Wandering thoughts filled her mind.");
+    const TextUtils::WordSpan folded = TextUtils::resolveCandidate(
+        sentence, 0, 9, QStringLiteral("wandering thoughts"));
+    QCOMPARE(folded.start, 0);
+    QCOMPARE(folded.end, 18);
+
+    // The selection pins the occurrence: a repeated word resolves to the one the
+    // user actually clicked rather than the first match in the text.
+    const int secondCovered = storyAt + 4;
+    const TextUtils::WordSpan bare = TextUtils::resolveCandidate(
+        text, secondCovered, secondCovered + 3, QStringLiteral("old"));
+    QCOMPARE(bare.start, secondCovered);
+
+    // Two overlapping occurrences that both cover the selection are genuinely
+    // ambiguous and are rejected rather than guessed.
+    QVERIFY(!TextUtils::resolveCandidate(QStringLiteral("aaa"), 1, 2,
+                                         QStringLiteral("aa")).valid());
+
+    QVERIFY(!TextUtils::resolveCandidate(text, manAt + 4, manAt + 7, QString()).valid());
 }
 
 void TestCore::replaceTargetsCompleteWord()
@@ -486,22 +579,20 @@ void TestCore::replaceTargetsCompleteWord()
     const TextUtils::WordSpan span = TextUtils::wordSpanAt(translated, huangIndex);
     QVERIFY(span.valid());
 
-    // The clicked span acts only as an anchor; the replacement target from
-    // the candidate response may cover a longer run than the clicked word.
+    // The clicked span acts only as an anchor; the replacement target from the
+    // candidate response may cover a longer run than the clicked word, and it
+    // resolves back to the absolute span the replacement is applied to.
     const QString target = QStringLiteral("皇帝");
-    const int start = TextUtils::nearestOccurrence(translated, target, span.start);
-    QCOMPARE(start, span.start);
+    const TextUtils::WordSpan resolved = TextUtils::resolveCandidate(
+        translated, span.start, span.end, target);
+    QVERIFY(resolved.valid());
+    QCOMPARE(resolved.start, span.start);
+    QCOMPARE(translated.mid(resolved.start, resolved.length()), target);
 
     QString replaced = translated;
-    replaced.replace(start, target.size(), QStringLiteral("君主"));
+    replaced.replace(resolved.start, resolved.length(), QStringLiteral("君主"));
     QCOMPARE(replaced,
              QStringLiteral("莫卧儿君主是从什么时候开始觉得自己是印度人的？"));
-
-    // Anchoring resolves to the occurrence closest to the given position.
-    const QString repeated = QStringLiteral("alpha beta alpha");
-    QCOMPARE(TextUtils::nearestOccurrence(repeated, QStringLiteral("alpha"), 6), 11);
-    QCOMPARE(TextUtils::nearestOccurrence(repeated, QStringLiteral("gamma"), 0), -1);
-    QCOMPARE(TextUtils::nearestOccurrence(repeated, QString(), 0), -1);
 }
 
 void TestCore::singleInstanceArbitration()
@@ -984,6 +1075,64 @@ void TestCore::stopCancelsActiveRequest()
     QVERIFY(!engine.busy());
     QVERIFY(!stateSpy.isEmpty());
     QCOMPARE(stateSpy.last().last().toBool(), false);
+}
+
+// A model that answers without a single usable group gets exactly one more
+// chance, and a reply that does carry groups is never retried.
+void TestCore::candidateRequestRetriesEmptyReply()
+{
+    QDir().mkpath(tempDir());
+    ConfigManager::createInstance(tempDir());
+
+    QTcpServer server;
+    QVERIFY(server.listen(QHostAddress::LocalHost));
+    ConfigManager::instance()->setValue(
+        Keys::apiBaseUrl, QStringLiteral("http://127.0.0.1:%1/v1").arg(server.serverPort()));
+
+    int requests = 0;
+    // The first reply names a fragment that does not cover the selection, which
+    // is the failure the retry exists for; the second one is usable.
+    const QByteArray offTargetReply =
+        R"({"choices":[{"message":{"content":"[{\"old\":\"印度人\",\"new\":[\"南亚人\"]}]"}}]})";
+    const QByteArray groupsReply =
+        R"({"choices":[{"message":{"content":"[{\"old\":\"皇帝\",\"new\":[\"君主\"]}]"}}]})";
+    QObject::connect(&server, &QTcpServer::newConnection, this, [&]() {
+        QTcpSocket* socket = server.nextPendingConnection();
+        QObject::connect(socket, &QTcpSocket::readyRead, socket, [&, socket]() {
+            socket->readAll();
+            ++requests;
+            const QByteArray body = requests == 1 ? offTargetReply : groupsReply;
+            socket->write("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: "
+                          + QByteArray::number(body.size()) + "\r\n\r\n" + body);
+            socket->flush();
+        });
+    });
+
+    TranslationEngine engine;
+    TranslationContext context;
+    context.translatedText = QStringLiteral("莫卧儿皇帝是从什么时候开始觉得自己是印度人的？");
+    context.targetLang = QStringLiteral("zh");
+    context.uiLanguage = QStringLiteral("en");
+
+    QVector<TranslationEngine::CandidateGroup> received;
+    QString error;
+    const QString word = QStringLiteral("皇帝");
+    const int start = context.translatedText.indexOf(word);
+    engine.requestCandidates(
+        context, start, start + word.size(),
+        [&](const QVector<TranslationEngine::CandidateGroup>& groups) { received = groups; },
+        [&](const QString& message) { error = message; });
+
+    QTRY_COMPARE_WITH_TIMEOUT(received.size(), 1, 5000);
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+    // The unusable first reply was retried, and the second one was taken as final.
+    QCOMPARE(requests, 2);
+    QCOMPARE(received.first().target, QStringLiteral("皇帝"));
+    QCOMPARE(received.first().options, QStringList({QStringLiteral("君主")}));
+    // The engine hands back the resolved span, so the caller never re-searches.
+    QCOMPARE(received.first().start, start);
+    QCOMPARE(received.first().length, word.size());
+    QVERIFY(received.first().valid());
 }
 
 void TestCore::failedDispatchReturnsToIdle()

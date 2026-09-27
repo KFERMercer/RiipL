@@ -5,6 +5,16 @@
 #include <QString>
 #include <QStringList>
 
+namespace CandidateMarks {
+
+// Bracket pair wrapped around the selection before a fragment reaches the model.
+// A paired glyph is used because single-character markers get echoed back
+// inside `old`.
+inline const QString selectionOpen = QStringLiteral("[[");
+inline const QString selectionClose = QStringLiteral("]]");
+
+}
+
 namespace Prompts {
 
 // Canonical prompt template identifiers from which per-language config keys derive.
@@ -198,42 +208,60 @@ inline const QString promptDefaultEn = R"TXT(Based on the reference information 
 {source_text}
 ```)TXT";
 
-inline const QString promptCandidateZh = R"TXT(原文：
-```
-{source_text}
-```
-译文：
-```
-{translated_text}
-```
-用户在译文中选中了：`{selected_word}`
+inline const QString promptCandidateZh = R"TXT(你的任务是寻找选定词语的替代遣词或表述，并返回 JSON 结构化方案。
 
-请结合上下文判断选中内容对应的完整词语或短语（必要时可向左右扩展为更完整的词），
-并提供 2-4 个可直接替换该词语的备选表达。
+待处理文本：
 
-重要：replace 必须能在译文中原样找到；replace 与所有 options 必须使用 {target_lang} 书写，
-与译文语言保持一致，并保证替换回译文后语法通顺，禁止翻译成其他任何语言。
-
-严格按以下 JSON 格式输出，禁止输出任何解释或代码块标记：
-{{"replace": "译文中需要被替换的完整片段", "options": ["备选一", "备选二", "备选三"]}})TXT";
-inline const QString promptCandidateEn = R"TXT(Source:
 ```
-{source_text}
+{selected_fragment}
 ```
-Translation:
+
+用户在文本中选中了：`{selected_word}`（已用 {mark_left} 和 {mark_right} 标出，这两个符号不属于原文）。
+
+判断步骤：
+1. 在文本中定位 {mark_left} 与 {mark_right} 之间的内容。
+2. 判断它在句中构成哪个完整表达单元——可以就是这个词语本身，也可以是包含它的固定搭配或短语——把它作为 `old`。
+3. 为 `old` 写出 2 到 4 条可直接替换的表达，放进 `new` 数组。
+
+约束：
+- `old` 必须从文本中直接复制，逐字节一致，包括大小写与标点；不得改写、拼接或虚构。
+- `old` 必须包含被标记的内容，可以向左右扩展为更完整的表达单元，但不得只取被标记词语的一部分。
+- `old` 中不得出现 {mark_left} 和 {mark_right}。
+- `new` 中每条表达均与 `old` 不同，且彼此互不相同。
+- `old` 与全部 `new` 一律使用 {target_lang} 书写，一个字都不得混入其他语言。
+- `new` 是同一语言内的近义改写，不是翻译，禁止译成其他语言。
+- 替换后整句意思不变、语法通顺。
+- 替换范围以 `old` 为准，句中其他部分保持原样。
+
+只输出如下 JSON 数组，不要解释、不要代码块标记，每个需要替换的片段对应一个对象：
+[{"old":"原样片段1","new":["替换表达1","替换表达2"]},{"old":"原样片段2","new":["替换表达3","替换表达4"]}])TXT";
+inline const QString promptCandidateEn = R"TXT(Your task is to find alternative wordings for the selected word, and return a structured JSON plan.
+
+Text to process:
+
 ```
-{translated_text}
+{selected_fragment}
 ```
-The user selected `{selected_word}` in the translation.
 
-Determine the complete word or phrase that the selection corresponds to in the translation (expand to the left or right if needed),
-then provide 2-4 alternative expressions that can directly replace it. The result must read naturally in context.
+The user selected `{selected_word}` in the text (already marked with {mark_left} and {mark_right}; those two symbols are not part of the original text).
 
-Important: "replace" must appear verbatim in the translation; "replace" and every entry in "options" MUST be written in {target_lang},
-the same language as the translation. Never use any other language.
+Steps:
+1. Locate the content between {mark_left} and {mark_right} in the text.
+2. Decide which complete expression unit it forms in the sentence, which may be the word itself or an idiomatic phrase containing it, and use that as `old`.
+3. Write 2 to 4 expressions that can directly replace `old` and put them into the `new` array.
 
-Output strictly in the following JSON format with no explanation and no code fences:
-{{"replace": "the exact fragment in the translation to be replaced", "options": ["option 1", "option 2", "option 3"]}})TXT";
+Constraints:
+- `old` must be copied verbatim from the text, character for character, including case and punctuation.
+- `old` must contain the marked content and may widen to a more complete expression unit, but must not take only part of the marked word.
+- `old` must not contain {mark_left} or {mark_right}.
+- Every entry in `new` differs from `old` and from the other entries.
+- `old` and all `new` entries must be written in {target_lang}; do not mix in a single character of another language.
+- `new` entries are paraphrases within the same language, not translations.
+- Replacing `old` with a `new` entry must keep the meaning and read naturally.
+- The replacement range is exactly `old`; leave the rest of the sentence untouched.
+
+Output only the following JSON array, with no explanation and no code fences, one object per fragment to replace:
+[{"old":"fragment 1","new":["alternative 1","alternative 2"]},{"old":"fragment 2","new":["alternative 3","alternative 4"]}])TXT";
 
 inline QJsonValue value(const QString& key)
 {

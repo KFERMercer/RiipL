@@ -27,22 +27,18 @@ CandidatePopup::CandidatePopup(TranslationEngine* engine, QWidget* parent)
     layout->addWidget(m_list);
 
     connect(m_list, &QListWidget::itemClicked, this, [this](QListWidgetItem* item) {
-        emit candidateChosen(m_replaceTarget.isEmpty() ? m_word : m_replaceTarget,
-                             item->text(), m_cursor);
+        emit candidateChosen(item->data(Qt::UserRole).toInt(),
+                             item->data(Qt::UserRole + 1).toString(), item->text());
         close();
     });
 }
 
 void CandidatePopup::openFor(const QString& word,
+                             int selectionStart,
+                             int selectionEnd,
                              const QPoint& globalPos,
-                             const QString& sourceText,
-                             const QString& translatedText,
-                             const QString& targetLang,
-                             const QTextCursor& cursor)
+                             const TranslationContext& context)
 {
-    m_word = word;
-    m_replaceTarget.clear();
-    m_cursor = cursor;
     m_header->setText(word);
     move(globalPos + QPoint(8, 10));
     show();
@@ -55,18 +51,27 @@ void CandidatePopup::openFor(const QString& word,
     adjustSize();
 
     m_engine->requestCandidates(
-        sourceText, translatedText, word, targetLang,
-        [this](const TranslationEngine::CandidateResult& result) {
+        context, selectionStart, selectionEnd,
+        [this](const QVector<TranslationEngine::CandidateGroup>& groups) {
             if (!isVisible())
                 return;
-            m_replaceTarget = result.replaceTarget;
+
+            // Groups arrive already resolved to a span of the translation, so a
+            // hallucinated or ambiguous target never reaches the list.
             m_list->clear();
-            if (result.options.isEmpty()) {
+            for (const TranslationEngine::CandidateGroup& group : groups) {
+                for (const QString& option : group.options) {
+                    auto* item = new QListWidgetItem(option, m_list);
+                    item->setData(Qt::UserRole, group.start);
+                    item->setData(Qt::UserRole + 1, group.target);
+                }
+            }
+
+            if (m_list->count() == 0) {
                 m_status->setText(tr("No alternatives found"));
                 m_list->hide();
             } else {
                 m_status->hide();
-                m_list->addItems(result.options);
                 m_list->show();
             }
             adjustSize();

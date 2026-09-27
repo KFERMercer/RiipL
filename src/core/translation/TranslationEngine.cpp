@@ -2,11 +2,19 @@
 
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
+#include "utils/TextUtils.h"
 
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QRegularExpression>
+
+namespace {
+
+// Sentence plus this many characters on either side reaches the neighbouring
+// clause, which the model needs to judge how the selection fits the sentence.
+constexpr int kCandidateContextChars = 80;
+
+}
 
 TranslationEngine::TranslationEngine(QObject* parent)
     : QObject(parent)
@@ -90,35 +98,112 @@ void TranslationEngine::translateText(const TranslationContext& context)
         });
 }
 
-void TranslationEngine::requestCandidates(const QString& sourceText,
-                                          const QString& translatedText,
-                                          const QString& word,
-                                          const QString& targetLang,
-                                          const std::function<void(const CandidateResult&)>& onDone,
+void TranslationEngine::requestCandidates(const TranslationContext& context,
+                                          int selectionStart,
+                                          int selectionEnd,
+                                          const std::function<void(const QVector<CandidateGroup>&)>& onDone,
                                           const std::function<void(const QString&)>& onError)
 {
     if (m_candidateApi.busy())
         m_candidateApi.cancel();
 
-    const QString uiLanguage = ConfigManager::instance()->resolvedUiLanguage();
-    const QString prompt = PromptBuilder::candidatePrompt(sourceText, translatedText, word, targetLang, uiLanguage);
-    QJsonObject body = buildRequestBody(prompt, false);
+    // The request carries only the sentence around the selection, so the prompt
+    // stays small no matter how long the document is.
+    const TextUtils::Fragment fragment = TextUtils::candidateFragment(
+        context.translatedText, selectionStart, selectionEnd, kCandidateContextChars);
+    if (!fragment.valid()) {
+        if (onError)
+            onError(tr("Nothing to look up"));
+        return;
+    }
 
-    m_candidateApi.sendChatRequest(body,
-        [this, onDone](const QString& result) {
-            if (onDone)
-                onDone(parseCandidateResponse(result));
+    // The selection is wrapped before the fragment is rendered, so the model
+    // sees the marked text inside the fenced block.
+    QString marked = fragment.text;
+    marked.insert(fragment.markEnd, CandidateMarks::selectionClose);
+    marked.insert(fragment.markStart, CandidateMarks::selectionOpen);
+
+    const QString word = context.translatedText.mid(selectionStart, selectionEnd - selectionStart);
+    const QString uiLanguage = ConfigManager::instance()->resolvedUiLanguage();
+    const QString prompt = PromptBuilder::candidatePrompt(
+        context.translatedText, marked, word, context.targetLang, uiLanguage);
+
+    m_candidateBody = buildRequestBody(prompt, false);
+    m_candidateText = context.translatedText;
+    m_candidateSelectionStart = selectionStart;
+    m_candidateSelectionEnd = selectionEnd;
+    m_candidateDone = onDone;
+    m_candidateError = onError;
+    // One retry is allowed per request; the flag is cleared as soon as it is
+    // spent, so a model that keeps answering unusably cannot loop.
+    m_candidateRetryPending = true;
+    dispatchCandidateRequest();
+}
+
+void TranslationEngine::dispatchCandidateRequest()
+{
+    m_candidateApi.sendChatRequest(m_candidateBody,
+        [this](const QString& result) {
+            deliverCandidates(result);
         },
         {},
-        [onError](const QString& message) {
+        [this](const QString& message) {
+            // A transport failure is not worth repeating: the retry targets a
+            // reply the model answered without a usable group.
+            m_candidateRetryPending = false;
+            const auto onError = m_candidateError;
+            m_candidateDone = nullptr;
+            m_candidateError = nullptr;
             if (onError)
                 onError(message);
         });
 }
 
-TranslationEngine::CandidateResult TranslationEngine::parseCandidateResponse(const QString& raw)
+void TranslationEngine::deliverCandidates(const QString& raw)
 {
-    CandidateResult result;
+    QVector<CandidateGroup> groups = resolveGroups(
+        parseCandidateResponse(raw), m_candidateText,
+        m_candidateSelectionStart, m_candidateSelectionEnd);
+
+    if (groups.isEmpty() && m_candidateRetryPending) {
+        m_candidateRetryPending = false;
+        dispatchCandidateRequest();
+        return;
+    }
+
+    m_candidateRetryPending = false;
+    const auto onDone = m_candidateDone;
+    m_candidateDone = nullptr;
+    m_candidateError = nullptr;
+    m_candidateBody = QJsonObject();
+    m_candidateText.clear();
+    m_candidateSelectionStart = -1;
+    m_candidateSelectionEnd = -1;
+    if (onDone)
+        onDone(groups);
+}
+
+QVector<TranslationEngine::CandidateGroup> TranslationEngine::resolveGroups(
+    QVector<CandidateGroup> groups, const QString& translatedText,
+    int selectionStart, int selectionEnd)
+{
+    QVector<CandidateGroup> resolved;
+    resolved.reserve(groups.size());
+    for (CandidateGroup& group : groups) {
+        const TextUtils::WordSpan span = TextUtils::resolveCandidate(
+            translatedText, selectionStart, selectionEnd, group.target);
+        if (!span.valid())
+            continue;
+        group.start = span.start;
+        group.length = span.length();
+        resolved << group;
+    }
+    return resolved;
+}
+
+QVector<TranslationEngine::CandidateGroup> TranslationEngine::parseCandidateResponse(const QString& raw)
+{
+    QVector<CandidateGroup> groups;
 
     QString text = raw.trimmed();
     if (text.startsWith(QStringLiteral("```"))) {
@@ -131,56 +216,35 @@ TranslationEngine::CandidateResult TranslationEngine::parseCandidateResponse(con
         text = text.trimmed();
     }
 
-    const int braceStart = text.indexOf(QLatin1Char('{'));
-    const int braceEnd = text.lastIndexOf(QLatin1Char('}'));
-    if (braceStart != -1 && braceEnd > braceStart) {
-        const QJsonDocument doc = QJsonDocument::fromJson(text.mid(braceStart, braceEnd - braceStart + 1).toUtf8());
-        if (doc.isObject()) {
-            const QJsonObject object = doc.object();
-            result.replaceTarget = object.value(QStringLiteral("replace")).toString().trimmed();
-            const QJsonArray options = object.value(QStringLiteral("options")).toArray();
-            for (const QJsonValue& value : options) {
-                const QString option = value.toString().trimmed();
-                if (!option.isEmpty())
-                    result.options << option;
-            }
-            if (!result.options.isEmpty())
-                return result;
-            result.replaceTarget.clear();
+    const int arrayStart = text.indexOf(QLatin1Char('['));
+    const int arrayEnd = text.lastIndexOf(QLatin1Char(']'));
+    if (arrayStart == -1 || arrayEnd <= arrayStart)
+        return groups;
+
+    const QJsonDocument document = QJsonDocument::fromJson(
+        text.mid(arrayStart, arrayEnd - arrayStart + 1).toUtf8());
+    if (!document.isArray())
+        return groups;
+
+    for (const QJsonValue& value : document.array()) {
+        const QJsonObject object = value.toObject();
+        const QString target = object.value(QStringLiteral("old")).toString().trimmed();
+        if (target.isEmpty())
+            continue;
+        CandidateGroup group;
+        group.target = target;
+        const QJsonValue options = object.value(QStringLiteral("new"));
+        const QJsonArray array = options.isArray() ? options.toArray()
+                                                   : QJsonArray{options};
+        for (const QJsonValue& option : array) {
+            const QString text = option.toString().trimmed();
+            if (!text.isEmpty() && text != target && !group.options.contains(text))
+                group.options << text;
         }
+        if (!group.options.isEmpty())
+            groups << group;
     }
-
-    const QStringList lines = text.split(QLatin1Char('\n'), Qt::SkipEmptyParts);
-    result.options = cleanCandidates(lines);
-    while (result.options.size() > 6)
-        result.options.removeLast();
-    return result;
-}
-
-QStringList TranslationEngine::cleanCandidates(const QStringList& candidates)
-{
-    static const QRegularExpression bulletPattern(QStringLiteral("^\\s*(?:[-*\u2022\u2023]\\s+|\\d{1,2}[.)]\\s+)"));
-    static const QRegularExpression leadingQuotes(QStringLiteral("^[`'\"]+"));
-    static const QRegularExpression trailingQuotes(QStringLiteral("[`'\"]+$"));
-
-    QStringList cleaned;
-    cleaned.reserve(candidates.size());
-    for (const QString& candidate : candidates) {
-        QString text = candidate.trimmed();
-        text.remove(bulletPattern);
-        text.remove(leadingQuotes);
-        text.remove(trailingQuotes);
-        for (int i = 0; i < 2; ++i) {
-            if (text.size() >= 2) {
-                const QChar first = text.front();
-                if (first == text.back() && (first == QLatin1Char('`') || first == QLatin1Char('\"') || first == QLatin1Char('\'')))
-                    text = text.mid(1, text.size() - 2).trimmed();
-            }
-        }
-        if (!text.isEmpty())
-            cleaned << text;
-    }
-    return cleaned;
+    return groups;
 }
 
 void TranslationEngine::stop()

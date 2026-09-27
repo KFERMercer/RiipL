@@ -138,12 +138,12 @@
 <context>
     <name>CandidatePopup</name>
     <message>
-        <location filename="../../src/ui/widgets/CandidatePopup.cpp" line="52"/>
+        <location filename="../../src/ui/widgets/CandidatePopup.cpp" line="48"/>
         <source>Fetching alternatives...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/widgets/CandidatePopup.cpp" line="65"/>
+        <location filename="../../src/ui/widgets/CandidatePopup.cpp" line="71"/>
         <source>No alternatives found</source>
         <translation type="unfinished"></translation>
     </message>
@@ -431,50 +431,50 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="107"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="108"/>
         <source>Translation has changed; replacement skipped</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="118"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="119"/>
         <source>Translation finished</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="136"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="137"/>
         <source>Translating...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="209"/>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="619"/>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="887"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="210"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="620"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="888"/>
         <source>Enter text to translate</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="320"/>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="861"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="321"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="862"/>
         <source>Follow system</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="870"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="871"/>
         <source>About RiipL</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="733"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="734"/>
         <source>Restored previous translation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="139"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="140"/>
         <source>Translation cancelled</source>
         <translation type="unfinished"></translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="608"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="609"/>
         <source>%n character(s)</source>
         <translation type="unfinished">
             <numerusform></numerusform>
@@ -482,198 +482,198 @@
         </translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="748"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="749"/>
         <source>Re-applied translation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="764"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="765"/>
         <source>Translation copied to clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="771"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="772"/>
         <source>Nothing to export</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="774"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="775"/>
         <source>Export translation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="780"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="781"/>
         <source>Cannot write file: %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="784"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="785"/>
         <source>Exported to %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="835"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="836"/>
         <source>RiipL Translator</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="837"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="838"/>
         <source>&amp;File</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="838"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="839"/>
         <source>Open document...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="840"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="841"/>
         <source>Export translation...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="842"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="843"/>
         <source>Exit</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="845"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="846"/>
         <source>&amp;Edit</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="846"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="847"/>
         <source>Glossary...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="848"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="849"/>
         <source>Manage tones...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="850"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="851"/>
         <source>History...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="852"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="853"/>
         <source>Manage API presets...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="855"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="856"/>
         <source>&amp;View</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="856"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="857"/>
         <source>Auto translate</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="857"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="858"/>
         <source>Always on top</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="858"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="859"/>
         <source>Interface language</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="865"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="866"/>
         <source>&amp;Tools</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="866"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="867"/>
         <source>Monitor clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="867"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="868"/>
         <source>Settings...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="869"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="870"/>
         <source>&amp;Help</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="872"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="873"/>
         <source>Translate</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="873"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="874"/>
         <source>Stop</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="874"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="875"/>
         <source>Document</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="875"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="876"/>
         <source>History</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="876"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="877"/>
         <source>Settings</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="877"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="878"/>
         <source>Translate now (Ctrl+Return)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="878"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="879"/>
         <source>Stop translation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="879"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="880"/>
         <source>Restore previous translation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="880"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="881"/>
         <source>Redo translation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="881"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="882"/>
         <source>Swap languages</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="882"/>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="885"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="883"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="886"/>
         <source>Clear</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="883"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="884"/>
         <source>Paste</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="884"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="885"/>
         <source>Copy</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="889"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="890"/>
         <source>Show/Hide window</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="890"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="891"/>
         <source>Translate clipboard</source>
         <translation type="unfinished"></translation>
     </message>
@@ -967,21 +967,36 @@
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="595"/>
-        <source>Full translated text, available to the candidate wording prompt</source>
+        <source>Full translated text</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="596"/>
+        <source>Sentence around the selection, with the selection marked</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="597"/>
         <source>Word the user selected in the translation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="608"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="598"/>
+        <source>Marker placed before the selection</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="599"/>
+        <source>Marker placed after the selection</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="611"/>
         <source>Copied</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="622"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="625"/>
         <source>Preview prompt...</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1089,8 +1104,13 @@
 <context>
     <name>TranslationEngine</name>
     <message>
-        <location filename="../../src/core/translation/TranslationEngine.cpp" line="70"/>
+        <location filename="../../src/core/translation/TranslationEngine.cpp" line="78"/>
         <source>Nothing to translate</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/core/translation/TranslationEngine.cpp" line="116"/>
+        <source>Nothing to look up</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

@@ -83,32 +83,24 @@ void TranslationEdit::mouseReleaseEvent(QMouseEvent* event)
     if (m_pressValid && event->button() == Qt::LeftButton
         && (event->pos() - m_pressPos).manhattanLength() <= 4) {
         m_pressValid = false;
-        const QString word = m_wordCursor.selectedText().trimmed();
-        if (!word.isEmpty())
-            emit wordRequested(word, event->globalPosition().toPoint(), m_wordCursor);
+        const QTextCursor cursor = m_wordCursor;
+        const QString word = cursor.selectedText().trimmed();
+        if (!word.isEmpty()) {
+            emit wordRequested(word, cursor.selectionStart(), cursor.selectionEnd(),
+                               event->globalPosition().toPoint());
+        }
     } else {
         m_pressValid = false;
     }
     QTextEdit::mouseReleaseEvent(event);
 }
 
-bool TranslationEdit::replaceWordAt(const QTextCursor& hint,
-                                    const QString& targetText,
-                                    const QString& replacement)
+bool TranslationEdit::replaceWordAt(int start, const QString& targetText, const QString& replacement)
 {
-    int start = -1;
-    if (!targetText.isEmpty()) {
-        // An exact hint selection pins the occurrence; otherwise the one
-        // nearest to the cursor position wins.
-        if (hint.hasSelection() && hint.selectedText() == targetText) {
-            start = hint.selectionStart();
-        } else {
-            const int anchor = hint.hasSelection() ? hint.selectionStart() : hint.position();
-            start = TextUtils::nearestOccurrence(toPlainText(), targetText, anchor);
-        }
-    }
-
-    if (start < 0)
+    const QString text = toPlainText();
+    if (start < 0 || targetText.isEmpty() || start + targetText.size() > text.size())
+        return false;
+    if (text.mid(start, targetText.size()) != targetText)
         return false;
 
     QTextCursor target(document());

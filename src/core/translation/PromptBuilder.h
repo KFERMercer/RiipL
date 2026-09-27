@@ -9,6 +9,9 @@
 struct TranslationContext
 {
     QString sourceText;
+    // Translation currently in the result pane. The candidate wording request
+    // offers it as {translated_text} and slices {selected_fragment} out of it.
+    QString translatedText;
     QString sourceLang = QStringLiteral("auto");
     QString targetLang = QStringLiteral("en");
     QString tone;
@@ -34,8 +37,11 @@ public:
     };
 
     static Result build(const TranslationContext& context);
-    static QString candidatePrompt(const QString& sourceText,
-                                   const QString& translatedText,
+    // Renders the candidate wording template. \p translatedText is the whole
+    // translation and \p fragment the sentence around the selection, already
+    // carrying the markers. Templates pick whichever of the two they need.
+    static QString candidatePrompt(const QString& translatedText,
+                                   const QString& fragment,
                                    const QString& word,
                                    const QString& targetLang,
                                    const QString& uiLanguage);

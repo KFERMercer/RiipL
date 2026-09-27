@@ -1,13 +1,12 @@
 #pragma once
 
-#include <QTextCursor>
 #include <QWidget>
 
+#include "core/translation/PromptBuilder.h"
 #include "core/translation/TranslationEngine.h"
 
 class QLabel;
 class QListWidget;
-class TranslationEngine;
 
 class CandidatePopup : public QWidget
 {
@@ -17,16 +16,15 @@ public:
     explicit CandidatePopup(TranslationEngine* engine, QWidget* parent = nullptr);
 
     void openFor(const QString& word,
+                 int selectionStart,
+                 int selectionEnd,
                  const QPoint& globalPos,
-                 const QString& sourceText,
-                 const QString& translatedText,
-                 const QString& targetLang,
-                 const QTextCursor& cursor);
+                 const TranslationContext& context);
 
 signals:
-    void candidateChosen(const QString& replaceTarget,
-                         const QString& replacement,
-                         const QTextCursor& cursor);
+    // \p start is the absolute offset of the resolved fragment in the
+    // translation the popup was opened for, and \p target the text there.
+    void candidateChosen(int start, const QString& target, const QString& replacement);
 
 protected:
     void keyPressEvent(QKeyEvent* event) override;
@@ -36,7 +34,4 @@ private:
     QListWidget* m_list = nullptr;
     QLabel* m_header = nullptr;
     QLabel* m_status = nullptr;
-    QString m_word;
-    QString m_replaceTarget;
-    QTextCursor m_cursor;
 };

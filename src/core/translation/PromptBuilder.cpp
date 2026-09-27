@@ -72,7 +72,10 @@ QStringList PromptBuilder::knownPlaceholders()
         QStringLiteral("glossary"),
         QStringLiteral("source_text"),
         QStringLiteral("translated_text"),
-        QStringLiteral("selected_word")
+        QStringLiteral("selected_fragment"),
+        QStringLiteral("selected_word"),
+        QStringLiteral("mark_left"),
+        QStringLiteral("mark_right")
     };
 }
 
@@ -162,17 +165,22 @@ PromptBuilder::Result PromptBuilder::build(const TranslationContext& context)
     return result;
 }
 
-QString PromptBuilder::candidatePrompt(const QString& sourceText,
-                                       const QString& translatedText,
+QString PromptBuilder::candidatePrompt(const QString& translatedText,
+                                       const QString& fragment,
                                        const QString& word,
                                        const QString& targetLang,
                                        const QString& uiLanguage)
 {
     QHash<QString, QString> variables;
     variables.insert(QStringLiteral("target_lang"), Languages::englishName(targetLang));
-    variables.insert(QStringLiteral("source_text"), sourceText);
     variables.insert(QStringLiteral("translated_text"), translatedText);
+    variables.insert(QStringLiteral("selected_fragment"), fragment);
     variables.insert(QStringLiteral("selected_word"), word);
+    variables.insert(QStringLiteral("mark_left"), CandidateMarks::selectionOpen);
+    variables.insert(QStringLiteral("mark_right"), CandidateMarks::selectionClose);
+    // The source text plays no part in a replacement request, so a template that
+    // still names it renders it away rather than failing.
+    variables.insert(QStringLiteral("source_text"), QString());
     const QString templ = templateFor(Prompts::candidateTemplate, uiLanguage);
     return substitute(templ, variables);
 }

@@ -93,15 +93,16 @@ MainWindow::MainWindow(QWidget* parent)
 
     m_popup = new CandidatePopup(&m_engine, this);
     connect(m_resultEdit, &TranslationEdit::wordRequested, this,
-            [this](const QString& word, const QPoint& globalPos, const QTextCursor& cursor) {
-                m_popup->openFor(word, globalPos,
-                                 m_sourceEdit->toPlainText(), m_resultEdit->result(),
-                                 m_targetLang->currentData().toString(), cursor);
+            [this](const QString& word, int selectionStart, int selectionEnd,
+                   const QPoint& globalPos) {
+                TranslationContext context = currentContext();
+                context.translatedText = m_resultEdit->result();
+                m_popup->openFor(word, selectionStart, selectionEnd, globalPos, context);
             });
     connect(m_popup, &CandidatePopup::candidateChosen, this,
-            [this](const QString& replaceTarget, const QString& replacement, const QTextCursor& cursor) {
+            [this](int start, const QString& target, const QString& replacement) {
                 pushResultSnapshot();
-                if (!m_resultEdit->replaceWordAt(cursor, replaceTarget, replacement)) {
+                if (!m_resultEdit->replaceWordAt(start, target, replacement)) {
                     m_resultSnapshots.removeLast();
                     updateUndoRedoActions();
                     setStatusMessage(tr("Translation has changed; replacement skipped"), false);

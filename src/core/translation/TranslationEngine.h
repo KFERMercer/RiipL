@@ -12,20 +12,26 @@ class TranslationEngine : public QObject
     Q_OBJECT
 
 public:
-    struct CandidateResult
+    // One replacement target plus the alternatives proposed for it. \p start and
+    // \p length locate the target in the translation that was searched, so the
+    // caller never has to resolve it again.
+    struct CandidateGroup
     {
-        QString replaceTarget;
+        QString target;
+        int start = -1;
+        int length = 0;
         QStringList options;
+
+        bool valid() const { return start >= 0 && length > 0; }
     };
 
     explicit TranslationEngine(QObject* parent = nullptr);
 
     void translateText(const TranslationContext& context);
-    void requestCandidates(const QString& sourceText,
-                           const QString& translatedText,
-                           const QString& word,
-                           const QString& targetLang,
-                           const std::function<void(const CandidateResult&)>& onDone,
+    void requestCandidates(const TranslationContext& context,
+                           int selectionStart,
+                           int selectionEnd,
+                           const std::function<void(const QVector<CandidateGroup>&)>& onDone,
                            const std::function<void(const QString&)>& onError);
     void stop();
     bool busy() const;
@@ -35,8 +41,18 @@ public:
     static QJsonObject buildRequestBody(const QString& userContent, bool stream,
                                         const QString& systemContent = QString());
 
-    static QStringList cleanCandidates(const QStringList& candidates);
-    static CandidateResult parseCandidateResponse(const QString& raw);
+    // Parses the candidate wording reply into its replacement groups, each with
+    // its own target, so a model that widens the selection differently per group
+    // still resolves. Malformed replies yield no groups.
+    static QVector<CandidateGroup> parseCandidateResponse(const QString& raw);
+
+    // Keeps only the groups whose target resolves to exactly one span covering
+    // the selection, and records that span. A hallucinated or ambiguous target
+    // is dropped rather than applied to the wrong occurrence.
+    static QVector<CandidateGroup> resolveGroups(QVector<CandidateGroup> groups,
+                                                 const QString& translatedText,
+                                                 int selectionStart,
+                                                 int selectionEnd);
 
 signals:
     void partialResult(const QString& text);
@@ -50,5 +66,20 @@ private:
     ApiClient m_candidateApi;
     QString m_accumulated;
     bool m_busy = false;
+
+    // State for the one automatic retry of a candidate request whose reply
+    // yielded no group covering the selection; cleared once it is dispatched.
+    QJsonObject m_candidateBody;
+    QString m_candidateText;
+    int m_candidateSelectionStart = -1;
+    int m_candidateSelectionEnd = -1;
+    std::function<void(const QVector<CandidateGroup>&)> m_candidateDone;
+    std::function<void(const QString&)> m_candidateError;
+    bool m_candidateRetryPending = false;
+
     void setBusy(bool busy);
+    // Delivers the parsed groups, retrying once when the model answered with
+    // nothing usable.
+    void deliverCandidates(const QString& raw);
+    void dispatchCandidateRequest();
 };
