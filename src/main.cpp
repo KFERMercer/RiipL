@@ -21,7 +21,7 @@ public:
             qApp->removeTranslator(translator);
         }
         if (language == QLatin1String("zh")) {
-            if (m_app.load(QStringLiteral(":/i18n/riip_zh.qm")))
+            if (m_app.load(QStringLiteral(":/i18n/riipl_zh.qm")))
                 qApp->installTranslator(&m_app);
             if (m_qt.load(QStringLiteral("qtbase_zh_CN"),
                           QLibraryInfo::path(QLibraryInfo::TranslationsPath)))
@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
     QApplication app(argc, argv);
     QApplication::setOrganizationName(QStringLiteral("RiipL"));
     QApplication::setApplicationName(QStringLiteral("RiipL"));
-    QApplication::setApplicationVersion(RIIP_VERSION);
+    QApplication::setApplicationVersion(RIIPL_VERSION);
     QApplication::setWindowIcon(QIcon(QStringLiteral(":/icons/app.svg")));
 
     ConfigManager::createInstance();

@@ -37,19 +37,19 @@ set(CORE_HEADERS
     src/core/history/HistoryManager.h
     src/core/json/JsonUtils.h
 )
-add_library(riip_core STATIC ${CORE_SOURCES} ${CORE_HEADERS})
-target_include_directories(riip_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(riip_core PUBLIC Qt6::Core Qt6::Network)
+add_library(riipl_core STATIC ${CORE_SOURCES} ${CORE_HEADERS})
+target_include_directories(riipl_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(riipl_core PUBLIC Qt6::Core Qt6::Network)
 
 # Shared helpers used by the app shell and the test suite.
-add_library(riip_utils STATIC
+add_library(riipl_utils STATIC
     src/utils/SingleInstance.cpp
     src/utils/SingleInstance.h
     src/utils/TextUtils.cpp
     src/utils/TextUtils.h
 )
-target_include_directories(riip_utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(riip_utils PUBLIC Qt6::Core Qt6::Network)
+target_include_directories(riipl_utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(riipl_utils PUBLIC Qt6::Core Qt6::Network)
 
 set(UI_SOURCES
     src/main.cpp
@@ -85,22 +85,22 @@ set(UI_HEADERS
     src/ui/dialogs/AboutDialog.h
 )
 
-set(TS_FILES resources/i18n/riip_en.ts resources/i18n/riip_zh.ts)
+set(TS_FILES resources/i18n/riipl_en.ts resources/i18n/riipl_zh.ts)
 
 qt_add_executable(RiipL
     ${UI_SOURCES}
     ${UI_HEADERS}
-    resources/riipL.qrc
+    resources/riipl.qrc
 )
-target_link_libraries(RiipL PRIVATE riip_core riip_utils Qt6::Widgets)
-target_compile_definitions(RiipL PRIVATE RIIP_VERSION="${PROJECT_VERSION}")
+target_link_libraries(RiipL PRIVATE riipl_core riipl_utils Qt6::Widgets)
+target_compile_definitions(RiipL PRIVATE RIIPL_VERSION="${PROJECT_VERSION}")
 
 # Compiles the .ts catalogs into .qm files and embeds them at :/i18n, and
 # exposes the standard update_translations target for refreshing the sources.
 # SOURCE_TARGETS is explicit so the test target is not scanned for strings.
 qt_add_translations(RiipL
     TS_FILES ${TS_FILES}
-    SOURCE_TARGETS riip_core riip_utils RiipL
+    SOURCE_TARGETS riipl_core riipl_utils RiipL
     LUPDATE_OPTIONS -no-obsolete
 )
 
@@ -108,10 +108,10 @@ option(BUILD_TESTING "Build the unit test suite" OFF)
 if(BUILD_TESTING)
     find_package(Qt6 6.8 REQUIRED COMPONENTS Test)
     enable_testing()
-    add_executable(riip_tests
+    add_executable(riipl_tests
         tests/test_core.cpp
     )
-    target_include_directories(riip_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-    target_link_libraries(riip_tests PRIVATE riip_core riip_utils Qt6::Test)
-    add_test(NAME core_tests COMMAND riip_tests)
+    target_include_directories(riipl_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_link_libraries(riipl_tests PRIVATE riipl_core riipl_utils Qt6::Test)
+    add_test(NAME core_tests COMMAND riipl_tests)
 endif()
