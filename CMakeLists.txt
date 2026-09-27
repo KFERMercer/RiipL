@@ -58,6 +58,7 @@ set(UI_SOURCES
     src/ui/widgets/TranslationEdit.cpp
     src/ui/widgets/CandidatePopup.cpp
     src/ui/widgets/AppIcons.cpp
+    src/ui/widgets/AppFonts.cpp
     src/ui/widgets/FlowLayout.cpp
     src/ui/widgets/ThemeColors.cpp
     src/ui/widgets/WindowState.cpp
@@ -75,6 +76,7 @@ set(UI_HEADERS
     src/ui/widgets/TranslationEdit.h
     src/ui/widgets/CandidatePopup.h
     src/ui/widgets/AppIcons.h
+    src/ui/widgets/AppFonts.h
     src/ui/widgets/FlowLayout.h
     src/ui/widgets/ThemeColors.h
     src/ui/widgets/WindowState.h

@@ -104,6 +104,9 @@ public:
     QJsonValue value() const override;
     QPlainTextEdit* edit() const { return m_edit; }
 
+    // Applies the fixed-width font and disables wrapping.
+    static void applyFixedWidthFont(QPlainTextEdit* edit);
+
 protected:
     void setControlValue(const QJsonValue& v) override;
 

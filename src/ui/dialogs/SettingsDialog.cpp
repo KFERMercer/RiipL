@@ -10,6 +10,7 @@
 #include "core/translation/Language.h"
 #include "core/translation/PromptBuilder.h"
 #include "core/translation/Tone.h"
+#include "ui/widgets/AppFonts.h"
 #include "ui/widgets/ConfigEditors.h"
 #include "ui/widgets/FlowLayout.h"
 #include "ui/widgets/ThemeColors.h"
@@ -23,7 +24,6 @@
 #include <QCursor>
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
-#include <QFontDatabase>
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -144,7 +144,7 @@ public:
 
         m_output = new QPlainTextEdit(this);
         m_output->setReadOnly(true);
-        m_output->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
+        m_output->setFont(AppFonts::fixedWidth());
         layout->addWidget(m_output, 1);
 
         auto* buttons = new QDialogButtonBox(QDialogButtonBox::Close, this);
@@ -355,9 +355,11 @@ QWidget* SettingsDialog::createApiPage()
 
     auto* headersEdit = new ConfigTextEdit(Keys::apiCustomHeaders, page);
     headersEdit->edit()->setPlaceholderText(tr("One per line: Header-Name: value"));
+    ConfigTextEdit::applyFixedWidthFont(headersEdit->edit());
     form->addRow(tr("Custom headers"), headersEdit);
 
     auto* extraEdit = new ConfigTextEdit(Keys::apiExtraBody, page);
+    ConfigTextEdit::applyFixedWidthFont(extraEdit->edit());
     auto* validation = new QLabel(page);
     auto updateValidation = [extraEdit, validation]() {
         const QString text = extraEdit->edit()->toPlainText().trimmed();
@@ -633,7 +635,9 @@ QWidget* SettingsDialog::createPromptsPage()
         auto* pageLayout = new QVBoxLayout(pageWidget);
         auto* langTabs = new QTabWidget(pageWidget);
         auto* zhEditor = new ConfigTextEdit(Keys::promptKey(info.key, QStringLiteral("zh")), pageWidget);
+        ConfigTextEdit::applyFixedWidthFont(zhEditor->edit());
         auto* enEditor = new ConfigTextEdit(Keys::promptKey(info.key, QStringLiteral("en")), pageWidget);
+        ConfigTextEdit::applyFixedWidthFont(enEditor->edit());
         langTabs->addTab(zhEditor, tr("Chinese template"));
         langTabs->addTab(enEditor, tr("English template"));
         pageLayout->addWidget(langTabs);
@@ -661,6 +665,7 @@ QWidget* SettingsDialog::createPromptsPage()
             const QString token = QLatin1Char('{') + placeholder + QLatin1Char('}');
             auto* chip = new QToolButton(placeholderGroup);
             chip->setText(token);
+            chip->setFont(AppFonts::fixedWidth());
             chip->setToolTip(placeholderHint(placeholder));
             chip->setCursor(Qt::PointingHandCursor);
             chip->setAutoRaise(true);

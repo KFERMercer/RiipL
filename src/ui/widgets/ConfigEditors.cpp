@@ -2,6 +2,7 @@
 
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
+#include "ui/widgets/AppFonts.h"
 #include "ui/widgets/AppIcons.h"
 
 #include <QCheckBox>
@@ -194,6 +195,12 @@ QJsonValue ConfigTextEdit::value() const
 void ConfigTextEdit::setControlValue(const QJsonValue& v)
 {
     m_edit->setPlainText(v.toString());
+}
+
+void ConfigTextEdit::applyFixedWidthFont(QPlainTextEdit* edit)
+{
+    edit->setFont(AppFonts::fixedWidth());
+    edit->setLineWrapMode(QPlainTextEdit::NoWrap);
 }
 
 ConfigSpinBox::ConfigSpinBox(const QString& key, int minimum, int maximum, int step,
