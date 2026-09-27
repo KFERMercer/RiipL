@@ -20,3 +20,4 @@ RiipL
 .DS_Store
 .env
 .env.*
+.agents/
