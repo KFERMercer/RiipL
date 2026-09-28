@@ -205,7 +205,7 @@ inline const QString promptDefaultZh = R"TXT(根据以上参考信息，将以�
 inline const QString promptDefaultEn = R"TXT(Based on the reference information above, translate the following text into {target_lang}. Note that you must **only output the translated result without any additional explanation**:
 {source_text})TXT";
 
-inline const QString promptCandidateZh = R"TXT(你的任务是寻找给定原文中被标记词语的替代遣词或表述，并返回 JSON 结构化方案。
+inline const QString promptCandidateZh = R"TXT(你的任务是寻找给定原文中被标记的词的替代遣词或表述，并返回 JSON 结构化方案。
 
 原文：
 
@@ -213,7 +213,7 @@ inline const QString promptCandidateZh = R"TXT(你的任务是寻找给定原文
 {selected_fragment}
 ```
 
-用户在原文中选中了：`{selected_word}`。（已用标示符 `{mark_left}` 和 `{mark_right}` 标出，这两处标示符不属于原文。)
+被标记的词为：`{selected_word}`（已用标示符 `{mark_left}` 和 `{mark_right}` 标出，这两处标示符不属于原文)。
 
 处理步骤：
 1. 在原文中定位 {mark_left} 与 {mark_right} 之间的内容。
@@ -241,7 +241,7 @@ Source text:
 {selected_fragment}
 ```
 
-The user selected `{selected_word}` in the source text. (It is marked with the markers `{mark_left}` and `{mark_right}`; those two markers are not part of the source text.)
+The marked word is: `{selected_word}` (marked with the markers `{mark_left}` and `{mark_right}`; those two markers are not part of the source text.)
 
 Steps:
 1. Locate the content between {mark_left} and {mark_right} in the source text.
@@ -262,7 +262,7 @@ Constraints:
 Output only the following JSON array, with no explanation and no code fences, one object per fragment to replace:
 [{"old":"source fragment 1","new":["alternative 1","alternative 2"]},{"old":"source fragment 2","new":["alternative 3","alternative 4"]}])TXT";
 
-inline const QString promptCandidateShortZh = R"TXT(你的任务是寻找译文中被标记词语的替代遣词或表述，并返回 JSON 结构化方案。
+inline const QString promptCandidateShortZh = R"TXT(你的任务是寻找译文中被标记的词的替代遣词或表述，并返回 JSON 结构化方案。
 
 译文：
 
@@ -276,7 +276,7 @@ inline const QString promptCandidateShortZh = R"TXT(你的任务是寻找译文�
 {source_text}
 ```
 
-用户在译文中选中了：`{selected_word}` （已用标示符 `{mark_left}` 和 `{mark_right}` 标出)。
+被标记的词为：`{selected_word}` （已用标示符 `{mark_left}` 和 `{mark_right}` 标出)。
 
 处理步骤：
 1. 在译文中定位 {mark_left} 与 {mark_right} 之间的内容。
@@ -310,7 +310,7 @@ Source text before translation:
 {source_text}
 ```
 
-The user selected `{selected_word}` in the translation. (It is marked with the markers `{mark_left}` and `{mark_right}`.)
+The marked word is: `{selected_word}` (marked with the markers `{mark_left}` and `{mark_right}`.)
 
 Steps:
 1. Locate the content between {mark_left} and {mark_right} in the translation.
