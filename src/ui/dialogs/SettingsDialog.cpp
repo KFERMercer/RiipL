@@ -71,11 +71,11 @@ const QVector<TemplateInfo>& templateInfos()
     return list;
 }
 
-QList<QPair<QString, QString>> targetLanguageItems(const QString& uiLanguage)
+QList<QPair<QString, QString>> languageItems(const QString& uiLanguage, bool includeAuto)
 {
     QList<QPair<QString, QString>> items;
     for (const LangItem& lang : Languages::all()) {
-        if (lang.code == QLatin1String("auto"))
+        if (!includeAuto && lang.code == QLatin1String("auto"))
             continue;
         items.append({Languages::displayName(lang.code, uiLanguage), lang.code});
     }
@@ -126,8 +126,12 @@ public:
         // only overrides them for the preview it renders.
         m_source = new QLineEdit(this);
         m_source->setText(QStringLiteral("Hello, world! RiipL is a translation tool."));
+        m_sourceLang = new QComboBox(this);
+        for (const QPair<QString, QString>& item : languageItems(uiLanguage, true))
+            m_sourceLang->addItem(item.first, item.second);
+        selectItem(m_sourceLang, config->stringValue(Keys::translationSourceLang));
         m_target = new QComboBox(this);
-        for (const QPair<QString, QString>& item : targetLanguageItems(uiLanguage))
+        for (const QPair<QString, QString>& item : languageItems(uiLanguage, false))
             m_target->addItem(item.first, item.second);
         selectItem(m_target, config->stringValue(Keys::translationTargetLang));
         m_tone = new QComboBox(this);
@@ -139,6 +143,7 @@ public:
         m_style = new QLineEdit(config->stringValue(Keys::translationStyle), this);
         m_background = new QLineEdit(config->stringValue(Keys::translationBackground), this);
         form->addRow(tr("Sample text"), m_source);
+        form->addRow(tr("Source language"), m_sourceLang);
         form->addRow(tr("Target language"), m_target);
         form->addRow(tr("Tone"), m_tone);
         form->addRow(tr("Style"), m_style);
@@ -155,6 +160,7 @@ public:
         connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::close);
 
         connect(m_source, &QLineEdit::textChanged, this, &PromptPreviewDialog::refresh);
+        connect(m_sourceLang, &QComboBox::currentIndexChanged, this, &PromptPreviewDialog::refresh);
         connect(m_target, &QComboBox::currentIndexChanged, this, &PromptPreviewDialog::refresh);
         connect(m_tone, &QComboBox::currentIndexChanged, this, &PromptPreviewDialog::refresh);
         connect(m_style, &QLineEdit::textChanged, this, &PromptPreviewDialog::refresh);
@@ -169,6 +175,7 @@ private slots:
         ConfigManager* config = ConfigManager::instance();
         TranslationContext context;
         context.sourceText = m_source->text();
+        context.sourceLang = m_sourceLang->currentData().toString();
         context.targetLang = m_target->currentData().toString();
         context.tone = m_tone->currentData().toString();
         context.style = m_style->text().trimmed();
@@ -188,6 +195,7 @@ private:
     bool m_glossaryEnabled = false;
     QVector<GlossaryEntry> m_glossary;
     QLineEdit* m_source = nullptr;
+    QComboBox* m_sourceLang = nullptr;
     QComboBox* m_target = nullptr;
     QComboBox* m_tone = nullptr;
     QLineEdit* m_style = nullptr;
@@ -517,14 +525,11 @@ QWidget* SettingsDialog::createTranslationPage()
 
     const QString uiLanguage = ConfigManager::instance()->resolvedUiLanguage();
     auto* sourceCombo = new ConfigComboBox(Keys::translationSourceLang, page);
-    QList<QPair<QString, QString>> sourceItems;
-    for (const LangItem& lang : Languages::all())
-        sourceItems.append({Languages::displayName(lang.code, uiLanguage), lang.code});
-    sourceCombo->setItems(sourceItems);
+    sourceCombo->setItems(languageItems(uiLanguage, true));
     form->addRow(tr("Source language"), sourceCombo);
 
     auto* targetCombo = new ConfigComboBox(Keys::translationTargetLang, page);
-    targetCombo->setItems(targetLanguageItems(uiLanguage));
+    targetCombo->setItems(languageItems(uiLanguage, false));
     form->addRow(tr("Target language"), targetCombo);
 
     auto* toneRow = new QHBoxLayout();
