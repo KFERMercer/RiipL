@@ -103,7 +103,8 @@ RiipL/
 │   │   └── history/      # HistoryManager
 │   ├── ui/               # MainWindow、配置绑定控件、各对话框
 │   └── utils/            # TextUtils、SingleInstance
-└── tests/                # 核心层 QTest 单元测试
+└── tests/
+    └── core/             # 核心层 QTest 套件，每个单元一个，接入 CTest
 ```
 
 ## 使用须知

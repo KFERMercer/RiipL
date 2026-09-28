@@ -112,10 +112,5 @@ option(BUILD_TESTING "Build the unit test suite" OFF)
 if(BUILD_TESTING)
     find_package(Qt6 6.8 REQUIRED COMPONENTS Test)
     enable_testing()
-    add_executable(riipl_tests
-        tests/test_core.cpp
-    )
-    target_include_directories(riipl_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-    target_link_libraries(riipl_tests PRIVATE riipl_core riipl_utils Qt6::Test)
-    add_test(NAME core_tests COMMAND riipl_tests)
+    add_subdirectory(tests/core)
 endif()

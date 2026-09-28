@@ -19,7 +19,8 @@ RiipL/
 │   │   └── history/      # HistoryManager
 │   ├── ui/               # MainWindow, bound editor widgets, dialogs
 │   └── utils/            # TextUtils, SingleInstance
-└── tests/                # QTest suite for the core layer
+└── tests/
+    └── core/             # QTest suites for the core layer, one per unit, wired to CTest
 ```
 
 ### 构建与运行
@@ -46,6 +47,8 @@ ctest --test-dir build --output-on-failure
 # 运行应用（限时 5 秒，用于快速验证启动是否正常）
 timeout 5 ./build/RiipL 2>&1; echo "exit: $?"
 ```
+
+测试套件放在 `tests/core/` 且保持扁平：一个核心单元一个 `tst_<unit>.cpp`（`<unit>` 取单元头文件名的全小写，如 `ApiClient.h` → `tst_apiclient.cpp`），共用工具放在同目录的 `TestSupport.h`。新增单元时，把套件名加进 `tests/core/CMakeLists.txt` 的 `RIIPL_TEST_SUITES`。
 
 > [!IMPORTANT]
 > src/core 与 src/utils 的改动必须保证全部测试通过；新增核心功能需同步补充 QTest 用例。

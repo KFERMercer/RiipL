@@ -102,7 +102,8 @@ RiipL/
 │   │   └── history/      # HistoryManager
 │   ├── ui/               # MainWindow, bound editor widgets, dialogs
 │   └── utils/            # TextUtils, SingleInstance
-└── tests/                # QTest suite for the core layer
+└── tests/
+    └── core/             # QTest suites for the core layer, one per unit, wired to CTest
 ```
 
 ## Usage Notes
