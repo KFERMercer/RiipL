@@ -46,10 +46,10 @@ public:
     static QString systemPrompt(const TranslationContext& context);
     static QStringList knownPlaceholders();
     static QString substitute(QString text, const QHash<QString, QString>& variables);
-    // Renders the glossary as a JSON array whose keys are localized, so the
-    // model reads the pairs as structured data instead of prose. A term with
-    // no target is mapped to itself.
-    static QString glossaryData(const QVector<GlossaryEntry>& entries, const QString& uiLanguage);
+    // Renders the glossary as a JSON array, so the model reads the pairs as
+    // structured data instead of prose. A term with no target is mapped to
+    // itself.
+    static QString glossaryData(const QVector<GlossaryEntry>& entries);
 
 private:
     static QString templateFor(const QString& name, const QString& uiLanguage);

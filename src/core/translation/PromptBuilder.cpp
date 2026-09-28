@@ -10,21 +10,8 @@
 
 namespace {
 
-// Localized keys of the rendered glossary; they follow the UI language so the
-// data block reads in the same language as the template that labels it.
-const QString& sourceKey(const QString& uiLanguage)
-{
-    static const QString zh = QStringLiteral("原文");
-    static const QString en = QStringLiteral("source");
-    return uiLanguage == QLatin1String("zh") ? zh : en;
-}
-
-const QString& targetKey(const QString& uiLanguage)
-{
-    static const QString zh = QStringLiteral("译文");
-    static const QString en = QStringLiteral("target");
-    return uiLanguage == QLatin1String("zh") ? zh : en;
-}
+const QString kGlossarySourceKey = QStringLiteral("source");
+const QString kGlossaryTargetKey = QStringLiteral("target");
 
 }
 
@@ -41,7 +28,7 @@ QString PromptBuilder::templateFor(const QString& name, const QString& uiLanguag
     return QString();
 }
 
-QString PromptBuilder::glossaryData(const QVector<GlossaryEntry>& entries, const QString& uiLanguage)
+QString PromptBuilder::glossaryData(const QVector<GlossaryEntry>& entries)
 {
     QJsonArray array;
     for (const GlossaryEntry& entry : entries) {
@@ -49,11 +36,11 @@ QString PromptBuilder::glossaryData(const QVector<GlossaryEntry>& entries, const
         if (source.isEmpty())
             continue;
         QJsonObject object;
-        object.insert(sourceKey(uiLanguage), source);
+        object.insert(kGlossarySourceKey, source);
         // An entry without a target keeps the source term untouched. Emitting
         // the source as its own target states that directly, whereas a null
         // value is read as a literal "null" by some models.
-        object.insert(targetKey(uiLanguage), entry.target.trimmed().isEmpty() ? source : entry.target.trimmed());
+        object.insert(kGlossaryTargetKey, entry.target.trimmed().isEmpty() ? source : entry.target.trimmed());
         array.append(object);
     }
     if (array.isEmpty())
@@ -119,8 +106,7 @@ QHash<QString, QString> PromptBuilder::variablesFor(const TranslationContext& co
     variables.insert(QStringLiteral("style"), context.style);
     variables.insert(QStringLiteral("background"), context.background);
     variables.insert(QStringLiteral("glossary"),
-                     context.glossaryEnabled ? glossaryData(context.glossary, context.uiLanguage)
-                                             : QString());
+                     context.glossaryEnabled ? glossaryData(context.glossary) : QString());
     variables.insert(QStringLiteral("source_text"), context.sourceText);
     variables.insert(QStringLiteral("translated_text"), context.translatedText);
     variables.insert(QStringLiteral("selected_fragment"), context.selectedFragment);

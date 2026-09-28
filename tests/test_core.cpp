@@ -249,21 +249,20 @@ void TestCore::promptGlossaryFormatting()
     entries.append({QStringLiteral("苹果"), QStringLiteral("Apple")});
     entries.append({QStringLiteral("RiipL"), QString()});
 
-    const QString data = PromptBuilder::glossaryData(entries, QStringLiteral("zh"));
+    const QString data = PromptBuilder::glossaryData(entries);
     const QJsonDocument doc = QJsonDocument::fromJson(data.toUtf8());
     QVERIFY(doc.isArray());
     const QJsonArray array = doc.array();
     QCOMPARE(array.size(), 2);
-    QCOMPARE(array.at(0).toObject().value(QStringLiteral("原文")).toString(), QStringLiteral("苹果"));
-    QCOMPARE(array.at(0).toObject().value(QStringLiteral("译文")).toString(), QStringLiteral("Apple"));
-    QCOMPARE(array.at(1).toObject().value(QStringLiteral("原文")).toString(), QStringLiteral("RiipL"));
+    QCOMPARE(array.at(0).toObject().value(QStringLiteral("source")).toString(), QStringLiteral("苹果"));
+    QCOMPARE(array.at(0).toObject().value(QStringLiteral("target")).toString(), QStringLiteral("Apple"));
+    QCOMPARE(array.at(1).toObject().value(QStringLiteral("source")).toString(), QStringLiteral("RiipL"));
     // A term without a target is mapped to itself, which states "keep as-is"
     // without a null literal that some models echo verbatim.
-    QCOMPARE(array.at(1).toObject().value(QStringLiteral("译文")).toString(), QStringLiteral("RiipL"));
+    QCOMPARE(array.at(1).toObject().value(QStringLiteral("target")).toString(), QStringLiteral("RiipL"));
 
     // Entries without a source term carry no information and are dropped.
-    QVERIFY(PromptBuilder::glossaryData({{QString(), QStringLiteral("Apple")}},
-                                        QStringLiteral("zh")).isEmpty());
+    QVERIFY(PromptBuilder::glossaryData({{QString(), QStringLiteral("Apple")}}).isEmpty());
 
     TranslationContext context;
     context.sourceText = QStringLiteral("苹果 is good");
@@ -273,9 +272,10 @@ void TestCore::promptGlossaryFormatting()
     PromptBuilder::Result result = PromptBuilder::build(context);
     QVERIFY(result.user.contains(QStringLiteral("- 术语表：")));
     QVERIFY(result.user.contains(QStringLiteral("```json")));
-    QVERIFY(result.user.contains(QStringLiteral("\"原文\": \"苹果\"")));
+    QVERIFY(result.user.contains(QStringLiteral("\"source\": \"苹果\"")));
 
-    // The glossary keys follow the UI language of the template.
+    // The keys do not follow the UI language, so the same entries render the
+    // same way whichever template language labels them.
     context.uiLanguage = QStringLiteral("en");
     result = PromptBuilder::build(context);
     QVERIFY(result.user.contains(QStringLiteral("\"source\": \"苹果\"")));
@@ -303,7 +303,7 @@ void TestCore::promptReferenceEntryKeepsBodyIntact()
     QVERIFY(prompt.contains(QStringLiteral("- 语气：\n  ```\n  formal\n  ```")));
     QVERIFY(prompt.contains(QStringLiteral("- 风格：\n  ```\n  concise\n  technical\n  ```")));
     QVERIFY(prompt.contains(QStringLiteral("- 背景信息：\n  ```\n  line one\n  line two\n  ```")));
-    QVERIFY(prompt.contains(QStringLiteral("- 术语表：\n  ```json\n  [\n      {\n          \"原文\": \"fox\",")));
+    QVERIFY(prompt.contains(QStringLiteral("- 术语表：\n  ```json\n  [\n      {\n          \"source\": \"fox\",")));
     // One shared header and the instruction last.
     QCOMPARE(prompt.count(Defaults::promptReferenceZh.trimmed()), 1);
     QVERIFY(prompt.indexOf(QStringLiteral("Hello")) > prompt.indexOf(Defaults::promptReferenceZh.trimmed()));
