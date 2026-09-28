@@ -33,6 +33,7 @@ private slots:
     void promptReferenceEntryKeepsBodyIntact();
     void candidatePromptSubstitution();
     void candidateShortPromptSubstitution();
+    void everyTemplateReachesEveryPlaceholder();
     void knownPlaceholdersCoverVariables();
     void glossaryRoundTrip();
     void historyTrimming();
@@ -322,8 +323,14 @@ void TestCore::candidatePromptSubstitution()
 {
     const QString fragment = QStringLiteral("[[世界]]，你好");
     const QString full = QStringLiteral("你好，世界！今天天气不错。");
-    const QString prompt = PromptBuilder::candidatePrompt(
-        full, fragment, QStringLiteral("世界"), QStringLiteral("zh"), QStringLiteral("en"));
+    TranslationContext context;
+    context.translatedText = full;
+    context.selectedFragment = fragment;
+    context.selectedWord = QStringLiteral("世界");
+    context.targetLang = QStringLiteral("zh");
+    context.uiLanguage = QStringLiteral("en");
+
+    const QString prompt = PromptBuilder::candidatePrompt(Prompts::candidateTemplate, context);
     QVERIFY(prompt.contains(fragment));
     QVERIFY(prompt.contains(QStringLiteral("世界")));
     QVERIFY(prompt.contains(QStringLiteral("Chinese")));
@@ -341,14 +348,68 @@ void TestCore::candidatePromptSubstitution()
     // selection cannot be confused with the fence or with JSON syntax.
     QVERIFY(prompt.contains(QStringLiteral("```\n%1\n```").arg(fragment)));
 
-    // {translated_text} stays the full translation and is only rendered when a
-    // template asks for it, while {selected_fragment} always drives the request.
+    // {translated_text} stays the full translation, which this template does not
+    // reach for, so the request carries the marked window alone.
     QVERIFY(!prompt.contains(full));
-    const QString withFull = PromptBuilder::substitute(
-        QStringLiteral("整段：{translated_text}\n片段：{selected_fragment}"),
-        {{QStringLiteral("translated_text"), full},
-         {QStringLiteral("selected_fragment"), fragment}});
-    QVERIFY(withFull.contains(full));
+}
+
+// Every template is offered the same placeholders, so a wording prompt can reach
+// the tone, the style and the glossary just as a translation prompt can, and a
+// translation prompt can reach the selection.
+void TestCore::everyTemplateReachesEveryPlaceholder()
+{
+    QDir().mkpath(tempDir());
+    ConfigManager::createInstance(tempDir());
+
+    TranslationContext context;
+    context.sourceLang = QStringLiteral("en");
+    context.targetLang = QStringLiteral("zh");
+    context.tone = QStringLiteral("formal");
+    context.style = QStringLiteral("concise");
+    context.background = QStringLiteral("deployment notes");
+    context.glossary = {{QStringLiteral("fox"), QStringLiteral("狐狸")}};
+    context.glossaryEnabled = true;
+    context.uiLanguage = QStringLiteral("zh");
+    context.sourceText = QStringLiteral("The fox jumps.");
+    context.translatedText = QStringLiteral("狐狸在跳。");
+    context.selectedWord = QStringLiteral("狐狸");
+    context.selectedFragment = QStringLiteral("[[狐狸]]在跳。");
+
+    // A template naming every placeholder renders each of them to a value.
+    QStringList tokens;
+    for (const QString& placeholder : PromptBuilder::knownPlaceholders())
+        tokens << QStringLiteral("{%1}").arg(placeholder);
+    const QString probe = QStringLiteral("[%1]").arg(tokens.join(QStringLiteral("][")));
+    const QStringList templates = {
+        Prompts::systemTemplate, Prompts::referenceTemplate, Prompts::toneTemplate,
+        Prompts::styleTemplate, Prompts::backgroundTemplate, Prompts::glossaryTemplate,
+        Prompts::defaultTemplate, Prompts::candidateTemplate, Prompts::candidateShortTemplate
+    };
+    for (const QString& name : templates) {
+        ConfigManager::instance()->setValue(
+            Keys::promptKey(name, QStringLiteral("zh")), probe);
+        const QString rendered = PromptBuilder::candidatePrompt(name, context);
+        for (const QString& token : tokens)
+            QVERIFY2(!rendered.contains(token), qPrintable(rendered));
+        for (const QString& value : {context.sourceText, context.translatedText,
+                                     context.selectedWord, context.selectedFragment,
+                                     context.tone, context.style, context.background}) {
+            QVERIFY2(rendered.contains(value), qPrintable(rendered));
+        }
+        // The glossary renders as JSON, so it is checked as data rather than as
+        // the literal text it was configured with.
+        QVERIFY(rendered.contains(QStringLiteral("\"fox\"")));
+        QVERIFY(rendered.contains(CandidateMarks::selectionOpen));
+        QVERIFY(rendered.contains(CandidateMarks::selectionClose));
+    }
+
+    // An option the context leaves unset still renders away rather than failing.
+    TranslationContext bare;
+    bare.translatedText = QStringLiteral("text");
+    bare.uiLanguage = QStringLiteral("zh");
+    const QString rendered = PromptBuilder::candidatePrompt(Prompts::candidateTemplate, bare);
+    for (const QString& token : tokens)
+        QVERIFY2(!rendered.contains(token), qPrintable(rendered));
 }
 
 void TestCore::candidateShortPromptSubstitution()
@@ -356,17 +417,21 @@ void TestCore::candidateShortPromptSubstitution()
     QDir().mkpath(tempDir());
     ConfigManager::createInstance(tempDir());
 
-    const QString translated = QStringLiteral("你好，世界！");
-    const QString marked = QStringLiteral("你好，[[世界]]！");
-    const QString source = QStringLiteral("Hello, world!");
-    const QString prompt = PromptBuilder::candidateShortPrompt(
-        translated, marked, QStringLiteral("世界"), source,
-        QStringLiteral("zh"), QStringLiteral("en"));
+    TranslationContext context;
+    context.translatedText = QStringLiteral("你好，世界！");
+    context.selectedWord = QStringLiteral("世界");
+    context.selectedFragment = QStringLiteral("你好，[[世界]]！");
+    context.sourceText = QStringLiteral("Hello, world!");
+    context.targetLang = QStringLiteral("zh");
+    context.uiLanguage = QStringLiteral("en");
 
-    // The short-text template is rendered from the marked whole translation, and
-    // carries the source text next to it.
-    QVERIFY(prompt.contains(marked));
-    QVERIFY(prompt.contains(source));
+    const QString prompt =
+        PromptBuilder::candidatePrompt(Prompts::candidateShortTemplate, context);
+
+    // The short-text template is rendered from the marked window, which is the
+    // whole translation here, and carries the source text next to it.
+    QVERIFY(prompt.contains(context.selectedFragment));
+    QVERIFY(prompt.contains(context.sourceText));
     QVERIFY(prompt.contains(QStringLiteral("世界")));
     QVERIFY(prompt.contains(QStringLiteral("Chinese")));
     QVERIFY(prompt.contains(CandidateMarks::selectionOpen));
@@ -385,9 +450,8 @@ void TestCore::candidateShortPromptSubstitution()
     ConfigManager::instance()->setValue(Keys::promptCandidateShortZh,
                                         QStringLiteral("短文本：{source_text}"));
     ConfigManager::instance()->setValue(Keys::uiLanguage, QStringLiteral("zh"));
-    QCOMPARE(PromptBuilder::candidateShortPrompt(translated, marked, QStringLiteral("世界"),
-                                                 source, QStringLiteral("zh"),
-                                                 ConfigManager::instance()->resolvedUiLanguage()),
+    context.uiLanguage = ConfigManager::instance()->resolvedUiLanguage();
+    QCOMPARE(PromptBuilder::candidatePrompt(Prompts::candidateShortTemplate, context),
              QStringLiteral("短文本：Hello, world!"));
 }
 

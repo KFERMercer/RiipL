@@ -1017,22 +1017,22 @@
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="661"/>
-        <source>Context around the selection, with the selection marked</source>
+        <source>Translation fragment around the selected word (candidate wording only)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="662"/>
-        <source>Word the user selected in the translation</source>
+        <source>Word selected in the translation pane (candidate wording only)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="663"/>
-        <source>Marker placed before the selection</source>
+        <source>Marker placed before the selected word (candidate wording only)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="664"/>
-        <source>Marker placed after the selection</source>
+        <source>Marker placed after the selected word (candidate wording only)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

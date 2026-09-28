@@ -913,19 +913,24 @@
         <translation>译文全文</translation>
     </message>
     <message>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="661"/>
+        <source>Translation fragment around the selected word (candidate wording only)</source>
+        <translation>选中词附近的译文片段（候选遣词专用）</translation>
+    </message>
+    <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="662"/>
-        <source>Word the user selected in the translation</source>
-        <translation>用户在译文中选中的词语</translation>
+        <source>Word selected in the translation pane (candidate wording only)</source>
+        <translation>在译文区选中的词（候选遣词专用）</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="663"/>
-        <source>Marker placed before the selection</source>
-        <translation>选中内容之前的标记</translation>
+        <source>Marker placed before the selected word (candidate wording only)</source>
+        <translation>标记选中词的记号 - 左（候选遣词专用）</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="664"/>
-        <source>Marker placed after the selection</source>
-        <translation>选中内容之后的标记</translation>
+        <source>Marker placed after the selected word (candidate wording only)</source>
+        <translation>标记选中词的记号 - 右（候选遣词专用）</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="677"/>
@@ -1033,11 +1038,6 @@
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="645"/>
         <source>English template</source>
         <translation>英文模板</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="661"/>
-        <source>Context around the selection, with the selection marked</source>
-        <translation>选中内容前后的上下文，选中部分已标记</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="691"/>

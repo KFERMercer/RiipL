@@ -658,10 +658,10 @@ QWidget* SettingsDialog::createPromptsPage()
             if (placeholder == QLatin1String("glossary")) return tr("Glossary entries, rendered as JSON");
             if (placeholder == QLatin1String("source_text")) return tr("Text to be translated");
             if (placeholder == QLatin1String("translated_text")) return tr("Full translated text");
-            if (placeholder == QLatin1String("selected_fragment")) return tr("Context around the selection, with the selection marked");
-            if (placeholder == QLatin1String("selected_word")) return tr("Word the user selected in the translation");
-            if (placeholder == QLatin1String("mark_left")) return tr("Marker placed before the selection");
-            if (placeholder == QLatin1String("mark_right")) return tr("Marker placed after the selection");
+            if (placeholder == QLatin1String("selected_fragment")) return tr("Translation fragment around the selected word (candidate wording only)");
+            if (placeholder == QLatin1String("selected_word")) return tr("Word selected in the translation pane (candidate wording only)");
+            if (placeholder == QLatin1String("mark_left")) return tr("Marker placed before the selected word (candidate wording only)");
+            if (placeholder == QLatin1String("mark_right")) return tr("Marker placed after the selected word (candidate wording only)");
             return QString();
         };
         for (const QString& placeholder : PromptBuilder::knownPlaceholders()) {

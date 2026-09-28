@@ -9,9 +9,11 @@
 struct TranslationContext
 {
     QString sourceText;
-    // Translation currently in the result pane. The candidate wording request
-    // offers it as {translated_text} and slices {selected_fragment} out of it.
     QString translatedText;
+    // Selection in the translation, offered as {selected_word} and, wrapped in
+    // the markers, as {selected_fragment}. Empty on a translation request.
+    QString selectedWord;
+    QString selectedFragment;
     QString sourceLang = QStringLiteral("auto");
     QString targetLang = QStringLiteral("en");
     QString tone;
@@ -37,25 +39,9 @@ public:
     };
 
     static Result build(const TranslationContext& context);
-    // Renders the candidate wording template used on a context window that does
-    // not cover the whole translation. \p translatedText is the whole translation
-    // and \p fragment the marked window around the selection. Templates pick
-    // whichever of the two they need.
-    static QString candidatePrompt(const QString& translatedText,
-                                   const QString& fragment,
-                                   const QString& word,
-                                   const QString& targetLang,
-                                   const QString& uiLanguage);
-    // Renders the candidate wording template used when the window covers the
-    // whole translation. \p translatedText is the unmarked translation, \p marked
-    // the same text with the selection wrapped in the markers, and the request
-    // carries \p sourceText as well.
-    static QString candidateShortPrompt(const QString& translatedText,
-                                        const QString& marked,
-                                        const QString& word,
-                                        const QString& sourceText,
-                                        const QString& targetLang,
-                                        const QString& uiLanguage);
+    // Renders any named template, offering it every placeholder the context
+    // carries.
+    static QString candidatePrompt(const QString& name, const TranslationContext& context);
     // System prompt for a request that is not a translation.
     static QString systemPrompt(const TranslationContext& context);
     static QStringList knownPlaceholders();
@@ -67,14 +53,9 @@ public:
 
 private:
     static QString templateFor(const QString& name, const QString& uiLanguage);
-    // Placeholder values a request interpolates.
+    // Placeholder values a request interpolates. Every placeholder is present so
+    // that any template can reach any of them.
     static QHash<QString, QString> variablesFor(const TranslationContext& context);
-    // Placeholder values shared by both candidate wording templates.
-    static QHash<QString, QString> candidateVariables(const QString& translatedText,
-                                                      const QString& marked,
-                                                      const QString& word,
-                                                      const QString& sourceText,
-                                                      const QString& targetLang);
     static QString render(const QString& name, const QString& uiLanguage,
                           const QHash<QString, QString>& variables);
 };

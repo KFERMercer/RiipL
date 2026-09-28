@@ -123,23 +123,19 @@ void TranslationEngine::requestCandidates(const TranslationContext& context,
     marked.insert(fragment.markEnd, CandidateMarks::selectionClose);
     marked.insert(fragment.markStart, CandidateMarks::selectionOpen);
 
-    const QString word = context.translatedText.mid(selectionStart, selectionEnd - selectionStart);
-    const QString uiLanguage = ConfigManager::instance()->resolvedUiLanguage();
+    TranslationContext selection = context;
+    selection.selectedWord = context.translatedText.mid(selectionStart, selectionEnd - selectionStart);
+    selection.selectedFragment = marked;
+    // A window already holding every word of the translation is rendered by the
+    // template that reaches for the source text. The window never carries the
+    // blanks around the translation, so the comparison ignores them too.
+    const QString name = fragment.text == context.translatedText.trimmed()
+        ? Prompts::candidateShortTemplate
+        : Prompts::candidateTemplate;
     PromptBuilder::Result prompt;
-    // A window that already holds every word of the translation, because it is
-    // that short, is rendered by the template that takes the source text as well.
-    // The window never carries the blanks around the translation, so the
-    // comparison ignores them too.
-    if (fragment.text == context.translatedText.trimmed()) {
-        prompt.user = PromptBuilder::candidateShortPrompt(
-            context.translatedText, marked, word, context.sourceText,
-            context.targetLang, uiLanguage);
-    } else {
-        prompt.user = PromptBuilder::candidatePrompt(
-            context.translatedText, marked, word, context.targetLang, uiLanguage);
-    }
+    prompt.user = PromptBuilder::candidatePrompt(name, selection);
     // Candidates answer under the same system prompt as a translation.
-    prompt.system = PromptBuilder::systemPrompt(context);
+    prompt.system = PromptBuilder::systemPrompt(selection);
 
     m_candidateBody = buildRequestBody(prompt, false);
     m_candidateText = context.translatedText;
