@@ -36,7 +36,7 @@ What DeepL reserves for paying members, RiipL gives you completely free:
 - 🔌 **Bring your own model** — works with OpenAI, Ollama, LM Studio, llama.cpp and any compatible gateway.
 - 🧩 **Prompt template pipeline** — multiple customizable prompt templates: glossary, tone, style, background knowledge and more. Live preview supported.
 - 📖 **Glossary** — custom translations for your domain terms, with JSON import/export.
-- 🗣 **Tones, styles & background** — 13 preset tones plus custom ones, with free-form style and background info.
+- 🗣 **Tones, styles & background** — 14 preset tones plus custom ones, with free-form style and background info.
 - 📋 **Clipboard monitoring** — clipboard text is translated automatically, with copy-back of results.
 - 🕘 **Translation history** — search and reuse past translations.
 

@@ -15,6 +15,7 @@ namespace Tones {
 inline const QVector<ToneItem>& presets()
 {
     static const QVector<ToneItem> list = {
+        {QStringLiteral("default"), QStringLiteral("Default"), QStringLiteral("默认")},
         {QStringLiteral("formal"), QStringLiteral("Formal"), QStringLiteral("正式")},
         {QStringLiteral("casual"), QStringLiteral("Casual"), QStringLiteral("口语")},
         {QStringLiteral("neutral"), QStringLiteral("Neutral"), QStringLiteral("中性")},

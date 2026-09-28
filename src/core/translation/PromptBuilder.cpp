@@ -130,8 +130,10 @@ PromptBuilder::Result PromptBuilder::build(const TranslationContext& context)
 
     // Reference entries appear in the order they are listed here, and only
     // while their variable holds a value, so unset options stay out entirely.
+    // The default tone is the absence of a tone: it is skipped just like an
+    // empty one, whereas every other tone reaches the model explicitly.
     QStringList referenceEntries;
-    if (!context.tone.isEmpty() && context.tone != QLatin1String("neutral"))
+    if (!context.tone.isEmpty() && context.tone != QLatin1String("default"))
         referenceEntries << render(Prompts::toneTemplate, uiLanguage, variables);
     if (!context.style.isEmpty())
         referenceEntries << render(Prompts::styleTemplate, uiLanguage, variables);

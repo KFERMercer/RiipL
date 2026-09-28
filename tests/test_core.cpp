@@ -7,6 +7,7 @@
 #include "core/models/Glossary.h"
 #include "core/translation/Language.h"
 #include "core/translation/PromptBuilder.h"
+#include "core/translation/Tone.h"
 #include "core/translation/TranslationEngine.h"
 #include "utils/SingleInstance.h"
 #include "utils/TextUtils.h"
@@ -29,6 +30,7 @@ private slots:
     void configFlushesPendingSaveOnRecreate();
     void promptSubstitution();
     void promptReferenceBlockIsDynamic();
+    void promptToneEntries();
     void promptGlossaryFormatting();
     void promptReferenceEntryKeepsBodyIntact();
     void candidatePromptSubstitution();
@@ -203,16 +205,22 @@ void TestCore::promptReferenceBlockIsDynamic()
     // cannot pollute the prompt.
     QString prompt = PromptBuilder::build(context).user;
     QVERIFY(!prompt.contains(Defaults::promptReferenceZh.trimmed()));
-    QVERIFY(!prompt.contains(QStringLiteral("- 语气：")));
-    QVERIFY(!prompt.contains(QStringLiteral("- 风格：")));
+    QVERIFY(!prompt.contains(QStringLiteral("- 翻译语气：")));
+    QVERIFY(!prompt.contains(QStringLiteral("- 语言风格：")));
     QVERIFY(!prompt.contains(QStringLiteral("- 背景信息：")));
     QVERIFY(!prompt.contains(QStringLiteral("- 术语表：")));
 
-    // The neutral tone is the absence of a tone, not a reference item.
+    // The neutral tone is submitted like any other; the default tone and an
+    // unset one both leave the entry out.
     context.tone = QStringLiteral("neutral");
     prompt = PromptBuilder::build(context).user;
+    QVERIFY(prompt.startsWith(Defaults::promptReferenceZh.trimmed()));
+    QVERIFY(prompt.contains(QStringLiteral("- 翻译语气：neutral")));
+
+    context.tone = QStringLiteral("default");
+    prompt = PromptBuilder::build(context).user;
     QVERIFY(!prompt.contains(Defaults::promptReferenceZh.trimmed()));
-    QVERIFY(!prompt.contains(QStringLiteral("- 语气：")));
+    QVERIFY(!prompt.contains(QStringLiteral("- 翻译语气：")));
 
     // Each set option appends exactly its own entry, in reference order.
     context.tone = QStringLiteral("formal");
@@ -223,8 +231,8 @@ void TestCore::promptReferenceBlockIsDynamic()
     QVERIFY(prompt.contains(QStringLiteral("formal")));
     QVERIFY(prompt.contains(QStringLiteral("concise")));
     QVERIFY(prompt.contains(QStringLiteral("deployment notes")));
-    const int toneAt = prompt.indexOf(QStringLiteral("- 语气："));
-    const int styleAt = prompt.indexOf(QStringLiteral("- 风格："));
+    const int toneAt = prompt.indexOf(QStringLiteral("- 翻译语气："));
+    const int styleAt = prompt.indexOf(QStringLiteral("- 语言风格："));
     const int backgroundAt = prompt.indexOf(QStringLiteral("- 背景信息："));
     QVERIFY(toneAt >= 0 && styleAt > toneAt && backgroundAt > styleAt);
 
@@ -241,6 +249,28 @@ void TestCore::promptReferenceBlockIsDynamic()
     QVERIFY(!PromptBuilder::build(glossaryContext).user.contains(QStringLiteral("- 术语表：")));
     glossaryContext.glossaryEnabled = true;
     QVERIFY(PromptBuilder::build(glossaryContext).user.contains(QStringLiteral("- 术语表：")));
+}
+
+// The default tone is the absence of a tone: it stays out of the prompt like an
+// unset one, while every other preset reaches the model by its key.
+void TestCore::promptToneEntries()
+{
+    QDir().mkpath(tempDir());
+    ConfigManager::createInstance(tempDir());
+
+    TranslationContext context;
+    context.sourceText = QStringLiteral("Hello");
+    context.targetLang = QStringLiteral("de");
+    context.uiLanguage = QStringLiteral("zh");
+    context.tone = QStringLiteral("default");
+    QVERIFY(!PromptBuilder::build(context).user.contains(QStringLiteral("- 翻译语气：")));
+
+    context.tone = QStringLiteral("neutral");
+    QVERIFY(PromptBuilder::build(context).user.contains(QStringLiteral("- 翻译语气：neutral")));
+
+    // The persisted default is the one the tone list leads with.
+    QCOMPARE(Defaults::translationTone, Tones::presets().first().key);
+    QVERIFY(!Tones::presetDisplayName(Defaults::translationTone, QStringLiteral("zh")).isEmpty());
 }
 
 void TestCore::promptGlossaryFormatting()
@@ -300,8 +330,8 @@ void TestCore::promptReferenceEntryKeepsBodyIntact()
     context.glossary = {{QStringLiteral("fox"), QStringLiteral("Fuchs")}};
 
     const QString prompt = PromptBuilder::build(context).user;
-    QVERIFY(prompt.contains(QStringLiteral("- 语气：\n  ```\n  formal\n  ```")));
-    QVERIFY(prompt.contains(QStringLiteral("- 风格：\n  ```\n  concise\n  technical\n  ```")));
+    QVERIFY(prompt.contains(QStringLiteral("- 翻译语气：formal")));
+    QVERIFY(prompt.contains(QStringLiteral("- 语言风格：\n  ```\n  concise\n  technical\n  ```")));
     QVERIFY(prompt.contains(QStringLiteral("- 背景信息：\n  ```\n  line one\n  line two\n  ```")));
     QVERIFY(prompt.contains(QStringLiteral("- 术语表：\n  ```json\n  [\n      {\n          \"source\": \"fox\",")));
     // One shared header and the instruction last.
@@ -315,7 +345,7 @@ void TestCore::promptReferenceEntryKeepsBodyIntact()
 
     // An unset option removes its whole entry, indentation included.
     single.style.clear();
-    QVERIFY(!PromptBuilder::build(single).user.contains(QStringLiteral("- 风格：")));
+    QVERIFY(!PromptBuilder::build(single).user.contains(QStringLiteral("- 语言风格：")));
 }
 
 
