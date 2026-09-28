@@ -151,28 +151,22 @@ inline const QString promptSystemEn = QStringLiteral("You are a professional tra
 
 // The reference templates are self-contained: each one renders its own label,
 // fence and placeholder, and is emitted only while its variable holds a value.
-inline const QString promptReferenceZh = R"TXT(你需要仔细阅读并严格遵守以下参考信息：
+inline const QString promptReferenceZh = R"TXT(你需要仔细阅读并严格遵守以下约束：
 )TXT";
 inline const QString promptReferenceEn = R"TXT(Read the following reference information carefully and follow it strictly:
 )TXT";
 
-inline const QString promptToneZh = R"TXT(- 语气：
-  ```
-  {tone}
-  ```
+inline const QString promptToneZh = R"TXT(- 翻译语气：{tone}
 )TXT";
-inline const QString promptToneEn = R"TXT(- Tone:
-  ```
-  {tone}
-  ```
+inline const QString promptToneEn = R"TXT(- Translation tone: {tone}
 )TXT";
 
-inline const QString promptStyleZh = R"TXT(- 风格：
+inline const QString promptStyleZh = R"TXT(- 语言风格：
   ```
   {style}
   ```
 )TXT";
-inline const QString promptStyleEn = R"TXT(- Style:
+inline const QString promptStyleEn = R"TXT(- Language style:
   ```
   {style}
   ```
@@ -183,7 +177,7 @@ inline const QString promptBackgroundZh = R"TXT(- 背景信息：
   {background}
   ```
 )TXT";
-inline const QString promptBackgroundEn = R"TXT(- Background:
+inline const QString promptBackgroundEn = R"TXT(- Background Information:
   ```
   {background}
   ```
