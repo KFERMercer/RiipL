@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QJsonArray>
 #include <QJsonValue>
 #include <QList>
 #include <QPair>
@@ -166,3 +167,11 @@ protected:
 private:
     QCheckBox* m_box = nullptr;
 };
+
+// Item lists for the language and tone selectors, shared by every editor that
+// offers the same choice so the display names stay in step.
+QList<QPair<QString, QString>> languageItems(const QString& uiLanguage, bool includeAuto);
+QList<QPair<QString, QString>> toneItems(const QString& uiLanguage, const QJsonArray& customTones);
+// Keeps the selection on the persisted key; an unknown key falls back to the
+// first entry.
+void selectComboItem(QComboBox* box, const QString& key);

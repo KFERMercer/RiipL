@@ -2,8 +2,12 @@
 
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
+#include "core/translation/Language.h"
+#include "core/translation/Tone.h"
 #include "ui/widgets/AppFonts.h"
 #include "ui/widgets/AppIcons.h"
+
+#include <QJsonObject>
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -286,4 +290,34 @@ QJsonValue ConfigCheckBox::value() const
 void ConfigCheckBox::setControlValue(const QJsonValue& v)
 {
     m_box->setChecked(v.toBool());
+}
+
+QList<QPair<QString, QString>> languageItems(const QString& uiLanguage, bool includeAuto)
+{
+    QList<QPair<QString, QString>> items;
+    for (const LangItem& lang : Languages::all()) {
+        if (!includeAuto && lang.code == QLatin1String("auto"))
+            continue;
+        items.append({Languages::displayName(lang.code, uiLanguage), lang.code});
+    }
+    return items;
+}
+
+QList<QPair<QString, QString>> toneItems(const QString& uiLanguage, const QJsonArray& customTones)
+{
+    QList<QPair<QString, QString>> items;
+    for (const ToneItem& tone : Tones::presets())
+        items.append({Tones::presetDisplayName(tone.key, uiLanguage), tone.key});
+    for (const QJsonValue& value : customTones) {
+        const QJsonObject object = value.toObject();
+        const QString key = object.value(QStringLiteral("key")).toString();
+        items.append({object.value(QStringLiteral("name")).toString(key), key});
+    }
+    return items;
+}
+
+void selectComboItem(QComboBox* box, const QString& key)
+{
+    const int index = box->findData(key);
+    box->setCurrentIndex(index < 0 ? 0 : index);
 }

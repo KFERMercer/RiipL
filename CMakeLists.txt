@@ -66,6 +66,7 @@ set(UI_SOURCES
     src/ui/dialogs/ApiPresetDialog.cpp
     src/ui/dialogs/GlossaryDialog.cpp
     src/ui/dialogs/ToneDialog.cpp
+    src/ui/dialogs/PromptPreviewDialog.cpp
     src/ui/dialogs/HistoryDialog.cpp
     src/ui/dialogs/DocumentDialog.cpp
     src/ui/dialogs/AboutDialog.cpp
@@ -84,6 +85,7 @@ set(UI_HEADERS
     src/ui/dialogs/ApiPresetDialog.h
     src/ui/dialogs/GlossaryDialog.h
     src/ui/dialogs/ToneDialog.h
+    src/ui/dialogs/PromptPreviewDialog.h
     src/ui/dialogs/HistoryDialog.h
     src/ui/dialogs/DocumentDialog.h
     src/ui/dialogs/AboutDialog.h

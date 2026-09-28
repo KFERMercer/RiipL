@@ -2,14 +2,12 @@
 
 #include "ApiPresetDialog.h"
 #include "GlossaryDialog.h"
+#include "PromptPreviewDialog.h"
 #include "ToneDialog.h"
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
 #include "core/history/HistoryManager.h"
-#include "core/models/Glossary.h"
-#include "core/translation/Language.h"
 #include "core/translation/PromptBuilder.h"
-#include "core/translation/Tone.h"
 #include "ui/widgets/AppFonts.h"
 #include "ui/widgets/ConfigEditors.h"
 #include "ui/widgets/FlowLayout.h"
@@ -18,7 +16,6 @@
 
 #include <QAbstractButton>
 #include <QApplication>
-#include <QCheckBox>
 #include <QClipboard>
 #include <QComboBox>
 #include <QCursor>
@@ -71,137 +68,7 @@ const QVector<TemplateInfo>& templateInfos()
     return list;
 }
 
-QList<QPair<QString, QString>> languageItems(const QString& uiLanguage, bool includeAuto)
-{
-    QList<QPair<QString, QString>> items;
-    for (const LangItem& lang : Languages::all()) {
-        if (!includeAuto && lang.code == QLatin1String("auto"))
-            continue;
-        items.append({Languages::displayName(lang.code, uiLanguage), lang.code});
-    }
-    return items;
 }
-
-QList<QPair<QString, QString>> toneItems(const QString& uiLanguage, const QJsonArray& customTones)
-{
-    QList<QPair<QString, QString>> items;
-    for (const ToneItem& tone : Tones::presets())
-        items.append({Tones::presetDisplayName(tone.key, uiLanguage), tone.key});
-    for (const QJsonValue& value : customTones) {
-        const QJsonObject object = value.toObject();
-        const QString key = object.value(QStringLiteral("key")).toString();
-        items.append({object.value(QStringLiteral("name")).toString(key), key});
-    }
-    return items;
-}
-
-// Keeps the selection on the persisted key; an unknown key falls back to the
-// first entry, mirroring ConfigComboBox.
-void selectItem(QComboBox* box, const QString& key)
-{
-    const int index = box->findData(key);
-    box->setCurrentIndex(index < 0 ? 0 : index);
-}
-
-}
-
-class PromptPreviewDialog : public QDialog
-{
-    Q_OBJECT
-
-public:
-    explicit PromptPreviewDialog(QWidget* parent = nullptr)
-        : QDialog(parent)
-    {
-        setWindowTitle(tr("Prompt preview"));
-        ConfigManager* config = ConfigManager::instance();
-        const QString uiLanguage = config->resolvedUiLanguage();
-        m_glossaryEnabled = config->boolValue(Keys::glossaryEnabled);
-        m_glossary = Glossary::loadFromConfig().entries;
-
-        auto* layout = new QVBoxLayout(this);
-
-        auto* form = new QFormLayout();
-        // The sampled options start from the persisted configuration; the dialog
-        // only overrides them for the preview it renders.
-        m_source = new QLineEdit(this);
-        m_source->setText(QStringLiteral("Hello, world! RiipL is a translation tool."));
-        m_sourceLang = new QComboBox(this);
-        for (const QPair<QString, QString>& item : languageItems(uiLanguage, true))
-            m_sourceLang->addItem(item.first, item.second);
-        selectItem(m_sourceLang, config->stringValue(Keys::translationSourceLang));
-        m_target = new QComboBox(this);
-        for (const QPair<QString, QString>& item : languageItems(uiLanguage, false))
-            m_target->addItem(item.first, item.second);
-        selectItem(m_target, config->stringValue(Keys::translationTargetLang));
-        m_tone = new QComboBox(this);
-        for (const QPair<QString, QString>& item
-             : toneItems(uiLanguage, config->value(Keys::translationCustomTones).toArray())) {
-            m_tone->addItem(item.first, item.second);
-        }
-        selectItem(m_tone, config->stringValue(Keys::translationTone));
-        m_style = new QLineEdit(config->stringValue(Keys::translationStyle), this);
-        m_background = new QLineEdit(config->stringValue(Keys::translationBackground), this);
-        form->addRow(tr("Sample text"), m_source);
-        form->addRow(tr("Source language"), m_sourceLang);
-        form->addRow(tr("Target language"), m_target);
-        form->addRow(tr("Tone"), m_tone);
-        form->addRow(tr("Style"), m_style);
-        form->addRow(tr("Background"), m_background);
-        layout->addLayout(form);
-
-        m_output = new QPlainTextEdit(this);
-        m_output->setReadOnly(true);
-        m_output->setFont(AppFonts::fixedWidth());
-        layout->addWidget(m_output, 1);
-
-        auto* buttons = new QDialogButtonBox(QDialogButtonBox::Close, this);
-        layout->addWidget(buttons);
-        connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::close);
-
-        connect(m_source, &QLineEdit::textChanged, this, &PromptPreviewDialog::refresh);
-        connect(m_sourceLang, &QComboBox::currentIndexChanged, this, &PromptPreviewDialog::refresh);
-        connect(m_target, &QComboBox::currentIndexChanged, this, &PromptPreviewDialog::refresh);
-        connect(m_tone, &QComboBox::currentIndexChanged, this, &PromptPreviewDialog::refresh);
-        connect(m_style, &QLineEdit::textChanged, this, &PromptPreviewDialog::refresh);
-        connect(m_background, &QLineEdit::textChanged, this, &PromptPreviewDialog::refresh);
-        refresh();
-        WindowState::track(this, WindowState::Id::promptPreview);
-    }
-
-private slots:
-    void refresh()
-    {
-        ConfigManager* config = ConfigManager::instance();
-        TranslationContext context;
-        context.sourceText = m_source->text();
-        context.sourceLang = m_sourceLang->currentData().toString();
-        context.targetLang = m_target->currentData().toString();
-        context.tone = m_tone->currentData().toString();
-        context.style = m_style->text().trimmed();
-        context.background = m_background->text().trimmed();
-        context.glossaryEnabled = m_glossaryEnabled;
-        context.glossary = m_glossary;
-        context.uiLanguage = config->resolvedUiLanguage();
-        const PromptBuilder::Result result = PromptBuilder::build(context);
-        QString text;
-        if (!result.system.isEmpty())
-            text += QStringLiteral("[system]\n%1\n\n").arg(result.system);
-        text += result.user;
-        m_output->setPlainText(text.isEmpty() ? tr("(empty prompt)") : text);
-    }
-
-private:
-    bool m_glossaryEnabled = false;
-    QVector<GlossaryEntry> m_glossary;
-    QLineEdit* m_source = nullptr;
-    QComboBox* m_sourceLang = nullptr;
-    QComboBox* m_target = nullptr;
-    QComboBox* m_tone = nullptr;
-    QLineEdit* m_style = nullptr;
-    QLineEdit* m_background = nullptr;
-    QPlainTextEdit* m_output = nullptr;
-};
 
 SettingsDialog::SettingsDialog(HistoryManager* history, QWidget* parent)
     : QDialog(parent)
@@ -695,11 +562,10 @@ QWidget* SettingsDialog::createPromptsPage()
     buttonRow->addStretch(1);
     auto* testButton = new QPushButton(tr("Preview prompt..."), page);
     connect(testButton, &QPushButton::clicked, page, [page]() {
-        PromptPreviewDialog(page).exec();
+        PromptPreviewDialog dialog(page);
+        dialog.exec();
     });
     buttonRow->addWidget(testButton);
     layout->addLayout(buttonRow);
     return page;
 }
-
-#include "SettingsDialog.moc"
