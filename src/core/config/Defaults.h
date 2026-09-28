@@ -196,15 +196,9 @@ inline const QString promptGlossaryEn = R"TXT(- Glossary:
 )TXT";
 
 inline const QString promptDefaultZh = R"TXT(根据以上参考信息，将以下文本翻译为 {target_lang}，注意**只需要输出翻译后的结果，不要额外解释**：
-
-```
-{source_text}
-```)TXT";
+{source_text})TXT";
 inline const QString promptDefaultEn = R"TXT(Based on the reference information above, translate the following text into {target_lang}. Note that you must **only output the translated result without any additional explanation**:
-
-```
-{source_text}
-```)TXT";
+{source_text})TXT";
 
 inline const QString promptCandidateZh = R"TXT(你的任务是寻找给定原文中被标记词语的替代遣词或表述，并返回 JSON 结构化方案。
 
