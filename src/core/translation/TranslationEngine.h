@@ -51,8 +51,7 @@ public:
 
     // Assembles a chat-completions request body from the current configuration.
     // A negative configured temperature omits the parameter from the body.
-    static QJsonObject buildRequestBody(const QString& userContent, bool stream,
-                                        const QString& systemContent = QString());
+    static QJsonObject buildRequestBody(const PromptBuilder::Result& prompt, bool stream);
 
     // Parses the candidate wording reply into its replacement groups, each with
     // its own target, so a model that widens the selection differently per group

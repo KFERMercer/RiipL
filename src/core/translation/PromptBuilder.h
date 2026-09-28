@@ -45,6 +45,8 @@ public:
                                    const QString& word,
                                    const QString& targetLang,
                                    const QString& uiLanguage);
+    // System prompt for a request that is not a translation.
+    static QString systemPrompt(const TranslationContext& context);
     static QStringList knownPlaceholders();
     static QString substitute(QString text, const QHash<QString, QString>& variables);
     // Renders the glossary as a JSON array whose keys are localized, so the
@@ -54,4 +56,8 @@ public:
 
 private:
     static QString templateFor(const QString& name, const QString& uiLanguage);
+    // Placeholder values a request interpolates.
+    static QHash<QString, QString> variablesFor(const TranslationContext& context);
+    static QString render(const QString& name, const QString& uiLanguage,
+                          const QHash<QString, QString>& variables);
 };

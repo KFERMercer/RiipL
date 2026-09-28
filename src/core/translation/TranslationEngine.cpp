@@ -41,19 +41,19 @@ bool TranslationEngine::busy() const
     return m_busy;
 }
 
-QJsonObject TranslationEngine::buildRequestBody(const QString& userContent, bool stream, const QString& systemContent)
+QJsonObject TranslationEngine::buildRequestBody(const PromptBuilder::Result& prompt, bool stream)
 {
     ConfigManager* config = ConfigManager::instance();
     QJsonArray messages;
-    if (!systemContent.isEmpty()) {
+    if (!prompt.system.isEmpty()) {
         messages.append(QJsonObject{
             {QStringLiteral("role"), QStringLiteral("system")},
-            {QStringLiteral("content"), systemContent}
+            {QStringLiteral("content"), prompt.system}
         });
     }
     messages.append(QJsonObject{
         {QStringLiteral("role"), QStringLiteral("user")},
-        {QStringLiteral("content"), userContent}
+        {QStringLiteral("content"), prompt.user}
     });
 
     QJsonObject body;
@@ -79,7 +79,7 @@ void TranslationEngine::translateText(const TranslationContext& context)
         return;
     }
 
-    QJsonObject body = buildRequestBody(prompt.user, ConfigManager::instance()->boolValue(Keys::apiStream), prompt.system);
+    QJsonObject body = buildRequestBody(prompt, ConfigManager::instance()->boolValue(Keys::apiStream));
 
     m_accumulated.clear();
     setBusy(true);
@@ -125,8 +125,11 @@ void TranslationEngine::requestCandidates(const TranslationContext& context,
 
     const QString word = context.translatedText.mid(selectionStart, selectionEnd - selectionStart);
     const QString uiLanguage = ConfigManager::instance()->resolvedUiLanguage();
-    const QString prompt = PromptBuilder::candidatePrompt(
+    PromptBuilder::Result prompt;
+    prompt.user = PromptBuilder::candidatePrompt(
         context.translatedText, marked, word, context.targetLang, uiLanguage);
+    // Candidates answer under the same system prompt as a translation.
+    prompt.system = PromptBuilder::systemPrompt(context);
 
     m_candidateBody = buildRequestBody(prompt, false);
     m_candidateText = context.translatedText;

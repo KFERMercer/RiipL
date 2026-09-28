@@ -60,6 +60,7 @@ private slots:
     void apiPresetApplyWritesEveryField();
     void stopCancelsActiveRequest();
     void candidateRequestRetriesEmptyReply();
+    void candidateRequestCarriesSystemPrompt();
     void failedDispatchReturnsToIdle();
     void stopWhenIdleIsNoOp();
 
@@ -797,11 +798,13 @@ void TestCore::requestBodyParameterHandling()
     ConfigManager::createInstance(tempDir());
 
     QCOMPARE(Defaults::apiTemperature, -0.1);
-    const QJsonObject body = TranslationEngine::buildRequestBody(QStringLiteral("Hello"), false);
+    const QJsonObject body = TranslationEngine::buildRequestBody(
+        {QString(), QStringLiteral("Hello")}, false);
     QVERIFY(!body.contains(QStringLiteral("temperature")));
 
     ConfigManager::instance()->setValue(Keys::apiTemperature, 0.7);
-    const QJsonObject tuned = TranslationEngine::buildRequestBody(QStringLiteral("Hello"), false);
+    const QJsonObject tuned = TranslationEngine::buildRequestBody(
+        {QString(), QStringLiteral("Hello")}, false);
     QCOMPARE(tuned.value(QStringLiteral("temperature")).toDouble(), 0.7);
 }
 
@@ -1211,6 +1214,72 @@ void TestCore::candidateRequestRetriesEmptyReply()
     QCOMPARE(received.first().start, start);
     QCOMPARE(received.first().length, word.size());
     QVERIFY(received.first().valid());
+}
+
+// The candidate request must open with the configured system prompt.
+void TestCore::candidateRequestCarriesSystemPrompt()
+{
+    QDir().mkpath(tempDir());
+    ConfigManager::createInstance(tempDir());
+
+    QTcpServer server;
+    QVERIFY(server.listen(QHostAddress::LocalHost));
+    ConfigManager::instance()->setValue(
+        Keys::apiBaseUrl, QStringLiteral("http://127.0.0.1:%1/v1").arg(server.serverPort()));
+    ConfigManager::instance()->setValue(Keys::promptSystemEn,
+                                        QStringLiteral("You are a careful editor."));
+
+    QByteArray payload;
+    QByteArray request;
+    QObject::connect(&server, &QTcpServer::newConnection, this, [&]() {
+        QTcpSocket* socket = server.nextPendingConnection();
+        QObject::connect(socket, &QTcpSocket::readyRead, socket, [&, socket]() {
+            request += socket->readAll();
+            if (!payload.isEmpty())
+                return;
+            const int headerEnd = request.indexOf("\r\n\r\n");
+            if (headerEnd == -1)
+                return;
+            int contentLength = 0;
+            for (const QByteArray& line : request.left(headerEnd).split('\n')) {
+                if (line.toLower().startsWith("content-length:"))
+                    contentLength = line.mid(int(line.indexOf(':')) + 1).trimmed().toInt();
+            }
+            if (request.size() - headerEnd - 4 < contentLength)
+                return;
+            payload = request.mid(headerEnd + 4, contentLength);
+            const QByteArray body =
+                R"({"choices":[{"message":{"content":"[{\"old\":\"皇帝\",\"new\":[\"君主\"]}]"}}]})";
+            socket->write("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: "
+                          + QByteArray::number(body.size()) + "\r\n\r\n" + body);
+            socket->flush();
+        });
+    });
+
+    TranslationEngine engine;
+    TranslationContext context;
+    context.translatedText = QStringLiteral("莫卧儿皇帝是从什么时候开始觉得自己是印度人的？");
+    context.targetLang = QStringLiteral("zh");
+    context.uiLanguage = QStringLiteral("en");
+
+    QVector<TranslationEngine::CandidateGroup> received;
+    const QString word = QStringLiteral("皇帝");
+    const int start = context.translatedText.indexOf(word);
+    engine.requestCandidates(
+        context, start, start + word.size(),
+        [&](const QVector<TranslationEngine::CandidateGroup>& groups) { received = groups; },
+        [](const QString&) {});
+
+    QTRY_COMPARE_WITH_TIMEOUT(received.size(), 1, 5000);
+    const QJsonObject sent = QJsonDocument::fromJson(payload).object();
+    const QJsonArray messages = sent.value(QStringLiteral("messages")).toArray();
+    QCOMPARE(messages.size(), 2);
+    QCOMPARE(messages.at(0).toObject().value(QStringLiteral("role")).toString(),
+             QStringLiteral("system"));
+    QCOMPARE(messages.at(0).toObject().value(QStringLiteral("content")).toString(),
+             QStringLiteral("You are a careful editor."));
+    QCOMPARE(messages.at(1).toObject().value(QStringLiteral("role")).toString(),
+             QStringLiteral("user"));
 }
 
 void TestCore::failedDispatchReturnsToIdle()

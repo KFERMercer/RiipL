@@ -110,47 +110,54 @@ QString PromptBuilder::substitute(QString text, const QHash<QString, QString>& v
     return text;
 }
 
-PromptBuilder::Result PromptBuilder::build(const TranslationContext& context)
+QHash<QString, QString> PromptBuilder::variablesFor(const TranslationContext& context)
 {
-    const QString uiLanguage = context.uiLanguage;
-    const QString glossary = context.glossaryEnabled
-        ? glossaryData(context.glossary, uiLanguage)
-        : QString();
-
     QHash<QString, QString> variables;
     variables.insert(QStringLiteral("source_lang"), Languages::englishName(context.sourceLang));
     variables.insert(QStringLiteral("target_lang"), Languages::englishName(context.targetLang));
     variables.insert(QStringLiteral("tone"), context.tone);
     variables.insert(QStringLiteral("style"), context.style);
     variables.insert(QStringLiteral("background"), context.background);
-    variables.insert(QStringLiteral("glossary"), glossary);
+    variables.insert(QStringLiteral("glossary"),
+                     context.glossaryEnabled ? glossaryData(context.glossary, context.uiLanguage)
+                                             : QString());
     variables.insert(QStringLiteral("source_text"), context.sourceText);
     variables.insert(QStringLiteral("translated_text"), QString());
     variables.insert(QStringLiteral("selected_word"), QString());
+    return variables;
+}
 
-    const auto render = [&variables, &uiLanguage](const QString& name) {
-        return substitute(templateFor(name, uiLanguage), variables);
-    };
+QString PromptBuilder::render(const QString& name, const QString& uiLanguage,
+                              const QHash<QString, QString>& variables)
+{
+    return substitute(templateFor(name, uiLanguage), variables);
+}
+
+PromptBuilder::Result PromptBuilder::build(const TranslationContext& context)
+{
+    const QString uiLanguage = context.uiLanguage;
+    const QHash<QString, QString> variables = variablesFor(context);
+    const QString glossary = variables.value(QStringLiteral("glossary"));
 
     // Reference entries appear in the order they are listed here, and only
     // while their variable holds a value, so unset options stay out entirely.
     QStringList referenceEntries;
     if (!context.tone.isEmpty() && context.tone != QLatin1String("neutral"))
-        referenceEntries << render(Prompts::toneTemplate);
+        referenceEntries << render(Prompts::toneTemplate, uiLanguage, variables);
     if (!context.style.isEmpty())
-        referenceEntries << render(Prompts::styleTemplate);
+        referenceEntries << render(Prompts::styleTemplate, uiLanguage, variables);
     if (!context.background.isEmpty())
-        referenceEntries << render(Prompts::backgroundTemplate);
+        referenceEntries << render(Prompts::backgroundTemplate, uiLanguage, variables);
     if (!glossary.isEmpty())
-        referenceEntries << render(Prompts::glossaryTemplate);
+        referenceEntries << render(Prompts::glossaryTemplate, uiLanguage, variables);
 
     QStringList fragments;
     if (!referenceEntries.isEmpty()) {
-        const QString header = render(Prompts::referenceTemplate).trimmed();
+        const QString header = render(Prompts::referenceTemplate, uiLanguage, variables).trimmed();
         fragments << (header.isEmpty() ? referenceEntries.join(QString())
                                        : header + QStringLiteral("\n\n") + referenceEntries.join(QString()));
     }
-    fragments << render(Prompts::defaultTemplate);
+    fragments << render(Prompts::defaultTemplate, uiLanguage, variables);
 
     QStringList parts;
     for (const QString& fragment : fragments) {
@@ -160,9 +167,14 @@ PromptBuilder::Result PromptBuilder::build(const TranslationContext& context)
     }
 
     Result result;
-    result.system = render(Prompts::systemTemplate).trimmed();
+    result.system = render(Prompts::systemTemplate, uiLanguage, variables).trimmed();
     result.user = parts.join(QStringLiteral("\n\n"));
     return result;
+}
+
+QString PromptBuilder::systemPrompt(const TranslationContext& context)
+{
+    return render(Prompts::systemTemplate, context.uiLanguage, variablesFor(context)).trimmed();
 }
 
 QString PromptBuilder::candidatePrompt(const QString& translatedText,
@@ -181,6 +193,5 @@ QString PromptBuilder::candidatePrompt(const QString& translatedText,
     // The source text plays no part in a replacement request, so a template that
     // still names it renders it away rather than failing.
     variables.insert(QStringLiteral("source_text"), QString());
-    const QString templ = templateFor(Prompts::candidateTemplate, uiLanguage);
-    return substitute(templ, variables);
+    return render(Prompts::candidateTemplate, uiLanguage, variables);
 }
