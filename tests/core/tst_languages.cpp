@@ -1,6 +1,5 @@
 #include <QtTest>
 
-#include "TestSupport.h"
 #include "core/translation/Language.h"
 
 class TestLanguages : public QObject

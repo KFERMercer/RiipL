@@ -3,7 +3,6 @@
 #include "TestSupport.h"
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
-#include "core/network/ApiClient.h"
 #include "core/translation/TranslationEngine.h"
 #include "utils/TextUtils.h"
 

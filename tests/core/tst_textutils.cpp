@@ -1,6 +1,5 @@
 #include <QtTest>
 
-#include "TestSupport.h"
 #include "utils/TextUtils.h"
 
 class TestTextUtils : public QObject

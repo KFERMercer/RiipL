@@ -3,7 +3,6 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QString>
-#include <QStringList>
 #include <QVector>
 
 #include "core/config/ConfigManager.h"

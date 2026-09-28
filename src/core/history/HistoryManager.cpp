@@ -1,9 +1,5 @@
 #include "HistoryManager.h"
 
-#include "core/config/ConfigManager.h"
-#include "core/config/Defaults.h"
-
-#include <QDateTime>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>

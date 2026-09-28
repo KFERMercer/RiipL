@@ -1,7 +1,6 @@
 #include "HistoryDialog.h"
 
 #include "core/config/ConfigManager.h"
-#include "core/config/Defaults.h"
 #include "core/translation/Language.h"
 #include "core/translation/Tone.h"
 #include "ui/widgets/WindowState.h"

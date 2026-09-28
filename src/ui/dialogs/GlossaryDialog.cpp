@@ -9,9 +9,7 @@
 #include <QFileDialog>
 #include <QHeaderView>
 #include <QHBoxLayout>
-#include <QJsonArray>
 #include <QJsonDocument>
-#include <QJsonObject>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>

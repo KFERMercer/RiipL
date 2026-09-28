@@ -3,6 +3,8 @@
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
 
+#include <QJsonObject>
+
 QJsonArray Glossary::toJson(const QVector<GlossaryEntry>& entries)
 {
     QJsonArray array;

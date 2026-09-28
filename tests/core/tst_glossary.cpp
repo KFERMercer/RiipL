@@ -1,6 +1,5 @@
 #include <QtTest>
 
-#include "TestSupport.h"
 #include "core/models/Glossary.h"
 
 class TestGlossary : public QObject

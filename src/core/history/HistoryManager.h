@@ -5,8 +5,6 @@
 #include <QTimer>
 #include <QVector>
 
-#include "core/models/Glossary.h"
-
 struct TranslationRecord
 {
     qint64 timestamp = 0;

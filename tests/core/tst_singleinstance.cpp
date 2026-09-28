@@ -1,6 +1,5 @@
 #include <QtTest>
 
-#include "TestSupport.h"
 #include "utils/SingleInstance.h"
 
 class TestSingleInstance : public QObject
