@@ -32,6 +32,7 @@ private slots:
     void promptGlossaryFormatting();
     void promptReferenceEntryKeepsBodyIntact();
     void candidatePromptSubstitution();
+    void candidateShortPromptSubstitution();
     void knownPlaceholdersCoverVariables();
     void glossaryRoundTrip();
     void historyTrimming();
@@ -40,6 +41,7 @@ private slots:
     void wordSpanAtBoundaries();
     void candidateResponseParsing();
     void candidateFragmentWindow();
+    void candidateWindowCountsWords();
     void candidateResolution();
     void replaceTargetsCompleteWord();
     void replacementAbsorbsRestatedNeighbour();
@@ -61,6 +63,7 @@ private slots:
     void stopCancelsActiveRequest();
     void candidateRequestRetriesEmptyReply();
     void candidateRequestCarriesSystemPrompt();
+    void candidateRequestPicksShortTextTemplate();
     void failedDispatchReturnsToIdle();
     void stopWhenIdleIsNoOp();
 
@@ -77,6 +80,19 @@ private:
     {
         static QTemporaryDir dir;
         return dir.path() + QStringLiteral("/%1").arg(QTest::currentTestFunction());
+    }
+
+    // Content of the user message in a recorded chat-completions request body.
+    static QString requestUserPrompt(const QByteArray& body)
+    {
+        const QJsonArray messages = QJsonDocument::fromJson(body).object()
+                                        .value(QStringLiteral("messages")).toArray();
+        for (const QJsonValue& message : messages) {
+            const QJsonObject object = message.toObject();
+            if (object.value(QStringLiteral("role")).toString() == QLatin1String("user"))
+                return object.value(QStringLiteral("content")).toString();
+        }
+        return QString();
     }
 };
 
@@ -335,6 +351,46 @@ void TestCore::candidatePromptSubstitution()
     QVERIFY(withFull.contains(full));
 }
 
+void TestCore::candidateShortPromptSubstitution()
+{
+    QDir().mkpath(tempDir());
+    ConfigManager::createInstance(tempDir());
+
+    const QString translated = QStringLiteral("你好，世界！");
+    const QString marked = QStringLiteral("你好，[[世界]]！");
+    const QString source = QStringLiteral("Hello, world!");
+    const QString prompt = PromptBuilder::candidateShortPrompt(
+        translated, marked, QStringLiteral("世界"), source,
+        QStringLiteral("zh"), QStringLiteral("en"));
+
+    // The short-text template is rendered from the marked whole translation, and
+    // carries the source text next to it.
+    QVERIFY(prompt.contains(marked));
+    QVERIFY(prompt.contains(source));
+    QVERIFY(prompt.contains(QStringLiteral("世界")));
+    QVERIFY(prompt.contains(QStringLiteral("Chinese")));
+    QVERIFY(prompt.contains(CandidateMarks::selectionOpen));
+    QVERIFY(prompt.contains(CandidateMarks::selectionClose));
+    for (const QString& placeholder : {QStringLiteral("{target_lang}"),
+                                       QStringLiteral("{translated_text}"),
+                                       QStringLiteral("{selected_fragment}"),
+                                       QStringLiteral("{source_text}"),
+                                       QStringLiteral("{selected_word}"),
+                                       QStringLiteral("{mark_left}"),
+                                       QStringLiteral("{mark_right}")}) {
+        QVERIFY(!prompt.contains(placeholder));
+    }
+
+    // A configured template overrides the built-in one, like every other prompt.
+    ConfigManager::instance()->setValue(Keys::promptCandidateShortZh,
+                                        QStringLiteral("短文本：{source_text}"));
+    ConfigManager::instance()->setValue(Keys::uiLanguage, QStringLiteral("zh"));
+    QCOMPARE(PromptBuilder::candidateShortPrompt(translated, marked, QStringLiteral("世界"),
+                                                 source, QStringLiteral("zh"),
+                                                 ConfigManager::instance()->resolvedUiLanguage()),
+             QStringLiteral("短文本：Hello, world!"));
+}
+
 void TestCore::knownPlaceholdersCoverVariables()
 {
     const QStringList placeholders = PromptBuilder::knownPlaceholders();
@@ -510,31 +566,70 @@ void TestCore::candidateFragmentWindow()
     QVERIFY(word.valid());
     QCOMPARE(text.mid(word.start, word.length()), QStringLiteral("target"));
 
-    // Without extra context the fragment stays inside the sentence holding the
-    // selection, and the mark still maps onto the word.
+    // Without surrounding words the fragment is the selection itself.
     const TextUtils::Fragment tight =
-        TextUtils::candidateFragment(text, word.start, word.end, 0);
+        TextUtils::candidateFragment(text, word.start, word.end, {0, 0});
     QVERIFY(tight.valid());
-    QVERIFY(!tight.text.contains(QStringLiteral("First sentence")));
-    QVERIFY(!tight.text.contains(QStringLiteral("Third sentence")));
-    QCOMPARE(tight.text.mid(tight.markStart, tight.markEnd - tight.markStart),
-             QStringLiteral("target"));
+    QCOMPARE(tight.text, QStringLiteral("target"));
+    QCOMPARE(tight.markStart, 0);
+    QCOMPARE(tight.markEnd, word.length());
 
-    // The window only ever grows, and it never cuts a word in half.
+    // The window reaches exactly as many words as it is granted on each side,
+    // and its edges sit on whole words.
     const TextUtils::Fragment wide =
-        TextUtils::candidateFragment(text, word.start, word.end, 80);
+        TextUtils::candidateFragment(text, word.start, word.end, {3, 2});
     QVERIFY(wide.valid());
-    QVERIFY(wide.text.size() >= tight.text.size());
+    QCOMPARE(wide.text, QStringLiteral("sentence carries the target word here"));
     QCOMPARE(wide.text.mid(wide.markStart, wide.markEnd - wide.markStart),
              QStringLiteral("target"));
-    QCOMPARE(text.mid(wide.sourceOffset + wide.markStart,
-                      wide.markEnd - wide.markStart), QStringLiteral("target"));
-    const QChar first = wide.text.front();
-    const QChar last = wide.text.back();
-    QVERIFY(!first.isSpace() && !last.isSpace());
+    QVERIFY(!wide.text.front().isSpace() && !wide.text.back().isSpace());
 
-    // The absolute offset maps a fragment occurrence back to the full text.
-    QVERIFY(text.mid(wide.sourceOffset).startsWith(wide.text));
+    // A window wider than the text still stops at its edges, which is what lets
+    // the caller tell a window over a short translation from a local one.
+    const TextUtils::Fragment all =
+        TextUtils::candidateFragment(text, word.start, word.end, {100, 100});
+    QVERIFY(all.valid());
+    QCOMPARE(all.text, text);
+    QVERIFY(all.text != wide.text);
+}
+
+void TestCore::candidateWindowCountsWords()
+{
+    // A word of context is one segment of the word break rules, so punctuation
+    // the editor selects on its own spends one of them and a blank run spends
+    // none.
+    const QString english = QStringLiteral("Hello, world! It's fine.");
+    const TextUtils::WordSpan world = TextUtils::wordSpanAt(english, english.indexOf(QStringLiteral("world")));
+    QVERIFY(world.valid());
+    const auto window = [&](int before, int after) {
+        return TextUtils::candidateFragment(english, world.start, world.end, {before, after}).text;
+    };
+    QCOMPARE(window(1, 0), QStringLiteral(", world"));
+    QCOMPARE(window(2, 0), QStringLiteral("Hello, world"));
+    QCOMPARE(window(0, 1), QStringLiteral("world!"));
+    QCOMPARE(window(1, 1), QStringLiteral(", world!"));
+    QCOMPARE(window(0, 2), QStringLiteral("world! It's"));
+    QCOMPARE(window(9, 9), english);
+
+    // The same counting drives a text without blanks, where every ideograph is
+    // its own word and the full-width comma is one too.
+    const QString chinese = QStringLiteral("你好，世界！");
+    const TextUtils::WordSpan shi = TextUtils::wordSpanAt(chinese, chinese.indexOf(QStringLiteral("世")));
+    QVERIFY(shi.valid());
+    QCOMPARE(chinese.mid(shi.start, shi.length()), QStringLiteral("世"));
+    QCOMPARE(TextUtils::candidateFragment(chinese, shi.start, shi.end, {2, 0}).text,
+             QStringLiteral("好，世"));
+    QCOMPARE(TextUtils::candidateFragment(chinese, shi.start, shi.end, {0, 1}).text,
+             QStringLiteral("世界"));
+    QCOMPARE(TextUtils::candidateFragment(chinese, shi.start, shi.end, {10, 30}).text,
+             chinese);
+
+    // A CJK run the word break rules split per character is counted per
+    // character, which is what the editor hands out there.
+    const QString run = QStringLiteral("\u8fd9\u662f\u4e00\u6bb5\u6ca1\u6709\u4efb\u4f55\u6807\u70b9\u7684\u5f88\u957f\u4e2d\u6587\u6587\u672c");
+    const TextUtils::Fragment local = TextUtils::candidateFragment(run, 5, 6, {1, 1});
+    QVERIFY(local.valid());
+    QCOMPARE(local.text, run.mid(4, 3));
 }
 
 void TestCore::candidateResolution()
@@ -1280,6 +1375,91 @@ void TestCore::candidateRequestCarriesSystemPrompt()
              QStringLiteral("You are a careful editor."));
     QCOMPARE(messages.at(1).toObject().value(QStringLiteral("role")).toString(),
              QStringLiteral("user"));
+}
+
+// A translation short enough to sit inside the context window is looked up with
+// the template that carries the source text; a longer one uses the local one.
+void TestCore::candidateRequestPicksShortTextTemplate()
+{
+    QDir().mkpath(tempDir());
+    ConfigManager::createInstance(tempDir());
+
+    QTcpServer server;
+    QVERIFY(server.listen(QHostAddress::LocalHost));
+    ConfigManager::instance()->setValue(
+        Keys::apiBaseUrl, QStringLiteral("http://127.0.0.1:%1/v1").arg(server.serverPort()));
+
+    // Every request is answered, and its user message is kept for the check.
+    QStringList prompts;
+    QObject::connect(&server, &QTcpServer::newConnection, this, [&]() {
+        QTcpSocket* socket = server.nextPendingConnection();
+        QObject::connect(socket, &QTcpSocket::readyRead, socket, [&, socket]() {
+            QByteArray request;
+            forever {
+                const QByteArray chunk = socket->readAll();
+                if (chunk.isEmpty())
+                    break;
+                request += chunk;
+            }
+            const int headerEnd = request.indexOf("\r\n\r\n");
+            if (headerEnd == -1)
+                return;
+            int contentLength = 0;
+            for (const QByteArray& line : request.left(headerEnd).split('\n')) {
+                if (line.toLower().startsWith("content-length:"))
+                    contentLength = line.mid(int(line.indexOf(':')) + 1).trimmed().toInt();
+            }
+            if (request.size() - headerEnd - 4 < contentLength)
+                return;
+            prompts << requestUserPrompt(request.mid(headerEnd + 4, contentLength));
+            const QByteArray body =
+                R"({"choices":[{"message":{"content":"[{\"old\":\"皇帝\",\"new\":[\"君主\"]}]"}}]})";
+            socket->write("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: "
+                          + QByteArray::number(body.size()) + "\r\n\r\n" + body);
+            socket->flush();
+        });
+    });
+
+    TranslationEngine engine;
+    TranslationContext context;
+    context.sourceText = QStringLiteral("When did the Mughal emperor start to see himself as Indian?");
+    context.targetLang = QStringLiteral("zh");
+    context.uiLanguage = QStringLiteral("en");
+    const QString word = QStringLiteral("皇帝");
+
+    const QString shortText = QStringLiteral("莫卧儿皇帝是从什么时候开始觉得自己是印度人的？");
+    QVector<TranslationEngine::CandidateGroup> received;
+    const auto request = [&](const QString& translatedText, int start) {
+        context.translatedText = translatedText;
+        received.clear();
+        engine.requestCandidates(
+            context, start, start + word.size(),
+            [&](const QVector<TranslationEngine::CandidateGroup>& groups) { received = groups; },
+            [](const QString&) {});
+        QTRY_COMPARE_WITH_TIMEOUT(received.size(), 1, 5000);
+    };
+
+    request(shortText, shortText.indexOf(word));
+    // The short template renders the whole translation with the selection marked
+    // inside it, plus the source text.
+    QCOMPARE(prompts.size(), 1);
+    QVERIFY(prompts.first().contains(
+        QStringLiteral("莫卧儿%1%2%3").arg(CandidateMarks::selectionOpen, word,
+                                          CandidateMarks::selectionClose)));
+    QVERIFY(prompts.first().contains(context.sourceText));
+    QVERIFY(prompts.first().contains(shortText.left(shortText.indexOf(word))));
+
+    const QString longText =
+        shortText + QStringLiteral("这段补充说明让译文超出上下文窗口，从而落到按片段取词的模板上。");
+    request(longText, longText.indexOf(word));
+    // The local template carries the marked window instead, so neither the
+    // source text nor the translation at large reaches the request.
+    QCOMPARE(prompts.size(), 2);
+    QVERIFY(!prompts.last().contains(context.sourceText));
+    QVERIFY(!prompts.last().contains(longText));
+    QVERIFY(prompts.last().contains(
+        QStringLiteral("莫卧儿%1%2%3").arg(CandidateMarks::selectionOpen, word,
+                                          CandidateMarks::selectionClose)));
 }
 
 void TestCore::failedDispatchReturnsToIdle()

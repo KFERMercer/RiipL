@@ -29,6 +29,9 @@ inline const QString backgroundTemplate = QStringLiteral("background");
 inline const QString glossaryTemplate = QStringLiteral("glossary");
 inline const QString defaultTemplate = QStringLiteral("default");
 inline const QString candidateTemplate = QStringLiteral("candidate");
+// Wording request for a translation short enough to sit inside the context
+// window, which lets it carry the source text as well.
+inline const QString candidateShortTemplate = QStringLiteral("candidate_short");
 
 }
 
@@ -56,6 +59,8 @@ inline const QString promptDefaultZh = promptKey(Prompts::defaultTemplate, QStri
 inline const QString promptDefaultEn = promptKey(Prompts::defaultTemplate, QStringLiteral("en"));
 inline const QString promptCandidateZh = promptKey(Prompts::candidateTemplate, QStringLiteral("zh"));
 inline const QString promptCandidateEn = promptKey(Prompts::candidateTemplate, QStringLiteral("en"));
+inline const QString promptCandidateShortZh = promptKey(Prompts::candidateShortTemplate, QStringLiteral("zh"));
+inline const QString promptCandidateShortEn = promptKey(Prompts::candidateShortTemplate, QStringLiteral("en"));
 
 inline const QString apiBaseUrl = QStringLiteral("api.base_url");
 inline const QString apiKey = QStringLiteral("api.api_key");
@@ -257,6 +262,75 @@ Constraints:
 Output only the following JSON array, with no explanation and no code fences, one object per fragment to replace:
 [{"old":"source fragment 1","new":["alternative 1","alternative 2"]},{"old":"source fragment 2","new":["alternative 3","alternative 4"]}])TXT";
 
+inline const QString promptCandidateShortZh = R"TXT(你的任务是寻找译文中被标记词语的替代遣词或表述，并返回 JSON 结构化方案。
+
+译文：
+
+```
+{selected_fragment}
+```
+
+翻译前的原文：
+
+```
+{source_text}
+```
+
+用户在译文中选中了：`{selected_word}` （已用标示符 `{mark_left}` 和 `{mark_right}` 标出)。
+
+处理步骤：
+1. 在译文中定位 {mark_left} 与 {mark_right} 之间的内容。
+2. 在句中找出包含 `{selected_word}` 的**最小完整词语或固定搭配**，作为 `old`。
+3. 参考翻译前的原文，为 `old` 写出 2 到 4 条可直接替换的表达，放进 `new` 数组。
+
+约束：
+- `old` 必须从译文中直接复制，逐字节一致，包括大小写与标点；不得改写、拼接或虚构。
+- `old` 必须包含 `{selected_word}`；如果 `{selected_word}` 只是某个词的一部分，`old` 必须扩展到该完整词语。
+- `old` 不得缩小为 `{selected_word}` 本身，除非标记内容在句中确实是一个独立完整的词。
+- `old` 中不得出现 {mark_left} 和 {mark_right}。
+- `new` 中每条表达均与 `old` 不同，且彼此互不相同。
+- `new` 一律使用 {target_lang} 书写，不得混入其他语言。
+- `new` 是同一语言内的近义改写，不是翻译，禁止译成其他语言。
+- 用 `new` 替换 `old` 后，整句必须通顺、意思不变，且结果中不得出现相邻重复的字。
+- 替换范围以 `old` 为准，句中其他部分保持原样。
+
+只输出如下 JSON 数组，不要解释、不要代码块标记，每个需要替换的片段对应一个对象：
+[{"old":"译文片段1","new":["替换表达1","替换表达2"]},{"old":"译文片段12","new":["替换表达3","替换表达4"]}])TXT";
+inline const QString promptCandidateShortEn = R"TXT(Your task is to find alternative wordings for the marked word in the translation, and return a structured JSON plan.
+
+Translation:
+
+```
+{selected_fragment}
+```
+
+Source text before translation:
+
+```
+{source_text}
+```
+
+The user selected `{selected_word}` in the translation. (It is marked with the markers `{mark_left}` and `{mark_right}`.)
+
+Steps:
+1. Locate the content between {mark_left} and {mark_right} in the translation.
+2. Find the **smallest complete word or set phrase** in the sentence that contains `{selected_word}`, and use it as `old`.
+3. Consult the source text before translation and write 2 to 4 expressions that can directly replace `old`, then put them into the `new` array.
+
+Constraints:
+- `old` must be copied verbatim from the translation, character for character, including case and punctuation; do not rewrite, splice or invent it.
+- `old` must contain `{selected_word}`; if `{selected_word}` is only part of a word, `old` must widen to that complete word.
+- `old` must not shrink to `{selected_word}` itself unless the marked content really is a complete standalone word in the sentence.
+- `old` must not contain {mark_left} or {mark_right}.
+- Every entry in `new` differs from `old` and from the other entries.
+- `new` entries must be written in {target_lang} only, without mixing in another language.
+- `new` entries are paraphrases within the same language, not translations.
+- Replacing `old` with a `new` entry must leave the whole sentence reading correctly and keep its meaning, with no adjacent repeated characters in the result.
+- The replacement range is exactly `old`; leave the rest of the sentence untouched.
+
+Output only the following JSON array, with no explanation and no code fences, one object per fragment to replace:
+[{"old":"translated fragment 1","new":["alternative 1","alternative 2"]},{"old":"translated fragment 2","new":["alternative 3","alternative 4"]}])TXT";
+
 inline QJsonValue value(const QString& key)
 {
     if (key == Keys::apiBaseUrl) return QJsonValue(apiBaseUrl);
@@ -299,6 +373,8 @@ inline QJsonValue value(const QString& key)
     if (key == Keys::promptDefaultEn) return QJsonValue(promptDefaultEn);
     if (key == Keys::promptCandidateZh) return QJsonValue(promptCandidateZh);
     if (key == Keys::promptCandidateEn) return QJsonValue(promptCandidateEn);
+    if (key == Keys::promptCandidateShortZh) return QJsonValue(promptCandidateShortZh);
+    if (key == Keys::promptCandidateShortEn) return QJsonValue(promptCandidateShortEn);
     if (key == Keys::clipboardMonitor) return QJsonValue(clipboardMonitor);
     if (key == Keys::clipboardDelayMs) return QJsonValue(clipboardDelayMs);
     if (key == Keys::historyEnabled) return QJsonValue(historyEnabled);

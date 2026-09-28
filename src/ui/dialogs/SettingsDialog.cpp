@@ -54,7 +54,8 @@ const QVector<TemplateInfo>& templateInfos()
 {
     // Listed in the order the fragments reach the model: the system prompt
     // leads the request, the reference block follows it, and the candidate
-    // wording prompt is a separate request that closes the list.
+    // wording prompts are separate requests that close the list, the one for a
+    // short translation last.
     static const QVector<TemplateInfo> list = {
         {Prompts::systemTemplate, QStringLiteral("System prompt"), QStringLiteral("系统提示词")},
         {Prompts::referenceTemplate, QStringLiteral("Reference header"), QStringLiteral("参考信息标题")},
@@ -63,7 +64,9 @@ const QVector<TemplateInfo>& templateInfos()
         {Prompts::backgroundTemplate, QStringLiteral("Background"), QStringLiteral("背景信息")},
         {Prompts::glossaryTemplate, QStringLiteral("Glossary"), QStringLiteral("术语表")},
         {Prompts::defaultTemplate, QStringLiteral("Default instruction"), QStringLiteral("默认指令")},
-        {Prompts::candidateTemplate, QStringLiteral("Candidate wording"), QStringLiteral("候选遣词")}
+        {Prompts::candidateTemplate, QStringLiteral("Candidate wording"), QStringLiteral("候选遣词")},
+        {Prompts::candidateShortTemplate, QStringLiteral("Candidate wording (short text)"),
+         QStringLiteral("候选遣词（短文本）")}
     };
     return list;
 }
@@ -655,7 +658,7 @@ QWidget* SettingsDialog::createPromptsPage()
             if (placeholder == QLatin1String("glossary")) return tr("Glossary entries, rendered as JSON");
             if (placeholder == QLatin1String("source_text")) return tr("Text to be translated");
             if (placeholder == QLatin1String("translated_text")) return tr("Full translated text");
-            if (placeholder == QLatin1String("selected_fragment")) return tr("Sentence around the selection, with the selection marked");
+            if (placeholder == QLatin1String("selected_fragment")) return tr("Context around the selection, with the selection marked");
             if (placeholder == QLatin1String("selected_word")) return tr("Word the user selected in the translation");
             if (placeholder == QLatin1String("mark_left")) return tr("Marker placed before the selection");
             if (placeholder == QLatin1String("mark_right")) return tr("Marker placed after the selection");

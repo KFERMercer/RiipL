@@ -18,24 +18,27 @@ struct WordSpan
 struct Fragment
 {
     QString text;
-    // Offset of the slice inside the text it was taken from, so an occurrence
-    // found in the slice maps back to an absolute position.
-    int sourceOffset = 0;
     int markStart = -1;
     int markEnd = -1;
 
     bool valid() const { return markStart >= 0 && markEnd > markStart; }
 };
 
+// Window of \p before words in front of a selection and \p after words behind it.
+struct WordWindow
+{
+    int before = 0;
+    int after = 0;
+};
+
 WordSpan wordSpanAt(const QString& text, int position);
 
-// Context window handed to the candidate wording prompt: the sentence holding
-// the selection, widened by up to \p contextChars on either side. Both edges
-// snap to the word boundaries the editor uses, so a fragment never starts or
-// ends inside a word, and \p contextChars of zero keeps the window inside one
-// sentence.
+// Words of \p text around the selection, both edges snapped to a word so a
+// fragment never starts or ends inside one. A window wide enough to hold the
+// whole text yields the whole text, which is how a short text is told apart from
+// a local window.
 Fragment candidateFragment(const QString& text, int selectionStart, int selectionEnd,
-                           int contextChars, bool sentenceScoped = true);
+                           WordWindow window);
 
 // Span of \p text that the chosen \p replacement overwrites when the model
 // proposed it for \p target. The target is matched verbatim first and

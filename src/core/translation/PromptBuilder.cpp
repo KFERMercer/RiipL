@@ -28,6 +28,23 @@ const QString& targetKey(const QString& uiLanguage)
 
 }
 
+QHash<QString, QString> PromptBuilder::candidateVariables(const QString& translatedText,
+                                                          const QString& marked,
+                                                          const QString& word,
+                                                          const QString& sourceText,
+                                                          const QString& targetLang)
+{
+    QHash<QString, QString> variables;
+    variables.insert(QStringLiteral("target_lang"), Languages::englishName(targetLang));
+    variables.insert(QStringLiteral("translated_text"), translatedText);
+    variables.insert(QStringLiteral("selected_fragment"), marked);
+    variables.insert(QStringLiteral("selected_word"), word);
+    variables.insert(QStringLiteral("mark_left"), CandidateMarks::selectionOpen);
+    variables.insert(QStringLiteral("mark_right"), CandidateMarks::selectionClose);
+    variables.insert(QStringLiteral("source_text"), sourceText);
+    return variables;
+}
+
 QString PromptBuilder::templateFor(const QString& name, const QString& uiLanguage)
 {
     ConfigManager* config = ConfigManager::instance();
@@ -183,15 +200,19 @@ QString PromptBuilder::candidatePrompt(const QString& translatedText,
                                        const QString& targetLang,
                                        const QString& uiLanguage)
 {
-    QHash<QString, QString> variables;
-    variables.insert(QStringLiteral("target_lang"), Languages::englishName(targetLang));
-    variables.insert(QStringLiteral("translated_text"), translatedText);
-    variables.insert(QStringLiteral("selected_fragment"), fragment);
-    variables.insert(QStringLiteral("selected_word"), word);
-    variables.insert(QStringLiteral("mark_left"), CandidateMarks::selectionOpen);
-    variables.insert(QStringLiteral("mark_right"), CandidateMarks::selectionClose);
     // The source text plays no part in a replacement request, so a template that
     // still names it renders it away rather than failing.
-    variables.insert(QStringLiteral("source_text"), QString());
-    return render(Prompts::candidateTemplate, uiLanguage, variables);
+    return render(Prompts::candidateTemplate, uiLanguage,
+                  candidateVariables(translatedText, fragment, word, QString(), targetLang));
+}
+
+QString PromptBuilder::candidateShortPrompt(const QString& translatedText,
+                                            const QString& marked,
+                                            const QString& word,
+                                            const QString& sourceText,
+                                            const QString& targetLang,
+                                            const QString& uiLanguage)
+{
+    return render(Prompts::candidateShortTemplate, uiLanguage,
+                  candidateVariables(translatedText, marked, word, sourceText, targetLang));
 }

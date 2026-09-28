@@ -10,9 +10,9 @@
 
 namespace {
 
-// Sentence plus this many characters on either side reaches the neighbouring
-// clause, which the model needs to judge how the selection fits the sentence.
-constexpr int kCandidateContextChars = 80;
+// Clause plus this many words on either side reaches the neighbouring sentence,
+// which the model needs to judge how the selection fits the translation.
+constexpr TextUtils::WordWindow kCandidateContextWords{10, 30};
 
 }
 
@@ -107,18 +107,18 @@ void TranslationEngine::requestCandidates(const TranslationContext& context,
     if (m_candidateApi.busy())
         m_candidateApi.cancel();
 
-    // The request carries only the sentence around the selection, so the prompt
+    // The request carries only the words around the selection, so the prompt
     // stays small no matter how long the document is.
     const TextUtils::Fragment fragment = TextUtils::candidateFragment(
-        context.translatedText, selectionStart, selectionEnd, kCandidateContextChars);
+        context.translatedText, selectionStart, selectionEnd, kCandidateContextWords);
     if (!fragment.valid()) {
         if (onError)
             onError(tr("Nothing to look up"));
         return;
     }
 
-    // The selection is wrapped before the fragment is rendered, so the model
-    // sees the marked text inside the fenced block.
+    // The selection is wrapped before the window is rendered, so the model sees
+    // the marked text inside the fenced block.
     QString marked = fragment.text;
     marked.insert(fragment.markEnd, CandidateMarks::selectionClose);
     marked.insert(fragment.markStart, CandidateMarks::selectionOpen);
@@ -126,8 +126,18 @@ void TranslationEngine::requestCandidates(const TranslationContext& context,
     const QString word = context.translatedText.mid(selectionStart, selectionEnd - selectionStart);
     const QString uiLanguage = ConfigManager::instance()->resolvedUiLanguage();
     PromptBuilder::Result prompt;
-    prompt.user = PromptBuilder::candidatePrompt(
-        context.translatedText, marked, word, context.targetLang, uiLanguage);
+    // A window that already holds every word of the translation, because it is
+    // that short, is rendered by the template that takes the source text as well.
+    // The window never carries the blanks around the translation, so the
+    // comparison ignores them too.
+    if (fragment.text == context.translatedText.trimmed()) {
+        prompt.user = PromptBuilder::candidateShortPrompt(
+            context.translatedText, marked, word, context.sourceText,
+            context.targetLang, uiLanguage);
+    } else {
+        prompt.user = PromptBuilder::candidatePrompt(
+            context.translatedText, marked, word, context.targetLang, uiLanguage);
+    }
     // Candidates answer under the same system prompt as a translation.
     prompt.system = PromptBuilder::systemPrompt(context);
 

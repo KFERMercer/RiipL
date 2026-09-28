@@ -41,9 +41,9 @@ constexpr int kMaxCjkRunLength = 8;
 // Longest run of characters absorbed from each side of a resolved target.
 constexpr int kMaxAbsorbedChars = 4;
 
-// Word boundaries of \p text under the Unicode word break rules; a boundary is
-// also emitted at the end of the text when the finder stops short of it.
-QList<int> wordBoundaries(const QString& text)
+// Segments of \p text under the Unicode word break rules; a boundary is also
+// emitted at the end of the text when the finder stops short of it.
+QList<TextUtils::WordSpan> wordSegments(const QString& text)
 {
     QTextBoundaryFinder finder(QTextBoundaryFinder::Word, text);
     QList<int> boundaries;
@@ -56,29 +56,46 @@ QList<int> wordBoundaries(const QString& text)
     }
     if (boundaries.last() != text.size())
         boundaries.append(text.size());
-    return boundaries;
+
+    QList<TextUtils::WordSpan> segments;
+    segments.reserve(boundaries.size());
+    for (int i = 0; i < boundaries.size() - 1; ++i)
+        segments.append({boundaries.at(i), boundaries.at(i + 1)});
+    return segments;
 }
 
-// Index of the last boundary at or before \p position.
-int snapBefore(const QList<int>& boundaries, int position)
+// Strips leading and trailing blanks, leaving the blank run between two words
+// invalid so it never resolves to a word.
+TextUtils::WordSpan trimmed(const TextUtils::WordSpan& segment, const QString& text)
 {
-    int result = boundaries.first();
-    for (int boundary : boundaries) {
-        if (boundary > position)
-            break;
-        result = boundary;
-    }
-    return result;
+    int start = segment.start;
+    int end = segment.end;
+    while (start < end && text.at(start).isSpace())
+        ++start;
+    while (end > start && text.at(end - 1).isSpace())
+        --end;
+    return {start, end};
 }
 
-// Index of the first boundary at or after \p position.
-int snapAfter(const QList<int>& boundaries, int position)
+// True for a segment \p wordSpanAt hands out as one word, which excludes a
+// CJK-dominant run past \p kMaxCjkRunLength.
+bool isSelectableWord(const QString& text, const TextUtils::WordSpan& span)
 {
-    for (int boundary : boundaries) {
-        if (boundary >= position)
-            return boundary;
+    if (!span.valid())
+        return false;
+    const int cjkCount = countCjkCodePoints(text, span.start, span.end);
+    const bool cjkDominant = cjkCount * 2 >= span.length();
+    return !cjkDominant || span.length() <= kMaxCjkRunLength;
+}
+
+// Segment containing \p position, or an invalid span when no segment does.
+TextUtils::WordSpan segmentAt(const QList<TextUtils::WordSpan>& segments, int position)
+{
+    for (const TextUtils::WordSpan& segment : segments) {
+        if (segment.start <= position && position < segment.end)
+            return segment;
     }
-    return boundaries.last();
+    return {};
 }
 
 // An occurrence is a candidate only when it covers the whole selection, and it
@@ -148,7 +165,7 @@ WordSpan wordSpanAt(const QString& text, int position)
     if (position < text.size() && text.at(position).isSpace())
         return {};
 
-    const QList<int> boundaries = wordBoundaries(text);
+    const QList<WordSpan> segments = wordSegments(text);
 
     for (int attempt : {position, position - 1}) {
         if (attempt < 0 || attempt >= text.size())
@@ -156,72 +173,17 @@ WordSpan wordSpanAt(const QString& text, int position)
         if (text.at(attempt).isSpace())
             continue;
 
-        int segmentIndex = 0;
-        for (int i = 0; i < boundaries.size() - 1; ++i) {
-            if (boundaries.at(i) <= attempt && attempt < boundaries.at(i + 1)) {
-                segmentIndex = i;
-                break;
-            }
-        }
-
-        int start = boundaries.at(segmentIndex);
-        int end = boundaries.at(segmentIndex + 1);
-        while (start < end && text.at(start).isSpace())
-            ++start;
-        while (end > start && text.at(end - 1).isSpace())
-            --end;
-        if (end <= start)
+        const WordSpan span = trimmed(segmentAt(segments, attempt), text);
+        if (!isSelectableWord(text, span))
             continue;
 
-        const int cjkCount = countCjkCodePoints(text, start, end);
-        const bool cjkDominant = cjkCount * 2 >= (end - start);
-        if (cjkDominant && (end - start) > kMaxCjkRunLength)
-            continue;
-
-        return {start, end};
+        return span;
     }
     return {};
 }
 
-// Sentence holding \p position, delimited by the Unicode sentence break rules.
-WordSpan sentenceSpanAt(const QString& text, int position)
-{
-    if (text.isEmpty())
-        return {};
-
-    position = qBound(0, position, text.size());
-    QTextBoundaryFinder finder(QTextBoundaryFinder::Sentence, text);
-    finder.setPosition(position);
-
-    int start = finder.toPreviousBoundary();
-    if (start == -1)
-        start = 0;
-    // toPreviousBoundary lands on the end of the preceding sentence when the
-    // position sits exactly on a boundary, so walk forward again until the
-    // returned run contains the position.
-    while (start > position) {
-        const int previous = finder.toPreviousBoundary();
-        if (previous == -1)
-            break;
-        start = previous;
-    }
-
-    finder.setPosition(position);
-    int end = finder.toNextBoundary();
-    if (end == -1)
-        end = text.size();
-
-    while (start < end && text.at(start).isSpace())
-        ++start;
-    while (end > start && text.at(end - 1).isSpace())
-        --end;
-    if (end <= start)
-        return {};
-    return {start, end};
-}
-
 Fragment candidateFragment(const QString& text, int selectionStart, int selectionEnd,
-                           int contextChars, bool sentenceScoped)
+                           WordWindow window)
 {
     if (text.isEmpty())
         return {};
@@ -231,28 +193,44 @@ Fragment candidateFragment(const QString& text, int selectionStart, int selectio
     if (selectionEnd <= selectionStart)
         return {};
 
+    // The mark is widened to whole words first, so the words it covers are part
+    // of the window rather than something the window reaches past.
     int start = selectionStart;
     int end = selectionEnd;
-    if (sentenceScoped) {
-        const WordSpan sentence = sentenceSpanAt(text, selectionStart);
-        if (sentence.valid()) {
-            start = sentence.start;
-            end = sentence.end;
+    const QList<WordSpan> segments = wordSegments(text);
+    const WordSpan markedStart = trimmed(segmentAt(segments, selectionStart), text);
+    const WordSpan markedEnd = trimmed(segmentAt(segments, qMax(selectionStart, selectionEnd - 1)), text);
+    if (markedStart.valid())
+        start = markedStart.start;
+    if (markedEnd.valid())
+        end = markedEnd.end;
+
+    int remaining = window.before;
+    int index = 0;
+    while (index < segments.size() && segments.at(index).end <= start)
+        ++index;
+    while (remaining > 0 && index > 0) {
+        const WordSpan span = trimmed(segments.at(--index), text);
+        if (isSelectableWord(text, span)) {
+            start = span.start;
+            --remaining;
         }
     }
 
-    if (contextChars > 0) {
-        const QList<int> boundaries = wordBoundaries(text);
-        start = snapAfter(boundaries, qMax(0, selectionStart - contextChars));
-        end = snapBefore(boundaries, qMin(text.size(), selectionEnd + contextChars));
-        // A boundary snap may overshoot the selection; keep the mark intact.
-        start = qMin(start, selectionStart);
-        end = qMax(end, selectionEnd);
+    remaining = window.after;
+    index = 0;
+    while (index < segments.size() && segments.at(index).start < end)
+        ++index;
+    while (remaining > 0 && index < segments.size()) {
+        const WordSpan span = trimmed(segments.at(index++), text);
+        if (isSelectableWord(text, span)) {
+            end = span.end;
+            --remaining;
+        }
     }
 
     Fragment fragment;
     fragment.text = text.mid(start, end - start);
-    fragment.sourceOffset = start;
     fragment.markStart = selectionStart - start;
     fragment.markEnd = selectionEnd - start;
     return fragment;

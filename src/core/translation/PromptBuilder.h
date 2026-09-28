@@ -37,14 +37,25 @@ public:
     };
 
     static Result build(const TranslationContext& context);
-    // Renders the candidate wording template. \p translatedText is the whole
-    // translation and \p fragment the sentence around the selection, already
-    // carrying the markers. Templates pick whichever of the two they need.
+    // Renders the candidate wording template used on a context window that does
+    // not cover the whole translation. \p translatedText is the whole translation
+    // and \p fragment the marked window around the selection. Templates pick
+    // whichever of the two they need.
     static QString candidatePrompt(const QString& translatedText,
                                    const QString& fragment,
                                    const QString& word,
                                    const QString& targetLang,
                                    const QString& uiLanguage);
+    // Renders the candidate wording template used when the window covers the
+    // whole translation. \p translatedText is the unmarked translation, \p marked
+    // the same text with the selection wrapped in the markers, and the request
+    // carries \p sourceText as well.
+    static QString candidateShortPrompt(const QString& translatedText,
+                                        const QString& marked,
+                                        const QString& word,
+                                        const QString& sourceText,
+                                        const QString& targetLang,
+                                        const QString& uiLanguage);
     // System prompt for a request that is not a translation.
     static QString systemPrompt(const TranslationContext& context);
     static QStringList knownPlaceholders();
@@ -58,6 +69,12 @@ private:
     static QString templateFor(const QString& name, const QString& uiLanguage);
     // Placeholder values a request interpolates.
     static QHash<QString, QString> variablesFor(const TranslationContext& context);
+    // Placeholder values shared by both candidate wording templates.
+    static QHash<QString, QString> candidateVariables(const QString& translatedText,
+                                                      const QString& marked,
+                                                      const QString& word,
+                                                      const QString& sourceText,
+                                                      const QString& targetLang);
     static QString render(const QString& name, const QString& uiLanguage,
                           const QHash<QString, QString>& variables);
 };
