@@ -103,9 +103,9 @@ MainWindow::MainWindow(QWidget* parent)
                 m_popup->openFor(word, selectionStart, selectionEnd, globalPos, context);
             });
     connect(m_popup, &CandidatePopup::candidateChosen, this,
-            [this](int start, const QString& target, const QString& replacement) {
+            [this](int start, int length, const QString& replacement) {
                 pushResultSnapshot();
-                if (!m_resultEdit->replaceWordAt(start, target, replacement)) {
+                if (!m_resultEdit->replaceWordAt(start, length, replacement)) {
                     m_resultSnapshots.removeLast();
                     updateUndoRedoActions();
                     setStatusMessage(tr("Translation has changed; replacement skipped"), false);

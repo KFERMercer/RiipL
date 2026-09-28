@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QString>
+#include <QStringList>
 
 namespace TextUtils {
 
@@ -36,12 +37,14 @@ WordSpan wordSpanAt(const QString& text, int position);
 Fragment candidateFragment(const QString& text, int selectionStart, int selectionEnd,
                            int contextChars, bool sentenceScoped = true);
 
-// Span of the occurrence of \p candidate covering [selectionStart,
-// selectionEnd). The candidate is matched verbatim first and case-insensitively
-// only as a fallback, so a sentence-initial capital the model dropped still
-// resolves. Returns an invalid span when no occurrence covers the selection or
-// when several do, which keeps a repeated fragment from being replaced blindly.
-WordSpan resolveCandidate(const QString& text, int selectionStart, int selectionEnd,
-                          const QString& candidate);
+// Span of \p text that the chosen \p replacement overwrites when the model
+// proposed it for \p target. The target is matched verbatim first and
+// case-insensitively only as a fallback, so a dropped sentence-initial capital
+// still resolves. The match is then widened over characters of \p text that some
+// \p replacement restates at its own edge, which keeps a replacement whose text
+// repeats the characters outside the target from doubling them in the result.
+// An invalid span means no occurrence covers the selection, or several do.
+WordSpan replacementSpan(const QString& text, int selectionStart, int selectionEnd,
+                         const QString& target, const QStringList& replacements);
 
 }

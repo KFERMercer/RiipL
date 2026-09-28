@@ -206,60 +206,62 @@ inline const QString promptDefaultEn = R"TXT(Based on the reference information 
 {source_text}
 ```)TXT";
 
-inline const QString promptCandidateZh = R"TXT(你的任务是寻找选定词语的替代遣词或表述，并返回 JSON 结构化方案。
+inline const QString promptCandidateZh = R"TXT(你的任务是寻找给定原文中被标记词语的替代遣词或表述，并返回 JSON 结构化方案。
 
-待处理文本：
+原文：
 
 ```
 {selected_fragment}
 ```
 
-用户在文本中选中了：`{selected_word}`（已用 {mark_left} 和 {mark_right} 标出，这两个符号不属于原文）。
+用户在原文中选中了：`{selected_word}`。（已用标示符 `{mark_left}` 和 `{mark_right}` 标出，这两处标示符不属于原文。)
 
-判断步骤：
-1. 在文本中定位 {mark_left} 与 {mark_right} 之间的内容。
-2. 判断它在句中构成哪个完整表达单元——可以就是这个词语本身，也可以是包含它的固定搭配或短语——把它作为 `old`。
+处理步骤：
+1. 在原文中定位 {mark_left} 与 {mark_right} 之间的内容。
+2. 在句中找出包含 `{selected_word}` 的**最小完整词语或固定搭配**，作为 `old`。
 3. 为 `old` 写出 2 到 4 条可直接替换的表达，放进 `new` 数组。
 
 约束：
-- `old` 必须从文本中直接复制，逐字节一致，包括大小写与标点；不得改写、拼接或虚构。
-- `old` 必须包含被标记的内容，可以向左右扩展为更完整的表达单元，但不得只取被标记词语的一部分。
+- `old` 必须从原文中直接复制，逐字节一致，包括大小写与标点；不得改写、拼接或虚构。
+- `old` 必须包含 `{selected_word}`；如果 `{selected_word}` 只是某个词的一部分，`old` 必须扩展到该完整词语。
+- `old` 不得缩小为 `{selected_word}` 本身，除非标记内容在句中确实是一个独立完整的词。
 - `old` 中不得出现 {mark_left} 和 {mark_right}。
 - `new` 中每条表达均与 `old` 不同，且彼此互不相同。
-- `old` 与全部 `new` 一律使用 {target_lang} 书写，一个字都不得混入其他语言。
+- `new` 一律使用 {target_lang} 书写，不得混入其他语言。
 - `new` 是同一语言内的近义改写，不是翻译，禁止译成其他语言。
-- 替换后整句意思不变、语法通顺。
+- 用 `new` 替换 `old` 后，整句必须通顺、意思不变，且结果中不得出现相邻重复的字。
 - 替换范围以 `old` 为准，句中其他部分保持原样。
 
 只输出如下 JSON 数组，不要解释、不要代码块标记，每个需要替换的片段对应一个对象：
-[{"old":"原样片段1","new":["替换表达1","替换表达2"]},{"old":"原样片段2","new":["替换表达3","替换表达4"]}])TXT";
-inline const QString promptCandidateEn = R"TXT(Your task is to find alternative wordings for the selected word, and return a structured JSON plan.
+[{"old":"原文片段1","new":["替换表达1","替换表达2"]},{"old":"原文片段2","new":["替换表达3","替换表达4"]}])TXT";
+inline const QString promptCandidateEn = R"TXT(Your task is to find alternative wordings for the marked word in the given source text, and return a structured JSON plan.
 
-Text to process:
+Source text:
 
 ```
 {selected_fragment}
 ```
 
-The user selected `{selected_word}` in the text (already marked with {mark_left} and {mark_right}; those two symbols are not part of the original text).
+The user selected `{selected_word}` in the source text. (It is marked with the markers `{mark_left}` and `{mark_right}`; those two markers are not part of the source text.)
 
 Steps:
-1. Locate the content between {mark_left} and {mark_right} in the text.
-2. Decide which complete expression unit it forms in the sentence, which may be the word itself or an idiomatic phrase containing it, and use that as `old`.
+1. Locate the content between {mark_left} and {mark_right} in the source text.
+2. Find the **smallest complete word or set phrase** in the sentence that contains `{selected_word}`, and use it as `old`.
 3. Write 2 to 4 expressions that can directly replace `old` and put them into the `new` array.
 
 Constraints:
-- `old` must be copied verbatim from the text, character for character, including case and punctuation.
-- `old` must contain the marked content and may widen to a more complete expression unit, but must not take only part of the marked word.
+- `old` must be copied verbatim from the source text, character for character, including case and punctuation; do not rewrite, splice or invent it.
+- `old` must contain `{selected_word}`; if `{selected_word}` is only part of a word, `old` must widen to that complete word.
+- `old` must not shrink to `{selected_word}` itself unless the marked content really is a complete standalone word in the sentence.
 - `old` must not contain {mark_left} or {mark_right}.
 - Every entry in `new` differs from `old` and from the other entries.
-- `old` and all `new` entries must be written in {target_lang}; do not mix in a single character of another language.
+- `new` entries must be written in {target_lang} only, without mixing in another language.
 - `new` entries are paraphrases within the same language, not translations.
-- Replacing `old` with a `new` entry must keep the meaning and read naturally.
+- Replacing `old` with a `new` entry must leave the whole sentence reading correctly and keep its meaning, with no adjacent repeated characters in the result.
 - The replacement range is exactly `old`; leave the rest of the sentence untouched.
 
 Output only the following JSON array, with no explanation and no code fences, one object per fragment to replace:
-[{"old":"fragment 1","new":["alternative 1","alternative 2"]},{"old":"fragment 2","new":["alternative 3","alternative 4"]}])TXT";
+[{"old":"source fragment 1","new":["alternative 1","alternative 2"]},{"old":"source fragment 2","new":["alternative 3","alternative 4"]}])TXT";
 
 inline QJsonValue value(const QString& key)
 {

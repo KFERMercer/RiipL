@@ -12,15 +12,26 @@ class TranslationEngine : public QObject
     Q_OBJECT
 
 public:
+    // One alternative wording together with the span of the translation it
+    // overwrites. The span sits on the option because a replacement can restate
+    // characters the target itself left outside its bounds.
+    struct CandidateOption
+    {
+        QString text;
+        int start = -1;
+        int length = 0;
+
+        bool valid() const { return start >= 0 && length > 0; }
+    };
+
     // One replacement target plus the alternatives proposed for it. \p start and
-    // \p length locate the target in the translation that was searched, so the
-    // caller never has to resolve it again.
+    // \p length locate the target in the translation that was searched.
     struct CandidateGroup
     {
         QString target;
         int start = -1;
         int length = 0;
-        QStringList options;
+        QVector<CandidateOption> options;
 
         bool valid() const { return start >= 0 && length > 0; }
     };
@@ -49,8 +60,9 @@ public:
     static QVector<CandidateGroup> parseCandidateResponse(const QString& raw);
 
     // Keeps only the groups whose target resolves to exactly one span covering
-    // the selection, and records that span. A hallucinated or ambiguous target
-    // is dropped rather than applied to the wrong occurrence.
+    // the selection, and records that span plus the span each option overwrites.
+    // A target or option that cannot be pinned down is dropped rather than
+    // applied to the wrong occurrence.
     static QVector<CandidateGroup> resolveGroups(QVector<CandidateGroup> groups,
                                                  const QString& translatedText,
                                                  int selectionStart,

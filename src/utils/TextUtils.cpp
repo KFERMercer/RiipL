@@ -1,6 +1,7 @@
 #include "TextUtils.h"
 
 #include <QList>
+#include <algorithm>
 #include <QTextBoundaryFinder>
 
 namespace {
@@ -36,6 +37,9 @@ int countCjkCodePoints(const QString& text, int from, int to)
 }
 
 constexpr int kMaxCjkRunLength = 8;
+
+// Longest run of characters absorbed from each side of a resolved target.
+constexpr int kMaxAbsorbedChars = 4;
 
 // Word boundaries of \p text under the Unicode word break rules; a boundary is
 // also emitted at the end of the text when the finder stops short of it.
@@ -75,6 +79,60 @@ int snapAfter(const QList<int>& boundaries, int position)
             return boundary;
     }
     return boundaries.last();
+}
+
+// An occurrence is a candidate only when it covers the whole selection, and it
+// has to be the only one, otherwise the fragment is ambiguous.
+QList<int> coveringStarts(const QString& haystack, const QString& needle,
+                          int selectionStart, int selectionEnd)
+{
+    QList<int> starts;
+    if (needle.isEmpty())
+        return starts;
+    const qsizetype length = needle.size();
+    qsizetype at = haystack.indexOf(needle);
+    while (at != -1) {
+        if (at <= selectionStart && at + length >= selectionEnd)
+            starts.append(static_cast<int>(at));
+        at = haystack.indexOf(needle, at + 1);
+    }
+    return starts;
+}
+
+// Number of replacements that restate the \p length characters of \p text
+// ending at \p edge, read from their left end when \p left holds and from their
+// right end otherwise. A replacement no longer than the run cannot restate it.
+int restatedVotes(const QString& text, const QStringList& replacements,
+                  int edge, int length, bool left)
+{
+    const QString run = text.mid(edge, length);
+    int votes = 0;
+    for (const QString& replacement : replacements) {
+        if (replacement.size() <= length)
+            continue;
+        if ((left ? replacement.left(length) : replacement.right(length)) == run)
+            ++votes;
+    }
+    return votes;
+}
+
+// Widens [start, end) over characters of \p text that a replacement restates at
+// its own edge. At most \p maxChars are absorbed per side, only the longest
+// restated run of a side is taken, and a run may not reach past whitespace.
+TextUtils::WordSpan absorbRestatedEdges(const QString& text, int start, int end,
+                                        const QStringList& replacements, int maxChars)
+{
+    const auto restatedRun = [&](int edge, bool left) {
+        for (int length = qMin(maxChars, left ? edge : text.size() - edge); length > 0; --length) {
+            const QString run = text.mid(left ? edge - length : edge, length);
+            const bool blank = std::any_of(run.cbegin(), run.cend(),
+                                           [](QChar ch) { return ch.isSpace(); });
+            if (!blank && restatedVotes(text, replacements, left ? edge - length : edge, length, left) > 0)
+                return length;
+        }
+        return 0;
+    };
+    return {start - restatedRun(start, true), end + restatedRun(end, false)};
 }
 
 }
@@ -200,43 +258,26 @@ Fragment candidateFragment(const QString& text, int selectionStart, int selectio
     return fragment;
 }
 
-WordSpan resolveCandidate(const QString& text, int selectionStart, int selectionEnd,
-                          const QString& candidate)
+WordSpan replacementSpan(const QString& text, int selectionStart, int selectionEnd,
+                         const QString& target, const QStringList& replacements)
 {
-    if (candidate.isEmpty())
+    if (target.isEmpty())
         return {};
     selectionStart = qBound(0, selectionStart, text.size());
     selectionEnd = qBound(selectionStart, selectionEnd, text.size());
 
-    // Only an occurrence that covers the whole selection is a candidate, and it
-    // has to be the only one, otherwise the fragment is ambiguous.
-    const auto covering = [&](const QString& haystack, const QString& needle) {
-        QList<int> starts;
-        if (needle.isEmpty())
-            return starts;
-        const qsizetype length = needle.size();
-        qsizetype at = haystack.indexOf(needle);
-        while (at != -1) {
-            if (at <= selectionStart && at + length >= selectionEnd)
-                starts.append(static_cast<int>(at));
-            at = haystack.indexOf(needle, at + 1);
-        }
-        return starts;
-    };
-
-    const int length = candidate.size();
-    const QList<int> starts = covering(text, candidate);
-    if (starts.size() == 1)
-        return {starts.first(), starts.first() + length};
-    if (!starts.isEmpty())
+    const int length = target.size();
+    QList<int> starts = coveringStarts(text, target, selectionStart, selectionEnd);
+    if (starts.isEmpty()) {
+        // A dropped sentence-initial capital still resolves while the match stays
+        // unambiguous.
+        starts = coveringStarts(text.toCaseFolded(), target.toCaseFolded(),
+                                selectionStart, selectionEnd);
+    }
+    if (starts.size() != 1)
         return {};
-
-    // A model that drops a sentence-initial capital still resolves, as long as
-    // the relaxed match stays unambiguous.
-    const QList<int> folded = covering(text.toCaseFolded(), candidate.toCaseFolded());
-    if (folded.size() == 1)
-        return {folded.first(), folded.first() + length};
-    return {};
+    return absorbRestatedEdges(text, starts.first(), starts.first() + length,
+                               replacements, kMaxAbsorbedChars);
 }
 
 }

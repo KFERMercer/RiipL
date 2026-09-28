@@ -95,17 +95,14 @@ void TranslationEdit::mouseReleaseEvent(QMouseEvent* event)
     QTextEdit::mouseReleaseEvent(event);
 }
 
-bool TranslationEdit::replaceWordAt(int start, const QString& targetText, const QString& replacement)
+bool TranslationEdit::replaceWordAt(int start, int length, const QString& replacement)
 {
-    const QString text = toPlainText();
-    if (start < 0 || targetText.isEmpty() || start + targetText.size() > text.size())
-        return false;
-    if (text.mid(start, targetText.size()) != targetText)
+    if (start < 0 || length <= 0 || start + length > toPlainText().size())
         return false;
 
     QTextCursor target(document());
     target.setPosition(start);
-    target.setPosition(start + targetText.size(), QTextCursor::KeepAnchor);
+    target.setPosition(start + length, QTextCursor::KeepAnchor);
     target.insertText(replacement);
     clearHighlight();
     return true;

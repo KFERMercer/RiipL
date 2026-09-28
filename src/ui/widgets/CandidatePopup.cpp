@@ -28,7 +28,8 @@ CandidatePopup::CandidatePopup(TranslationEngine* engine, QWidget* parent)
 
     connect(m_list, &QListWidget::itemClicked, this, [this](QListWidgetItem* item) {
         emit candidateChosen(item->data(Qt::UserRole).toInt(),
-                             item->data(Qt::UserRole + 1).toString(), item->text());
+                             item->data(Qt::UserRole + 1).toInt(),
+                             item->data(Qt::UserRole + 2).toString());
         close();
     });
 }
@@ -63,10 +64,11 @@ void CandidatePopup::openFor(const QString& word,
             // hallucinated or ambiguous target never reaches the list.
             m_list->clear();
             for (const TranslationEngine::CandidateGroup& group : groups) {
-                for (const QString& option : group.options) {
-                    auto* item = new QListWidgetItem(option, m_list);
-                    item->setData(Qt::UserRole, group.start);
-                    item->setData(Qt::UserRole + 1, group.target);
+                for (const TranslationEngine::CandidateOption& option : group.options) {
+                    auto* item = new QListWidgetItem(option.text, m_list);
+                    item->setData(Qt::UserRole, option.start);
+                    item->setData(Qt::UserRole + 1, option.length);
+                    item->setData(Qt::UserRole + 2, option.text);
                 }
             }
 

@@ -11,9 +11,9 @@ public:
 
     void setResult(const QString& text);
     QString result() const;
-    // Replaces \p targetText when it still starts at \p start, so a replacement
-    // is rejected outright once the translation has moved on.
-    bool replaceWordAt(int start, const QString& targetText, const QString& replacement);
+    // Replaces the \p length characters at \p start, so a replacement is
+    // rejected outright once the translation has moved on.
+    bool replaceWordAt(int start, int length, const QString& replacement);
 
 signals:
     void wordRequested(const QString& word, int selectionStart, int selectionEnd,

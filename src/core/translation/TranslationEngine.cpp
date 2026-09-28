@@ -201,13 +201,34 @@ QVector<TranslationEngine::CandidateGroup> TranslationEngine::resolveGroups(
     QVector<CandidateGroup> resolved;
     resolved.reserve(groups.size());
     for (CandidateGroup& group : groups) {
-        const TextUtils::WordSpan span = TextUtils::resolveCandidate(
-            translatedText, selectionStart, selectionEnd, group.target);
+        QStringList options;
+        options.reserve(group.options.size());
+        for (const CandidateOption& option : group.options)
+            options << option.text;
+
+        const TextUtils::WordSpan span = TextUtils::replacementSpan(
+            translatedText, selectionStart, selectionEnd, group.target, options);
         if (!span.valid())
             continue;
         group.start = span.start;
         group.length = span.length();
-        resolved << group;
+
+        QVector<CandidateOption> aligned;
+        aligned.reserve(group.options.size());
+        for (const CandidateOption& option : group.options) {
+            const TextUtils::WordSpan optionSpan = TextUtils::replacementSpan(
+                translatedText, selectionStart, selectionEnd, group.target, {option.text});
+            // An option carries its own span because it may absorb characters the
+            // target left behind. One that resolves to nothing, or that no
+            // longer covers the target, would overwrite the wrong run.
+            if (!optionSpan.valid() || optionSpan.start > span.start
+                || optionSpan.start + optionSpan.length() < span.start + span.length())
+                continue;
+            aligned.append({option.text, optionSpan.start, optionSpan.length()});
+        }
+        group.options = aligned;
+        if (!group.options.isEmpty())
+            resolved << group;
     }
     return resolved;
 }
@@ -249,8 +270,15 @@ QVector<TranslationEngine::CandidateGroup> TranslationEngine::parseCandidateResp
                                                    : QJsonArray{options};
         for (const QJsonValue& option : array) {
             const QString text = option.toString().trimmed();
-            if (!text.isEmpty() && text != target && !group.options.contains(text))
-                group.options << text;
+            const auto alreadyListed = [&group](const QString& text) {
+                for (const CandidateOption& listed : group.options) {
+                    if (listed.text == text)
+                        return true;
+                }
+                return false;
+            };
+            if (!text.isEmpty() && text != target && !alreadyListed(text))
+                group.options.append({text, -1, 0});
         }
         if (!group.options.isEmpty())
             groups << group;

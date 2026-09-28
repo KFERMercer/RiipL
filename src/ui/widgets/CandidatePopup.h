@@ -23,9 +23,9 @@ public:
                  const TranslationContext& context);
 
 signals:
-    // \p start is the absolute offset of the resolved fragment in the
-    // translation the popup was opened for, and \p target the text there.
-    void candidateChosen(int start, const QString& target, const QString& replacement);
+    // \p start and \p length locate the text the replacement overwrites in the
+    // translation the popup was opened for.
+    void candidateChosen(int start, int length, const QString& replacement);
 
 protected:
     void keyPressEvent(QKeyEvent* event) override;
