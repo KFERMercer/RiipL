@@ -339,6 +339,7 @@ QWidget* SettingsDialog::createApiPage()
         saveAsPresetButton->setToolTip(tr("Save the current API settings under a new name"));
         managePresetButton->setToolTip(tr("Rename, copy, reorder, delete or load API presets"));
         temperatureSpin->edit()->setSpecialValueText(tr("API default"));
+        temperatureSpin->edit()->updateGeometry();
         headersEdit->edit()->setPlaceholderText(tr("One per line: Header-Name: value"));
     });
     connect(m_presetCombo, &QComboBox::activated, this, &SettingsDialog::applySelectedPreset);
