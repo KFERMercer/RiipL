@@ -176,15 +176,9 @@ inline const QString promptToneZh = R"TXT(- 翻译语气：{tone}
 inline const QString promptToneEn = R"TXT(- Translation tone: {tone}
 )TXT";
 
-inline const QString promptStyleZh = R"TXT(- 语言风格：
-  ```
-  {style}
-  ```
+inline const QString promptStyleZh = R"TXT(- 语言风格：{style}
 )TXT";
-inline const QString promptStyleEn = R"TXT(- Language style:
-  ```
-  {style}
-  ```
+inline const QString promptStyleEn = R"TXT(- Language style: {style}
 )TXT";
 
 inline const QString promptBackgroundZh = R"TXT(- 背景信息：
