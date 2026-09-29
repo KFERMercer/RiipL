@@ -127,7 +127,7 @@ void TestPromptBuilder::writesToneEntries()
 
     // The persisted default is the one the tone list leads with.
     QCOMPARE(Defaults::translationTone, Tones::presets().first().key);
-    QVERIFY(!Tones::presetDisplayName(Defaults::translationTone, QStringLiteral("zh")).isEmpty());
+    QVERIFY(Tones::labelFor(Defaults::translationTone) != nullptr);
 }
 
 void TestPromptBuilder::formatsGlossaryAsJson()

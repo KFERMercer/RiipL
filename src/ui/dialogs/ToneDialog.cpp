@@ -2,6 +2,7 @@
 
 #include "core/translation/Tone.h"
 #include "ui/widgets/AppIcons.h"
+#include "ui/widgets/ConfigEditors.h"
 #include "ui/widgets/WindowState.h"
 
 #include <QDialogButtonBox>
@@ -21,7 +22,7 @@ constexpr int kNameColumn = 0;
 constexpr int kKeyColumn = 1;
 }
 
-ToneDialog::ToneDialog(const QJsonArray& customTones, const QString& uiLanguage, QWidget* parent)
+ToneDialog::ToneDialog(const QJsonArray& customTones, QWidget* parent)
     : QDialog(parent)
 {
     setWindowTitle(tr("Tones"));
@@ -35,7 +36,7 @@ ToneDialog::ToneDialog(const QJsonArray& customTones, const QString& uiLanguage,
     m_presets->header()->setSectionResizeMode(QHeaderView::Stretch);
     for (const ToneItem& item : Tones::presets()) {
         auto* presetItem = new QTreeWidgetItem(m_presets);
-        presetItem->setText(kNameColumn, Tones::presetDisplayName(item.key, uiLanguage));
+        presetItem->setText(kNameColumn, toneLabel(item.key));
         presetItem->setText(kKeyColumn, item.key);
         presetItem->setFlags(Qt::NoItemFlags);
     }
@@ -95,30 +96,29 @@ void ToneDialog::loadTones(const QJsonArray& stored)
     }
 }
 
-QJsonArray ToneDialog::toJson(const QVector<ToneItem>& tones)
+QJsonArray ToneDialog::toJson(const QVector<CustomTone>& tones)
 {
     QJsonArray array;
-    for (const ToneItem& tone : tones) {
+    for (const CustomTone& tone : tones) {
         QJsonObject object;
         object.insert(QStringLiteral("key"), tone.key);
-        object.insert(QStringLiteral("name"), tone.en);
+        object.insert(QStringLiteral("name"), tone.name);
         array.append(object);
     }
     return array;
 }
 
-QVector<ToneItem> ToneDialog::customTones() const
+QVector<CustomTone> ToneDialog::customTones() const
 {
-    QVector<ToneItem> result;
+    QVector<CustomTone> result;
     for (int i = 0; i < m_custom->rowCount(); ++i) {
-        ToneItem tone;
+        CustomTone tone;
         tone.key = m_custom->item(i, kKeyColumn) ? m_custom->item(i, kKeyColumn)->text().trimmed() : QString();
-        tone.en = m_custom->item(i, kNameColumn) ? m_custom->item(i, kNameColumn)->text().trimmed() : QString();
+        tone.name = m_custom->item(i, kNameColumn) ? m_custom->item(i, kNameColumn)->text().trimmed() : QString();
         if (tone.key.isEmpty())
             continue;
-        if (tone.en.isEmpty())
-            tone.en = tone.key;
-        tone.zh = tone.en;
+        if (tone.name.isEmpty())
+            tone.name = tone.key;
         result.append(tone);
     }
     return result;

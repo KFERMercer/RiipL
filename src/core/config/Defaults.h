@@ -84,6 +84,21 @@ inline const QStringList& apiPresetFields()
 }
 
 inline const QString uiLanguage = QStringLiteral("ui.language");
+// Offered interface languages, in the order the pickers list them.
+inline const QStringList& uiLanguageCodes()
+{
+    static const QStringList codes = {
+        QStringLiteral("en"),
+        QStringLiteral("zh")
+    };
+    return codes;
+}
+// Follows the session locale instead of naming a language.
+inline const QString uiLanguageAuto = QStringLiteral("auto");
+inline bool isOfferedUiLanguage(const QString& code)
+{
+    return code == uiLanguageAuto || uiLanguageCodes().contains(code);
+}
 inline const QString uiAutoTranslate = QStringLiteral("ui.auto_translate");
 inline const QString uiAutoTranslateDelay = QStringLiteral("ui.auto_translate_delay");
 inline const QString uiAlwaysOnTop = QStringLiteral("ui.always_on_top");

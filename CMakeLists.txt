@@ -47,6 +47,8 @@ add_library(riipl_utils STATIC
     src/utils/SingleInstance.h
     src/utils/TextUtils.cpp
     src/utils/TextUtils.h
+    src/utils/AppTranslator.cpp
+    src/utils/AppTranslator.h
 )
 target_include_directories(riipl_utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(riipl_utils PUBLIC Qt6::Core Qt6::Network)
@@ -91,7 +93,9 @@ set(UI_HEADERS
     src/ui/dialogs/AboutDialog.h
 )
 
-set(TS_FILES resources/i18n/riipl_en.ts resources/i18n/riipl_zh.ts)
+# English is the source language, so it needs no catalog: tr() falls back to the
+# source strings. Keeping a catalog for it would only embed an unused .qm.
+set(TS_FILES resources/i18n/riipl_zh.ts)
 
 qt_add_executable(RiipL
     ${UI_SOURCES}

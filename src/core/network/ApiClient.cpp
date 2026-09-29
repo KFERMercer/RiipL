@@ -80,7 +80,7 @@ void ApiClient::sendChatRequest(const QJsonObject& body,
     const QString baseUrl = config->stringValue(Keys::apiBaseUrl).trimmed();
     if (baseUrl.isEmpty()) {
         if (onError)
-            onError(tr("API base URL is not configured"));
+            onError({ErrorCode::BaseUrlMissing, QString()});
         emit requestFinished();
         return;
     }
@@ -214,24 +214,28 @@ void ApiClient::onFinished()
     const bool aborted = reply->error() == QNetworkReply::OperationCanceledError;
     if (aborted && !m_doneSent) {
         if (errorCb)
-            errorCb(m_userCancelled ? tr("Translation cancelled") : tr("Translation timed out"));
+            errorCb({m_userCancelled ? ErrorCode::Cancelled : ErrorCode::TimedOut, QString()});
         emit requestFinished();
         return;
     }
     if (reply->error() != QNetworkReply::NoError && statusCode == 0) {
         if (errorCb)
-            errorCb(tr("Network request failed: %1").arg(errorString));
+            errorCb({ErrorCode::NetworkFailure, errorString});
         emit requestFinished();
         return;
     }
     if (statusCode >= 400 || reply->error() != QNetworkReply::NoError) {
-        QString message = apiErrorMessage(QString::fromUtf8(m_rawBuffer));
-        if (message.isEmpty() && statusCode > 0)
-            message = tr("Request failed with status %1").arg(statusCode);
-        if (message.isEmpty())
-            message = tr("Network request failed");
-        if (errorCb)
-            errorCb(message);
+        const QString serverMessage = apiErrorMessage(QString::fromUtf8(m_rawBuffer));
+        if (!errorCb) {
+            emit requestFinished();
+            return;
+        }
+        if (!serverMessage.isEmpty())
+            errorCb({ErrorCode::ServerMessage, serverMessage});
+        else if (statusCode > 0)
+            errorCb({ErrorCode::HttpStatus, QString::number(statusCode)});
+        else
+            errorCb({ErrorCode::NetworkFailure, QString()});
         emit requestFinished();
         return;
     }
@@ -241,14 +245,14 @@ void ApiClient::onFinished()
         const QJsonDocument doc = QJsonDocument::fromJson(m_rawBuffer);
         if (!doc.isObject()) {
             if (errorCb)
-                errorCb(tr("Failed to parse API response"));
+                errorCb({ErrorCode::InvalidResponse, QString()});
             emit requestFinished();
             return;
         }
         const QJsonArray choices = doc.object().value(QStringLiteral("choices")).toArray();
         if (choices.isEmpty()) {
             if (errorCb)
-                errorCb(tr("API response contains no choices"));
+                errorCb({ErrorCode::NoChoices, QString()});
             emit requestFinished();
             return;
         }
@@ -261,6 +265,37 @@ void ApiClient::onFinished()
     if (done)
         done(result);
     emit requestFinished();
+}
+
+// The failure vocabulary stays with the class that reports it; the engine reuses
+// the codes for the failures it detects itself.
+QString ApiClient::Error::text() const
+{
+    switch (code) {
+    case ErrorCode::BaseUrlMissing:
+        return tr("API base URL is not configured");
+    case ErrorCode::Cancelled:
+        return tr("Translation cancelled");
+    case ErrorCode::TimedOut:
+        return tr("Translation timed out");
+    case ErrorCode::NetworkFailure:
+        return detail.isEmpty() ? tr("Network request failed")
+                                : tr("Network request failed: %1").arg(detail);
+    case ErrorCode::HttpStatus:
+        return tr("Request failed with status %1").arg(detail);
+    case ErrorCode::ServerMessage:
+        // The provider worded this failure itself, so there is no source string.
+        return detail;
+    case ErrorCode::InvalidResponse:
+        return tr("Failed to parse API response");
+    case ErrorCode::NoChoices:
+        return tr("API response contains no choices");
+    case ErrorCode::NothingToTranslate:
+        return tr("Nothing to translate");
+    case ErrorCode::NothingToLookUp:
+        return tr("Nothing to look up");
+    }
+    return QString();
 }
 
 QString ApiClient::apiErrorMessage(const QString& body) const

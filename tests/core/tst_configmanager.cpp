@@ -1,5 +1,8 @@
 #include <QtTest>
 
+#include <QFile>
+#include <QLocale>
+
 #include "TestSupport.h"
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
@@ -15,6 +18,9 @@ private slots:
     void flushesPendingSaveOnRecreate();
     void valueEqualityMatchesDefaults();
     void resolvesUiLanguage();
+    void resolvesUiLocaleScript();
+    void rejectsUnofferedUiLanguage();
+    void ignoresUnchangedSetValue();
 };
 
 void TestConfigManager::fallsBackToDefaults()
@@ -131,6 +137,75 @@ void TestConfigManager::resolvesUiLanguage()
     QCOMPARE(ConfigManager::instance()->resolvedUiLanguage(), QStringLiteral("zh"));
     ConfigManager::instance()->setValue(Keys::uiLanguage, QStringLiteral("en"));
     QCOMPARE(ConfigManager::instance()->resolvedUiLanguage(), QStringLiteral("en"));
+}
+
+void TestConfigManager::resolvesUiLocaleScript()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    ConfigManager::createInstance(TestSupport::tempDir());
+
+    // A stored language resolves to that language, whatever the session speaks.
+    ConfigManager::instance()->setValue(Keys::uiLanguage, QStringLiteral("en"));
+    QCOMPARE(ConfigManager::instance()->uiLocale().language(), QLocale::English);
+    ConfigManager::instance()->setValue(Keys::uiLanguage, QStringLiteral("zh"));
+    QCOMPARE(ConfigManager::instance()->uiLocale().language(), QLocale::Chinese);
+
+    // The result always names an offered language, so a catalog and a template
+    // exist for it.
+    for (const QString& stored : {QStringLiteral("auto"), QStringLiteral("zh"),
+                                  QStringLiteral("en"), QStringLiteral("ja")}) {
+        ConfigManager::instance()->setValue(Keys::uiLanguage, stored);
+        const QString resolved = ConfigManager::instance()->resolvedUiLanguage();
+        QVERIFY2(Keys::uiLanguageCodes().contains(resolved), qPrintable(resolved));
+    }
+}
+
+void TestConfigManager::rejectsUnofferedUiLanguage()
+{
+    const QString dir = TestSupport::tempDir() + QStringLiteral("/invalid");
+    QDir().mkpath(dir);
+    ConfigManager::createInstance(dir);
+
+    // An unoffered language is refused outright.
+    ConfigManager::instance()->setValue(Keys::uiLanguage, QStringLiteral("ja"));
+    QVERIFY(ConfigManager::instance()->hasValidUiLanguage());
+    QVERIFY(ConfigManager::instance()->isDefault(Keys::uiLanguage));
+    const QString resolved = ConfigManager::instance()->resolvedUiLanguage();
+    QVERIFY(resolved == QLatin1String("en") || resolved == QLatin1String("zh"));
+    QVERIFY(resolved != QLatin1String("ja"));
+
+    // "auto" is valid although it names no catalog.
+    ConfigManager::instance()->setValue(Keys::uiLanguage, QStringLiteral("auto"));
+    QVERIFY(ConfigManager::instance()->hasValidUiLanguage());
+    for (const QString& code : Keys::uiLanguageCodes())
+        QVERIFY(!code.isEmpty());
+
+    // A value written straight into the file is dropped on load.
+    {
+        QFile file(ConfigManager::instance()->configFilePath());
+        QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
+        file.write("{\"ui\":{\"language\":\"ja\"}}");
+    }
+    ConfigManager::createInstance(dir);
+    QVERIFY(ConfigManager::instance()->hasValidUiLanguage());
+    QVERIFY(ConfigManager::instance()->isDefault(Keys::uiLanguage));
+}
+
+void TestConfigManager::ignoresUnchangedSetValue()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    ConfigManager::createInstance(TestSupport::tempDir());
+
+    QSignalSpy spy(ConfigManager::instance(), &ConfigManager::changed);
+    ConfigManager::instance()->setValue(Keys::apiModel, QStringLiteral("gpt-4o"));
+    QCOMPARE(spy.count(), 1);
+    // Rewriting the same value wakes no subscriber and reloads no translator.
+    ConfigManager::instance()->setValue(Keys::apiModel, QStringLiteral("gpt-4o"));
+    QCOMPARE(spy.count(), 1);
+    ConfigManager::instance()->removeValue(Keys::uiLanguage);
+    const int afterFirstRemove = spy.count();
+    ConfigManager::instance()->removeValue(Keys::uiLanguage);
+    QCOMPARE(spy.count(), afterFirstRemove);
 }
 
 QTEST_MAIN(TestConfigManager)

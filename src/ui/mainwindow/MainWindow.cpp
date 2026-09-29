@@ -10,6 +10,7 @@
 #include "ui/dialogs/ToneDialog.h"
 #include "ui/widgets/AppIcons.h"
 #include "ui/widgets/ThemeColors.h"
+#include "ui/widgets/ConfigEditors.h"
 #include "ui/widgets/WindowState.h"
 #include "core/config/ApiPreset.h"
 #include "core/config/ConfigManager.h"
@@ -92,7 +93,7 @@ MainWindow::MainWindow(QWidget* parent)
 
     m_statusLabel = new QLabel(this);
     statusBar()->addWidget(m_statusLabel, 1);
-    setStatusMessage(tr("Ready"), false);
+    setStatus(Status::Ready);
 
     m_popup = new CandidatePopup(&m_engine, this);
     connect(m_resultEdit, &TranslationEdit::wordRequested, this,
@@ -108,7 +109,7 @@ MainWindow::MainWindow(QWidget* parent)
                 if (!m_resultEdit->replaceWordAt(start, length, replacement)) {
                     m_resultSnapshots.removeLast();
                     updateUndoRedoActions();
-                    setStatusMessage(tr("Translation has changed; replacement skipped"), false);
+                    setStatus(Status::ReplacementSkipped);
                 }
             });
 
@@ -119,7 +120,7 @@ MainWindow::MainWindow(QWidget* parent)
     });
     connect(&m_engine, &TranslationEngine::finished, this, [this](const QString& text) {
         m_resultEdit->setResult(text);
-        setStatusMessage(tr("Translation finished"), false);
+        setStatus(Status::Finished);
         if (ConfigManager::instance()->boolValue(Keys::historyEnabled)) {
             TranslationRecord record;
             record.timestamp = QDateTime::currentSecsSinceEpoch();
@@ -131,16 +132,16 @@ MainWindow::MainWindow(QWidget* parent)
             m_history.addRecord(record);
         }
     });
-    connect(&m_engine, &TranslationEngine::error, this, [this](const QString& message) {
-        setStatusMessage(message, true);
+    connect(&m_engine, &TranslationEngine::error, this, [this](const ApiClient::Error& failure) {
+        setStatusFailure(failure);
     });
     connect(&m_engine, &TranslationEngine::stateChanged, this, [this](bool busy) {
         setBusy(busy);
         if (busy)
-            setStatusMessage(tr("Translating..."), false);
+            setStatus(Status::Translating);
     });
     connect(&m_engine, &TranslationEngine::stopped, this, [this]() {
-        setStatusMessage(tr("Translation cancelled"), false);
+        setStatus(Status::Cancelled);
     });
 
     m_debounce = new QTimer(this);
@@ -319,11 +320,7 @@ void MainWindow::buildMenus()
     m_languageMenu = m_viewMenu->addMenu(QString());
     auto* languageGroup = new QActionGroup(m_languageMenu);
     languageGroup->setExclusive(true);
-    const QList<QPair<QString, QString>> languageOptions = {
-        {tr("Follow system"), QStringLiteral("auto")},
-        {QStringLiteral("English"), QStringLiteral("en")},
-        {QStringLiteral("简体中文"), QStringLiteral("zh")}
-    };
+    const QList<QPair<QString, QString>> languageOptions = uiLanguageItems();
     for (const QPair<QString, QString>& option : languageOptions) {
         QAction* languageAction = m_languageMenu->addAction(option.first);
         languageAction->setData(option.second);
@@ -405,8 +402,7 @@ void MainWindow::buildMenus()
     });
     connect(m_toneAction, &QAction::triggered, this, [this]() {
         ConfigManager* config = ConfigManager::instance();
-        ToneDialog dialog(config->value(Keys::translationCustomTones).toArray(),
-                          config->resolvedUiLanguage(), this);
+        ToneDialog dialog(config->value(Keys::translationCustomTones).toArray(), this);
         if (dialog.exec() == QDialog::Accepted)
             config->setValue(Keys::translationCustomTones, ToneDialog::toJson(dialog.customTones()));
     });
@@ -464,7 +460,6 @@ void MainWindow::updateSwapButtonGeometry()
 
 void MainWindow::populateLanguageCombos()
 {
-    const QString uiLanguage = ConfigManager::instance()->resolvedUiLanguage();
     const QString source = m_sourceLang ? m_sourceLang->currentData().toString()
                                         : ConfigManager::instance()->stringValue(Keys::translationSourceLang);
     const QString target = m_targetLang ? m_targetLang->currentData().toString()
@@ -473,7 +468,7 @@ void MainWindow::populateLanguageCombos()
         QSignalBlocker blocker(m_sourceLang);
         m_sourceLang->clear();
         for (const LangItem& lang : Languages::all())
-            m_sourceLang->addItem(Languages::displayName(lang.code, uiLanguage), lang.code);
+            m_sourceLang->addItem(languageLabel(lang.code), lang.code);
         const int index = m_sourceLang->findData(source.isEmpty() ? ConfigManager::instance()->stringValue(Keys::translationSourceLang) : source);
         m_sourceLang->setCurrentIndex(index < 0 ? 0 : index);
     }
@@ -483,7 +478,7 @@ void MainWindow::populateLanguageCombos()
         for (const LangItem& lang : Languages::all()) {
             if (lang.code == QLatin1String("auto"))
                 continue;
-            m_targetLang->addItem(Languages::displayName(lang.code, uiLanguage), lang.code);
+            m_targetLang->addItem(languageLabel(lang.code), lang.code);
         }
         const int index = m_targetLang->findData(target.isEmpty() ? ConfigManager::instance()->stringValue(Keys::translationTargetLang) : target);
         m_targetLang->setCurrentIndex(index < 0 ? 1 : index);
@@ -494,11 +489,10 @@ void MainWindow::populateToneCombo()
 {
     if (!m_tone)
         return;
-    const QString uiLanguage = ConfigManager::instance()->resolvedUiLanguage();
     QSignalBlocker blocker(m_tone);
     m_tone->clear();
     for (const ToneItem& tone : Tones::presets())
-        m_tone->addItem(Tones::presetDisplayName(tone.key, uiLanguage), tone.key);
+        m_tone->addItem(toneLabel(tone.key), tone.key);
     const QJsonArray custom = ConfigManager::instance()->value(Keys::translationCustomTones).toArray();
     for (const QJsonValue& value : custom) {
         const QJsonObject object = value.toObject();
@@ -538,8 +532,10 @@ void MainWindow::rebuildApiPresetMenu()
     // An empty submenu opens as a blank popup and reads as a broken control, so
     // a disabled entry explains the state instead.
     if (presets.isEmpty()) {
-        QAction* placeholder = m_apiPresetMenu->addAction(tr("No presets"));
-        placeholder->setEnabled(false);
+        m_apiPresetPlaceholder = m_apiPresetMenu->addAction(QString());
+        m_apiPresetPlaceholder->setEnabled(false);
+    } else {
+        m_apiPresetPlaceholder = nullptr;
     }
     syncApiPresetMenu();
 }
@@ -598,9 +594,10 @@ void MainWindow::applyClipboardMonitoring(bool enabled)
 void MainWindow::onConfigChanged(const QString& key)
 {
     if (key == Keys::uiLanguage) {
+        // Qt delivers LanguageChange when the translator is swapped, which runs
+        // retranslateUi(); only the catalog-independent lists are rebuilt here.
         populateLanguageCombos();
         populateToneCombo();
-        retranslateUi();
         return;
     }
     if (key == Keys::uiAutoTranslate) {
@@ -657,8 +654,7 @@ TranslationContext MainWindow::currentContext() const
 
 void MainWindow::onSourceChanged()
 {
-    const int count = m_sourceEdit->toPlainText().size();
-    m_countLabel->setText(tr("%n character(s)", nullptr, count));
+    updateCountLabel();
     if (m_autoTranslateAction->isChecked()) {
         m_debounce->start();
     }
@@ -669,7 +665,7 @@ void MainWindow::translateNow()
     m_debounce->stop();
     const QString text = m_sourceEdit->toPlainText().trimmed();
     if (text.isEmpty()) {
-        setStatusMessage(tr("Enter text to translate"), false);
+        setStatus(Status::EmptySource);
         return;
     }
     pushResultSnapshot();
@@ -682,14 +678,60 @@ void MainWindow::setBusy(bool busy)
     m_stopAction->setEnabled(busy);
 }
 
-void MainWindow::setStatusMessage(const QString& message, bool isError)
+void MainWindow::setStatus(Status status, const QString& argument)
 {
-    m_statusLabel->setText(message);
-    if (isError) {
+    m_status = status;
+    m_statusArgument = argument;
+    m_statusLabel->setText(statusText());
+    if (statusIsError())
         ThemeColors::setTextColor(m_statusLabel, ThemeColors::errorText(m_statusLabel));
-    } else {
+    else
         m_statusLabel->setPalette(QPalette());
+}
+
+void MainWindow::setStatusFailure(const ApiClient::Error& failure)
+{
+    m_statusFailure = failure;
+    setStatus(Status::Failure);
+}
+
+QString MainWindow::statusText() const
+{
+    switch (m_status) {
+    case Status::Ready: return tr("Ready");
+    case Status::Translating: return tr("Translating...");
+    case Status::Finished: return tr("Translation finished");
+    case Status::Cancelled: return tr("Translation cancelled");
+    case Status::ReplacementSkipped: return tr("Translation has changed; replacement skipped");
+    case Status::Restored: return tr("Restored previous translation");
+    case Status::Reapplied: return tr("Re-applied translation");
+    case Status::Copied: return tr("Translation copied to clipboard");
+    case Status::EmptySource: return tr("Enter text to translate");
+    case Status::NothingToExport: return tr("Nothing to export");
+    case Status::Exported: return tr("Exported to %1").arg(m_statusArgument);
+    case Status::CannotWrite: return tr("Cannot write file: %1").arg(m_statusArgument);
+    case Status::Failure: return m_statusFailure.text();
     }
+    return QString();
+}
+
+bool MainWindow::statusIsError() const
+{
+    return m_status == Status::NothingToExport
+        || m_status == Status::CannotWrite
+        || m_status == Status::Failure;
+}
+
+void MainWindow::updateCountLabel()
+{
+    m_countLabel->setText(tr("%n character(s)", nullptr, m_sourceEdit->toPlainText().size()));
+}
+
+void MainWindow::changeEvent(QEvent* event)
+{
+    QMainWindow::changeEvent(event);
+    if (event->type() == QEvent::LanguageChange)
+        retranslateUi();
 }
 
 void MainWindow::swapLanguages()
@@ -780,7 +822,7 @@ void MainWindow::undoResult()
         m_redoSnapshots.removeFirst();
     m_resultEdit->setResult(m_resultSnapshots.takeLast());
     updateUndoRedoActions();
-    setStatusMessage(tr("Restored previous translation"), false);
+    setStatus(Status::Restored);
 }
 
 void MainWindow::redoResult()
@@ -795,7 +837,7 @@ void MainWindow::redoResult()
         m_resultSnapshots.removeFirst();
     m_resultEdit->setResult(m_redoSnapshots.takeLast());
     updateUndoRedoActions();
-    setStatusMessage(tr("Re-applied translation"), false);
+    setStatus(Status::Reapplied);
 }
 
 void MainWindow::updateUndoRedoActions()
@@ -811,14 +853,14 @@ void MainWindow::copyResult()
         return;
     m_lastClipboard = text.trimmed();
     QApplication::clipboard()->setText(text);
-    setStatusMessage(tr("Translation copied to clipboard"), false);
+    setStatus(Status::Copied);
 }
 
 void MainWindow::exportTranslation()
 {
     const QString text = m_resultEdit->result();
     if (text.isEmpty()) {
-        setStatusMessage(tr("Nothing to export"), true);
+        setStatus(Status::NothingToExport);
         return;
     }
     const QString path = QFileDialog::getSaveFileName(this, tr("Export translation"),
@@ -827,11 +869,11 @@ void MainWindow::exportTranslation()
         return;
     QFile file(path);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        setStatusMessage(tr("Cannot write file: %1").arg(path), true);
+        setStatus(Status::CannotWrite, path);
         return;
     }
     file.write(text.toUtf8());
-    setStatusMessage(tr("Exported to %1").arg(path), false);
+    setStatus(Status::Exported, path);
 }
 
 void MainWindow::showSettingsDialog()
@@ -884,7 +926,7 @@ void MainWindow::retranslateUi()
     m_onTopAction->setText(tr("Always on top"));
     m_languageMenu->setTitle(tr("Interface language"));
     for (QAction* action : m_languageMenu->actions()) {
-        if (action->data().toString() == QLatin1String("auto"))
+        if (action->data().toString() == Keys::uiLanguageAuto)
             action->setText(tr("Follow system"));
     }
     syncLanguageMenu();
@@ -899,6 +941,8 @@ void MainWindow::retranslateUi()
 
     m_translateAction->setText(tr("Translate"));
     m_stopAction->setText(tr("Stop"));
+    // A toolbar button built from an action shows its icon text, so these carry
+    // the short labels the toolbar displays instead of the menu wording.
     m_documentAction->setIconText(tr("Document"));
     m_historyAction->setIconText(tr("History"));
     m_settingsAction->setIconText(tr("Settings"));
@@ -913,6 +957,12 @@ void MainWindow::retranslateUi()
     m_clearResultAction->setText(tr("Clear"));
 
     m_sourceEdit->setPlaceholderText(tr("Enter text to translate"));
+
+    if (m_apiPresetPlaceholder)
+        m_apiPresetPlaceholder->setText(tr("No presets"));
+    m_statusLabel->setText(statusText());
+    updateCountLabel();
+
     if (m_trayMenu) {
         m_trayShowHideAction->setText(tr("Show/Hide window"));
         m_trayTranslateClipAction->setText(tr("Translate clipboard"));

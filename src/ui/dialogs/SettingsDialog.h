@@ -3,11 +3,18 @@
 #include <QDialog>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QTabWidget>
 #include <QVector>
+
+#include <functional>
 
 #include "core/config/ApiPreset.h"
 
 class QComboBox;
+class QFormLayout;
+class QLabel;
+class QLayout;
+class QListWidget;
 class QPushButton;
 class HistoryManager;
 
@@ -26,6 +33,9 @@ public:
 
     void reject() override;
 
+protected:
+    void changeEvent(QEvent* event) override;
+
 private slots:
     void updateDirtyState();
     void applyChanges();
@@ -43,6 +53,16 @@ private:
     QWidget* createHistoryPage();
     QWidget* createPromptsPage();
 
+    // Re-applies every registered string. Rebuilding the pages instead would
+    // discard pending edits.
+    void retranslateUi();
+    void bindText(const std::function<void()>& apply);
+
+    // The layout variant serves a row whose field holds several widgets.
+    QLabel* createRowLabel(QWidget* parent, const char* source);
+    void addLabeledRow(QFormLayout* form, const char* source, QWidget* field);
+    void addLabeledRow(QFormLayout* form, const char* source, QLayout* row);
+
     bool isDirty() const;
     bool canSavePreset() const;
     QJsonObject editedApiValues() const;
@@ -56,4 +76,7 @@ private:
     QVector<ApiPreset> m_apiPresets;
     QPushButton* m_applyButton = nullptr;
     HistoryManager* m_history = nullptr;
+    QTabWidget* m_tabs = nullptr;
+    QListWidget* m_templateList = nullptr;
+    QVector<std::function<void()>> m_boundText;
 };

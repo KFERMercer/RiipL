@@ -6,8 +6,8 @@
 struct ToneItem
 {
     QString key;
-    QString en;
-    QString zh;
+    // A literal so the UI can pass it to QCoreApplication::translate.
+    const char* en;
 };
 
 namespace Tones {
@@ -15,32 +15,33 @@ namespace Tones {
 inline const QVector<ToneItem>& presets()
 {
     static const QVector<ToneItem> list = {
-        {QStringLiteral("default"), QStringLiteral("Default"), QStringLiteral("默认")},
-        {QStringLiteral("formal"), QStringLiteral("Formal"), QStringLiteral("正式")},
-        {QStringLiteral("casual"), QStringLiteral("Casual"), QStringLiteral("口语")},
-        {QStringLiteral("neutral"), QStringLiteral("Neutral"), QStringLiteral("中性")},
-        {QStringLiteral("technical"), QStringLiteral("Technical"), QStringLiteral("技术")},
-        {QStringLiteral("marketing"), QStringLiteral("Marketing"), QStringLiteral("营销")},
-        {QStringLiteral("literary"), QStringLiteral("Literary"), QStringLiteral("文学")},
-        {QStringLiteral("academic"), QStringLiteral("Academic"), QStringLiteral("学术")},
-        {QStringLiteral("legal"), QStringLiteral("Legal"), QStringLiteral("法律")},
-        {QStringLiteral("literal"), QStringLiteral("Literal"), QStringLiteral("直译")},
-        {QStringLiteral("idiomatic"), QStringLiteral("Idiomatic"), QStringLiteral("意译")},
-        {QStringLiteral("transcreation"), QStringLiteral("Transcreation"), QStringLiteral("创译")},
-        {QStringLiteral("machine-like"), QStringLiteral("Machine-like"), QStringLiteral("机器")},
-        {QStringLiteral("concise"), QStringLiteral("Concise"), QStringLiteral("简明")}
+        {QStringLiteral("default"), QT_TRANSLATE_NOOP("Tones", "Default")},
+        {QStringLiteral("formal"), QT_TRANSLATE_NOOP("Tones", "Formal")},
+        {QStringLiteral("casual"), QT_TRANSLATE_NOOP("Tones", "Casual")},
+        {QStringLiteral("neutral"), QT_TRANSLATE_NOOP("Tones", "Neutral")},
+        {QStringLiteral("technical"), QT_TRANSLATE_NOOP("Tones", "Technical")},
+        {QStringLiteral("marketing"), QT_TRANSLATE_NOOP("Tones", "Marketing")},
+        {QStringLiteral("literary"), QT_TRANSLATE_NOOP("Tones", "Literary")},
+        {QStringLiteral("academic"), QT_TRANSLATE_NOOP("Tones", "Academic")},
+        {QStringLiteral("legal"), QT_TRANSLATE_NOOP("Tones", "Legal")},
+        {QStringLiteral("literal"), QT_TRANSLATE_NOOP("Tones", "Literal")},
+        {QStringLiteral("idiomatic"), QT_TRANSLATE_NOOP("Tones", "Idiomatic")},
+        {QStringLiteral("transcreation"), QT_TRANSLATE_NOOP("Tones", "Transcreation")},
+        {QStringLiteral("machine-like"), QT_TRANSLATE_NOOP("Tones", "Machine-like")},
+        {QStringLiteral("concise"), QT_TRANSLATE_NOOP("Tones", "Concise")}
     };
     return list;
 }
 
-inline QString presetDisplayName(const QString& key, const QString& uiLanguage)
+// Untranslated name for the UI, or nullptr for a custom key; the caller resolves
+// it through the "Tones" catalog.
+inline const char* labelFor(const QString& key)
 {
-    const QVector<ToneItem>& list = presets();
-    for (const ToneItem& item : list) {
+    for (const ToneItem& item : presets()) {
         if (item.key == key)
-            return uiLanguage == QLatin1String("zh") ? item.zh : item.en;
+            return item.en;
     }
-    return key;
+    return nullptr;
 }
 
 }

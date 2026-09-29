@@ -79,10 +79,10 @@ DocumentDialog::DocumentDialog(const TranslationContext& baseContext, QWidget* p
             m_status->setText(tr("Translation finished"));
         }
     });
-    connect(&m_engine, &TranslationEngine::error, this, [this](const QString& message) {
+    connect(&m_engine, &TranslationEngine::error, this, [this](const ApiClient::Error& failure) {
         m_running = false;
         m_startButton->setEnabled(true);
-        m_status->setText(tr("Error: %1").arg(message));
+        m_status->setText(tr("Error: %1").arg(failure.text()));
     });
 
     WindowState::track(this, WindowState::Id::document);

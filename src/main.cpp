@@ -1,40 +1,13 @@
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
+#include "utils/AppTranslator.h"
 #include "ui/mainwindow/MainWindow.h"
 #include "utils/SingleInstance.h"
 
 #include <QApplication>
 #include <QDebug>
 #include <QFont>
-#include <QLibraryInfo>
 #include <QObject>
-#include <QTranslator>
-
-namespace {
-
-class AppTranslator
-{
-public:
-    void apply(const QString& language)
-    {
-        for (QTranslator* translator : {&m_app, &m_qt}) {
-            qApp->removeTranslator(translator);
-        }
-        if (language == QLatin1String("zh")) {
-            if (m_app.load(QStringLiteral(":/i18n/riipl_zh.qm")))
-                qApp->installTranslator(&m_app);
-            if (m_qt.load(QStringLiteral("qtbase_zh_CN"),
-                          QLibraryInfo::path(QLibraryInfo::TranslationsPath)))
-                qApp->installTranslator(&m_qt);
-        }
-    }
-
-private:
-    QTranslator m_app;
-    QTranslator m_qt;
-};
-
-}
 
 int main(int argc, char* argv[])
 {
@@ -47,7 +20,7 @@ int main(int argc, char* argv[])
     ConfigManager* config = ConfigManager::instance();
 
     AppTranslator translator;
-    translator.apply(config->resolvedUiLanguage());
+    translator.apply(config->uiLocale());
 
     QFont font = app.font();
     font.setPointSize(config->intValue(Keys::uiFontSize));
@@ -56,7 +29,7 @@ int main(int argc, char* argv[])
     QObject::connect(config, &ConfigManager::changed, &app,
         [&translator, config](const QString& key) {
             if (key == Keys::uiLanguage)
-                translator.apply(config->resolvedUiLanguage());
+                translator.apply(config->uiLocale());
             else if (key == Keys::uiFontSize) {
                 QFont updated = QApplication::font();
                 updated.setPointSize(config->intValue(key));

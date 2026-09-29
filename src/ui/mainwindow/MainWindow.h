@@ -27,6 +27,7 @@ public:
     void retranslateUi();
 
 protected:
+    void changeEvent(QEvent* event) override;
     void closeEvent(QCloseEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
 
@@ -45,6 +46,30 @@ private slots:
     void toggleVisible();
 
 private:
+    // Held as a state rather than a snapshot of translated text, so a language
+    // change can re-render the status bar.
+    enum class Status {
+        Ready,
+        Translating,
+        Finished,
+        Cancelled,
+        ReplacementSkipped,
+        Restored,
+        Reapplied,
+        Copied,
+        EmptySource,
+        NothingToExport,
+        Exported,
+        CannotWrite,
+        Failure
+    };
+
+    void setStatus(Status status, const QString& argument = QString());
+    void setStatusFailure(const ApiClient::Error& failure);
+    QString statusText() const;
+    bool statusIsError() const;
+    void updateCountLabel();
+
     QWidget* createLeftPane();
     QWidget* createRightPane();
     void buildMenus();
@@ -62,7 +87,6 @@ private:
 
     TranslationContext currentContext() const;
     void setBusy(bool busy);
-    void setStatusMessage(const QString& message, bool isError);
     void translateClipboard();
 
     void pushResultSnapshot();
@@ -112,6 +136,7 @@ private:
     QMenu* m_apiPresetMenu = nullptr;
     QActionGroup* m_apiPresetGroup = nullptr;
     QMenu* m_trayMenu = nullptr;
+    QAction* m_apiPresetPlaceholder = nullptr;
 
     QTimer* m_debounce = nullptr;
     QTimer* m_clipboardTimer = nullptr;
@@ -119,6 +144,9 @@ private:
     HistoryManager m_history;
     QSystemTrayIcon* m_tray = nullptr;
     CandidatePopup* m_popup = nullptr;
+    Status m_status = Status::Ready;
+    QString m_statusArgument;
+    ApiClient::Error m_statusFailure;
     QString m_lastClipboard;
     QStringList m_resultSnapshots;
     QStringList m_redoSnapshots;

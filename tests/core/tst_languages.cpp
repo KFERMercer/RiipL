@@ -11,6 +11,7 @@ private slots:
     void detectsSupplementaryPlanes();
     void ignoresScriptlessAttachments();
     void resolveAutoExcludesTarget();
+    void exposesTranslatableNames();
 };
 
 void TestLanguages::guessesLanguageFromScript()
@@ -82,6 +83,21 @@ void TestLanguages::resolveAutoExcludesTarget()
     QVERIFY(indexOf(latinFallback) > 0);
     QVERIFY(resolveAuto(QStringLiteral("你好"), QStringLiteral("zh")) != QStringLiteral("zh"));
     QVERIFY(resolveAuto(QString(), QStringLiteral("ja")) != QStringLiteral("ja"));
+}
+
+void TestLanguages::exposesTranslatableNames()
+{
+    // The UI resolves these through the "Languages" catalog.
+    for (const LangItem& lang : Languages::all())
+        QVERIFY2(lang.en && *lang.en, qPrintable(lang.code));
+    QVERIFY(Languages::labelFor(QStringLiteral("zh")) != nullptr);
+    QVERIFY(Languages::labelFor(QStringLiteral("zh-Hant")) != nullptr);
+    QVERIFY(Languages::labelFor(QStringLiteral("not-a-language")) == nullptr);
+
+    // The prompt text is English regardless of locale.
+    QCOMPARE(Languages::englishName(QStringLiteral("zh")), QStringLiteral("Chinese"));
+    QCOMPARE(Languages::englishName(QStringLiteral("auto")), QStringLiteral("the detected language"));
+    QCOMPARE(Languages::englishName(QStringLiteral("not-a-language")), QStringLiteral("not-a-language"));
 }
 
 QTEST_MAIN(TestLanguages)

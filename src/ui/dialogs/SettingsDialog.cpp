@@ -43,8 +43,7 @@ namespace {
 struct TemplateInfo
 {
     QString key;
-    QString labelEn;
-    QString labelZh;
+    const char* label;
 };
 
 const QVector<TemplateInfo>& templateInfos()
@@ -54,16 +53,16 @@ const QVector<TemplateInfo>& templateInfos()
     // wording prompts are separate requests that close the list, the one for a
     // short translation last.
     static const QVector<TemplateInfo> list = {
-        {Prompts::systemTemplate, QStringLiteral("System prompt"), QStringLiteral("系统提示词")},
-        {Prompts::referenceTemplate, QStringLiteral("Reference header"), QStringLiteral("参考信息标题")},
-        {Prompts::toneTemplate, QStringLiteral("Tone"), QStringLiteral("语气")},
-        {Prompts::styleTemplate, QStringLiteral("Style"), QStringLiteral("风格")},
-        {Prompts::backgroundTemplate, QStringLiteral("Background"), QStringLiteral("背景信息")},
-        {Prompts::glossaryTemplate, QStringLiteral("Glossary"), QStringLiteral("术语表")},
-        {Prompts::defaultTemplate, QStringLiteral("Default instruction"), QStringLiteral("默认指令")},
-        {Prompts::candidateTemplate, QStringLiteral("Candidate wording"), QStringLiteral("候选遣词")},
-        {Prompts::candidateShortTemplate, QStringLiteral("Candidate wording (short text)"),
-         QStringLiteral("候选遣词（短文本）")}
+        {Prompts::systemTemplate, QT_TRANSLATE_NOOP("SettingsDialog", "System prompt")},
+        {Prompts::referenceTemplate, QT_TRANSLATE_NOOP("SettingsDialog", "Reference header")},
+        {Prompts::toneTemplate, QT_TRANSLATE_NOOP("SettingsDialog", "Tone")},
+        {Prompts::styleTemplate, QT_TRANSLATE_NOOP("SettingsDialog", "Style")},
+        {Prompts::backgroundTemplate, QT_TRANSLATE_NOOP("SettingsDialog", "Background")},
+        {Prompts::glossaryTemplate, QT_TRANSLATE_NOOP("SettingsDialog", "Glossary")},
+        {Prompts::defaultTemplate, QT_TRANSLATE_NOOP("SettingsDialog", "Default instruction")},
+        {Prompts::candidateTemplate, QT_TRANSLATE_NOOP("SettingsDialog", "Candidate wording")},
+        {Prompts::candidateShortTemplate,
+         QT_TRANSLATE_NOOP("SettingsDialog", "Candidate wording (short text)")}
     };
     return list;
 }
@@ -74,20 +73,28 @@ SettingsDialog::SettingsDialog(HistoryManager* history, QWidget* parent)
     : QDialog(parent)
     , m_history(history)
 {
-    setWindowTitle(tr("Settings"));
-
     m_customTones = ConfigManager::instance()->value(Keys::translationCustomTones).toArray();
     m_apiPresets = ApiPresets::fromJson(ConfigManager::instance()->value(Keys::apiPresets).toArray());
 
     auto* layout = new QVBoxLayout(this);
-    auto* tabs = new QTabWidget(this);
-    tabs->addTab(createApiPage(), tr("API"));
-    tabs->addTab(createTranslationPage(), tr("Translation"));
-    tabs->addTab(createInterfacePage(), tr("Interface"));
-    tabs->addTab(createClipboardPage(), tr("Clipboard"));
-    tabs->addTab(createHistoryPage(), tr("History"));
-    tabs->addTab(createPromptsPage(), tr("Prompt templates"));
-    layout->addWidget(tabs, 1);
+    m_tabs = new QTabWidget(this);
+    m_tabs->addTab(createApiPage(), QString());
+    m_tabs->addTab(createTranslationPage(), QString());
+    m_tabs->addTab(createInterfacePage(), QString());
+    m_tabs->addTab(createClipboardPage(), QString());
+    m_tabs->addTab(createHistoryPage(), QString());
+    m_tabs->addTab(createPromptsPage(), QString());
+    layout->addWidget(m_tabs, 1);
+
+    bindText([this]() {
+        setWindowTitle(tr("Settings"));
+        m_tabs->setTabText(0, tr("API"));
+        m_tabs->setTabText(1, tr("Translation"));
+        m_tabs->setTabText(2, tr("Interface"));
+        m_tabs->setTabText(3, tr("Clipboard"));
+        m_tabs->setTabText(4, tr("History"));
+        m_tabs->setTabText(5, tr("Prompt templates"));
+    });
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Apply
                                          | QDialogButtonBox::Cancel, this);
@@ -110,8 +117,51 @@ SettingsDialog::SettingsDialog(HistoryManager* history, QWidget* parent)
         connect(editor, &ConfigEditor::edited, this, &SettingsDialog::updateDirtyState);
     }
     updateDirtyState();
+    retranslateUi();
 
     WindowState::track(this, WindowState::Id::settings);
+}
+
+// Pages are built once and never rebuilt, so each label registers its text for
+// retranslation instead of passing tr() to QFormLayout::addRow.
+QLabel* SettingsDialog::createRowLabel(QWidget* parent, const char* source)
+{
+    auto* label = new QLabel(parent);
+    bindText([label, source]() {
+        label->setText(QCoreApplication::translate("SettingsDialog", source));
+    });
+    return label;
+}
+
+void SettingsDialog::addLabeledRow(QFormLayout* form, const char* source, QWidget* field)
+{
+    form->addRow(createRowLabel(field->parentWidget(), source), field);
+}
+
+void SettingsDialog::addLabeledRow(QFormLayout* form, const char* source, QLayout* row)
+{
+    form->addRow(createRowLabel(form->parentWidget(), source), row);
+}
+
+void SettingsDialog::bindText(const std::function<void()>& apply)
+{
+    m_boundText.append(apply);
+}
+
+void SettingsDialog::retranslateUi()
+{
+    for (const std::function<void()>& apply : std::as_const(m_boundText))
+        apply();
+    for (ConfigEditor* editor : findChildren<ConfigEditor*>())
+        editor->retranslateUi();
+    updateDirtyState();
+}
+
+void SettingsDialog::changeEvent(QEvent* event)
+{
+    QDialog::changeEvent(event);
+    if (event->type() == QEvent::LanguageChange)
+        retranslateUi();
 }
 
 void SettingsDialog::reject()
@@ -200,16 +250,13 @@ QWidget* SettingsDialog::createApiPage()
 
     // Presets replace every field below at once, so they are grouped apart from the
     // editors they replace.
-    auto* presetGroup = new QGroupBox(tr("API preset"), page);
+    auto* presetGroup = new QGroupBox(page);
     auto* presetLayout = new QVBoxLayout(presetGroup);
     auto* presetRow = new QHBoxLayout();
     m_presetCombo = new QComboBox(presetGroup);
-    m_presetCombo->setPlaceholderText(tr("Custom settings"));
-    m_overwriteButton = new QPushButton(tr("Save preset"), presetGroup);
-    auto* saveAsPresetButton = new QPushButton(tr("Save as..."), presetGroup);
-    auto* managePresetButton = new QPushButton(tr("Manage..."), presetGroup);
-    saveAsPresetButton->setToolTip(tr("Save the current API settings under a new name"));
-    managePresetButton->setToolTip(tr("Rename, copy, reorder, delete or load API presets"));
+    m_overwriteButton = new QPushButton(presetGroup);
+    auto* saveAsPresetButton = new QPushButton(presetGroup);
+    auto* managePresetButton = new QPushButton(presetGroup);
     presetRow->addWidget(m_presetCombo, 1);
     presetRow->addWidget(m_overwriteButton);
     presetRow->addWidget(saveAsPresetButton);
@@ -217,24 +264,23 @@ QWidget* SettingsDialog::createApiPage()
     presetLayout->addLayout(presetRow);
     form->addRow(presetGroup);
 
-    form->addRow(tr("Base URL"), new ConfigLineEdit(Keys::apiBaseUrl, false, page));
-    form->addRow(tr("API key"), new ConfigLineEdit(Keys::apiKey, true, page));
-    form->addRow(tr("Model"), new ConfigLineEdit(Keys::apiModel, false, page));
-    form->addRow(tr("Server connection timeout (ms)"),
-                 new ConfigSpinBox(Keys::apiTimeoutMs, 1000, 300000, 1000, page));
-    form->addRow(tr("Max tokens"), new ConfigSpinBox(Keys::apiMaxTokens, 1, 1000000, 256, page));
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Base URL"), new ConfigLineEdit(Keys::apiBaseUrl, false, page));
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "API key"), new ConfigLineEdit(Keys::apiKey, true, page));
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Model"), new ConfigLineEdit(Keys::apiModel, false, page));
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Server connection timeout (ms)"),
+                  new ConfigSpinBox(Keys::apiTimeoutMs, 1000, 300000, 1000, page));
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Max tokens"),
+                  new ConfigSpinBox(Keys::apiMaxTokens, 1, 1000000, 256, page));
 
     auto* temperatureSpin = new ConfigDoubleSpinBox(Keys::apiTemperature, -0.1, 2.0, 0.1, 2, page);
-    temperatureSpin->edit()->setSpecialValueText(tr("API default"));
-    form->addRow(tr("Temperature"), temperatureSpin);
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Temperature"), temperatureSpin);
 
     auto* streamCheck = new ConfigCheckBox(Keys::apiStream, page);
-    form->addRow(tr("Stream responses"), streamCheck);
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Stream responses"), streamCheck);
 
     auto* headersEdit = new ConfigTextEdit(Keys::apiCustomHeaders, page);
-    headersEdit->edit()->setPlaceholderText(tr("One per line: Header-Name: value"));
     ConfigTextEdit::applyFixedWidthFont(headersEdit->edit());
-    form->addRow(tr("Custom headers"), headersEdit);
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Custom headers"), headersEdit);
 
     auto* extraEdit = new ConfigTextEdit(Keys::apiExtraBody, page);
     ConfigTextEdit::applyFixedWidthFont(extraEdit->edit());
@@ -262,9 +308,21 @@ QWidget* SettingsDialog::createApiPage()
     extraLayout->setSpacing(0);
     extraLayout->addWidget(extraEdit);
     extraLayout->addWidget(validation);
-    form->addRow(tr("Extra body (JSON)"), extraField);
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Extra body (JSON)"), extraField);
     updateValidation();
+    bindText(updateValidation);
 
+    bindText([presetGroup, saveAsPresetButton, managePresetButton, temperatureSpin, headersEdit, this]() {
+        presetGroup->setTitle(tr("API preset"));
+        m_presetCombo->setPlaceholderText(tr("Custom settings"));
+        m_overwriteButton->setText(tr("Save preset"));
+        saveAsPresetButton->setText(tr("Save as..."));
+        managePresetButton->setText(tr("Manage..."));
+        saveAsPresetButton->setToolTip(tr("Save the current API settings under a new name"));
+        managePresetButton->setToolTip(tr("Rename, copy, reorder, delete or load API presets"));
+        temperatureSpin->edit()->setSpecialValueText(tr("API default"));
+        headersEdit->edit()->setPlaceholderText(tr("One per line: Header-Name: value"));
+    });
     connect(m_presetCombo, &QComboBox::activated, this, &SettingsDialog::applySelectedPreset);
     connect(m_overwriteButton, &QPushButton::clicked, this, &SettingsDialog::overwritePreset);
     connect(saveAsPresetButton, &QPushButton::clicked, this, &SettingsDialog::savePreset);
@@ -390,25 +448,28 @@ QWidget* SettingsDialog::createTranslationPage()
     auto* page = new QWidget(this);
     auto* form = new QFormLayout(page);
 
-    const QString uiLanguage = ConfigManager::instance()->resolvedUiLanguage();
     auto* sourceCombo = new ConfigComboBox(Keys::translationSourceLang, page);
-    sourceCombo->setItems(languageItems(uiLanguage, true));
-    form->addRow(tr("Source language"), sourceCombo);
-
     auto* targetCombo = new ConfigComboBox(Keys::translationTargetLang, page);
-    targetCombo->setItems(languageItems(uiLanguage, false));
-    form->addRow(tr("Target language"), targetCombo);
+    bindText([sourceCombo, targetCombo]() {
+        sourceCombo->setItems(languageItems(true));
+        targetCombo->setItems(languageItems(false));
+    });
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Source language"), sourceCombo);
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Target language"), targetCombo);
 
     auto* toneRow = new QHBoxLayout();
     auto* toneCombo = new ConfigComboBox(Keys::translationTone, page);
-    auto rebuildToneItems = [this, toneCombo, uiLanguage]() {
-        toneCombo->setItems(toneItems(uiLanguage, m_customTones));
+    auto rebuildToneItems = [this, toneCombo]() {
+        toneCombo->setItems(toneItems(m_customTones));
     };
     rebuildToneItems();
 
-    auto* manageTones = new QPushButton(tr("Manage..."), page);
+    bindText(rebuildToneItems);
+
+    auto* manageTones = new QPushButton(page);
+    bindText([manageTones]() { manageTones->setText(tr("Manage...")); });
     connect(manageTones, &QPushButton::clicked, page, [this, rebuildToneItems, page]() {
-        ToneDialog dialog(m_customTones, ConfigManager::instance()->resolvedUiLanguage(), page);
+        ToneDialog dialog(m_customTones, page);
         if (dialog.exec() == QDialog::Accepted) {
             m_customTones = ToneDialog::toJson(dialog.customTones());
             rebuildToneItems();
@@ -417,25 +478,26 @@ QWidget* SettingsDialog::createTranslationPage()
     });
     toneRow->addWidget(toneCombo, 1);
     toneRow->addWidget(manageTones);
-    form->addRow(tr("Tone"), toneRow);
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Tone"), static_cast<QLayout*>(toneRow));
 
     auto* glossaryRow = new QHBoxLayout();
     auto* glossaryEnabled = new ConfigCheckBox(Keys::glossaryEnabled, page);
-    auto* manageGlossary = new QPushButton(tr("Manage..."), page);
+    auto* manageGlossary = new QPushButton(page);
+    bindText([manageGlossary]() { manageGlossary->setText(tr("Manage...")); });
     connect(manageGlossary, &QPushButton::clicked, page, [page]() {
         GlossaryDialog dialog(page);
         dialog.exec();
     });
     glossaryRow->addWidget(glossaryEnabled, 1);
     glossaryRow->addWidget(manageGlossary);
-    form->addRow(tr("Glossary"), glossaryRow);
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Glossary"), static_cast<QLayout*>(glossaryRow));
 
-    form->addRow(tr("Style"), new ConfigTextEdit(Keys::translationStyle, page));
-    form->addRow(tr("Background"), new ConfigTextEdit(Keys::translationBackground, page));
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Style"), new ConfigTextEdit(Keys::translationStyle, page));
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Background"), new ConfigTextEdit(Keys::translationBackground, page));
 
     auto* autoTranslateCheck = new ConfigCheckBox(Keys::uiAutoTranslate, page);
-    form->addRow(tr("Auto translate after typing"), autoTranslateCheck);
-    form->addRow(tr("Auto translate delay (ms)"), new ConfigSpinBox(Keys::uiAutoTranslateDelay, 100, 10000, 100, page));
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Auto translate after typing"), autoTranslateCheck);
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Auto translate delay (ms)"), new ConfigSpinBox(Keys::uiAutoTranslateDelay, 100, 10000, 100, page));
     return page;
 }
 
@@ -445,20 +507,16 @@ QWidget* SettingsDialog::createInterfacePage()
     auto* form = new QFormLayout(page);
 
     auto* languageCombo = new ConfigComboBox(Keys::uiLanguage, page);
-    languageCombo->setItems({
-        {tr("Follow system"), QStringLiteral("auto")},
-        {QStringLiteral("English"), QStringLiteral("en")},
-        {QStringLiteral("简体中文"), QStringLiteral("zh")}
-    });
-    form->addRow(tr("Interface language"), languageCombo);
+    bindText([languageCombo]() { languageCombo->setItems(uiLanguageItems()); });
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Interface language"), languageCombo);
 
     auto* onTopCheck = new ConfigCheckBox(Keys::uiAlwaysOnTop, page);
-    form->addRow(tr("Keep window on top"), onTopCheck);
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Keep window on top"), onTopCheck);
 
     auto* trayCheck = new ConfigCheckBox(Keys::uiMinimizeToTray, page);
-    form->addRow(tr("Minimize to tray on close"), trayCheck);
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Minimize to tray on close"), trayCheck);
 
-    form->addRow(tr("Font size"), new ConfigSpinBox(Keys::uiFontSize, 8, 24, 1, page));
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Font size"), new ConfigSpinBox(Keys::uiFontSize, 8, 24, 1, page));
     return page;
 }
 
@@ -467,8 +525,8 @@ QWidget* SettingsDialog::createClipboardPage()
     auto* page = new QWidget(this);
     auto* form = new QFormLayout(page);
     auto* monitorCheck = new ConfigCheckBox(Keys::clipboardMonitor, page);
-    form->addRow(tr("Monitor clipboard and translate automatically"), monitorCheck);
-    form->addRow(tr("Monitor delay (ms)"), new ConfigSpinBox(Keys::clipboardDelayMs, 100, 5000, 50, page));
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Monitor clipboard and translate automatically"), monitorCheck);
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Monitor delay (ms)"), new ConfigSpinBox(Keys::clipboardDelayMs, 100, 5000, 50, page));
     return page;
 }
 
@@ -477,16 +535,17 @@ QWidget* SettingsDialog::createHistoryPage()
     auto* page = new QWidget(this);
     auto* form = new QFormLayout(page);
     auto* enabledCheck = new ConfigCheckBox(Keys::historyEnabled, page);
-    form->addRow(tr("Save translation history"), enabledCheck);
-    form->addRow(tr("Max records"), new ConfigSpinBox(Keys::historyMaxRecords, 10, 100000, 10, page));
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Save translation history"), enabledCheck);
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Max records"), new ConfigSpinBox(Keys::historyMaxRecords, 10, 100000, 10, page));
 
-    auto* clearButton = new QPushButton(tr("Clear history now"), page);
+    auto* clearButton = new QPushButton(page);
     connect(clearButton, &QPushButton::clicked, this, [this]() {
         if (QMessageBox::question(this, tr("RiipL"), tr("Delete all history records?"))
             == QMessageBox::Yes)
             m_history->clear();
     });
     form->addRow(QString(), clearButton);
+    bindText([clearButton]() { clearButton->setText(tr("Clear history now")); });
     return page;
 }
 
@@ -496,13 +555,17 @@ QWidget* SettingsDialog::createPromptsPage()
     auto* layout = new QVBoxLayout(page);
     auto* contentRow = new QHBoxLayout();
 
-    auto* list = new QListWidget(page);
-    list->setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
-    list->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Expanding);
-    const QString uiLanguage = ConfigManager::instance()->resolvedUiLanguage();
-    for (const TemplateInfo& info : templateInfos())
-        list->addItem(uiLanguage == QLatin1String("zh") ? info.labelZh : info.labelEn);
-    contentRow->addWidget(list);
+    m_templateList = new QListWidget(page);
+    m_templateList->setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
+    m_templateList->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Expanding);
+    for (int i = 0; i < templateInfos().size(); ++i)
+        m_templateList->addItem(QString());
+    contentRow->addWidget(m_templateList);
+    bindText([this]() {
+        const QVector<TemplateInfo>& infos = templateInfos();
+        for (int i = 0; i < infos.size() && i < m_templateList->count(); ++i)
+            m_templateList->item(i)->setText(tr(infos.at(i).label));
+    });
 
     auto* stack = new QStackedWidget(page);
     for (const TemplateInfo& info : templateInfos()) {
@@ -513,11 +576,16 @@ QWidget* SettingsDialog::createPromptsPage()
         ConfigTextEdit::applyFixedWidthFont(zhEditor->edit());
         auto* enEditor = new ConfigTextEdit(Keys::promptKey(info.key, QStringLiteral("en")), pageWidget);
         ConfigTextEdit::applyFixedWidthFont(enEditor->edit());
-        langTabs->addTab(zhEditor, tr("Chinese template"));
-        langTabs->addTab(enEditor, tr("English template"));
+        langTabs->addTab(zhEditor, QString());
+        langTabs->addTab(enEditor, QString());
         pageLayout->addWidget(langTabs);
 
-        auto* placeholderGroup = new QGroupBox(tr("Available placeholders (click to copy)"), pageWidget);
+        auto* placeholderGroup = new QGroupBox(pageWidget);
+        bindText([langTabs, placeholderGroup]() {
+            langTabs->setTabText(0, tr("Chinese template"));
+            langTabs->setTabText(1, tr("English template"));
+            placeholderGroup->setTitle(tr("Available placeholders (click to copy)"));
+        });
         auto* hintLayout = new FlowLayout(placeholderGroup);
         // Describes what each placeholder inserts, so the chip tooltip explains
         // the token instead of repeating the group title.
@@ -541,7 +609,9 @@ QWidget* SettingsDialog::createPromptsPage()
             auto* chip = new QToolButton(placeholderGroup);
             chip->setText(token);
             chip->setFont(AppFonts::fixedWidth());
-            chip->setToolTip(placeholderHint(placeholder));
+            bindText([chip, placeholder, placeholderHint]() {
+                chip->setToolTip(placeholderHint(placeholder));
+            });
             chip->setCursor(Qt::PointingHandCursor);
             chip->setAutoRaise(true);
             connect(chip, &QToolButton::clicked, chip, [chip, token]() {
@@ -553,14 +623,15 @@ QWidget* SettingsDialog::createPromptsPage()
         pageLayout->addWidget(placeholderGroup);
         stack->addWidget(pageWidget);
     }
-    connect(list, &QListWidget::currentRowChanged, stack, &QStackedWidget::setCurrentIndex);
-    list->setCurrentRow(0);
+    connect(m_templateList, &QListWidget::currentRowChanged, stack, &QStackedWidget::setCurrentIndex);
+    m_templateList->setCurrentRow(0);
     contentRow->addWidget(stack, 1);
     layout->addLayout(contentRow, 1);
 
     auto* buttonRow = new QHBoxLayout();
     buttonRow->addStretch(1);
-    auto* testButton = new QPushButton(tr("Preview prompt..."), page);
+    auto* testButton = new QPushButton(page);
+    bindText([testButton]() { testButton->setText(tr("Preview prompt...")); });
     connect(testButton, &QPushButton::clicked, page, [page]() {
         PromptPreviewDialog dialog(page);
         dialog.exec();

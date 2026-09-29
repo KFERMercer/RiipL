@@ -3,6 +3,7 @@
 #include <QByteArray>
 #include <QHttpHeaders>
 #include <QJsonObject>
+#include <QMetaType>
 #include <QObject>
 #include <QString>
 #include <QUrl>
@@ -16,9 +17,37 @@ class ApiClient : public QObject
     Q_OBJECT
 
 public:
+    // Names every failure the network and translation layers surface. The layers
+    // report the code instead of rendering it, so the text can follow the
+    // language in force when it is shown rather than when the request failed.
+    enum class ErrorCode {
+        BaseUrlMissing,
+        Cancelled,
+        TimedOut,
+        // detail: the Qt error string.
+        NetworkFailure,
+        // detail: the HTTP status code.
+        HttpStatus,
+        // detail: the message the API supplied, which is already in its own words.
+        ServerMessage,
+        InvalidResponse,
+        NoChoices,
+        NothingToTranslate,
+        NothingToLookUp
+    };
+
+    struct Error
+    {
+        ErrorCode code = ErrorCode::NetworkFailure;
+        QString detail;
+
+        // A receiver that keeps the Error can render it again after a change.
+        QString text() const;
+    };
+
     using DoneCallback = std::function<void(const QString&)>;
     using DeltaCallback = std::function<void(const QString&)>;
-    using ErrorCallback = std::function<void(const QString&)>;
+    using ErrorCallback = std::function<void(const Error&)>;
 
     explicit ApiClient(QObject* parent = nullptr);
 
@@ -57,3 +86,5 @@ private:
     DeltaCallback m_onDelta;
     ErrorCallback m_onError;
 };
+
+Q_DECLARE_METATYPE(ApiClient::Error)

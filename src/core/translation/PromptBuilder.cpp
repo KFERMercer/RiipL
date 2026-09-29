@@ -21,11 +21,8 @@ QString PromptBuilder::templateFor(const QString& name, const QString& uiLanguag
     const QString value = config->stringValue(Keys::promptKey(name, uiLanguage));
     if (!value.isEmpty())
         return value;
-    const QString fallbackLanguage = uiLanguage == QLatin1String("zh") ? QStringLiteral("en") : QStringLiteral("zh");
-    const QString fallback = config->stringValue(Keys::promptKey(name, fallbackLanguage));
-    if (!fallback.isEmpty())
-        return fallback;
-    return QString();
+    // Templates ship in Chinese and English only, so fall back to English.
+    return config->stringValue(Keys::promptKey(name, QStringLiteral("en")));
 }
 
 QString PromptBuilder::glossaryData(const QVector<GlossaryEntry>& entries)

@@ -9,6 +9,8 @@
 #include <QHttpHeaders>
 #include <QTcpServer>
 
+#include <optional>
+
 class TestApiClient : public QObject
 {
     Q_OBJECT
@@ -68,16 +70,16 @@ void TestApiClient::requestsDerivedEndpoint()
     ApiClient client;
     QSignalSpy finishedSpy(&client, &ApiClient::requestFinished);
     QString result;
-    QString error;
+    std::optional<ApiClient::Error> error;
     QJsonObject body;
     body.insert(QStringLiteral("stream"), false);
     client.sendChatRequest(body,
                            [&](const QString& text) { result = text; },
                            nullptr,
-                           [&](const QString& message) { error = message; });
+                           [&](const ApiClient::Error& failure) { error = failure; });
 
     QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 5000);
-    QVERIFY2(error.isEmpty(), qPrintable(error));
+    QVERIFY2(!error.has_value(), "the request must not report a failure");
     QCOMPARE(result, QStringLiteral("ok"));
     QCOMPARE(requestLine, QStringLiteral("POST /v1/chat/completions HTTP/1.1"));
     QCOMPARE(authorization, QByteArrayLiteral("Bearer secret"));

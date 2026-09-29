@@ -3,6 +3,7 @@
 #include "core/config/ConfigManager.h"
 #include "core/translation/Language.h"
 #include "core/translation/Tone.h"
+#include "ui/widgets/ConfigEditors.h"
 #include "ui/widgets/WindowState.h"
 
 #include <QDateTime>
@@ -96,7 +97,6 @@ void HistoryDialog::reload()
     header->setSectionResizeMode(3, QHeaderView::Stretch);
     header->setSectionResizeMode(4, QHeaderView::ResizeToContents);
 
-    const QString uiLanguage = ConfigManager::instance()->resolvedUiLanguage();
     m_tree->clear();
     for (int i = 0; i < m_records.size(); ++i) {
         const TranslationRecord& record = m_records.at(i);
@@ -104,11 +104,11 @@ void HistoryDialog::reload()
         item->setText(0, QDateTime::fromSecsSinceEpoch(record.timestamp)
                              .toString(QStringLiteral("yyyy-MM-dd HH:mm:ss")));
         item->setText(1, QStringLiteral("%1 → %2").arg(
-                             Languages::displayName(record.sourceLang, uiLanguage),
-                             Languages::displayName(record.targetLang, uiLanguage)));
+                             languageLabel(record.sourceLang),
+                             languageLabel(record.targetLang)));
         item->setText(2, record.source);
         item->setText(3, record.target);
-        item->setText(4, Tones::presetDisplayName(record.tone, uiLanguage));
+        item->setText(4, toneLabel(record.tone));
         item->setData(0, Qt::UserRole, i);
         item->setToolTip(2, record.source);
         item->setToolTip(3, record.target);

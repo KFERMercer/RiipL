@@ -76,7 +76,7 @@ void TranslationEngine::translateText(const TranslationContext& context)
 
     const PromptBuilder::Result prompt = PromptBuilder::build(context);
     if (prompt.user.isEmpty()) {
-        emit error(tr("Nothing to translate"));
+        emit error({ApiClient::ErrorCode::NothingToTranslate, QString()});
         return;
     }
 
@@ -94,8 +94,8 @@ void TranslationEngine::translateText(const TranslationContext& context)
             m_accumulated += delta;
             emit partialResult(m_accumulated);
         },
-        [this](const QString& message) {
-            emit error(message);
+        [this](const ApiClient::Error& failure) {
+            emit error(failure);
         });
 }
 
@@ -103,7 +103,7 @@ void TranslationEngine::requestCandidates(const TranslationContext& context,
                                           int selectionStart,
                                           int selectionEnd,
                                           const std::function<void(const QVector<CandidateGroup>&)>& onDone,
-                                          const std::function<void(const QString&)>& onError)
+                                          const std::function<void(const ApiClient::Error&)>& onError)
 {
     if (m_candidateApi.busy())
         m_candidateApi.cancel();
@@ -114,7 +114,7 @@ void TranslationEngine::requestCandidates(const TranslationContext& context,
         context.translatedText, selectionStart, selectionEnd, kCandidateContextWords);
     if (!fragment.valid()) {
         if (onError)
-            onError(tr("Nothing to look up"));
+            onError({ApiClient::ErrorCode::NothingToLookUp, QString()});
         return;
     }
 
@@ -163,7 +163,7 @@ void TranslationEngine::dispatchCandidateRequest()
             deliverCandidates(result);
         },
         {},
-        [this](const QString& message) {
+        [this](const ApiClient::Error& failure) {
             // A transport failure is not worth repeating: the retry targets a
             // reply the model answered without a usable group.
             m_candidateRetryPending = false;
@@ -171,7 +171,7 @@ void TranslationEngine::dispatchCandidateRequest()
             m_candidateDone = nullptr;
             m_candidateError = nullptr;
             if (onError)
-                onError(message);
+                onError(failure);
         });
 }
 

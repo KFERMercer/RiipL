@@ -283,16 +283,16 @@ void TestTranslationEngine::retriesEmptyCandidateReply()
     context.uiLanguage = QStringLiteral("en");
 
     QVector<TranslationEngine::CandidateGroup> received;
-    QString error;
+    bool failed = false;
     const QString word = QStringLiteral("皇帝");
     const int start = context.translatedText.indexOf(word);
     engine.requestCandidates(
         context, start, start + word.size(),
         [&](const QVector<TranslationEngine::CandidateGroup>& groups) { received = groups; },
-        [&](const QString& message) { error = message; });
+        [&](const ApiClient::Error&) { failed = true; });
 
     QTRY_COMPARE_WITH_TIMEOUT(received.size(), 1, 5000);
-    QVERIFY2(error.isEmpty(), qPrintable(error));
+    QVERIFY(!failed);
     // The unusable first reply was retried, and the second one was taken as final.
     QCOMPARE(requests, 2);
     QCOMPARE(received.first().target, QStringLiteral("皇帝"));
@@ -356,7 +356,7 @@ void TestTranslationEngine::sendsSystemPromptWithCandidates()
     engine.requestCandidates(
         context, start, start + word.size(),
         [&](const QVector<TranslationEngine::CandidateGroup>& groups) { received = groups; },
-        [](const QString&) {});
+        [](const ApiClient::Error&) {});
 
     QTRY_COMPARE_WITH_TIMEOUT(received.size(), 1, 5000);
     const QJsonObject sent = QJsonDocument::fromJson(payload).object();
@@ -429,7 +429,7 @@ void TestTranslationEngine::picksShortTextTemplate()
         engine.requestCandidates(
             context, start, start + word.size(),
             [&](const QVector<TranslationEngine::CandidateGroup>& groups) { received = groups; },
-            [](const QString&) {});
+            [](const ApiClient::Error&) {});
         QTRY_COMPARE_WITH_TIMEOUT(received.size(), 1, 5000);
     };
 
@@ -474,7 +474,10 @@ void TestTranslationEngine::failedDispatchReturnsToIdle()
     engine.translateText(context);
 
     QCOMPARE(errorSpy.count(), 1);
-    QVERIFY(!errorSpy.first().first().toString().isEmpty());
+    // The failure is named rather than rendered, so a handler can translate it
+    // when it is shown.
+    QCOMPARE(errorSpy.first().first().value<ApiClient::Error>().code,
+             ApiClient::ErrorCode::BaseUrlMissing);
     QCOMPARE(stoppedSpy.count(), 0);
     QVERIFY(!engine.busy());
     QCOMPARE(stateSpy.last().last().toBool(), false);

@@ -81,10 +81,10 @@ void CandidatePopup::openFor(const QString& word,
             }
             adjustSize();
         },
-        [this](const QString& message) {
+        [this](const ApiClient::Error& failure) {
             if (!isVisible())
                 return;
-            m_status->setText(message);
+            m_status->setText(failure.text());
             m_list->hide();
             adjustSize();
         });

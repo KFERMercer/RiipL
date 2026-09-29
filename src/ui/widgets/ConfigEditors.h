@@ -34,6 +34,7 @@ public:
     virtual QJsonValue value() const = 0;
     bool isModified() const;
     void refreshBaseline();
+    void retranslateUi();
     // Applies v as if the user had typed it, so pending edits are tracked
     // against the loaded baseline exactly like direct interaction.
     void setUserValue(const QJsonValue& v);
@@ -170,8 +171,12 @@ private:
 
 // Item lists for the language and tone selectors, shared by every editor that
 // offers the same choice so the display names stay in step.
-QList<QPair<QString, QString>> languageItems(const QString& uiLanguage, bool includeAuto);
-QList<QPair<QString, QString>> toneItems(const QString& uiLanguage, const QJsonArray& customTones);
+QList<QPair<QString, QString>> languageItems(bool includeAuto);
+QList<QPair<QString, QString>> uiLanguageItems();
+QList<QPair<QString, QString>> toneItems(const QJsonArray& customTones);
+// Display name of one language or tone preset, resolved through its catalog.
+QString languageLabel(const QString& code);
+QString toneLabel(const QString& key);
 // Keeps the selection on the persisted key; an unknown key falls back to the
 // first entry.
 void selectComboItem(QComboBox* box, const QString& key);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QJsonObject>
+#include <QLocale>
 #include <QObject>
 #include <QString>
 #include <QTimer>
@@ -15,7 +16,11 @@ public:
 
     QJsonValue value(const QString& key) const;
     QString stringValue(const QString& key) const;
+    // The interface locale in effect, carrying its script.
+    QLocale uiLocale() const;
+    // The code of uiLocale(), always one of the offered ones.
     QString resolvedUiLanguage() const;
+    bool hasValidUiLanguage() const;
     bool boolValue(const QString& key) const;
     int intValue(const QString& key) const;
     double doubleValue(const QString& key) const;
@@ -36,6 +41,7 @@ signals:
 private:
     explicit ConfigManager(const QString& configDir);
     void load();
+    void repairUiLanguage();
     void scheduleSave();
     void save();
 

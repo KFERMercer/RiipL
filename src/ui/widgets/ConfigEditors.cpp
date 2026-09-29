@@ -8,6 +8,7 @@
 #include "ui/widgets/AppIcons.h"
 
 #include <QJsonObject>
+#include <QLocale>
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -29,7 +30,6 @@ QToolButton* createResetButton(QWidget* parent)
 {
     auto* button = new QToolButton(parent);
     button->setIcon(AppIcons::reset());
-    button->setToolTip(ConfigEditorsTr::tr("Reset to default"));
     button->setVisible(false);
     return button;
 }
@@ -45,6 +45,7 @@ ConfigEditor::ConfigEditor(const QString& key, QWidget* parent)
 void ConfigEditor::setupDisplay(QToolButton* resetButton)
 {
     m_reset = resetButton;
+    retranslateUi();
     connect(m_reset, &QToolButton::clicked, this,
             [this]() { setUserValue(Defaults::value(m_key)); });
 }
@@ -96,8 +97,15 @@ void ConfigEditor::refreshModifiedState()
 {
     if (!m_reset)
         return;
-    const bool modified = value() != Defaults::value(m_key);
-    m_reset->setVisible(modified);
+    m_reset->setVisible(value() != Defaults::value(m_key));
+}
+
+// The reset affordance tracks the default, while dirty tracking compares against
+// the loaded baseline; the two differ when a stored value is out of range.
+void ConfigEditor::retranslateUi()
+{
+    if (m_reset)
+        m_reset->setToolTip(ConfigEditorsTr::tr("Reset to default"));
 }
 
 ConfigLineEdit::ConfigLineEdit(const QString& key, bool password, QWidget* parent)
@@ -292,22 +300,50 @@ void ConfigCheckBox::setControlValue(const QJsonValue& v)
     m_box->setChecked(v.toBool());
 }
 
-QList<QPair<QString, QString>> languageItems(const QString& uiLanguage, bool includeAuto)
+// The core tables mark their names with QT_TRANSLATE_NOOP under their own
+// contexts, so the lookup goes through the matching one.
+QString languageLabel(const QString& code)
+{
+    const char* source = Languages::labelFor(code);
+    return source ? QCoreApplication::translate("Languages", source) : code;
+}
+
+QString toneLabel(const QString& key)
+{
+    const char* source = Tones::labelFor(key);
+    return source ? QCoreApplication::translate("Tones", source) : key;
+}
+
+QList<QPair<QString, QString>> uiLanguageItems()
+{
+    QList<QPair<QString, QString>> items;
+    items.append({ConfigEditorsTr::tr("Follow system"), Keys::uiLanguageAuto});
+    // A language list names each language in itself, which is what a reader
+    // looking for their own language recognises. The World country drops the
+    // region, so English reads as "English" rather than "American English".
+    for (const QString& code : Keys::uiLanguageCodes()) {
+        const QLocale locale(code);
+        items.append({QLocale(locale.language(), QLocale::World).nativeLanguageName(), code});
+    }
+    return items;
+}
+
+QList<QPair<QString, QString>> languageItems(bool includeAuto)
 {
     QList<QPair<QString, QString>> items;
     for (const LangItem& lang : Languages::all()) {
         if (!includeAuto && lang.code == QLatin1String("auto"))
             continue;
-        items.append({Languages::displayName(lang.code, uiLanguage), lang.code});
+        items.append({languageLabel(lang.code), lang.code});
     }
     return items;
 }
 
-QList<QPair<QString, QString>> toneItems(const QString& uiLanguage, const QJsonArray& customTones)
+QList<QPair<QString, QString>> toneItems(const QJsonArray& customTones)
 {
     QList<QPair<QString, QString>> items;
     for (const ToneItem& tone : Tones::presets())
-        items.append({Tones::presetDisplayName(tone.key, uiLanguage), tone.key});
+        items.append({toneLabel(tone.key), tone.key});
     for (const QJsonValue& value : customTones) {
         const QJsonObject object = value.toObject();
         const QString key = object.value(QStringLiteral("key")).toString();

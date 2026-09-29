@@ -42,7 +42,7 @@ public:
                            int selectionStart,
                            int selectionEnd,
                            const std::function<void(const QVector<CandidateGroup>&)>& onDone,
-                           const std::function<void(const QString&)>& onError);
+                           const std::function<void(const ApiClient::Error&)>& onError);
     // Drops the in-flight candidate request and reports nothing back.
     void cancelCandidates();
     void stop();
@@ -69,7 +69,7 @@ public:
 signals:
     void partialResult(const QString& text);
     void finished(const QString& text);
-    void error(const QString& message);
+    void error(const ApiClient::Error& failure);
     void stopped();
     void stateChanged(bool busy);
 
@@ -86,7 +86,7 @@ private:
     int m_candidateSelectionStart = -1;
     int m_candidateSelectionEnd = -1;
     std::function<void(const QVector<CandidateGroup>&)> m_candidateDone;
-    std::function<void(const QString&)> m_candidateError;
+    std::function<void(const ApiClient::Error&)> m_candidateError;
     bool m_candidateRetryPending = false;
 
     void setBusy(bool busy);

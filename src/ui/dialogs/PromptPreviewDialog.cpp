@@ -20,7 +20,6 @@ PromptPreviewDialog::PromptPreviewDialog(QWidget* parent)
 {
     setWindowTitle(tr("Prompt preview"));
     ConfigManager* config = ConfigManager::instance();
-    const QString uiLanguage = config->resolvedUiLanguage();
     m_glossaryEnabled = config->boolValue(Keys::glossaryEnabled);
     m_glossary = Glossary::loadFromConfig().entries;
 
@@ -30,16 +29,16 @@ PromptPreviewDialog::PromptPreviewDialog(QWidget* parent)
     m_source = new QLineEdit(this);
     m_source->setText(QStringLiteral("Hello, world! RiipL is a translation tool."));
     m_sourceLang = new QComboBox(this);
-    for (const QPair<QString, QString>& item : languageItems(uiLanguage, true))
+    for (const QPair<QString, QString>& item : languageItems(true))
         m_sourceLang->addItem(item.first, item.second);
     selectComboItem(m_sourceLang, config->stringValue(Keys::translationSourceLang));
     m_target = new QComboBox(this);
-    for (const QPair<QString, QString>& item : languageItems(uiLanguage, false))
+    for (const QPair<QString, QString>& item : languageItems(false))
         m_target->addItem(item.first, item.second);
     selectComboItem(m_target, config->stringValue(Keys::translationTargetLang));
     m_tone = new QComboBox(this);
     for (const QPair<QString, QString>& item
-         : toneItems(uiLanguage, config->value(Keys::translationCustomTones).toArray())) {
+         : toneItems(config->value(Keys::translationCustomTones).toArray())) {
         m_tone->addItem(item.first, item.second);
     }
     selectComboItem(m_tone, config->stringValue(Keys::translationTone));
