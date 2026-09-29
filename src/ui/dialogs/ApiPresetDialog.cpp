@@ -18,7 +18,7 @@
 #include <QVBoxLayout>
 
 namespace {
-// Role holding the captured API fields of the preset named by the item text.
+// Captured API fields of the item's preset.
 constexpr int kValuesRole = Qt::UserRole;
 }
 
@@ -28,18 +28,16 @@ ApiPresetDialog::ApiPresetDialog(const QVector<ApiPreset>& presets, int selected
     setWindowTitle(tr("API presets"));
 
     auto* layout = new QVBoxLayout(this);
-    layout->addWidget(new QLabel(tr("Double-click a preset to load it."), this));
+    layout->addWidget(new QLabel(tr("OK loads the highlighted preset."), this));
 
-    // The list owns the presets: the item text is the name and its data is the
-    // captured settings, so every operation works on one source of truth.
+    // The item text is the name and its data holds the captured settings.
     m_list = new QListWidget(this);
     m_list->setSelectionMode(QAbstractItemView::SingleSelection);
     for (const ApiPreset& preset : presets) {
         auto* item = new QListWidgetItem(preset.name, m_list);
         item->setData(kValuesRole, preset.values);
     }
-    // The preset in effect is highlighted; settings matching none fall back to
-    // the first entry so the window always opens with a usable selection.
+    // Fall back to the first preset so the window opens with a usable selection.
     if (m_list->count() > 0)
         m_list->setCurrentRow(selectedIndex >= 0 && selectedIndex < m_list->count() ? selectedIndex : 0);
     layout->addWidget(m_list, 1);
@@ -54,14 +52,12 @@ ApiPresetDialog::ApiPresetDialog(const QVector<ApiPreset>& presets, int selected
     m_renameButton = new QPushButton(tr("Rename"), this);
     m_copyButton = new QPushButton(tr("Copy"), this);
     m_removeButton = new QPushButton(tr("Remove"), this);
-    m_loadButton = new QPushButton(tr("Load"), this);
     buttonRow->addWidget(m_moveUpButton);
     buttonRow->addWidget(m_moveDownButton);
     buttonRow->addWidget(m_renameButton);
     buttonRow->addWidget(m_copyButton);
     buttonRow->addWidget(m_removeButton);
     buttonRow->addStretch(1);
-    buttonRow->addWidget(m_loadButton);
     layout->addLayout(buttonRow);
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
@@ -72,14 +68,19 @@ ApiPresetDialog::ApiPresetDialog(const QVector<ApiPreset>& presets, int selected
     connect(m_renameButton, &QPushButton::clicked, this, &ApiPresetDialog::renameSelected);
     connect(m_copyButton, &QPushButton::clicked, this, &ApiPresetDialog::copySelected);
     connect(m_removeButton, &QPushButton::clicked, this, &ApiPresetDialog::removeSelected);
-    connect(m_loadButton, &QPushButton::clicked, this, &ApiPresetDialog::loadSelected);
     connect(m_list, &QListWidget::itemSelectionChanged, this, &ApiPresetDialog::refreshButtons);
-    connect(m_list, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem*) { loadSelected(); });
-    connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
+    connect(m_list, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem*) { accept(); });
+    connect(buttons, &QDialogButtonBox::accepted, this, &ApiPresetDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
     refreshButtons();
     WindowState::track(this, WindowState::Id::apiPresets);
+}
+
+void ApiPresetDialog::accept()
+{
+    m_loadedIndex = m_list->currentRow();
+    QDialog::accept();
 }
 
 void ApiPresetDialog::manage(QWidget* parent)
@@ -121,14 +122,12 @@ void ApiPresetDialog::refreshButtons()
     m_renameButton->setEnabled(hasSelection);
     m_copyButton->setEnabled(hasSelection);
     m_removeButton->setEnabled(hasSelection);
-    m_loadButton->setEnabled(hasSelection);
 }
 
 QString ApiPresetDialog::uniqueName(const QString& base) const
 {
-    // An existing copy marker is recognised so duplicates of duplicates share
-    // one stem instead of stacking suffixes. The marker is translated, hence
-    // the escape.
+    // A recognised copy marker keeps duplicates of duplicates on one stem; the
+    // marker is translated, hence the escape.
     const QRegularExpression suffix(
         QStringLiteral("\\s+%1(?:\\s+(\\d+))?$").arg(QRegularExpression::escape(tr("copy"))));
     const QRegularExpressionMatch match = suffix.match(base);
@@ -177,7 +176,6 @@ void ApiPresetDialog::copySelected()
     if (!item)
         return;
 
-    // The duplicate keeps the same captured fields and lands below its source.
     auto* copy = new QListWidgetItem(uniqueName(item->text()));
     m_list->insertItem(m_list->row(item) + 1, copy);
     copy->setData(kValuesRole, item->data(kValuesRole));
@@ -212,20 +210,9 @@ void ApiPresetDialog::moveSelected(int offset)
     const int target = row + offset;
     if (target < 0 || target >= m_list->count())
         return;
-    // moveRows keeps the item data and view state; destinationChild is the index
-    // the row is inserted before, so a downward move lands past the row it swaps
-    // with.
+    // destinationChild is the index the row lands before, so a downward move needs one step more.
     m_list->model()->moveRows(QModelIndex(), row, 1, QModelIndex(), offset < 0 ? target : target + 1);
     m_list->setCurrentRow(target);
-    // The current item is unchanged, so the end-of-list states are refreshed here.
+    // moveRows keeps the current item, so the states are refreshed here.
     refreshButtons();
-}
-
-void ApiPresetDialog::loadSelected()
-{
-    if (!m_list->item(m_list->currentRow()))
-        return;
-
-    m_loadedIndex = m_list->currentRow();
-    accept();
 }

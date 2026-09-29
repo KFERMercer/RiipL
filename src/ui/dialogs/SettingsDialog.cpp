@@ -466,9 +466,7 @@ void SettingsDialog::managePresets()
     if (dialog.exec() != QDialog::Accepted)
         return;
     m_apiPresets = dialog.presets();
-    // A load request replaces the pending edits; otherwise the presets may have
-    // moved or disappeared, so the selection is re-derived from the visible
-    // fields.
+    // Accepting the manager loads the highlighted preset over the pending edits.
     const int loaded = dialog.loadedIndex();
     if (loaded >= 0 && loaded < m_apiPresets.size()) {
         applyPresetValues(m_apiPresets.at(loaded));
