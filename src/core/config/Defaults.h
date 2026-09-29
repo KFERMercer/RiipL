@@ -216,7 +216,7 @@ inline const QString promptCandidateZh = R"TXT(你的任务是寻找给定原文
 {selected_fragment}
 ```
 
-被标记的词为：`{selected_word}`（已用标示符 `{mark_left}` 和 `{mark_right}` 标出，这两处标示符不属于原文)。
+被标记的词为：`{selected_word}`（已用标示符 `{mark_left}` 和 `{mark_right}` 标出，标示符不属于原文)
 
 处理步骤：
 1. 在原文中定位 {mark_left} 与 {mark_right} 之间的内容。
@@ -236,23 +236,23 @@ inline const QString promptCandidateZh = R"TXT(你的任务是寻找给定原文
 
 只输出如下 JSON 数组，不要解释、不要代码块标记，每个需要替换的片段对应一个对象：
 [{"old":"原文片段1","new":["替换表达1","替换表达2"]},{"old":"原文片段2","new":["替换表达3","替换表达4"]}])TXT";
-inline const QString promptCandidateEn = R"TXT(Your task is to find alternative wordings for the marked word in the given source text, and return a structured JSON plan.
+inline const QString promptCandidateEn = R"TXT(Your task is to find alternative wordings for the marked word in the given original text, and return a structured JSON plan.
 
-Source text:
+Original text:
 
 ```
 {selected_fragment}
 ```
 
-The marked word is: `{selected_word}` (marked with the markers `{mark_left}` and `{mark_right}`; those two markers are not part of the source text.)
+The marked word is: `{selected_word}` (marked with the markers `{mark_left}` and `{mark_right}`; those markers are not part of the original text.)
 
 Steps:
-1. Locate the content between {mark_left} and {mark_right} in the source text.
+1. Locate the content between {mark_left} and {mark_right} in the original text.
 2. Find the **smallest complete word or set phrase** in the sentence that contains `{selected_word}`, and use it as `old`.
 3. Write 2 to 4 expressions that can directly replace `old` and put them into the `new` array.
 
 Constraints:
-- `old` must be copied verbatim from the source text, character for character, including case and punctuation; do not rewrite, splice or invent it.
+- `old` must be copied verbatim from the original text, character for character, including case and punctuation; do not rewrite, splice or invent it.
 - `old` must contain `{selected_word}`; if `{selected_word}` is only part of a word, `old` must widen to that complete word.
 - `old` must not shrink to `{selected_word}` itself unless the marked content really is a complete standalone word in the sentence.
 - `old` must not contain {mark_left} or {mark_right}.
@@ -279,7 +279,7 @@ inline const QString promptCandidateShortZh = R"TXT(你的任务是寻找译文�
 {source_text}
 ```
 
-被标记的词为：`{selected_word}` （已用标示符 `{mark_left}` 和 `{mark_right}` 标出)。
+被标记的词为：`{selected_word}`（已用标示符 `{mark_left}` 和 `{mark_right}` 标出，标示符不属于原文)
 
 处理步骤：
 1. 在译文中定位 {mark_left} 与 {mark_right} 之间的内容。
@@ -313,7 +313,7 @@ Source text before translation:
 {source_text}
 ```
 
-The marked word is: `{selected_word}` (marked with the markers `{mark_left}` and `{mark_right}`.)
+The marked word is: `{selected_word}` (marked with the markers `{mark_left}` and `{mark_right}`; those markers are not part of the original text.)
 
 Steps:
 1. Locate the content between {mark_left} and {mark_right} in the translation.
