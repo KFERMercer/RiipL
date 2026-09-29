@@ -41,6 +41,7 @@ private slots:
     void applyChanges();
     void reloadPresets();
     void applySelectedPreset(int index);
+    void newPreset();
     void overwritePreset();
     void savePreset();
     void managePresets();
@@ -65,6 +66,9 @@ private:
 
     bool isDirty() const;
     bool canSavePreset() const;
+    bool hasPendingApiEdits() const;
+    bool confirmDiscard(const QString& title, const QString& text,
+                        const QString& informativeText = QString());
     QJsonObject editedApiValues() const;
     void applyPresetValues(const ApiPreset& preset);
 

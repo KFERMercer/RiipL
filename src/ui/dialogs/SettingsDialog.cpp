@@ -164,18 +164,25 @@ void SettingsDialog::changeEvent(QEvent* event)
         retranslateUi();
 }
 
+// Cancel is the default, so a stray Return never drops pending edits.
+bool SettingsDialog::confirmDiscard(const QString& title, const QString& text,
+                                    const QString& informativeText)
+{
+    QMessageBox box(this);
+    box.setIcon(QMessageBox::Warning);
+    box.setWindowTitle(title);
+    box.setText(text);
+    if (!informativeText.isEmpty())
+        box.setInformativeText(informativeText);
+    box.setStandardButtons(QMessageBox::Discard | QMessageBox::Cancel);
+    box.setDefaultButton(QMessageBox::Cancel);
+    return box.exec() == QMessageBox::Discard;
+}
+
 void SettingsDialog::reject()
 {
-    if (isDirty()) {
-        QMessageBox box(this);
-        box.setIcon(QMessageBox::Warning);
-        box.setWindowTitle(tr("Unsaved changes"));
-        box.setText(tr("Your changes have not been applied yet."));
-        box.setStandardButtons(QMessageBox::Discard | QMessageBox::Cancel);
-        box.setDefaultButton(QMessageBox::Cancel);
-        if (box.exec() != QMessageBox::Discard)
-            return;
-    }
+    if (isDirty() && !confirmDiscard(tr("Unsaved changes"), tr("Your changes have not been applied yet.")))
+        return;
     QDialog::reject();
 }
 
@@ -213,6 +220,12 @@ bool SettingsDialog::canSavePreset() const
         return ApiPresets::withDefaults(edited)
             != ApiPresets::withDefaults(m_apiPresets.at(m_selectedPreset).values);
     }
+    return hasPendingApiEdits();
+}
+
+// Only the fields a preset captures; preset actions rewrite nothing else.
+bool SettingsDialog::hasPendingApiEdits() const
+{
     for (const ConfigEditor* editor : findChildren<ConfigEditor*>()) {
         if (Keys::apiPresetFields().contains(editor->key()) && editor->isModified())
             return true;
@@ -254,10 +267,12 @@ QWidget* SettingsDialog::createApiPage()
     auto* presetLayout = new QVBoxLayout(presetGroup);
     auto* presetRow = new QHBoxLayout();
     m_presetCombo = new QComboBox(presetGroup);
+    auto* newPresetButton = new QPushButton(presetGroup);
     m_overwriteButton = new QPushButton(presetGroup);
     auto* saveAsPresetButton = new QPushButton(presetGroup);
     auto* managePresetButton = new QPushButton(presetGroup);
     presetRow->addWidget(m_presetCombo, 1);
+    presetRow->addWidget(newPresetButton);
     presetRow->addWidget(m_overwriteButton);
     presetRow->addWidget(saveAsPresetButton);
     presetRow->addWidget(managePresetButton);
@@ -312,9 +327,12 @@ QWidget* SettingsDialog::createApiPage()
     updateValidation();
     bindText(updateValidation);
 
-    bindText([presetGroup, saveAsPresetButton, managePresetButton, temperatureSpin, headersEdit, this]() {
+    bindText([presetGroup, newPresetButton, saveAsPresetButton, managePresetButton, temperatureSpin, headersEdit, this]() {
         presetGroup->setTitle(tr("API preset"));
-        m_presetCombo->setPlaceholderText(tr("Custom settings"));
+        m_presetCombo->setPlaceholderText(tr("Empty preset"));
+        newPresetButton->setText(tr("New"));
+        newPresetButton->setToolTip(tr("Create an empty preset"));
+        newPresetButton->setAccessibleName(tr("New preset"));
         m_overwriteButton->setText(tr("Save preset"));
         saveAsPresetButton->setText(tr("Save as..."));
         managePresetButton->setText(tr("Manage..."));
@@ -324,9 +342,12 @@ QWidget* SettingsDialog::createApiPage()
         headersEdit->edit()->setPlaceholderText(tr("One per line: Header-Name: value"));
     });
     connect(m_presetCombo, &QComboBox::activated, this, &SettingsDialog::applySelectedPreset);
+    connect(newPresetButton, &QPushButton::clicked, this, &SettingsDialog::newPreset);
     connect(m_overwriteButton, &QPushButton::clicked, this, &SettingsDialog::overwritePreset);
     connect(saveAsPresetButton, &QPushButton::clicked, this, &SettingsDialog::savePreset);
     connect(managePresetButton, &QPushButton::clicked, this, &SettingsDialog::managePresets);
+    // The applied configuration decides which preset the selector starts on.
+    m_selectedPreset = ApiPresets::matchValues(m_apiPresets, editedApiValues());
     reloadPresets();
     return page;
 }
@@ -342,9 +363,8 @@ void SettingsDialog::reloadPresets()
     m_presetCombo->clear();
     for (const ApiPreset& preset : std::as_const(m_apiPresets))
         m_presetCombo->addItem(preset.name);
-    if (m_selectedPreset < 0 || m_selectedPreset >= m_apiPresets.size())
-        m_selectedPreset = ApiPresets::matchValues(m_apiPresets, editedApiValues());
-    m_presetCombo->setCurrentIndex(m_selectedPreset);
+    const bool held = m_selectedPreset >= 0 && m_selectedPreset < m_apiPresets.size();
+    m_presetCombo->setCurrentIndex(held ? m_selectedPreset : -1);
 }
 
 // API fields as currently shown by the editors, so a preset records pending
@@ -375,6 +395,22 @@ void SettingsDialog::applySelectedPreset(int index)
         return;
     m_selectedPreset = index;
     applyPresetValues(m_apiPresets.at(index));
+    updateDirtyState();
+}
+
+// Starts a preset from the default fields, named later by a save action.
+void SettingsDialog::newPreset()
+{
+    if (hasPendingApiEdits()
+        && !confirmDiscard(tr("New preset"),
+                           tr("The API fields hold changes that have not been applied yet."),
+                           tr("Discard them and start from the defaults?"))) {
+        return;
+    }
+
+    applyPresetValues(ApiPreset{});
+    m_selectedPreset = -1;
+    reloadPresets();
     updateDirtyState();
 }
 
