@@ -43,4 +43,53 @@ inline QStringList optionTexts(const TranslationEngine::CandidateGroup& group)
     return texts;
 }
 
+// An object whose keys are all line numbers: the shape a document window has.
+inline bool isNumberedObject(const QJsonObject& object)
+{
+    if (object.isEmpty())
+        return false;
+    for (auto it = object.constBegin(); it != object.constEnd(); ++it) {
+        bool numbered = false;
+        it.key().toInt(&numbered);
+        if (!numbered)
+            return false;
+    }
+    return true;
+}
+
+// Window a document request asks about: the last JSON object keyed by line
+// numbers, the neighbouring segments being plain text.
+inline QJsonObject documentWindowIn(const QString& prompt)
+{
+    QJsonObject window;
+    int start = -1;
+    int depth = 0;
+    bool quoted = false;
+    bool escaped = false;
+    for (int at = 0; at < prompt.size(); ++at) {
+        const QChar character = prompt.at(at);
+        if (quoted) {
+            if (escaped)
+                escaped = false;
+            else if (character == QLatin1Char('\\'))
+                escaped = true;
+            else if (character == QLatin1Char('"'))
+                quoted = false;
+            continue;
+        }
+        if (character == QLatin1Char('"')) {
+            quoted = true;
+        } else if (character == QLatin1Char('{')) {
+            if (depth++ == 0)
+                start = at;
+        } else if (character == QLatin1Char('}') && depth > 0 && --depth == 0) {
+            const QJsonObject candidate =
+                QJsonDocument::fromJson(prompt.mid(start, at - start + 1).toUtf8()).object();
+            if (isNumberedObject(candidate))
+                window = candidate;
+        }
+    }
+    return window;
+}
+
 }

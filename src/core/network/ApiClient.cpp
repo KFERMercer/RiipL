@@ -294,6 +294,9 @@ QString ApiClient::Error::text() const
         return tr("Nothing to translate");
     case ErrorCode::NothingToLookUp:
         return tr("Nothing to look up");
+    case ErrorCode::LineCountMismatch:
+        return tr("The answer does not hold a translation for each of the %1 lines of the segment")
+            .arg(detail);
     }
     return QString();
 }

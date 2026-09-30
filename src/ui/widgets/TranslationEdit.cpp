@@ -14,6 +14,13 @@ TranslationEdit::TranslationEdit(QWidget* parent)
     setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::LinksAccessibleByMouse);
 }
 
+void TranslationEdit::setWordSelectionEnabled(bool enabled)
+{
+    m_wordSelection = enabled;
+    if (!enabled)
+        clearHighlight();
+}
+
 void TranslationEdit::setResult(const QString& text)
 {
     clearHighlight();
@@ -23,6 +30,15 @@ void TranslationEdit::setResult(const QString& text)
 QString TranslationEdit::result() const
 {
     return toPlainText();
+}
+
+void TranslationEdit::appendResult(const QString& text)
+{
+    if (text.isEmpty())
+        return;
+    QTextCursor cursor(document());
+    cursor.movePosition(QTextCursor::End);
+    cursor.insertText(text);
 }
 
 void TranslationEdit::clearHighlight()
@@ -35,7 +51,7 @@ void TranslationEdit::mousePressEvent(QMouseEvent* event)
 {
     m_pressValid = false;
     m_pressPos = event->pos();
-    if (event->button() == Qt::LeftButton) {
+    if (m_wordSelection && event->button() == Qt::LeftButton) {
         const QTextCursor hitCursor = cursorForPosition(event->pos());
         const int position = hitCursor.position();
         // Fuzzy hits snap blank clicks (below or past the text) to the end of

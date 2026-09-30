@@ -8,6 +8,7 @@
 #include "ui/dialogs/HistoryDialog.h"
 #include "ui/dialogs/SettingsDialog.h"
 #include "ui/dialogs/ToneDialog.h"
+#include "ui/widgets/AppFonts.h"
 #include "ui/widgets/AppIcons.h"
 #include "ui/widgets/ThemeColors.h"
 #include "ui/widgets/ConfigEditors.h"
@@ -571,8 +572,7 @@ void MainWindow::applyAlwaysOnTop(bool onTop)
 
 void MainWindow::applyEditorFonts()
 {
-    QFont editorFont = QApplication::font();
-    editorFont.setPointSize(ConfigManager::instance()->intValue(Keys::uiFontSize) + 1);
+    const QFont editorFont = AppFonts::editorFont();
     m_sourceEdit->setFont(editorFont);
     m_resultEdit->setFont(editorFont);
 }

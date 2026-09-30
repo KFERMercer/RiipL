@@ -4,6 +4,8 @@ set(RIIPL_TEST_SUITES
     tst_apptranslator
     tst_apipresets
     tst_configmanager
+    tst_documentsegmenter
+    tst_documenttranslator
     tst_glossary
     tst_historymanager
     tst_languages

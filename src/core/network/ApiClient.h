@@ -33,7 +33,9 @@ public:
         InvalidResponse,
         NoChoices,
         NothingToTranslate,
-        NothingToLookUp
+        NothingToLookUp,
+        // detail: the line count the answer was expected to hold.
+        LineCountMismatch
     };
 
     struct Error

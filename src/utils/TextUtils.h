@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QList>
 #include <QString>
 #include <QStringList>
 
@@ -30,6 +31,16 @@ struct WordWindow
     int before = 0;
     int after = 0;
 };
+
+// Words of \p text under the Unicode word break rules, in order: punctuation
+// counts as a word on its own, and a run longer than the editor selects at once
+// is left out.
+QList<WordSpan> words(const QString& text);
+int wordCount(const QString& text);
+
+// \p text without a code fence wrapping the whole of it; text around a fence is
+// dropped as well.
+QString stripCodeFence(const QString& text);
 
 WordSpan wordSpanAt(const QString& text, int position);
 

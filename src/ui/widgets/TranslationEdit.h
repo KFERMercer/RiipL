@@ -9,8 +9,14 @@ class TranslationEdit : public QTextEdit
 public:
     explicit TranslationEdit(QWidget* parent = nullptr);
 
+    // Turns the click-to-look-up behaviour off, so a click in a pane without
+    // lookups does not highlight a word.
+    void setWordSelectionEnabled(bool enabled);
+
     void setResult(const QString& text);
     QString result() const;
+    // Extends the result, so a growing stream is not rewritten piece by piece.
+    void appendResult(const QString& text);
     // Replaces the \p length characters at \p start, so a replacement is
     // rejected outright once the translation has moved on.
     bool replaceWordAt(int start, int length, const QString& replacement);
@@ -29,4 +35,5 @@ private:
     QTextCursor m_wordCursor;
     QPoint m_pressPos;
     bool m_pressValid = false;
+    bool m_wordSelection = true;
 };

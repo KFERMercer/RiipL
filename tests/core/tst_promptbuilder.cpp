@@ -18,9 +18,22 @@ private slots:
     void indentsMultiLineEntries();
     void marksSelectionInCandidatePrompt();
     void rendersShortTextTemplate();
+    void buildsDocumentPrompt();
+    void rendersWindowAsNumberedJson();
     void offersEveryPlaceholderToEveryTemplate();
     void listsEveryKnownPlaceholder();
 };
+
+namespace {
+
+// Window as the document prompt carries it: one numbered entry per line, in
+// line order, indented like the glossary block.
+const QString kWindowJson = QStringLiteral("{\n"
+                                           "    \"1\": \"第一行\",\n"
+                                           "    \"2\": \"第二行\"\n"
+                                           "}");
+
+} // namespace
 
 void TestPromptBuilder::substitutesContextValues()
 {
@@ -270,6 +283,126 @@ void TestPromptBuilder::rendersShortTextTemplate()
              QStringLiteral("Short text: Hello, world!"));
 }
 
+// A long document uses its own template, sharing the system prompt and the
+// reference block with a translation request.
+
+void TestPromptBuilder::buildsDocumentPrompt()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    ConfigManager::createInstance(TestSupport::tempDir());
+
+    DocumentWindowPrompt window;
+    window.lines = {QStringLiteral("第一行"), QStringLiteral("第二行")};
+    window.previous = QStringLiteral("前一段");
+    window.next = QStringLiteral("后一段");
+
+    TranslationContext context;
+    context.targetLang = QStringLiteral("en");
+    context.tone = QStringLiteral("formal");
+    const PromptBuilder::Result result = PromptBuilder::buildDocument(context, window);
+    QCOMPARE(result.system, Defaults::promptSystem);
+
+    // The reference block leads the message exactly as it does for a
+    // translation, so an unset option stays out of the document prompt too.
+    QVERIFY(result.user.startsWith(Defaults::promptReference.trimmed()));
+    QVERIFY(result.user.contains(QStringLiteral("- Translation tone: formal")));
+    QVERIFY(!result.user.contains(QStringLiteral("- Language style:")));
+    QVERIFY(result.user.indexOf(QStringLiteral("第一行"))
+            > result.user.indexOf(QStringLiteral("- Translation tone:")));
+
+    // The window reaches the model as a JSON object keyed by line number.
+    const QJsonObject sent = TestSupport::documentWindowIn(result.user);
+    QCOMPARE(sent.keys(), QStringList({QStringLiteral("1"), QStringLiteral("2")}));
+    QCOMPARE(sent.value(QStringLiteral("1")).toString(), QStringLiteral("第一行"));
+    QCOMPARE(sent.value(QStringLiteral("2")).toString(), QStringLiteral("第二行"));
+
+    // Neighbouring windows and the target language are all injected.
+    QVERIFY(result.user.contains(window.previous));
+    QVERIFY(result.user.contains(window.next));
+    QVERIFY(result.user.contains(QStringLiteral("English")));
+    for (const QString& token : {QStringLiteral("{window}"), QStringLiteral("{window_lines}"),
+                                 QStringLiteral("{prev_window}"), QStringLiteral("{next_window}"),
+                                 QStringLiteral("{target_lang}")}) {
+        QVERIFY2(!result.user.contains(token), qPrintable(result.user));
+    }
+
+    TranslationContext bare;
+    bare.targetLang = QStringLiteral("en");
+    const QString plain = PromptBuilder::buildDocument(bare, window).user;
+    QVERIFY(!plain.contains(Defaults::promptReference.trimmed()));
+    QVERIFY(!plain.contains(QStringLiteral("- Translation tone:")));
+
+    // A document edge says so rather than leaving the context block empty.
+    DocumentWindowPrompt edge;
+    edge.lines = {QStringLiteral("only line")};
+    const QString edgePrompt = PromptBuilder::buildDocument(bare, edge).user;
+    QCOMPARE(edgePrompt.count(QStringLiteral("None")), 2);
+
+    // The line count stays a number and the neighbours stay plain text, whatever
+    // template carries them.
+    ConfigManager::instance()->setValue(Keys::promptDocument,
+                                        QStringLiteral("Lines: {window_lines}"));
+    QCOMPARE(PromptBuilder::buildDocument(bare, window).user, QStringLiteral("Lines: 2"));
+
+    ConfigManager::instance()->setValue(Keys::promptDocument,
+                                        QStringLiteral("{prev_window}\n{next_window}"));
+    QCOMPARE(PromptBuilder::buildDocument(bare, window).user,
+             QStringLiteral("前一段\n后一段"));
+
+    // A configured template overrides the built-in one, like every other prompt.
+    ConfigManager::instance()->setValue(Keys::promptDocument,
+                                        QStringLiteral("Lines: {window_lines}\n{window}"));
+    QCOMPARE(PromptBuilder::buildDocument(bare, window).user,
+             QStringLiteral("Lines: 2\n") + kWindowJson);
+}
+
+void TestPromptBuilder::rendersWindowAsNumberedJson()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    ConfigManager::createInstance(TestSupport::tempDir());
+
+    const QStringList lines = {QStringLiteral("first"), QStringLiteral("second"),
+                               QStringLiteral("third")};
+    const QString data = PromptBuilder::documentWindowData(lines);
+
+    const QJsonDocument document = QJsonDocument::fromJson(data.toUtf8());
+    QVERIFY2(document.isObject(), qPrintable(data));
+    QCOMPARE(document.object().keys(),
+             QStringList({QStringLiteral("1"), QStringLiteral("2"), QStringLiteral("3")}));
+    for (int index = 0; index < lines.size(); ++index) {
+        QCOMPARE(document.object().value(QString::number(index + 1)).toString(),
+                 lines.at(index));
+    }
+
+    // One entry per line, keys in line order, each entry on its own indented line.
+    const QStringList rendered = data.split(QLatin1Char('\n'));
+    QCOMPARE(rendered.size(), lines.size() + 2);
+    QCOMPARE(rendered.first(), QStringLiteral("{"));
+    QCOMPARE(rendered.last(), QStringLiteral("}"));
+    for (int index = 0; index < lines.size(); ++index) {
+        const QString entry = rendered.at(index + 1);
+        QVERIFY2(entry.startsWith(QStringLiteral("    \"")), qPrintable(entry));
+        QCOMPARE(entry.section(QLatin1Char('"'), 1, 1), QString::number(index + 1));
+    }
+
+    // Numeric key order holds past nine lines, where sorting the keys as text
+    // would put "10" before "2".
+    QStringList many;
+    for (int index = 0; index < 12; ++index)
+        many << QStringLiteral("line %1").arg(index);
+    const QStringList wide = PromptBuilder::documentWindowData(many).split(QLatin1Char('\n'));
+    QCOMPARE(wide.size(), many.size() + 2);
+    for (int index = 0; index < many.size(); ++index)
+        QCOMPARE(wide.at(index + 1).section(QLatin1Char('"'), 1, 1), QString::number(index + 1));
+
+    // Text needing escapes still round-trips through the object.
+    const QStringList quoted = {QStringLiteral("He said \"hi\""), QStringLiteral("C:\\path")};
+    const QJsonObject roundTrip =
+        QJsonDocument::fromJson(PromptBuilder::documentWindowData(quoted).toUtf8()).object();
+    QCOMPARE(roundTrip.value(QStringLiteral("1")).toString(), quoted.at(0));
+    QCOMPARE(roundTrip.value(QStringLiteral("2")).toString(), quoted.at(1));
+}
+
 void TestPromptBuilder::offersEveryPlaceholderToEveryTemplate()
 {
     QDir().mkpath(TestSupport::tempDir());
@@ -296,7 +429,8 @@ void TestPromptBuilder::offersEveryPlaceholderToEveryTemplate()
     const QStringList templates = {
         Keys::promptSystem, Keys::promptReference, Keys::promptTone,
         Keys::promptStyle, Keys::promptBackground, Keys::promptGlossary,
-        Keys::promptDefault, Keys::promptCandidate, Keys::promptCandidateShort
+        Keys::promptDefault, Keys::promptDocument, Keys::promptCandidate,
+        Keys::promptCandidateShort
     };
     for (const QString& key : templates) {
         ConfigManager::instance()->setValue(key, probe);
@@ -334,7 +468,9 @@ void TestPromptBuilder::listsEveryKnownPlaceholder()
         QStringLiteral("style"), QStringLiteral("background"), QStringLiteral("glossary"),
         QStringLiteral("source_text"), QStringLiteral("translated_text"),
         QStringLiteral("selected_fragment"), QStringLiteral("selected_word"),
-        QStringLiteral("mark_left"), QStringLiteral("mark_right")
+        QStringLiteral("mark_left"), QStringLiteral("mark_right"),
+        QStringLiteral("window"), QStringLiteral("window_lines"),
+        QStringLiteral("prev_window"), QStringLiteral("next_window")
     };
     QCOMPARE(placeholders, expected);
 

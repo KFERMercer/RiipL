@@ -23,6 +23,7 @@ inline const QString promptStyle = QStringLiteral("prompts.style");
 inline const QString promptBackground = QStringLiteral("prompts.background");
 inline const QString promptGlossary = QStringLiteral("prompts.glossary");
 inline const QString promptDefault = QStringLiteral("prompts.default");
+inline const QString promptDocument = QStringLiteral("prompts.document");
 inline const QString promptCandidate = QStringLiteral("prompts.candidate");
 inline const QString promptCandidateShort = QStringLiteral("prompts.candidate_short");
 
@@ -76,6 +77,9 @@ inline const QString translationCustomTones = QStringLiteral("translation.custom
 inline const QString translationStyle = QStringLiteral("translation.style");
 inline const QString translationBackground = QStringLiteral("translation.background");
 
+// Extra attempts a failed document window is sent for.
+inline const QString documentRetryCount = QStringLiteral("document.retry_count");
+
 inline const QString glossaryEnabled = QStringLiteral("glossary.enabled");
 inline const QString glossaryEntries = QStringLiteral("glossary.entries");
 
@@ -113,6 +117,8 @@ inline const QString translationTone = QStringLiteral("default");
 inline const QString translationStyle = QString();
 inline const QString translationBackground = QString();
 
+inline const int documentRetryCount = 3;
+
 inline const bool glossaryEnabled = false;
 
 inline const bool clipboardMonitor = false;
@@ -148,6 +154,32 @@ inline const QString promptGlossary = R"TXT(- Glossary:
 
 inline const QString promptDefault = R"TXT(Based on the reference information above, translate the following text into {target_lang}. Note that you must **only output the translated result without any additional explanation**:
 {source_text})TXT";
+
+inline const QString promptDocument = R"TXT(The segment to translate follows as a JSON object. Every key is a line number
+and every value is the text of that line:
+
+```json
+{window}
+```
+
+Behaviour constraints, which must be followed strictly:
+
+1. The object holds {window_lines} keys, one per line, numbered "1" to "{window_lines}"; answer with exactly {window_lines} keys in the same order.
+2. Each key describes one line of the document: never merge, split, add or drop a key, and never answer with an empty value.
+3. The context segments below are provided for understanding only; never translate them. Their line breaks carry no meaning.
+
+Context segments, for understanding only:
+
+- Previous segment:
+  ```
+  {prev_window}
+  ```
+- Next segment:
+  ```
+  {next_window}
+  ```
+
+Translate every value of the object into {target_lang}. Note that you must **only output the translated result without any additional explanation**, as a JSON object with exactly {window_lines} keys numbered "1" to "{window_lines}".)TXT";
 
 inline const QString promptCandidate = R"TXT(Your task is to find alternative wordings for the marked word in the given original text, and return a structured JSON plan.
 
@@ -237,6 +269,7 @@ inline QJsonValue value(const QString& key)
     if (key == Keys::translationCustomTones) return QJsonArray();
     if (key == Keys::translationStyle) return QJsonValue(translationStyle);
     if (key == Keys::translationBackground) return QJsonValue(translationBackground);
+    if (key == Keys::documentRetryCount) return QJsonValue(documentRetryCount);
     if (key == Keys::glossaryEnabled) return QJsonValue(glossaryEnabled);
     if (key == Keys::glossaryEntries) return QJsonArray();
     if (key == Keys::promptSystem) return QJsonValue(promptSystem);
@@ -246,6 +279,7 @@ inline QJsonValue value(const QString& key)
     if (key == Keys::promptBackground) return QJsonValue(promptBackground);
     if (key == Keys::promptGlossary) return QJsonValue(promptGlossary);
     if (key == Keys::promptDefault) return QJsonValue(promptDefault);
+    if (key == Keys::promptDocument) return QJsonValue(promptDocument);
     if (key == Keys::promptCandidate) return QJsonValue(promptCandidate);
     if (key == Keys::promptCandidateShort) return QJsonValue(promptCandidateShort);
     if (key == Keys::clipboardMonitor) return QJsonValue(clipboardMonitor);

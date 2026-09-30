@@ -59,6 +59,7 @@ const QVector<TemplateInfo>& templateInfos()
         {Keys::promptBackground, QT_TRANSLATE_NOOP("SettingsDialog", "Background")},
         {Keys::promptGlossary, QT_TRANSLATE_NOOP("SettingsDialog", "Glossary")},
         {Keys::promptDefault, QT_TRANSLATE_NOOP("SettingsDialog", "Default instruction")},
+        {Keys::promptDocument, QT_TRANSLATE_NOOP("SettingsDialog", "Document translation")},
         {Keys::promptCandidate, QT_TRANSLATE_NOOP("SettingsDialog", "Candidate wording")},
         {Keys::promptCandidateShort,
          QT_TRANSLATE_NOOP("SettingsDialog", "Candidate wording (short text)")}
@@ -528,6 +529,8 @@ QWidget* SettingsDialog::createTranslationPage()
 
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Style"), new ConfigTextEdit(Keys::translationStyle, page));
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Background"), new ConfigTextEdit(Keys::translationBackground, page));
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Document translation retries"),
+                  new ConfigSpinBox(Keys::documentRetryCount, 0, 999, 1, page));
 
     auto* autoTranslateCheck = new ConfigCheckBox(Keys::uiAutoTranslate, page);
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Auto translate after typing"), autoTranslateCheck);
@@ -628,6 +631,10 @@ QWidget* SettingsDialog::createPromptsPage()
             if (placeholder == QLatin1String("selected_word")) return tr("Word selected in the translation pane (candidate wording only)");
             if (placeholder == QLatin1String("mark_left")) return tr("Marker placed before the selected word (candidate wording only)");
             if (placeholder == QLatin1String("mark_right")) return tr("Marker placed after the selected word (candidate wording only)");
+            if (placeholder == QLatin1String("window")) return tr("Segment to translate (document translation only)");
+            if (placeholder == QLatin1String("window_lines")) return tr("Number of lines in the segment to translate (document translation only)");
+            if (placeholder == QLatin1String("prev_window")) return tr("Previous segment to translate (document translation only)");
+            if (placeholder == QLatin1String("next_window")) return tr("Next segment to translate (document translation only)");
             return QString();
         };
         for (const QString& placeholder : PromptBuilder::knownPlaceholders()) {

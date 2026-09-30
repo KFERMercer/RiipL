@@ -13,6 +13,22 @@ namespace {
 const QString kGlossarySourceKey = QStringLiteral("source");
 const QString kGlossaryTargetKey = QStringLiteral("target");
 
+// Handed to the model for a neighbour a document edge does not have, instead of
+// an empty block.
+const QString kNoAdjacentWindow = QStringLiteral("None");
+
+// Trims every fragment and joins the non-empty ones.
+QString joined(const QStringList& fragments)
+{
+    QStringList parts;
+    for (const QString& fragment : fragments) {
+        const QString trimmed = fragment.trimmed();
+        if (!trimmed.isEmpty())
+            parts << trimmed;
+    }
+    return parts.join(QStringLiteral("\n\n"));
+}
+
 }
 
 QString PromptBuilder::glossaryData(const QVector<GlossaryEntry>& entries)
@@ -34,6 +50,27 @@ QString PromptBuilder::glossaryData(const QVector<GlossaryEntry>& entries)
     return QString::fromUtf8(QJsonDocument(array).toJson(QJsonDocument::Indented)).trimmed();
 }
 
+QString PromptBuilder::documentWindowData(const QStringList& lines)
+{
+    if (lines.isEmpty())
+        return QString();
+    // QJsonObject would order the keys as text, which puts line 10 before line 2,
+    // so the object is written key by key in line order and only the values go
+    // through the JSON writer, which escapes them.
+    const auto escaped = [](const QString& line) {
+        const QString wrapped = QString::fromUtf8(
+            QJsonDocument(QJsonArray{line}).toJson(QJsonDocument::Compact));
+        return wrapped.mid(1, wrapped.size() - 2);
+    };
+
+    QStringList entries;
+    entries.reserve(lines.size());
+    for (int index = 0; index < lines.size(); ++index) {
+        entries.append(QStringLiteral("    \"%1\": %2").arg(index + 1).arg(escaped(lines.at(index))));
+    }
+    return QStringLiteral("{\n") + entries.join(QStringLiteral(",\n")) + QStringLiteral("\n}");
+}
+
 QStringList PromptBuilder::knownPlaceholders()
 {
     return {
@@ -48,7 +85,11 @@ QStringList PromptBuilder::knownPlaceholders()
         QStringLiteral("selected_fragment"),
         QStringLiteral("selected_word"),
         QStringLiteral("mark_left"),
-        QStringLiteral("mark_right")
+        QStringLiteral("mark_right"),
+        QStringLiteral("window"),
+        QStringLiteral("window_lines"),
+        QStringLiteral("prev_window"),
+        QStringLiteral("next_window")
     };
 }
 
@@ -98,6 +139,12 @@ QHash<QString, QString> PromptBuilder::variablesFor(const TranslationContext& co
     variables.insert(QStringLiteral("selected_word"), context.selectedWord);
     variables.insert(QStringLiteral("mark_left"), CandidateMarks::selectionOpen);
     variables.insert(QStringLiteral("mark_right"), CandidateMarks::selectionClose);
+    // Filled in by the document request; empty here so their tokens never
+    // reach another prompt.
+    variables.insert(QStringLiteral("window"), QString());
+    variables.insert(QStringLiteral("window_lines"), QString());
+    variables.insert(QStringLiteral("prev_window"), QString());
+    variables.insert(QStringLiteral("next_window"), QString());
     return variables;
 }
 
@@ -106,42 +153,58 @@ QString PromptBuilder::render(const QString& key, const QHash<QString, QString>&
     return substitute(ConfigManager::instance()->stringValue(key), variables);
 }
 
+QStringList PromptBuilder::referenceEntries(const TranslationContext& context,
+                                            const QHash<QString, QString>& variables)
+{
+    QStringList entries;
+    // The default tone is the absence of a tone, so it is skipped like an empty one.
+    if (!context.tone.isEmpty() && context.tone != QLatin1String("default"))
+        entries << render(Keys::promptTone, variables);
+    if (!context.style.isEmpty())
+        entries << render(Keys::promptStyle, variables);
+    if (!context.background.isEmpty())
+        entries << render(Keys::promptBackground, variables);
+    if (!variables.value(QStringLiteral("glossary")).isEmpty())
+        entries << render(Keys::promptGlossary, variables);
+    return entries;
+}
+
+QString PromptBuilder::referenceBlock(const TranslationContext& context,
+                                      const QHash<QString, QString>& variables)
+{
+    const QStringList entries = referenceEntries(context, variables);
+    if (entries.isEmpty())
+        return QString();
+    const QString header = render(Keys::promptReference, variables).trimmed();
+    const QString body = entries.join(QString());
+    return header.isEmpty() ? body : header + QStringLiteral("\n\n") + body;
+}
+
 PromptBuilder::Result PromptBuilder::build(const TranslationContext& context)
 {
     const QHash<QString, QString> variables = variablesFor(context);
-    const QString glossary = variables.value(QStringLiteral("glossary"));
+    Result result;
+    result.system = render(Keys::promptSystem, variables).trimmed();
+    result.user = joined({referenceBlock(context, variables),
+                          render(Keys::promptDefault, variables)});
+    return result;
+}
 
-    // Reference entries appear in the order listed here and only while their
-    // variable holds a value. The default tone is the absence of a tone, so it
-    // is skipped like an empty one.
-    QStringList referenceEntries;
-    if (!context.tone.isEmpty() && context.tone != QLatin1String("default"))
-        referenceEntries << render(Keys::promptTone, variables);
-    if (!context.style.isEmpty())
-        referenceEntries << render(Keys::promptStyle, variables);
-    if (!context.background.isEmpty())
-        referenceEntries << render(Keys::promptBackground, variables);
-    if (!glossary.isEmpty())
-        referenceEntries << render(Keys::promptGlossary, variables);
-
-    QStringList fragments;
-    if (!referenceEntries.isEmpty()) {
-        const QString header = render(Keys::promptReference, variables).trimmed();
-        fragments << (header.isEmpty() ? referenceEntries.join(QString())
-                                       : header + QStringLiteral("\n\n") + referenceEntries.join(QString()));
-    }
-    fragments << render(Keys::promptDefault, variables);
-
-    QStringList parts;
-    for (const QString& fragment : fragments) {
-        const QString trimmed = fragment.trimmed();
-        if (!trimmed.isEmpty())
-            parts << trimmed;
-    }
+PromptBuilder::Result PromptBuilder::buildDocument(const TranslationContext& context,
+                                                   const DocumentWindowPrompt& window)
+{
+    QHash<QString, QString> variables = variablesFor(context);
+    variables.insert(QStringLiteral("window"), documentWindowData(window.lines));
+    variables.insert(QStringLiteral("window_lines"), QString::number(window.lines.size()));
+    variables.insert(QStringLiteral("prev_window"),
+                     window.previous.isEmpty() ? kNoAdjacentWindow : window.previous);
+    variables.insert(QStringLiteral("next_window"),
+                     window.next.isEmpty() ? kNoAdjacentWindow : window.next);
 
     Result result;
     result.system = render(Keys::promptSystem, variables).trimmed();
-    result.user = parts.join(QStringLiteral("\n\n"));
+    result.user = joined({referenceBlock(context, variables),
+                          render(Keys::promptDocument, variables)});
     return result;
 }
 

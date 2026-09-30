@@ -17,30 +17,6 @@ add_compile_options(
     "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall;-Wextra>"
 )
 
-set(CORE_SOURCES
-    src/core/config/ConfigManager.cpp
-    src/core/network/ApiClient.cpp
-    src/core/translation/PromptBuilder.cpp
-    src/core/translation/TranslationEngine.cpp
-    src/core/models/Glossary.cpp
-    src/core/history/HistoryManager.cpp
-)
-set(CORE_HEADERS
-    src/core/config/Defaults.h
-    src/core/config/ConfigManager.h
-    src/core/network/ApiClient.h
-    src/core/translation/Language.h
-    src/core/translation/Tone.h
-    src/core/translation/PromptBuilder.h
-    src/core/translation/TranslationEngine.h
-    src/core/models/Glossary.h
-    src/core/history/HistoryManager.h
-    src/core/json/JsonUtils.h
-)
-add_library(riipl_core STATIC ${CORE_SOURCES} ${CORE_HEADERS})
-target_include_directories(riipl_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(riipl_core PUBLIC Qt6::Core Qt6::Network)
-
 # Shared helpers used by the app shell and the test suite.
 add_library(riipl_utils STATIC
     src/utils/SingleInstance.cpp
@@ -52,6 +28,35 @@ add_library(riipl_utils STATIC
 )
 target_include_directories(riipl_utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(riipl_utils PUBLIC Qt6::Core Qt6::Network)
+
+set(CORE_SOURCES
+    src/core/config/ConfigManager.cpp
+    src/core/document/DocumentSegmenter.cpp
+    src/core/network/ApiClient.cpp
+    src/core/translation/PromptBuilder.cpp
+    src/core/translation/TranslationEngine.cpp
+    src/core/translation/DocumentTranslator.cpp
+    src/core/models/Glossary.cpp
+    src/core/history/HistoryManager.cpp
+)
+set(CORE_HEADERS
+    src/core/config/Defaults.h
+    src/core/config/ConfigManager.h
+    src/core/document/DocumentSegmenter.h
+    src/core/network/ApiClient.h
+    src/core/translation/Language.h
+    src/core/translation/Tone.h
+    src/core/translation/PromptBuilder.h
+    src/core/translation/TranslationEngine.h
+    src/core/translation/DocumentTranslator.h
+    src/core/models/Glossary.h
+    src/core/history/HistoryManager.h
+    src/core/json/JsonUtils.h
+)
+add_library(riipl_core STATIC ${CORE_SOURCES} ${CORE_HEADERS})
+target_include_directories(riipl_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+# Document windows count words with the helpers the translation pane uses.
+target_link_libraries(riipl_core PUBLIC Qt6::Core Qt6::Network PRIVATE riipl_utils)
 
 set(UI_SOURCES
     src/main.cpp

@@ -71,10 +71,20 @@ QJsonObject TranslationEngine::buildRequestBody(const PromptBuilder::Result& pro
 
 void TranslationEngine::translateText(const TranslationContext& context)
 {
+    dispatch(PromptBuilder::build(context));
+}
+
+void TranslationEngine::translateDocument(const TranslationContext& context,
+                                          const DocumentWindowPrompt& window)
+{
+    dispatch(PromptBuilder::buildDocument(context, window));
+}
+
+void TranslationEngine::dispatch(const PromptBuilder::Result& prompt)
+{
     if (m_translateApi.busy())
         m_translateApi.cancel();
 
-    const PromptBuilder::Result prompt = PromptBuilder::build(context);
     if (prompt.user.isEmpty()) {
         emit error({ApiClient::ErrorCode::NothingToTranslate, QString()});
         return;
@@ -93,6 +103,7 @@ void TranslationEngine::translateText(const TranslationContext& context)
         [this](const QString& delta) {
             m_accumulated += delta;
             emit partialResult(m_accumulated);
+            emit partialDelta(delta);
         },
         [this](const ApiClient::Error& failure) {
             emit error(failure);
@@ -247,16 +258,7 @@ QVector<TranslationEngine::CandidateGroup> TranslationEngine::parseCandidateResp
 {
     QVector<CandidateGroup> groups;
 
-    QString text = raw.trimmed();
-    if (text.startsWith(QStringLiteral("```"))) {
-        const int firstNewline = text.indexOf(QLatin1Char('\n'));
-        if (firstNewline != -1)
-            text = text.mid(firstNewline + 1);
-        const int fenceEnd = text.lastIndexOf(QStringLiteral("```"));
-        if (fenceEnd != -1)
-            text = text.left(fenceEnd);
-        text = text.trimmed();
-    }
+    const QString text = TextUtils::stripCodeFence(raw);
 
     const int arrayStart = text.indexOf(QLatin1Char('['));
     const int arrayEnd = text.lastIndexOf(QLatin1Char(']'));

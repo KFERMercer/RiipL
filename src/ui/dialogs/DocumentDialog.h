@@ -1,15 +1,20 @@
 #pragma once
 
 #include <QDialog>
+#include <QString>
+#include <QVector>
 
+#include "core/document/DocumentSegmenter.h"
+#include "core/network/ApiClient.h"
+#include "core/translation/DocumentTranslator.h"
 #include "core/translation/PromptBuilder.h"
-#include "core/translation/TranslationEngine.h"
 
+class QAction;
 class QLabel;
 class QLineEdit;
-class QPlainTextEdit;
 class QProgressBar;
 class QPushButton;
+class TranslationEdit;
 
 class DocumentDialog : public QDialog
 {
@@ -18,29 +23,41 @@ class DocumentDialog : public QDialog
 public:
     DocumentDialog(const TranslationContext& baseContext, QWidget* parent = nullptr);
 
+public slots:
+    // Asks before abandoning a run, whose translated windows go with the dialog.
+    void reject() override;
+
 private slots:
     void browse();
     void start();
-    void cancel();
+    void stop();
     void exportResult();
 
 private:
-    void loadFile();
-    void translateNextChunk();
-    QStringList buildChunks(const QString& content) const;
+    // Loads the document the path box holds; false when it could not be read,
+    // with the failure already reported.
+    bool loadFile();
+    void setRunning(bool running);
+    void endRun();
+    void setStatus(const QString& text, bool error = false);
 
     TranslationContext m_baseContext;
-    TranslationEngine m_engine;
+    DocumentTranslator m_translator;
+    QVector<DocumentWindow> m_windows;
+    // Path the loaded windows came from, so the box and the document cannot
+    // disagree about what Translate translates.
+    QString m_loadedPath;
+    // Document translated so far; the window in flight is not part of it.
+    QString m_completedText;
     QLineEdit* m_pathEdit = nullptr;
+    QPushButton* m_browseButton = nullptr;
     QProgressBar* m_progress = nullptr;
     QLabel* m_status = nullptr;
-    QPlainTextEdit* m_preview = nullptr;
-    QPushButton* m_startButton = nullptr;
-    QPushButton* m_cancelButton = nullptr;
+    TranslationEdit* m_preview = nullptr;
+    QAction* m_translateAction = nullptr;
+    QAction* m_stopAction = nullptr;
     QPushButton* m_exportButton = nullptr;
-    QString m_sourceContent;
-    QStringList m_chunks;
-    QStringList m_translatedChunks;
-    int m_currentChunk = 0;
+    // Holds while the preview carries text streamed for the window in flight.
+    bool m_streaming = false;
     bool m_running = false;
 };

@@ -38,6 +38,9 @@ public:
     explicit TranslationEngine(QObject* parent = nullptr);
 
     void translateText(const TranslationContext& context);
+    // Translates one window of a document under the document prompt.
+    void translateDocument(const TranslationContext& context,
+                           const DocumentWindowPrompt& window);
     void requestCandidates(const TranslationContext& context,
                            int selectionStart,
                            int selectionEnd,
@@ -68,6 +71,9 @@ public:
 
 signals:
     void partialResult(const QString& text);
+    // Piece the latest partial result added, so a longer result can be appended
+    // to instead of rewritten.
+    void partialDelta(const QString& piece);
     void finished(const QString& text);
     void error(const ApiClient::Error& failure);
     void stopped();
@@ -90,6 +96,8 @@ private:
     bool m_candidateRetryPending = false;
 
     void setBusy(bool busy);
+    // Sends one assembled prompt and reports the reply through the signals.
+    void dispatch(const PromptBuilder::Result& prompt);
     // Delivers the parsed groups, retrying once when the model answered with
     // nothing usable.
     void deliverCandidates(const QString& raw);

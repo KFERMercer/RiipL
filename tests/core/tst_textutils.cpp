@@ -11,6 +11,8 @@ private slots:
     void windowsCandidateFragments();
     void countsWordsInFragmentWindow();
     void countsSupplementaryIdeographs();
+    void listsWordsOfAText();
+    void stripsCodeFence();
 };
 
 void TestTextUtils::findsWordsAtBoundaries()
@@ -139,6 +141,40 @@ void TestTextUtils::countsSupplementaryIdeographs()
     QCOMPARE(TextUtils::wordSpanAt(QStringLiteral("\uA960").repeated(8), 0).valid(), true);
     QCOMPARE(TextUtils::wordSpanAt(QStringLiteral("\uA960").repeated(9), 0).valid(), false);
     QCOMPARE(TextUtils::wordSpanAt(QStringLiteral("\u11A8").repeated(9), 0).valid(), false);
+}
+
+// The words of a text are the editor's words, in order, which is what a window counts.
+
+void TestTextUtils::listsWordsOfAText()
+{
+    const QString text = QStringLiteral("Hello, world! It's fine.");
+    const QList<TextUtils::WordSpan> spans = TextUtils::words(text);
+    QStringList words;
+    for (const TextUtils::WordSpan& span : spans)
+        words << text.mid(span.start, span.length());
+    QCOMPARE(words, QStringList({QStringLiteral("Hello"), QStringLiteral(","),
+                                 QStringLiteral("world"), QStringLiteral("!"),
+                                 QStringLiteral("It's"), QStringLiteral("fine"),
+                                 QStringLiteral(".")}));
+    QCOMPARE(TextUtils::wordCount(text), words.size());
+
+    // Every ideograph is a word, and so is a full-width punctuation mark.
+    QCOMPARE(TextUtils::wordCount(QStringLiteral("\u4f60\u597d\uff0c\u4e16\u754c\uff01")), 6);
+
+    // Blank runs carry no word, and neither do the characters around them.
+    QCOMPARE(TextUtils::wordCount(QString()), 0);
+    QCOMPARE(TextUtils::wordCount(QStringLiteral("   ")), 0);
+    QCOMPARE(TextUtils::wordCount(QStringLiteral("one\ttwo  three")), 3);
+}
+
+void TestTextUtils::stripsCodeFence()
+{
+    QCOMPARE(TextUtils::stripCodeFence(QStringLiteral("plain")), QStringLiteral("plain"));
+    QCOMPARE(TextUtils::stripCodeFence(QString()), QString());
+    QCOMPARE(TextUtils::stripCodeFence(QStringLiteral("  ```json\n[1, 2]\n```  ")),
+             QStringLiteral("[1, 2]"));
+    // A fence without its closing line still leaves the body behind.
+    QCOMPARE(TextUtils::stripCodeFence(QStringLiteral("```\nbody")), QStringLiteral("body"));
 }
 
 QTEST_MAIN(TestTextUtils)

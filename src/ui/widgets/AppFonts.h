@@ -8,4 +8,7 @@ namespace AppFonts {
 // prompt templates.
 QFont fixedWidth();
 
+// Font of the text panes, one step above the interface font.
+QFont editorFont();
+
 }

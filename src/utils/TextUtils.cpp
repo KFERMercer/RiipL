@@ -156,6 +156,36 @@ TextUtils::WordSpan absorbRestatedEdges(const QString& text, int start, int end,
 
 namespace TextUtils {
 
+QList<WordSpan> words(const QString& text)
+{
+    QList<WordSpan> result;
+    for (const WordSpan& segment : wordSegments(text)) {
+        const WordSpan span = trimmed(segment, text);
+        if (isSelectableWord(text, span))
+            result.append(span);
+    }
+    return result;
+}
+
+int wordCount(const QString& text)
+{
+    return words(text).size();
+}
+
+QString stripCodeFence(const QString& text)
+{
+    QString result = text.trimmed();
+    if (!result.startsWith(QStringLiteral("```")))
+        return result;
+    const int firstNewline = result.indexOf(QLatin1Char('\n'));
+    if (firstNewline != -1)
+        result = result.mid(firstNewline + 1);
+    const int fenceEnd = result.lastIndexOf(QStringLiteral("```"));
+    if (fenceEnd != -1)
+        result = result.left(fenceEnd);
+    return result.trimmed();
+}
+
 WordSpan wordSpanAt(const QString& text, int position)
 {
     if (text.isEmpty())
@@ -165,19 +195,20 @@ WordSpan wordSpanAt(const QString& text, int position)
     if (position < text.size() && text.at(position).isSpace())
         return {};
 
-    const QList<WordSpan> segments = wordSegments(text);
+    const QList<WordSpan> spans = words(text);
 
+    // The caret can sit on either side of the character it was placed at, so
+    // the character before it is tried as well.
     for (int attempt : {position, position - 1}) {
         if (attempt < 0 || attempt >= text.size())
             continue;
         if (text.at(attempt).isSpace())
             continue;
 
-        const WordSpan span = trimmed(segmentAt(segments, attempt), text);
-        if (!isSelectableWord(text, span))
-            continue;
-
-        return span;
+        for (const WordSpan& span : spans) {
+            if (span.start <= attempt && attempt < span.end)
+                return span;
+        }
     }
     return {};
 }
