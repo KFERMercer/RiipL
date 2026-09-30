@@ -130,11 +130,11 @@ void TranslationEngine::requestCandidates(const TranslationContext& context,
     // A window already holding every word of the translation is rendered by the
     // template that reaches for the source text. The window never carries the
     // blanks around the translation, so the comparison ignores them too.
-    const QString name = fragment.text == context.translatedText.trimmed()
-        ? Prompts::candidateShortTemplate
-        : Prompts::candidateTemplate;
+    const QString key = fragment.text == context.translatedText.trimmed()
+        ? Keys::promptCandidateShort
+        : Keys::promptCandidate;
     PromptBuilder::Result prompt;
-    prompt.user = PromptBuilder::candidatePrompt(name, selection);
+    prompt.user = PromptBuilder::candidatePrompt(key, selection);
     // Candidates answer under the same system prompt as a translation.
     prompt.system = PromptBuilder::systemPrompt(selection);
 

@@ -17,7 +17,6 @@ private slots:
     void persistsAcrossInstances();
     void flushesPendingSaveOnRecreate();
     void valueEqualityMatchesDefaults();
-    void resolvesUiLanguage();
     void resolvesUiLocaleScript();
     void rejectsUnofferedUiLanguage();
     void ignoresUnchangedSetValue();
@@ -124,25 +123,11 @@ void TestConfigManager::valueEqualityMatchesDefaults()
     QVERIFY(!config->isDefault(Keys::apiKey));
 }
 
-void TestConfigManager::resolvesUiLanguage()
-{
-    QDir().mkpath(TestSupport::tempDir());
-    ConfigManager::createInstance(TestSupport::tempDir());
-    QVERIFY(ConfigManager::instance()->isDefault(Keys::uiLanguage));
-
-    const QString resolved = ConfigManager::instance()->resolvedUiLanguage();
-    QVERIFY(resolved == QLatin1String("en") || resolved == QLatin1String("zh"));
-
-    ConfigManager::instance()->setValue(Keys::uiLanguage, QStringLiteral("zh"));
-    QCOMPARE(ConfigManager::instance()->resolvedUiLanguage(), QStringLiteral("zh"));
-    ConfigManager::instance()->setValue(Keys::uiLanguage, QStringLiteral("en"));
-    QCOMPARE(ConfigManager::instance()->resolvedUiLanguage(), QStringLiteral("en"));
-}
-
 void TestConfigManager::resolvesUiLocaleScript()
 {
     QDir().mkpath(TestSupport::tempDir());
     ConfigManager::createInstance(TestSupport::tempDir());
+    QVERIFY(ConfigManager::instance()->isDefault(Keys::uiLanguage));
 
     // A stored language resolves to that language, whatever the session speaks.
     ConfigManager::instance()->setValue(Keys::uiLanguage, QStringLiteral("en"));
@@ -150,12 +135,12 @@ void TestConfigManager::resolvesUiLocaleScript()
     ConfigManager::instance()->setValue(Keys::uiLanguage, QStringLiteral("zh"));
     QCOMPARE(ConfigManager::instance()->uiLocale().language(), QLocale::Chinese);
 
-    // The result always names an offered language, so a catalog and a template
-    // exist for it.
+    // The result always names an offered language, so a catalog exists for it.
     for (const QString& stored : {QStringLiteral("auto"), QStringLiteral("zh"),
                                   QStringLiteral("en"), QStringLiteral("ja")}) {
         ConfigManager::instance()->setValue(Keys::uiLanguage, stored);
-        const QString resolved = ConfigManager::instance()->resolvedUiLanguage();
+        const QString resolved =
+            QLocale::languageToCode(ConfigManager::instance()->uiLocale().language());
         QVERIFY2(Keys::uiLanguageCodes().contains(resolved), qPrintable(resolved));
     }
 }
@@ -170,9 +155,8 @@ void TestConfigManager::rejectsUnofferedUiLanguage()
     ConfigManager::instance()->setValue(Keys::uiLanguage, QStringLiteral("ja"));
     QVERIFY(ConfigManager::instance()->hasValidUiLanguage());
     QVERIFY(ConfigManager::instance()->isDefault(Keys::uiLanguage));
-    const QString resolved = ConfigManager::instance()->resolvedUiLanguage();
-    QVERIFY(resolved == QLatin1String("en") || resolved == QLatin1String("zh"));
-    QVERIFY(resolved != QLatin1String("ja"));
+    const QLocale::Language resolved = ConfigManager::instance()->uiLocale().language();
+    QVERIFY(resolved == QLocale::English || resolved == QLocale::Chinese);
 
     // "auto" is valid although it names no catalog.
     ConfigManager::instance()->setValue(Keys::uiLanguage, QStringLiteral("auto"));

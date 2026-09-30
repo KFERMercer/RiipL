@@ -73,7 +73,6 @@ PromptPreviewDialog::PromptPreviewDialog(QWidget* parent)
 
 void PromptPreviewDialog::refresh()
 {
-    ConfigManager* config = ConfigManager::instance();
     TranslationContext context;
     context.sourceText = m_source->text();
     context.sourceLang = m_sourceLang->currentData().toString();
@@ -83,7 +82,6 @@ void PromptPreviewDialog::refresh()
     context.background = m_background->text().trimmed();
     context.glossaryEnabled = m_glossaryEnabled;
     context.glossary = m_glossary;
-    context.uiLanguage = config->resolvedUiLanguage();
     const PromptBuilder::Result result = PromptBuilder::build(context);
     QString text;
     if (!result.system.isEmpty())

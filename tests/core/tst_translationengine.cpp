@@ -231,7 +231,6 @@ void TestTranslationEngine::stopCancelsActiveRequest()
     TranslationContext context;
     context.sourceText = QStringLiteral("Hello");
     context.targetLang = QStringLiteral("zh");
-    context.uiLanguage = QStringLiteral("en");
     engine.translateText(context);
     QVERIFY(engine.busy());
 
@@ -280,7 +279,6 @@ void TestTranslationEngine::retriesEmptyCandidateReply()
     TranslationContext context;
     context.translatedText = QStringLiteral("莫卧儿皇帝是从什么时候开始觉得自己是印度人的？");
     context.targetLang = QStringLiteral("zh");
-    context.uiLanguage = QStringLiteral("en");
 
     QVector<TranslationEngine::CandidateGroup> received;
     bool failed = false;
@@ -314,7 +312,7 @@ void TestTranslationEngine::sendsSystemPromptWithCandidates()
     QVERIFY(server.listen(QHostAddress::LocalHost));
     ConfigManager::instance()->setValue(
         Keys::apiBaseUrl, QStringLiteral("http://127.0.0.1:%1/v1").arg(server.serverPort()));
-    ConfigManager::instance()->setValue(Keys::promptSystemEn,
+    ConfigManager::instance()->setValue(Keys::promptSystem,
                                         QStringLiteral("You are a careful editor."));
 
     QByteArray payload;
@@ -348,7 +346,6 @@ void TestTranslationEngine::sendsSystemPromptWithCandidates()
     TranslationContext context;
     context.translatedText = QStringLiteral("莫卧儿皇帝是从什么时候开始觉得自己是印度人的？");
     context.targetLang = QStringLiteral("zh");
-    context.uiLanguage = QStringLiteral("en");
 
     QVector<TranslationEngine::CandidateGroup> received;
     const QString word = QStringLiteral("皇帝");
@@ -418,7 +415,6 @@ void TestTranslationEngine::picksShortTextTemplate()
     TranslationContext context;
     context.sourceText = QStringLiteral("When did the Mughal emperor start to see himself as Indian?");
     context.targetLang = QStringLiteral("zh");
-    context.uiLanguage = QStringLiteral("en");
     const QString word = QStringLiteral("皇帝");
 
     const QString shortText = QStringLiteral("莫卧儿皇帝是从什么时候开始觉得自己是印度人的？");
@@ -470,7 +466,6 @@ void TestTranslationEngine::failedDispatchReturnsToIdle()
     TranslationContext context;
     context.sourceText = QStringLiteral("Hello");
     context.targetLang = QStringLiteral("zh");
-    context.uiLanguage = QStringLiteral("en");
     engine.translateText(context);
 
     QCOMPARE(errorSpy.count(), 1);

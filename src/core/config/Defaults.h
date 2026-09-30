@@ -7,60 +7,24 @@
 
 namespace CandidateMarks {
 
-// Bracket pair wrapped around the selection before a fragment reaches the model.
-// A paired glyph is used because single-character markers get echoed back
-// inside `old`.
+// Wrapped around the selection before a fragment reaches the model. A paired
+// glyph is used because single-character markers get echoed back inside `old`.
 inline const QString selectionOpen = QStringLiteral("[[");
 inline const QString selectionClose = QStringLiteral("]]");
 
 }
 
-namespace Prompts {
-
-// Canonical prompt template identifiers from which per-language config keys derive.
-// Each template owns its labels, fences and placeholders; PromptBuilder only
-// orders them and drops the ones whose variable is empty. The declaration order
-// mirrors the order the fragments reach the model.
-inline const QString systemTemplate = QStringLiteral("system");
-inline const QString referenceTemplate = QStringLiteral("reference");
-inline const QString toneTemplate = QStringLiteral("tone");
-inline const QString styleTemplate = QStringLiteral("style");
-inline const QString backgroundTemplate = QStringLiteral("background");
-inline const QString glossaryTemplate = QStringLiteral("glossary");
-inline const QString defaultTemplate = QStringLiteral("default");
-inline const QString candidateTemplate = QStringLiteral("candidate");
-// Wording request for a translation short enough to sit inside the context
-// window, which lets it carry the source text as well.
-inline const QString candidateShortTemplate = QStringLiteral("candidate_short");
-
-}
-
 namespace Keys {
 
-// Single construction point for per-language prompt template keys.
-inline QString promptKey(const QString& name, const QString& language)
-{
-    return QStringLiteral("prompts.%1_%2").arg(name, language);
-}
-
-inline const QString promptSystemZh = promptKey(Prompts::systemTemplate, QStringLiteral("zh"));
-inline const QString promptSystemEn = promptKey(Prompts::systemTemplate, QStringLiteral("en"));
-inline const QString promptReferenceZh = promptKey(Prompts::referenceTemplate, QStringLiteral("zh"));
-inline const QString promptReferenceEn = promptKey(Prompts::referenceTemplate, QStringLiteral("en"));
-inline const QString promptToneZh = promptKey(Prompts::toneTemplate, QStringLiteral("zh"));
-inline const QString promptToneEn = promptKey(Prompts::toneTemplate, QStringLiteral("en"));
-inline const QString promptStyleZh = promptKey(Prompts::styleTemplate, QStringLiteral("zh"));
-inline const QString promptStyleEn = promptKey(Prompts::styleTemplate, QStringLiteral("en"));
-inline const QString promptBackgroundZh = promptKey(Prompts::backgroundTemplate, QStringLiteral("zh"));
-inline const QString promptBackgroundEn = promptKey(Prompts::backgroundTemplate, QStringLiteral("en"));
-inline const QString promptGlossaryZh = promptKey(Prompts::glossaryTemplate, QStringLiteral("zh"));
-inline const QString promptGlossaryEn = promptKey(Prompts::glossaryTemplate, QStringLiteral("en"));
-inline const QString promptDefaultZh = promptKey(Prompts::defaultTemplate, QStringLiteral("zh"));
-inline const QString promptDefaultEn = promptKey(Prompts::defaultTemplate, QStringLiteral("en"));
-inline const QString promptCandidateZh = promptKey(Prompts::candidateTemplate, QStringLiteral("zh"));
-inline const QString promptCandidateEn = promptKey(Prompts::candidateTemplate, QStringLiteral("en"));
-inline const QString promptCandidateShortZh = promptKey(Prompts::candidateShortTemplate, QStringLiteral("zh"));
-inline const QString promptCandidateShortEn = promptKey(Prompts::candidateShortTemplate, QStringLiteral("en"));
+inline const QString promptSystem = QStringLiteral("prompts.system");
+inline const QString promptReference = QStringLiteral("prompts.reference");
+inline const QString promptTone = QStringLiteral("prompts.tone");
+inline const QString promptStyle = QStringLiteral("prompts.style");
+inline const QString promptBackground = QStringLiteral("prompts.background");
+inline const QString promptGlossary = QStringLiteral("prompts.glossary");
+inline const QString promptDefault = QStringLiteral("prompts.default");
+inline const QString promptCandidate = QStringLiteral("prompts.candidate");
+inline const QString promptCandidateShort = QStringLiteral("prompts.candidate_short");
 
 inline const QString apiBaseUrl = QStringLiteral("api.base_url");
 inline const QString apiKey = QStringLiteral("api.api_key");
@@ -157,86 +121,35 @@ inline const int clipboardDelayMs = 500;
 inline const bool historyEnabled = true;
 inline const int historyMaxRecords = 500;
 
-// The default template definitions below follow the order the fragments reach
-// the model: the system prompt leads the request, the reference block follows
-// it, and the candidate wording prompt is a separate request.
+inline const QString promptSystem = QStringLiteral("You are a professional translator.");
 
-inline const QString promptSystemZh = QStringLiteral("你是一位翻译专家。");
-inline const QString promptSystemEn = QStringLiteral("You are a professional translator.");
-
-// The reference templates are self-contained: each one renders its own label,
-// fence and placeholder, and is emitted only while its variable holds a value.
-inline const QString promptReferenceZh = R"TXT(你需要仔细阅读并严格遵守以下约束：
-)TXT";
-inline const QString promptReferenceEn = R"TXT(Read the following reference information carefully and follow it strictly:
+// A reference template renders its own label, fence and placeholder, and is
+// emitted only while its variable holds a value.
+inline const QString promptReference = R"TXT(Read the following reference information carefully and follow it strictly:
 )TXT";
 
-inline const QString promptToneZh = R"TXT(- 翻译语气：{tone}
-)TXT";
-inline const QString promptToneEn = R"TXT(- Translation tone: {tone}
+inline const QString promptTone = R"TXT(- Translation tone: {tone}
 )TXT";
 
-inline const QString promptStyleZh = R"TXT(- 语言风格：{style}
-)TXT";
-inline const QString promptStyleEn = R"TXT(- Language style: {style}
+inline const QString promptStyle = R"TXT(- Language style: {style}
 )TXT";
 
-inline const QString promptBackgroundZh = R"TXT(- 背景信息：
-  ```
-  {background}
-  ```
-)TXT";
-inline const QString promptBackgroundEn = R"TXT(- Background Information:
+inline const QString promptBackground = R"TXT(- Background Information:
   ```
   {background}
   ```
 )TXT";
 
-inline const QString promptGlossaryZh = R"TXT(- 术语表：
-  ```json
-  {glossary}
-  ```
-)TXT";
-inline const QString promptGlossaryEn = R"TXT(- Glossary:
+inline const QString promptGlossary = R"TXT(- Glossary:
   ```json
   {glossary}
   ```
 )TXT";
 
-inline const QString promptDefaultZh = R"TXT(根据以上参考信息，将以下文本翻译为 {target_lang}，注意**只需要输出翻译后的结果，不要额外解释**：
-{source_text})TXT";
-inline const QString promptDefaultEn = R"TXT(Based on the reference information above, translate the following text into {target_lang}. Note that you must **only output the translated result without any additional explanation**:
+inline const QString promptDefault = R"TXT(Based on the reference information above, translate the following text into {target_lang}. Note that you must **only output the translated result without any additional explanation**:
 {source_text})TXT";
 
-inline const QString promptCandidateZh = R"TXT(你的任务是寻找给定原文中被标记的词的替代遣词或表述，并返回 JSON 结构化方案。
-
-原文：
-
-```
-{selected_fragment}
-```
-
-被标记的词为：`{selected_word}`（已用标示符 `{mark_left}` 和 `{mark_right}` 标出，标示符不属于原文)
-
-处理步骤：
-1. 在原文中定位 {mark_left} 与 {mark_right} 之间的内容。
-2. 在句中找出包含 `{selected_word}` 的**最小完整词语或固定搭配**，作为 `old`。
-3. 为 `old` 写出 2 到 4 条可直接替换的表达，放进 `new` 数组。
-
-约束：
-- `old` 必须从原文中直接复制，逐字节一致，包括大小写与标点；不得改写、拼接或虚构。
-- `old` 必须包含 `{selected_word}`；如果 `{selected_word}` 只是某个词的一部分，`old` 必须扩展到该完整词语。
-- `old` 不得缩小为 `{selected_word}` 本身，除非标记内容在句中确实是一个独立完整的词。
-- `old` 中不得出现 {mark_left} 和 {mark_right}。
-- `new` 中每条表达均与 `old` 不同，且彼此互不相同。
-- `new` 一律使用 {target_lang} 书写，不得混入其他语言。
-- `new` 是同一语言内的近义改写，不是翻译，禁止译成其他语言。
-- 用 `new` 替换 `old` 后，整句必须通顺、意思不变，且结果中不得出现相邻重复的字。
-- 替换范围以 `old` 为准，句中其他部分保持原样。
-
-只输出如下 JSON 数组，不要解释、不要代码块标记，每个需要替换的片段对应一个对象：
-[{"old":"原文片段1","new":["替换表达1","替换表达2"]},{"old":"原文片段2","new":["替换表达3","替换表达4"]}])TXT";
-inline const QString promptCandidateEn = R"TXT(Your task is to find alternative wordings for the marked word in the given original text, and return a structured JSON plan.
+inline const QString promptCandidate = R"TXT(Your task is to find alternative wordings for the marked word in the given original text, and return a structured JSON plan.
 
 Original text:
 
@@ -265,41 +178,7 @@ Constraints:
 Output only the following JSON array, with no explanation and no code fences, one object per fragment to replace:
 [{"old":"source fragment 1","new":["alternative 1","alternative 2"]},{"old":"source fragment 2","new":["alternative 3","alternative 4"]}])TXT";
 
-inline const QString promptCandidateShortZh = R"TXT(你的任务是寻找译文中被标记的词的替代遣词或表述，并返回 JSON 结构化方案。
-
-译文：
-
-```
-{selected_fragment}
-```
-
-翻译前的原文：
-
-```
-{source_text}
-```
-
-被标记的词为：`{selected_word}`（已用标示符 `{mark_left}` 和 `{mark_right}` 标出，标示符不属于原文)
-
-处理步骤：
-1. 在译文中定位 {mark_left} 与 {mark_right} 之间的内容。
-2. 在句中找出包含 `{selected_word}` 的**最小完整词语或固定搭配**，作为 `old`。
-3. 参考翻译前的原文，为 `old` 写出 2 到 4 条可直接替换的表达，放进 `new` 数组。
-
-约束：
-- `old` 必须从译文中直接复制，逐字节一致，包括大小写与标点；不得改写、拼接或虚构。
-- `old` 必须包含 `{selected_word}`；如果 `{selected_word}` 只是某个词的一部分，`old` 必须扩展到该完整词语。
-- `old` 不得缩小为 `{selected_word}` 本身，除非标记内容在句中确实是一个独立完整的词。
-- `old` 中不得出现 {mark_left} 和 {mark_right}。
-- `new` 中每条表达均与 `old` 不同，且彼此互不相同。
-- `new` 一律使用 {target_lang} 书写，不得混入其他语言。
-- `new` 是同一语言内的近义改写，不是翻译，禁止译成其他语言。
-- 用 `new` 替换 `old` 后，整句必须通顺、意思不变，且结果中不得出现相邻重复的字。
-- 替换范围以 `old` 为准，句中其他部分保持原样。
-
-只输出如下 JSON 数组，不要解释、不要代码块标记，每个需要替换的片段对应一个对象：
-[{"old":"译文片段1","new":["替换表达1","替换表达2"]},{"old":"译文片段12","new":["替换表达3","替换表达4"]}])TXT";
-inline const QString promptCandidateShortEn = R"TXT(Your task is to find alternative wordings for the marked word in the translation, and return a structured JSON plan.
+inline const QString promptCandidateShort = R"TXT(Your task is to find alternative wordings for the marked word in the translation, and return a structured JSON plan.
 
 Translation:
 
@@ -360,24 +239,15 @@ inline QJsonValue value(const QString& key)
     if (key == Keys::translationBackground) return QJsonValue(translationBackground);
     if (key == Keys::glossaryEnabled) return QJsonValue(glossaryEnabled);
     if (key == Keys::glossaryEntries) return QJsonArray();
-    if (key == Keys::promptSystemZh) return QJsonValue(promptSystemZh);
-    if (key == Keys::promptSystemEn) return QJsonValue(promptSystemEn);
-    if (key == Keys::promptReferenceZh) return QJsonValue(promptReferenceZh);
-    if (key == Keys::promptReferenceEn) return QJsonValue(promptReferenceEn);
-    if (key == Keys::promptToneZh) return QJsonValue(promptToneZh);
-    if (key == Keys::promptToneEn) return QJsonValue(promptToneEn);
-    if (key == Keys::promptStyleZh) return QJsonValue(promptStyleZh);
-    if (key == Keys::promptStyleEn) return QJsonValue(promptStyleEn);
-    if (key == Keys::promptBackgroundZh) return QJsonValue(promptBackgroundZh);
-    if (key == Keys::promptBackgroundEn) return QJsonValue(promptBackgroundEn);
-    if (key == Keys::promptGlossaryZh) return QJsonValue(promptGlossaryZh);
-    if (key == Keys::promptGlossaryEn) return QJsonValue(promptGlossaryEn);
-    if (key == Keys::promptDefaultZh) return QJsonValue(promptDefaultZh);
-    if (key == Keys::promptDefaultEn) return QJsonValue(promptDefaultEn);
-    if (key == Keys::promptCandidateZh) return QJsonValue(promptCandidateZh);
-    if (key == Keys::promptCandidateEn) return QJsonValue(promptCandidateEn);
-    if (key == Keys::promptCandidateShortZh) return QJsonValue(promptCandidateShortZh);
-    if (key == Keys::promptCandidateShortEn) return QJsonValue(promptCandidateShortEn);
+    if (key == Keys::promptSystem) return QJsonValue(promptSystem);
+    if (key == Keys::promptReference) return QJsonValue(promptReference);
+    if (key == Keys::promptTone) return QJsonValue(promptTone);
+    if (key == Keys::promptStyle) return QJsonValue(promptStyle);
+    if (key == Keys::promptBackground) return QJsonValue(promptBackground);
+    if (key == Keys::promptGlossary) return QJsonValue(promptGlossary);
+    if (key == Keys::promptDefault) return QJsonValue(promptDefault);
+    if (key == Keys::promptCandidate) return QJsonValue(promptCandidate);
+    if (key == Keys::promptCandidateShort) return QJsonValue(promptCandidateShort);
     if (key == Keys::clipboardMonitor) return QJsonValue(clipboardMonitor);
     if (key == Keys::clipboardDelayMs) return QJsonValue(clipboardDelayMs);
     if (key == Keys::historyEnabled) return QJsonValue(historyEnabled);

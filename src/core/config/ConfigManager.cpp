@@ -121,11 +121,6 @@ QLocale ConfigManager::uiLocale() const
     return chosen.language() == system.language() ? system : chosen;
 }
 
-QString ConfigManager::resolvedUiLanguage() const
-{
-    return QLocale::languageToCode(uiLocale().language());
-}
-
 bool ConfigManager::boolValue(const QString& key) const
 {
     return value(key).toBool();

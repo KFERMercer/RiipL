@@ -15,16 +15,6 @@ const QString kGlossaryTargetKey = QStringLiteral("target");
 
 }
 
-QString PromptBuilder::templateFor(const QString& name, const QString& uiLanguage)
-{
-    ConfigManager* config = ConfigManager::instance();
-    const QString value = config->stringValue(Keys::promptKey(name, uiLanguage));
-    if (!value.isEmpty())
-        return value;
-    // Templates ship in Chinese and English only, so fall back to English.
-    return config->stringValue(Keys::promptKey(name, QStringLiteral("en")));
-}
-
 QString PromptBuilder::glossaryData(const QVector<GlossaryEntry>& entries)
 {
     QJsonArray array;
@@ -34,9 +24,8 @@ QString PromptBuilder::glossaryData(const QVector<GlossaryEntry>& entries)
             continue;
         QJsonObject object;
         object.insert(kGlossarySourceKey, source);
-        // An entry without a target keeps the source term untouched. Emitting
-        // the source as its own target states that directly, whereas a null
-        // value is read as a literal "null" by some models.
+        // A term without a target repeats its source, which states "keep as is";
+        // a null would be read as a literal "null" by some models.
         object.insert(kGlossaryTargetKey, entry.target.trimmed().isEmpty() ? source : entry.target.trimmed());
         array.append(object);
     }
@@ -73,9 +62,8 @@ QString PromptBuilder::substitute(QString text, const QHash<QString, QString>& v
             continue;
         }
         // A multi-line value inherits the indentation of the line holding its
-        // placeholder, so a template can indent one line and keep every line of
-        // the value aligned under it. Occurrences are rewritten back to front so
-        // earlier positions stay valid, and each one uses its own indentation.
+        // placeholder. Occurrences are rewritten back to front so earlier
+        // positions stay valid.
         int at = text.lastIndexOf(token);
         while (at >= 0) {
             int lineStart = text.lastIndexOf(QLatin1Char('\n'), at) + 1;
@@ -113,39 +101,36 @@ QHash<QString, QString> PromptBuilder::variablesFor(const TranslationContext& co
     return variables;
 }
 
-QString PromptBuilder::render(const QString& name, const QString& uiLanguage,
-                              const QHash<QString, QString>& variables)
+QString PromptBuilder::render(const QString& key, const QHash<QString, QString>& variables)
 {
-    return substitute(templateFor(name, uiLanguage), variables);
+    return substitute(ConfigManager::instance()->stringValue(key), variables);
 }
 
 PromptBuilder::Result PromptBuilder::build(const TranslationContext& context)
 {
-    const QString uiLanguage = context.uiLanguage;
     const QHash<QString, QString> variables = variablesFor(context);
     const QString glossary = variables.value(QStringLiteral("glossary"));
 
-    // Reference entries appear in the order they are listed here, and only
-    // while their variable holds a value, so unset options stay out entirely.
-    // The default tone is the absence of a tone: it is skipped just like an
-    // empty one, whereas every other tone reaches the model explicitly.
+    // Reference entries appear in the order listed here and only while their
+    // variable holds a value. The default tone is the absence of a tone, so it
+    // is skipped like an empty one.
     QStringList referenceEntries;
     if (!context.tone.isEmpty() && context.tone != QLatin1String("default"))
-        referenceEntries << render(Prompts::toneTemplate, uiLanguage, variables);
+        referenceEntries << render(Keys::promptTone, variables);
     if (!context.style.isEmpty())
-        referenceEntries << render(Prompts::styleTemplate, uiLanguage, variables);
+        referenceEntries << render(Keys::promptStyle, variables);
     if (!context.background.isEmpty())
-        referenceEntries << render(Prompts::backgroundTemplate, uiLanguage, variables);
+        referenceEntries << render(Keys::promptBackground, variables);
     if (!glossary.isEmpty())
-        referenceEntries << render(Prompts::glossaryTemplate, uiLanguage, variables);
+        referenceEntries << render(Keys::promptGlossary, variables);
 
     QStringList fragments;
     if (!referenceEntries.isEmpty()) {
-        const QString header = render(Prompts::referenceTemplate, uiLanguage, variables).trimmed();
+        const QString header = render(Keys::promptReference, variables).trimmed();
         fragments << (header.isEmpty() ? referenceEntries.join(QString())
                                        : header + QStringLiteral("\n\n") + referenceEntries.join(QString()));
     }
-    fragments << render(Prompts::defaultTemplate, uiLanguage, variables);
+    fragments << render(Keys::promptDefault, variables);
 
     QStringList parts;
     for (const QString& fragment : fragments) {
@@ -155,17 +140,17 @@ PromptBuilder::Result PromptBuilder::build(const TranslationContext& context)
     }
 
     Result result;
-    result.system = render(Prompts::systemTemplate, uiLanguage, variables).trimmed();
+    result.system = render(Keys::promptSystem, variables).trimmed();
     result.user = parts.join(QStringLiteral("\n\n"));
     return result;
 }
 
 QString PromptBuilder::systemPrompt(const TranslationContext& context)
 {
-    return render(Prompts::systemTemplate, context.uiLanguage, variablesFor(context)).trimmed();
+    return render(Keys::promptSystem, variablesFor(context)).trimmed();
 }
 
-QString PromptBuilder::candidatePrompt(const QString& name, const TranslationContext& context)
+QString PromptBuilder::candidatePrompt(const QString& key, const TranslationContext& context)
 {
-    return render(name, context.uiLanguage, variablesFor(context));
+    return render(key, variablesFor(context));
 }

@@ -42,26 +42,25 @@ namespace {
 
 struct TemplateInfo
 {
-    QString key;
+    QString configKey;
     const char* label;
 };
 
 const QVector<TemplateInfo>& templateInfos()
 {
-    // Listed in the order the fragments reach the model: the system prompt
-    // leads the request, the reference block follows it, and the candidate
-    // wording prompts are separate requests that close the list, the one for a
-    // short translation last.
+    // In the order the fragments reach the model: the system prompt leads the
+    // request, the reference block follows it, and the candidate wording prompts
+    // are separate requests that close the list, the short one last.
     static const QVector<TemplateInfo> list = {
-        {Prompts::systemTemplate, QT_TRANSLATE_NOOP("SettingsDialog", "System prompt")},
-        {Prompts::referenceTemplate, QT_TRANSLATE_NOOP("SettingsDialog", "Reference header")},
-        {Prompts::toneTemplate, QT_TRANSLATE_NOOP("SettingsDialog", "Tone")},
-        {Prompts::styleTemplate, QT_TRANSLATE_NOOP("SettingsDialog", "Style")},
-        {Prompts::backgroundTemplate, QT_TRANSLATE_NOOP("SettingsDialog", "Background")},
-        {Prompts::glossaryTemplate, QT_TRANSLATE_NOOP("SettingsDialog", "Glossary")},
-        {Prompts::defaultTemplate, QT_TRANSLATE_NOOP("SettingsDialog", "Default instruction")},
-        {Prompts::candidateTemplate, QT_TRANSLATE_NOOP("SettingsDialog", "Candidate wording")},
-        {Prompts::candidateShortTemplate,
+        {Keys::promptSystem, QT_TRANSLATE_NOOP("SettingsDialog", "System prompt")},
+        {Keys::promptReference, QT_TRANSLATE_NOOP("SettingsDialog", "Reference header")},
+        {Keys::promptTone, QT_TRANSLATE_NOOP("SettingsDialog", "Tone")},
+        {Keys::promptStyle, QT_TRANSLATE_NOOP("SettingsDialog", "Style")},
+        {Keys::promptBackground, QT_TRANSLATE_NOOP("SettingsDialog", "Background")},
+        {Keys::promptGlossary, QT_TRANSLATE_NOOP("SettingsDialog", "Glossary")},
+        {Keys::promptDefault, QT_TRANSLATE_NOOP("SettingsDialog", "Default instruction")},
+        {Keys::promptCandidate, QT_TRANSLATE_NOOP("SettingsDialog", "Candidate wording")},
+        {Keys::promptCandidateShort,
          QT_TRANSLATE_NOOP("SettingsDialog", "Candidate wording (short text)")}
     };
     return list;
@@ -606,24 +605,16 @@ QWidget* SettingsDialog::createPromptsPage()
     for (const TemplateInfo& info : templateInfos()) {
         auto* pageWidget = new QWidget(stack);
         auto* pageLayout = new QVBoxLayout(pageWidget);
-        auto* langTabs = new QTabWidget(pageWidget);
-        auto* zhEditor = new ConfigTextEdit(Keys::promptKey(info.key, QStringLiteral("zh")), pageWidget);
-        ConfigTextEdit::applyFixedWidthFont(zhEditor->edit());
-        auto* enEditor = new ConfigTextEdit(Keys::promptKey(info.key, QStringLiteral("en")), pageWidget);
-        ConfigTextEdit::applyFixedWidthFont(enEditor->edit());
-        langTabs->addTab(zhEditor, QString());
-        langTabs->addTab(enEditor, QString());
-        pageLayout->addWidget(langTabs);
+        auto* editor = new ConfigTextEdit(info.configKey, pageWidget);
+        ConfigTextEdit::applyFixedWidthFont(editor->edit());
+        pageLayout->addWidget(editor);
 
         auto* placeholderGroup = new QGroupBox(pageWidget);
-        bindText([langTabs, placeholderGroup]() {
-            langTabs->setTabText(0, tr("Chinese template"));
-            langTabs->setTabText(1, tr("English template"));
+        bindText([placeholderGroup]() {
             placeholderGroup->setTitle(tr("Available placeholders (click to copy)"));
         });
         auto* hintLayout = new FlowLayout(placeholderGroup);
-        // Describes what each placeholder inserts, so the chip tooltip explains
-        // the token instead of repeating the group title.
+        // Each chip explains the token it inserts instead of repeating the title.
         const auto placeholderHint = [](const QString& placeholder) {
             if (placeholder == QLatin1String("source_lang")) return tr("Language of the source text");
             if (placeholder == QLatin1String("target_lang")) return tr("Language to translate into");

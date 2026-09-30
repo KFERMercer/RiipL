@@ -18,8 +18,6 @@ public:
     QString stringValue(const QString& key) const;
     // The interface locale in effect, carrying its script.
     QLocale uiLocale() const;
-    // The code of uiLocale(), always one of the offered ones.
-    QString resolvedUiLanguage() const;
     bool hasValidUiLanguage() const;
     bool boolValue(const QString& key) const;
     int intValue(const QString& key) const;

@@ -648,7 +648,6 @@ TranslationContext MainWindow::currentContext() const
     context.background = config->stringValue(Keys::translationBackground);
     context.glossaryEnabled = config->boolValue(Keys::glossaryEnabled);
     context.glossary = Glossary::loadFromConfig().entries;
-    context.uiLanguage = config->resolvedUiLanguage();
     return context;
 }
 
