@@ -442,57 +442,57 @@
 <context>
     <name>HistoryDialog</name>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="22"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="80"/>
         <source>Translation history</source>
         <translation>翻译历史</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="26"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="84"/>
         <source>Search:</source>
         <translation>搜索：</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="40"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="98"/>
         <source>Reuse</source>
         <translation>重新使用</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="41"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="99"/>
         <source>Delete</source>
         <translation>删除</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="42"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="100"/>
         <source>Clear all</source>
         <translation>全部清空</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="43"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="101"/>
         <source>Close</source>
         <translation>关闭</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="90"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="37"/>
         <source>Time</source>
         <translation>时间</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="90"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="49"/>
         <source>Direction</source>
         <translation>方向</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="90"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="43"/>
         <source>Source</source>
         <translation>原文</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="90"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="46"/>
         <source>Translation</source>
-        <translation>翻译</translation>
+        <translation>译文</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="90"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="55"/>
         <source>Tone</source>
         <translation>语气</translation>
     </message>

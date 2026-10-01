@@ -6,6 +6,7 @@
 
 class QLineEdit;
 class QTreeWidget;
+class QTreeWidgetItem;
 
 class HistoryDialog : public QDialog
 {
@@ -20,6 +21,7 @@ signals:
 private:
     void reload();
     void applyFilter();
+    void reuseItem(QTreeWidgetItem* item);
 
     HistoryManager* m_history = nullptr;
     QTreeWidget* m_tree = nullptr;

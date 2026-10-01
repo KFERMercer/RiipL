@@ -1,11 +1,11 @@
 #include "HistoryDialog.h"
 
-#include "core/config/ConfigManager.h"
 #include "core/translation/Language.h"
 #include "core/translation/Tone.h"
 #include "ui/widgets/ConfigEditors.h"
 #include "ui/widgets/WindowState.h"
 
+#include <QCoreApplication>
 #include <QDateTime>
 #include <QHeaderView>
 #include <QHBoxLayout>
@@ -13,7 +13,65 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QTreeWidget>
+#include <QTreeWidgetItem>
 #include <QVBoxLayout>
+
+#include <iterator>
+
+namespace {
+
+using ColumnText = QString (*)(const TranslationRecord&);
+
+struct ColumnSpec
+{
+    const char* header;
+    ColumnText text;
+    QHeaderView::ResizeMode resizeMode;
+    // Elided cells offer their full value on hover.
+    bool tooltip;
+};
+
+// Display order, content and sizing as one row per column, so moving a column
+// is a single edit here.
+const ColumnSpec kColumns[] = {
+    {QT_TRANSLATE_NOOP("HistoryDialog", "Time"),
+     [](const TranslationRecord& record) {
+         return QDateTime::fromSecsSinceEpoch(record.timestamp)
+             .toString(QStringLiteral("yyyy-MM-dd HH:mm:ss"));
+     },
+     QHeaderView::ResizeToContents, false},
+    {QT_TRANSLATE_NOOP("HistoryDialog", "Source"),
+     [](const TranslationRecord& record) { return record.source; },
+     QHeaderView::Stretch, true},
+    {QT_TRANSLATE_NOOP("HistoryDialog", "Translation"),
+     [](const TranslationRecord& record) { return record.target; },
+     QHeaderView::Stretch, true},
+    {QT_TRANSLATE_NOOP("HistoryDialog", "Direction"),
+     [](const TranslationRecord& record) {
+         return QStringLiteral("%1 → %2").arg(languageLabel(record.sourceLang),
+                                             languageLabel(record.targetLang));
+     },
+     QHeaderView::ResizeToContents, false},
+    {QT_TRANSLATE_NOOP("HistoryDialog", "Tone"),
+     [](const TranslationRecord& record) { return toneLabel(record.tone); },
+     QHeaderView::ResizeToContents, false},
+};
+
+constexpr int kColumnCount = int(std::size(kColumns));
+
+// The record index travels as item metadata rather than as another column.
+constexpr int kRowIndexColumn = 0;
+
+// Row index of the record an item shows, or -1 when there is no such item.
+int rowIndex(QTreeWidgetItem* item)
+{
+    if (!item)
+        return -1;
+    const QVariant stored = item->data(kRowIndexColumn, Qt::UserRole);
+    return stored.isValid() ? stored.toInt() : -1;
+}
+
+}
 
 HistoryDialog::HistoryDialog(HistoryManager* history, QWidget* parent)
     : QDialog(parent)
@@ -51,28 +109,15 @@ HistoryDialog::HistoryDialog(HistoryManager* history, QWidget* parent)
     connect(m_history, &HistoryManager::changed, this, [this]() { reload(); });
     connect(m_search, &QLineEdit::textChanged, this, [this]() { applyFilter(); });
     connect(m_tree, &QTreeWidget::itemDoubleClicked, this, [this](QTreeWidgetItem* item, int) {
-        if (!item)
-            return;
-        const int index = item->data(0, Qt::UserRole).toInt();
-        if (index >= 0 && index < m_records.size())
-            emit reuseRequested(m_records.at(index));
-        accept();
+        reuseItem(item);
     });
     connect(reuseButton, &QPushButton::clicked, this, [this]() {
-        QTreeWidgetItem* item = m_tree->currentItem();
-        if (!item)
-            return;
-        const int index = item->data(0, Qt::UserRole).toInt();
-        if (index >= 0 && index < m_records.size())
-            emit reuseRequested(m_records.at(index));
-        accept();
+        reuseItem(m_tree->currentItem());
     });
     connect(deleteButton, &QPushButton::clicked, this, [this]() {
-        QTreeWidgetItem* item = m_tree->currentItem();
-        if (!item)
-            return;
-        const int index = item->data(0, Qt::UserRole).toInt();
-        m_history->removeRecord(index);
+        const int index = rowIndex(m_tree->currentItem());
+        if (index >= 0)
+            m_history->removeRecord(index);
     });
     connect(clearButton, &QPushButton::clicked, this, [this]() { m_history->clear(); });
     connect(closeButton, &QPushButton::clicked, this, &QDialog::close);
@@ -87,33 +132,39 @@ void HistoryDialog::reload()
         return;
     m_records = m_history->records();
 
-    QStringList headers = {tr("Time"), tr("Direction"), tr("Source"), tr("Translation"), tr("Tone")};
-    m_tree->setColumnCount(headers.size());
+    QStringList headers;
+    headers.reserve(kColumnCount);
+    for (const ColumnSpec& spec : kColumns)
+        headers.append(QCoreApplication::translate("HistoryDialog", spec.header));
+    m_tree->setColumnCount(kColumnCount);
     m_tree->setHeaderLabels(headers);
+
     QHeaderView* header = m_tree->header();
-    header->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-    header->setSectionResizeMode(1, QHeaderView::ResizeToContents);
-    header->setSectionResizeMode(2, QHeaderView::Stretch);
-    header->setSectionResizeMode(3, QHeaderView::Stretch);
-    header->setSectionResizeMode(4, QHeaderView::ResizeToContents);
+    for (int i = 0; i < kColumnCount; ++i)
+        header->setSectionResizeMode(i, kColumns[i].resizeMode);
 
     m_tree->clear();
     for (int i = 0; i < m_records.size(); ++i) {
         const TranslationRecord& record = m_records.at(i);
         auto* item = new QTreeWidgetItem(m_tree);
-        item->setText(0, QDateTime::fromSecsSinceEpoch(record.timestamp)
-                             .toString(QStringLiteral("yyyy-MM-dd HH:mm:ss")));
-        item->setText(1, QStringLiteral("%1 → %2").arg(
-                             languageLabel(record.sourceLang),
-                             languageLabel(record.targetLang)));
-        item->setText(2, record.source);
-        item->setText(3, record.target);
-        item->setText(4, toneLabel(record.tone));
-        item->setData(0, Qt::UserRole, i);
-        item->setToolTip(2, record.source);
-        item->setToolTip(3, record.target);
+        for (int column = 0; column < kColumnCount; ++column) {
+            const QString text = kColumns[column].text(record);
+            item->setText(column, text);
+            if (kColumns[column].tooltip)
+                item->setToolTip(column, text);
+        }
+        item->setData(kRowIndexColumn, Qt::UserRole, i);
     }
     applyFilter();
+}
+
+void HistoryDialog::reuseItem(QTreeWidgetItem* item)
+{
+    const int index = rowIndex(item);
+    if (index < 0 || index >= m_records.size())
+        return;
+    emit reuseRequested(m_records.at(index));
+    accept();
 }
 
 void HistoryDialog::applyFilter()
