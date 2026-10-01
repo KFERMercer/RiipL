@@ -5,25 +5,6 @@
 #include <QString>
 #include <QStringList>
 
-namespace CandidateMarks {
-
-inline const QString selectionOpen = QStringLiteral("[[");
-inline const QString selectionClose = QStringLiteral("]]");
-
-}
-
-namespace ApiTemperature {
-
-inline const double providerDefaultSentinel = -0.1;
-
-}
-
-namespace DocumentWindowLines {
-
-inline const int unlimitedSentinel = 0;
-
-}
-
 namespace Keys {
 
 inline const QString promptSystem = QStringLiteral("prompts.system");

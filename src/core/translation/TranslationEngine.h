@@ -6,6 +6,12 @@
 #include "core/network/ApiClient.h"
 #include "core/translation/PromptBuilder.h"
 
+namespace ApiTemperature {
+
+inline const double providerDefaultSentinel = -0.1;
+
+}
+
 class TranslationEngine : public QObject
 {
     Q_OBJECT

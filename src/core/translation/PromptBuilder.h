@@ -6,6 +6,13 @@
 
 #include "core/models/Glossary.h"
 
+namespace CandidateMarks {
+
+inline const QString selectionOpen = QStringLiteral("[[");
+inline const QString selectionClose = QStringLiteral("]]");
+
+}
+
 struct TranslationContext
 {
     QString sourceText;

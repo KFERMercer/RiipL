@@ -8,6 +8,12 @@
 
 #include "core/config/Defaults.h"
 
+namespace DocumentWindowLines {
+
+inline const int unlimitedSentinel = 0;
+
+}
+
 // One line of a document: adjacent duplicates collapse into one entry, and the
 // blank lines before it are recorded so they can be put back on export.
 struct DocumentLine
