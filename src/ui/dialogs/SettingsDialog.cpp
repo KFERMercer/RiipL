@@ -80,8 +80,8 @@ SettingsDialog::SettingsDialog(HistoryManager* history, QWidget* parent)
     m_tabs = new QTabWidget(this);
     m_tabs->addTab(createApiPage(), QString());
     m_tabs->addTab(createTranslationPage(), QString());
+    m_tabs->addTab(createDocumentPage(), QString());
     m_tabs->addTab(createInterfacePage(), QString());
-    m_tabs->addTab(createClipboardPage(), QString());
     m_tabs->addTab(createHistoryPage(), QString());
     m_tabs->addTab(createPromptsPage(), QString());
     layout->addWidget(m_tabs, 1);
@@ -90,8 +90,8 @@ SettingsDialog::SettingsDialog(HistoryManager* history, QWidget* parent)
         setWindowTitle(tr("Settings"));
         m_tabs->setTabText(0, tr("API"));
         m_tabs->setTabText(1, tr("Translation"));
-        m_tabs->setTabText(2, tr("Interface"));
-        m_tabs->setTabText(3, tr("Clipboard"));
+        m_tabs->setTabText(2, tr("Document"));
+        m_tabs->setTabText(3, tr("Interface"));
         m_tabs->setTabText(4, tr("History"));
         m_tabs->setTabText(5, tr("Prompt templates"));
     });
@@ -530,12 +530,19 @@ QWidget* SettingsDialog::createTranslationPage()
 
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Style"), new ConfigTextEdit(Keys::translationStyle, page));
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Background"), new ConfigTextEdit(Keys::translationBackground, page));
-    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Document translation retries"),
-                  new ConfigSpinBox(Keys::documentRetryCount, 0, 999, 1, page));
 
     auto* autoTranslateCheck = new ConfigCheckBox(Keys::uiAutoTranslate, page);
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Auto translate after typing"), autoTranslateCheck);
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Auto translate delay (ms)"), new ConfigSpinBox(Keys::uiAutoTranslateDelay, 100, 10000, 100, page));
+    return page;
+}
+
+QWidget* SettingsDialog::createDocumentPage()
+{
+    auto* page = new QWidget(this);
+    auto* form = new QFormLayout(page);
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Document translation retries"),
+                  new ConfigSpinBox(Keys::documentRetryCount, 0, 999, 1, page));
     return page;
 }
 
@@ -555,13 +562,7 @@ QWidget* SettingsDialog::createInterfacePage()
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Minimize to tray on close"), trayCheck);
 
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Font size"), new ConfigSpinBox(Keys::uiFontSize, 8, 24, 1, page));
-    return page;
-}
 
-QWidget* SettingsDialog::createClipboardPage()
-{
-    auto* page = new QWidget(this);
-    auto* form = new QFormLayout(page);
     auto* monitorCheck = new ConfigCheckBox(Keys::clipboardMonitor, page);
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Monitor clipboard and translate automatically"), monitorCheck);
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Monitor delay (ms)"), new ConfigSpinBox(Keys::clipboardDelayMs, 100, 5000, 50, page));

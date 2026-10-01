@@ -49,8 +49,8 @@ private slots:
 private:
     QWidget* createApiPage();
     QWidget* createTranslationPage();
+    QWidget* createDocumentPage();
     QWidget* createInterfacePage();
-    QWidget* createClipboardPage();
     QWidget* createHistoryPage();
     QWidget* createPromptsPage();
 
