@@ -787,12 +787,6 @@ void MainWindow::toggleVisible()
     show();
     raise();
     activateWindow();
-    const QString clipboardText = QApplication::clipboard()->text().trimmed();
-    if (!clipboardText.isEmpty() && clipboardText != m_lastClipboard
-        && clipboardText != m_sourceEdit->toPlainText().trimmed()) {
-        m_sourceEdit->setPlainText(clipboardText);
-        translateNow();
-    }
 }
 
 void MainWindow::pushResultSnapshot()

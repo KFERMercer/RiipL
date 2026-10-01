@@ -720,17 +720,17 @@
     <message>
         <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="214"/>
         <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="708"/>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="958"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="952"/>
         <source>Enter text to translate</source>
         <translation>输入要翻译的文本</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="929"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="923"/>
         <source>Follow system</source>
         <translation>跟随系统</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="939"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="933"/>
         <source>About RiipL</source>
         <translation>关于 RiipL</translation>
     </message>
@@ -745,7 +745,7 @@
         <translation>翻译已取消</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="961"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="955"/>
         <source>No presets</source>
         <translation>无预设</translation>
     </message>
@@ -772,7 +772,7 @@
         <translation>没有可导出的内容</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="865"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="859"/>
         <source>Export translation</source>
         <translation>导出译文</translation>
     </message>
@@ -787,173 +787,173 @@
         <translation>已导出到 %1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="903"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="897"/>
         <source>RiipL Translator</source>
         <translation>RiipL 翻译</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="905"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="899"/>
         <source>&amp;File</source>
         <translation>文件(&amp;F)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="906"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="900"/>
         <source>Open document...</source>
         <translation>打开文档...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="908"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="902"/>
         <source>Export translation...</source>
         <translation>导出译文...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="910"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="904"/>
         <source>Exit</source>
         <translation>退出</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="913"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="907"/>
         <source>&amp;Edit</source>
         <translation>编辑(&amp;E)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="914"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="908"/>
         <source>Glossary...</source>
         <translation>术语表...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="916"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="910"/>
         <source>Manage tones...</source>
         <translation>管理语气...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="918"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="912"/>
         <source>History...</source>
         <translation>历史记录...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="920"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="914"/>
         <source>Manage API presets...</source>
         <translation>管理 API 预设...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="923"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="917"/>
         <source>&amp;View</source>
         <translation>视图(&amp;V)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="924"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="918"/>
         <source>Auto translate</source>
         <translation>自动翻译</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="925"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="919"/>
         <source>Always on top</source>
         <translation>窗口置顶</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="926"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="920"/>
         <source>Interface language</source>
         <translation>界面语言</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="933"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="927"/>
         <source>&amp;Tools</source>
         <translation>工具(&amp;T)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="934"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="928"/>
         <source>Monitor clipboard</source>
         <translation>监听剪贴板</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="935"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="929"/>
         <source>API preset</source>
         <translation>API 预设</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="936"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="930"/>
         <source>Settings...</source>
         <translation>设置...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="938"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="932"/>
         <source>&amp;Help</source>
         <translation>帮助(&amp;H)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="941"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="935"/>
         <source>Translate</source>
         <translation>翻译</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="942"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="936"/>
         <source>Stop</source>
         <translation>停止</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="945"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="939"/>
         <source>Document</source>
         <translation>文档</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="946"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="940"/>
         <source>History</source>
         <translation>历史</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="947"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="941"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="948"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="942"/>
         <source>Translate now (Ctrl+Return)</source>
         <translation>立即翻译（Ctrl+Return）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="949"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="943"/>
         <source>Stop translation</source>
         <translation>停止翻译</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="950"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="944"/>
         <source>Restore previous translation</source>
         <translation>恢复上一版译文</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="951"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="945"/>
         <source>Redo translation</source>
         <translation>重做译文</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="952"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="946"/>
         <source>Swap languages</source>
         <translation>交换语言</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="953"/>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="956"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="947"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="950"/>
         <source>Clear</source>
         <translation>清空</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="954"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="948"/>
         <source>Paste</source>
         <translation>粘贴</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="955"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="949"/>
         <source>Copy</source>
         <translation>复制</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="966"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="960"/>
         <source>Show/Hide window</source>
         <translation>显示/隐藏窗口</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="967"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="961"/>
         <source>Translate clipboard</source>
         <translation>翻译剪贴板</translation>
     </message>
