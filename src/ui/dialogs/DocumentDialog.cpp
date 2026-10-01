@@ -1,5 +1,6 @@
 #include "DocumentDialog.h"
 
+#include "core/config/ConfigManager.h"
 #include "ui/widgets/AppFonts.h"
 #include "ui/widgets/ThemeColors.h"
 #include "ui/widgets/TranslationEdit.h"
@@ -179,7 +180,10 @@ bool DocumentDialog::loadFile()
 
     const QString content = QString::fromUtf8(file.readAll());
     m_loadedPath = path;
-    m_windows = DocumentSegmenter::partition(content);
+    ConfigManager* config = ConfigManager::instance();
+    m_windows = DocumentSegmenter::partition(content,
+                                             config->intValue(Keys::documentWindowCharacters),
+                                             config->intValue(Keys::documentWindowLines));
     m_progress->setRange(0, qMax(1, m_windows.size()));
     if (m_windows.isEmpty()) {
         setStatus(tr("No content to translate"));

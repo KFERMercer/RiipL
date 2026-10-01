@@ -282,7 +282,8 @@ QVector<DocumentWindow> DocumentSegmenter::partition(const QString& document, in
         characters += length + (window.lines.isEmpty() ? 0 : 1);
         window.lines.append({line, 1, blanks});
         blanks = 0;
-        if (window.lines.size() >= lineLimit)
+        if (lineLimit != DocumentWindowLines::unlimitedSentinel
+            && window.lines.size() >= lineLimit)
             closeWindow();
     }
     closeWindow();

@@ -30,6 +30,10 @@ void TestConfigManager::fallsBackToDefaults()
     QCOMPARE(ConfigManager::instance()->doubleValue(Keys::apiTemperature), Defaults::apiTemperature);
     QCOMPARE(ConfigManager::instance()->intValue(Keys::apiTimeoutMs), Defaults::apiTimeoutMs);
     QCOMPARE(ConfigManager::instance()->stringValue(Keys::translationTargetLang), QStringLiteral("zh"));
+    QCOMPARE(ConfigManager::instance()->intValue(Keys::documentWindowCharacters),
+             Defaults::documentWindowCharacters);
+    QCOMPARE(ConfigManager::instance()->intValue(Keys::documentWindowLines),
+             Defaults::documentWindowLines);
     QVERIFY(ConfigManager::instance()->isDefault(Keys::apiModel));
     QFile file(ConfigManager::instance()->configFilePath());
     QVERIFY(file.open(QIODevice::ReadOnly));

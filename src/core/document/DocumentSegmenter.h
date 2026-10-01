@@ -6,6 +6,8 @@
 
 #include <optional>
 
+#include "core/config/Defaults.h"
+
 // One line of a document: adjacent duplicates collapse into one entry, and the
 // blank lines before it are recorded so they can be put back on export.
 struct DocumentLine
@@ -34,17 +36,13 @@ struct DocumentWindow
 class DocumentSegmenter
 {
 public:
-    // Characters a window may hold, and the lines it may hold at most.
-    static constexpr int windowCharacters = 500;
-    static constexpr int windowLines = 10;
-
-    // Splits \p document into windows of whole lines, taking lines while they fit
-    // \p charLimit characters and never holding more than \p lineLimit lines. A
-    // line longer than \p charLimit fills a window on its own. A document without
-    // a line carrying text yields no window.
+    // Splits \p document into windows of whole lines. A line longer than
+    // \p charLimit fills a window on its own, and \p lineLimit at
+    // DocumentWindowLines::unlimitedSentinel leaves the line count unbounded. A
+    // document without a line carrying text yields no window.
     static QVector<DocumentWindow> partition(const QString& document,
-                                             int charLimit = windowCharacters,
-                                             int lineLimit = windowLines);
+                                             int charLimit = Defaults::documentWindowCharacters,
+                                             int lineLimit = Defaults::documentWindowLines);
     // Answers, one per window line, keyed in the response by the line number
     // 1..lineCount(); nothing when the response does not hold those lines, each
     // once and carrying text.

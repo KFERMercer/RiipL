@@ -541,6 +541,15 @@ QWidget* SettingsDialog::createDocumentPage()
 {
     auto* page = new QWidget(this);
     auto* form = new QFormLayout(page);
+    auto* charactersSpin = new ConfigSpinBox(Keys::documentWindowCharacters, 1, 999999, 50, page);
+    auto* linesSpin = new ConfigSpinBox(Keys::documentWindowLines,
+                                        DocumentWindowLines::unlimitedSentinel, 99999, 1, page);
+    bindText([linesSpin]() {
+        linesSpin->edit()->setSpecialValueText(tr("Unlimited"));
+        linesSpin->edit()->updateGeometry();
+    });
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Window characters"), charactersSpin);
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Window lines"), linesSpin);
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Document translation retries"),
                   new ConfigSpinBox(Keys::documentRetryCount, 0, 999, 1, page));
     return page;

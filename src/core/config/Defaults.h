@@ -18,6 +18,12 @@ inline const double providerDefaultSentinel = -0.1;
 
 }
 
+namespace DocumentWindowLines {
+
+inline const int unlimitedSentinel = 0;
+
+}
+
 namespace Keys {
 
 inline const QString promptSystem = QStringLiteral("prompts.system");
@@ -81,8 +87,9 @@ inline const QString translationCustomTones = QStringLiteral("translation.custom
 inline const QString translationStyle = QStringLiteral("translation.style");
 inline const QString translationBackground = QStringLiteral("translation.background");
 
-// Extra attempts a failed document window is sent for.
 inline const QString documentRetryCount = QStringLiteral("document.retry_count");
+inline const QString documentWindowCharacters = QStringLiteral("document.window_characters");
+inline const QString documentWindowLines = QStringLiteral("document.window_lines");
 
 inline const QString glossaryEnabled = QStringLiteral("glossary.enabled");
 inline const QString glossaryEntries = QStringLiteral("glossary.entries");
@@ -121,6 +128,8 @@ inline const QString translationStyle = QString();
 inline const QString translationBackground = QString();
 
 inline const int documentRetryCount = 3;
+inline const int documentWindowCharacters = 500;
+inline const int documentWindowLines = 10;
 
 inline const bool glossaryEnabled = false;
 
@@ -273,6 +282,8 @@ inline QJsonValue value(const QString& key)
     if (key == Keys::translationStyle) return QJsonValue(translationStyle);
     if (key == Keys::translationBackground) return QJsonValue(translationBackground);
     if (key == Keys::documentRetryCount) return QJsonValue(documentRetryCount);
+    if (key == Keys::documentWindowCharacters) return QJsonValue(documentWindowCharacters);
+    if (key == Keys::documentWindowLines) return QJsonValue(documentWindowLines);
     if (key == Keys::glossaryEnabled) return QJsonValue(glossaryEnabled);
     if (key == Keys::glossaryEntries) return QJsonArray();
     if (key == Keys::promptSystem) return QJsonValue(promptSystem);
