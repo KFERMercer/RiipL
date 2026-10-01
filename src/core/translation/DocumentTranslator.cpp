@@ -3,9 +3,8 @@
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
 
-#include <QString>
+#include <QTimer>
 
-#include <optional>
 #include <utility>
 
 namespace {
@@ -13,19 +12,42 @@ namespace {
 // Pause before each attempt after the first.
 constexpr int kRetryDelayMs = 1000;
 
-} // namespace
+}
 
 DocumentTranslator::DocumentTranslator(QObject* parent)
     : QObject(parent)
 {
-    m_retryTimer.setSingleShot(true);
-    connect(&m_retryTimer, &QTimer::timeout, this, &DocumentTranslator::translateWindow);
+}
 
-    connect(&m_engine, &TranslationEngine::partialDelta,
-            this, &DocumentTranslator::windowStreamed);
-    connect(&m_engine, &TranslationEngine::finished,
-            this, &DocumentTranslator::handleWindowFinished);
-    connect(&m_engine, &TranslationEngine::error, this, &DocumentTranslator::retryOrFail);
+int DocumentTranslator::requestedWorkers() const
+{
+    ConfigManager* config = ConfigManager::instance();
+    // The switch turns concurrent translation off; the limit is what a run may
+    // have in flight when it is on.
+    if (!config->boolValue(Keys::documentConcurrent))
+        return 1;
+    return qMax(1, config->intValue(Keys::apiMaxConcurrency));
+}
+
+// The pool grows to the largest count a run has needed and is kept, so a second
+// run reuses the requests instead of building new ones.
+void DocumentTranslator::ensureWorkers(int count)
+{
+    while (m_workers.size() < count) {
+        const int index = m_workers.size();
+        Worker worker;
+        worker.engine = new TranslationEngine(this);
+        worker.retryTimer = new QTimer(this);
+        worker.retryTimer->setSingleShot(true);
+
+        connect(worker.engine, &TranslationEngine::finished, this,
+                [this, index](const QString& response) { handleWindowFinished(index, response); });
+        connect(worker.engine, &TranslationEngine::error, this,
+                [this, index](const ApiClient::Error& failure) { retryOrFail(index, failure); });
+        connect(worker.retryTimer, &QTimer::timeout, this,
+                [this, index]() { resendWindow(index); });
+        m_workers.append(worker);
+    }
 }
 
 void DocumentTranslator::start(const QVector<DocumentWindow>& windows,
@@ -37,18 +59,24 @@ void DocumentTranslator::start(const QVector<DocumentWindow>& windows,
     m_sources.reserve(m_windows.size());
     for (const DocumentWindow& window : std::as_const(m_windows))
         m_sources.append(window.source());
+
     m_translations.clear();
-    m_rendered.clear();
+    // A window without an answer yet renders as its own source text, which is
+    // what the document shows for the windows a run has not reached.
+    m_translations.resize(m_windows.size());
     m_context = context;
-    m_attempts = 0;
+    m_nextWindow = 0;
+    m_completed = 0;
 
     if (m_windows.isEmpty()) {
         emit finished(QString());
         return;
     }
+
+    ensureWorkers(qMin(requestedWorkers(), m_windows.size()));
     m_active = true;
     emit progressChanged(0, m_windows.size());
-    translateWindow();
+    dispatchPending();
 }
 
 void DocumentTranslator::stop()
@@ -62,19 +90,45 @@ void DocumentTranslator::stop()
 void DocumentTranslator::cancelRun()
 {
     m_active = false;
-    m_retryTimer.stop();
-    if (m_engine.busy())
-        m_engine.stop();
+    for (Worker& worker : m_workers) {
+        worker.retryTimer->stop();
+        if (worker.engine->busy())
+            worker.engine->stop();
+        worker.window = -1;
+    }
+    m_nextWindow = 0;
 }
 
-void DocumentTranslator::translateWindow()
+void DocumentTranslator::dispatchPending()
 {
     if (!m_active)
         return;
-    const int index = m_translations.size();
-    if (index >= m_windows.size())
+    for (int index = 0; index < m_workers.size() && m_nextWindow < m_windows.size(); ++index) {
+        Worker& worker = m_workers[index];
+        if (worker.window >= 0)
+            continue;
+        sendWindow(index, m_nextWindow);
+        ++m_nextWindow;
+    }
+}
+
+void DocumentTranslator::sendWindow(int workerIndex, int window)
+{
+    Worker& worker = m_workers[workerIndex];
+    worker.window = window;
+    worker.attempts = 0;
+    resendWindow(workerIndex);
+}
+
+void DocumentTranslator::resendWindow(int workerIndex)
+{
+    if (!m_active)
         return;
-    ++m_attempts;
+    Worker& worker = m_workers[workerIndex];
+    const int index = worker.window;
+    if (index < 0)
+        return;
+    ++worker.attempts;
 
     DocumentWindowPrompt prompt;
     // A line repeated in the document reaches the model once; the text is put
@@ -90,15 +144,16 @@ void DocumentTranslator::translateWindow()
 
     TranslationContext context = m_context;
     context.sourceText = m_sources.at(index);
-    m_engine.translateDocument(context, prompt);
+    worker.engine->translateDocument(context, prompt);
 }
 
-void DocumentTranslator::handleWindowFinished(const QString& response)
+void DocumentTranslator::handleWindowFinished(int workerIndex, const QString& response)
 {
     if (!m_active)
         return;
-    const int index = m_translations.size();
-    if (index >= m_windows.size())
+    Worker& worker = m_workers[workerIndex];
+    const int index = worker.window;
+    if (index < 0)
         return;
 
     const DocumentWindow& window = m_windows.at(index);
@@ -107,38 +162,43 @@ void DocumentTranslator::handleWindowFinished(const QString& response)
         ApiClient::Error failure;
         failure.code = ApiClient::ErrorCode::LineCountMismatch;
         failure.detail = QString::number(window.lineCount());
-        retryOrFail(failure);
+        retryOrFail(workerIndex, failure);
         return;
     }
 
-    m_attempts = 0;
-    m_translations.append(*lines);
-    m_rendered.append(DocumentSegmenter::renderWindow(window, *lines));
-    const QString text = m_rendered.join(QLatin1Char('\n'));
-    emit windowTranslated(text);
-    emit progressChanged(m_translations.size(), m_windows.size());
+    m_translations[index] = *lines;
+    worker.window = -1;
+    ++m_completed;
+    emit progressChanged(m_completed, m_windows.size());
 
-    if (m_translations.size() < m_windows.size()) {
-        translateWindow();
+    // The document is reported whole on every accepted window, so an answer lands
+    // at its own place whatever order the answers arrive in; a window the run has
+    // not accepted yet keeps its source text.
+    const QString document = DocumentSegmenter::assemble(m_windows, m_translations);
+    emit windowTranslated(document);
+
+    if (m_completed == m_windows.size()) {
+        m_active = false;
+        emit finished(document);
         return;
     }
-    m_active = false;
-    // The finished document is the segmenter's rebuild of every window.
-    emit finished(DocumentSegmenter::assemble(m_windows, m_translations));
+    dispatchPending();
 }
 
-void DocumentTranslator::retryOrFail(const ApiClient::Error& failure)
+void DocumentTranslator::retryOrFail(int workerIndex, const ApiClient::Error& failure)
 {
     if (!m_active)
         return;
+    Worker& worker = m_workers[workerIndex];
     const int retries = qMax(0, ConfigManager::instance()->intValue(Keys::documentRetryCount));
-    if (m_attempts > retries) {
-        m_active = false;
+    if (worker.attempts > retries) {
+        // The run gives up here, so the requests beside the failed window are
+        // dropped rather than left on the wire.
+        cancelRun();
         emit failed(failure);
         return;
     }
-    // The retry is settled before anyone is told, so a slot that stops the run
+    // The retry is settled before the pause starts, so a slot that stops the run
     // here stops it for good.
-    m_retryTimer.start(kRetryDelayMs * m_attempts);
-    emit windowRestarted();
+    worker.retryTimer->start(kRetryDelayMs * worker.attempts);
 }

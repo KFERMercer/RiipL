@@ -153,6 +153,7 @@ void TestApiPresets::applyWritesEveryField()
     config->setValue(Keys::apiModel, QStringLiteral("stale-model"));
     config->setValue(Keys::apiMaxTokens, 1);
     config->setValue(Keys::apiTemperature, 1.5);
+    config->setValue(Keys::apiMaxConcurrency, 64);
     config->setValue(Keys::apiStream, false);
     config->setValue(Keys::apiExtraBody, QStringLiteral("{\"x\":1}"));
     config->setValue(Keys::apiCustomHeaders, QStringLiteral("X-Stale: 1"));
@@ -164,6 +165,7 @@ void TestApiPresets::applyWritesEveryField()
     preset.values.insert(Keys::apiModel, QStringLiteral("deepseek-chat"));
     preset.values.insert(Keys::apiMaxTokens, 8192);
     preset.values.insert(Keys::apiTemperature, 0.3);
+    preset.values.insert(Keys::apiMaxConcurrency, 8);
     preset.values.insert(Keys::apiStream, true);
     preset.values.insert(Keys::apiExtraBody, QStringLiteral("{\"top_p\":0.9}"));
     preset.values.insert(Keys::apiCustomHeaders, QStringLiteral("X-Custom: yes"));
@@ -176,6 +178,7 @@ void TestApiPresets::applyWritesEveryField()
     QCOMPARE(config->intValue(Keys::apiMaxTokens), 8192);
     QCOMPARE(config->doubleValue(Keys::apiTemperature), 0.3);
     QCOMPARE(config->boolValue(Keys::apiStream), true);
+    QCOMPARE(config->intValue(Keys::apiMaxConcurrency), 8);
     QCOMPARE(config->stringValue(Keys::apiExtraBody), QStringLiteral("{\"top_p\":0.9}"));
     QCOMPARE(config->stringValue(Keys::apiCustomHeaders), QStringLiteral("X-Custom: yes"));
 
@@ -199,6 +202,7 @@ void TestApiPresets::applyWritesEveryField()
     QVERIFY(config->isDefault(Keys::apiKey));
     QVERIFY(config->isDefault(Keys::apiMaxTokens));
     QVERIFY(config->isDefault(Keys::apiTemperature));
+    QVERIFY(config->isDefault(Keys::apiMaxConcurrency));
     QVERIFY(config->isDefault(Keys::apiStream));
     QVERIFY(config->isDefault(Keys::apiCustomHeaders));
 

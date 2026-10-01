@@ -95,26 +95,11 @@ DocumentDialog::DocumentDialog(const TranslationContext& baseContext, QWidget* p
     connect(m_exportButton, &QPushButton::clicked, this, &DocumentDialog::exportResult);
     connect(closeButton, &QPushButton::clicked, this, &QDialog::close);
 
-    connect(&m_translator, &DocumentTranslator::windowStreamed, this, [this](const QString& piece) {
-        // The finished document separates two windows with a newline, so the
-        // streamed text follows one rather than running into the last line.
-        if (!m_streaming) {
-            m_streaming = true;
-            if (!m_completedText.isEmpty())
-                m_preview->appendResult(QStringLiteral("\n"));
-        }
-        m_preview->appendResult(piece);
-        QScrollBar* bar = m_preview->verticalScrollBar();
-        bar->setValue(bar->maximum());
-    });
-    connect(&m_translator, &DocumentTranslator::windowRestarted, this, [this]() {
-        m_streaming = false;
-        m_preview->setResult(m_completedText);
-    });
     connect(&m_translator, &DocumentTranslator::windowTranslated, this, [this](const QString& text) {
-        m_streaming = false;
         m_completedText = text;
         m_preview->setResult(text);
+        QScrollBar* bar = m_preview->verticalScrollBar();
+        bar->setValue(bar->maximum());
     });
     connect(&m_translator, &DocumentTranslator::progressChanged, this,
             [this](int completed, int total) {
@@ -160,7 +145,6 @@ bool DocumentDialog::loadFile()
     m_loadedPath.clear();
     m_windows.clear();
     m_completedText.clear();
-    m_streaming = false;
     m_preview->setResult(QString());
     m_progress->setRange(0, 1);
     m_progress->setValue(0);
@@ -209,7 +193,6 @@ void DocumentDialog::start()
     }
 
     m_completedText.clear();
-    m_streaming = false;
     m_preview->setResult(QString());
     m_progress->setRange(0, m_windows.size());
     m_progress->setValue(0);
@@ -256,12 +239,11 @@ void DocumentDialog::exportResult()
     setStatus(tr("Exported to %1").arg(path));
 }
 
-// A run leaves the preview on the document accepted so far, so a window that was
-// cut off mid-answer is not exported as if it were translated. The pane keeps
-// whatever it shows, so a stop does not wipe the lines already translated.
+// A run leaves the preview on the document accepted so far, which keeps the text
+// of the windows the run did not reach. The pane keeps whatever it shows, so a
+// stop does not wipe the lines already translated.
 void DocumentDialog::endRun()
 {
-    m_streaming = false;
     setRunning(false);
     m_exportButton->setEnabled(!m_completedText.isEmpty());
 }

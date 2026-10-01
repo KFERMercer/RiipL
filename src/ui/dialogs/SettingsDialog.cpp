@@ -293,6 +293,9 @@ QWidget* SettingsDialog::createApiPage()
                                                     ApiTemperature::providerDefaultSentinel, 2.0, 0.1, 2, page);
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Temperature"), temperatureSpin);
 
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Max concurrency"),
+                  new ConfigSpinBox(Keys::apiMaxConcurrency, 1, 128, 1, page));
+
     auto* streamCheck = new ConfigCheckBox(Keys::apiStream, page);
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Stream responses"), streamCheck);
 
@@ -552,8 +555,10 @@ QWidget* SettingsDialog::createDocumentPage()
     });
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Window characters"), charactersSpin);
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Window lines"), linesSpin);
-    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Document translation retries"),
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Retries"),
                   new ConfigSpinBox(Keys::documentRetryCount, 0, 999, 1, page));
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Translate concurrently"),
+                  new ConfigCheckBox(Keys::documentConcurrent, page));
     return page;
 }
 

@@ -34,6 +34,12 @@ void TestConfigManager::fallsBackToDefaults()
              Defaults::documentWindowCharacters);
     QCOMPARE(ConfigManager::instance()->intValue(Keys::documentWindowLines),
              Defaults::documentWindowLines);
+    QCOMPARE(ConfigManager::instance()->intValue(Keys::apiMaxConcurrency),
+             Defaults::apiMaxConcurrency);
+    QCOMPARE(ConfigManager::instance()->boolValue(Keys::documentConcurrent),
+             Defaults::documentConcurrent);
+    QCOMPARE(Defaults::apiMaxConcurrency, 1);
+    QVERIFY(Defaults::documentConcurrent);
     QVERIFY(ConfigManager::instance()->isDefault(Keys::apiModel));
     QFile file(ConfigManager::instance()->configFilePath());
     QVERIFY(file.open(QIODevice::ReadOnly));

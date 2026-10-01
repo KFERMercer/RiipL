@@ -47,7 +47,8 @@ private:
     // Path the loaded windows came from, so the box and the document cannot
     // disagree about what Translate translates.
     QString m_loadedPath;
-    // Document translated so far; the window in flight is not part of it.
+    // Document as it stands, sent once a window has been accepted; the windows the
+    // run has not reached yet carry their source text.
     QString m_completedText;
     QLineEdit* m_pathEdit = nullptr;
     QPushButton* m_browseButton = nullptr;
@@ -57,7 +58,5 @@ private:
     QAction* m_translateAction = nullptr;
     QAction* m_stopAction = nullptr;
     QPushButton* m_exportButton = nullptr;
-    // Holds while the preview carries text streamed for the window in flight.
-    bool m_streaming = false;
     bool m_running = false;
 };

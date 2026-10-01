@@ -32,15 +32,6 @@ QString TranslationEdit::result() const
     return toPlainText();
 }
 
-void TranslationEdit::appendResult(const QString& text)
-{
-    if (text.isEmpty())
-        return;
-    QTextCursor cursor(document());
-    cursor.movePosition(QTextCursor::End);
-    cursor.insertText(text);
-}
-
 void TranslationEdit::clearHighlight()
 {
     setExtraSelections({});

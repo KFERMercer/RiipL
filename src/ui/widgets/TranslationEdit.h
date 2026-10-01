@@ -15,8 +15,6 @@ public:
 
     void setResult(const QString& text);
     QString result() const;
-    // Extends the result, so a growing stream is not rewritten piece by piece.
-    void appendResult(const QString& text);
     // Replaces the \p length characters at \p start, so a replacement is
     // rejected outright once the translation has moved on.
     bool replaceWordAt(int start, int length, const QString& replacement);

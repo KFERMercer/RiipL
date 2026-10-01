@@ -27,6 +27,7 @@ inline const QString apiMaxTokens = QStringLiteral("api.max_tokens");
 inline const QString apiStream = QStringLiteral("api.stream");
 inline const QString apiExtraBody = QStringLiteral("api.extra_body");
 inline const QString apiCustomHeaders = QStringLiteral("api.custom_headers");
+inline const QString apiMaxConcurrency = QStringLiteral("api.max_concurrency");
 inline const QString apiPresets = QStringLiteral("api.presets");
 
 // Fields a named API preset captures, in settings-page order.
@@ -34,7 +35,7 @@ inline const QStringList& apiPresetFields()
 {
     static const QStringList fields = {
         apiBaseUrl, apiKey, apiModel, apiTimeoutMs, apiTemperature,
-        apiMaxTokens, apiStream, apiExtraBody, apiCustomHeaders,
+        apiMaxTokens, apiStream, apiMaxConcurrency, apiExtraBody, apiCustomHeaders,
     };
     return fields;
 }
@@ -68,9 +69,10 @@ inline const QString translationCustomTones = QStringLiteral("translation.custom
 inline const QString translationStyle = QStringLiteral("translation.style");
 inline const QString translationBackground = QStringLiteral("translation.background");
 
-inline const QString documentRetryCount = QStringLiteral("document.retry_count");
 inline const QString documentWindowCharacters = QStringLiteral("document.window_characters");
 inline const QString documentWindowLines = QStringLiteral("document.window_lines");
+inline const QString documentRetryCount = QStringLiteral("document.retry_count");
+inline const QString documentConcurrent = QStringLiteral("document.concurrent");
 
 inline const QString glossaryEnabled = QStringLiteral("glossary.enabled");
 inline const QString glossaryEntries = QStringLiteral("glossary.entries");
@@ -91,6 +93,7 @@ inline const QString apiModel = QStringLiteral("gpt-4o-mini");
 inline const int apiTimeoutMs = 10000;
 inline const double apiTemperature = 0.0;
 inline const int apiMaxTokens = 4096;
+inline const int apiMaxConcurrency = 1;
 inline const bool apiStream = true;
 inline const QString apiExtraBody = QString();
 inline const QString apiCustomHeaders = QString();
@@ -108,9 +111,10 @@ inline const QString translationTone = QStringLiteral("default");
 inline const QString translationStyle = QString();
 inline const QString translationBackground = QString();
 
-inline const int documentRetryCount = 3;
 inline const int documentWindowCharacters = 500;
 inline const int documentWindowLines = 10;
+inline const int documentRetryCount = 3;
+inline const bool documentConcurrent = true;
 
 inline const bool glossaryEnabled = false;
 
@@ -246,6 +250,7 @@ inline QJsonValue value(const QString& key)
     if (key == Keys::apiTimeoutMs) return QJsonValue(apiTimeoutMs);
     if (key == Keys::apiTemperature) return QJsonValue(apiTemperature);
     if (key == Keys::apiMaxTokens) return QJsonValue(apiMaxTokens);
+    if (key == Keys::apiMaxConcurrency) return QJsonValue(apiMaxConcurrency);
     if (key == Keys::apiStream) return QJsonValue(apiStream);
     if (key == Keys::apiExtraBody) return QJsonValue(apiExtraBody);
     if (key == Keys::apiCustomHeaders) return QJsonValue(apiCustomHeaders);
@@ -262,9 +267,10 @@ inline QJsonValue value(const QString& key)
     if (key == Keys::translationCustomTones) return QJsonArray();
     if (key == Keys::translationStyle) return QJsonValue(translationStyle);
     if (key == Keys::translationBackground) return QJsonValue(translationBackground);
-    if (key == Keys::documentRetryCount) return QJsonValue(documentRetryCount);
     if (key == Keys::documentWindowCharacters) return QJsonValue(documentWindowCharacters);
     if (key == Keys::documentWindowLines) return QJsonValue(documentWindowLines);
+    if (key == Keys::documentRetryCount) return QJsonValue(documentRetryCount);
+    if (key == Keys::documentConcurrent) return QJsonValue(documentConcurrent);
     if (key == Keys::glossaryEnabled) return QJsonValue(glossaryEnabled);
     if (key == Keys::glossaryEntries) return QJsonArray();
     if (key == Keys::promptSystem) return QJsonValue(promptSystem);
