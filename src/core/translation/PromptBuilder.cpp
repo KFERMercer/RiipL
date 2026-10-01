@@ -88,8 +88,8 @@ QStringList PromptBuilder::knownPlaceholders()
         QStringLiteral("mark_right"),
         QStringLiteral("window"),
         QStringLiteral("window_lines"),
-        QStringLiteral("prev_window"),
-        QStringLiteral("next_window")
+        QStringLiteral("prev_segment"),
+        QStringLiteral("next_segment")
     };
 }
 
@@ -143,8 +143,8 @@ QHash<QString, QString> PromptBuilder::variablesFor(const TranslationContext& co
     // reach another prompt.
     variables.insert(QStringLiteral("window"), QString());
     variables.insert(QStringLiteral("window_lines"), QString());
-    variables.insert(QStringLiteral("prev_window"), QString());
-    variables.insert(QStringLiteral("next_window"), QString());
+    variables.insert(QStringLiteral("prev_segment"), QString());
+    variables.insert(QStringLiteral("next_segment"), QString());
     return variables;
 }
 
@@ -196,9 +196,9 @@ PromptBuilder::Result PromptBuilder::buildDocument(const TranslationContext& con
     QHash<QString, QString> variables = variablesFor(context);
     variables.insert(QStringLiteral("window"), documentWindowData(window.lines));
     variables.insert(QStringLiteral("window_lines"), QString::number(window.lines.size()));
-    variables.insert(QStringLiteral("prev_window"),
+    variables.insert(QStringLiteral("prev_segment"),
                      window.previous.isEmpty() ? kNoAdjacentWindow : window.previous);
-    variables.insert(QStringLiteral("next_window"),
+    variables.insert(QStringLiteral("next_segment"),
                      window.next.isEmpty() ? kNoAdjacentWindow : window.next);
 
     Result result;

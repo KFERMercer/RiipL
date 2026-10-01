@@ -321,7 +321,7 @@ void TestPromptBuilder::buildsDocumentPrompt()
     QVERIFY(result.user.contains(window.next));
     QVERIFY(result.user.contains(QStringLiteral("English")));
     for (const QString& token : {QStringLiteral("{window}"), QStringLiteral("{window_lines}"),
-                                 QStringLiteral("{prev_window}"), QStringLiteral("{next_window}"),
+                                 QStringLiteral("{prev_segment}"), QStringLiteral("{next_segment}"),
                                  QStringLiteral("{target_lang}")}) {
         QVERIFY2(!result.user.contains(token), qPrintable(result.user));
     }
@@ -345,7 +345,7 @@ void TestPromptBuilder::buildsDocumentPrompt()
     QCOMPARE(PromptBuilder::buildDocument(bare, window).user, QStringLiteral("Lines: 2"));
 
     ConfigManager::instance()->setValue(Keys::promptDocument,
-                                        QStringLiteral("{prev_window}\n{next_window}"));
+                                        QStringLiteral("{prev_segment}\n{next_segment}"));
     QCOMPARE(PromptBuilder::buildDocument(bare, window).user,
              QStringLiteral("前一段\n后一段"));
 
@@ -470,7 +470,7 @@ void TestPromptBuilder::listsEveryKnownPlaceholder()
         QStringLiteral("selected_fragment"), QStringLiteral("selected_word"),
         QStringLiteral("mark_left"), QStringLiteral("mark_right"),
         QStringLiteral("window"), QStringLiteral("window_lines"),
-        QStringLiteral("prev_window"), QStringLiteral("next_window")
+        QStringLiteral("prev_segment"), QStringLiteral("next_segment")
     };
     QCOMPARE(placeholders, expected);
 

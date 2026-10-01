@@ -631,10 +631,10 @@ QWidget* SettingsDialog::createPromptsPage()
             if (placeholder == QLatin1String("selected_word")) return tr("Word selected in the translation pane (candidate wording only)");
             if (placeholder == QLatin1String("mark_left")) return tr("Marker placed before the selected word (candidate wording only)");
             if (placeholder == QLatin1String("mark_right")) return tr("Marker placed after the selected word (candidate wording only)");
-            if (placeholder == QLatin1String("window")) return tr("Segment to translate (document translation only)");
-            if (placeholder == QLatin1String("window_lines")) return tr("Number of lines in the segment to translate (document translation only)");
-            if (placeholder == QLatin1String("prev_window")) return tr("Previous segment to translate (document translation only)");
-            if (placeholder == QLatin1String("next_window")) return tr("Next segment to translate (document translation only)");
+            if (placeholder == QLatin1String("window")) return tr("Translation window, rendered as JSON (document translation only)");
+            if (placeholder == QLatin1String("window_lines")) return tr("Number of lines in the translation window (document translation only)");
+            if (placeholder == QLatin1String("prev_segment")) return tr("Previous segment to translate (document translation only)");
+            if (placeholder == QLatin1String("next_segment")) return tr("Next segment to translate (document translation only)");
             return QString();
         };
         for (const QString& placeholder : PromptBuilder::knownPlaceholders()) {

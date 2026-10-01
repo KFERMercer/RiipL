@@ -172,11 +172,11 @@ Context segments, for understanding only:
 
 - Previous segment:
   ```
-  {prev_window}
+  {prev_segment}
   ```
 - Next segment:
   ```
-  {next_window}
+  {next_segment}
   ```
 
 Translate every value of the object into {target_lang}. Note that you must **only output the translated result without any additional explanation**, as a JSON object with exactly {window_lines} keys numbered "1" to "{window_lines}".)TXT";

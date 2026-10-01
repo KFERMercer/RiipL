@@ -1326,14 +1326,9 @@
         <translation>标记选中词的记号 - 右（候选遣词专用）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="634"/>
-        <source>Segment to translate (document translation only)</source>
-        <translation>待翻译片段（文档翻译专用）</translation>
-    </message>
-    <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="635"/>
-        <source>Number of lines in the segment to translate (document translation only)</source>
-        <translation>待翻译片段行数（文档翻译专用）</translation>
+        <source>Number of lines in the translation window (document translation only)</source>
+        <translation>翻译窗口段落数（文档翻译专用）</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="636"/>
@@ -1409,6 +1404,11 @@
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="532"/>
         <source>Document translation retries</source>
         <translation>文档翻译重试次数</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="634"/>
+        <source>Translation window, rendered as JSON (document translation only)</source>
+        <translation>翻译窗口，以 JSON 渲染（文档翻译专用）</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="667"/>
