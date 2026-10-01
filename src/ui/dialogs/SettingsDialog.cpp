@@ -287,7 +287,8 @@ QWidget* SettingsDialog::createApiPage()
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Max tokens"),
                   new ConfigSpinBox(Keys::apiMaxTokens, 1, 1000000, 256, page));
 
-    auto* temperatureSpin = new ConfigDoubleSpinBox(Keys::apiTemperature, -0.1, 2.0, 0.1, 2, page);
+    auto* temperatureSpin = new ConfigDoubleSpinBox(Keys::apiTemperature,
+                                                    ApiTemperature::providerDefaultSentinel, 2.0, 0.1, 2, page);
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Temperature"), temperatureSpin);
 
     auto* streamCheck = new ConfigCheckBox(Keys::apiStream, page);

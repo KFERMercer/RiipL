@@ -201,10 +201,16 @@ void TestTranslationEngine::handlesRequestBodyParameters()
     QDir().mkpath(TestSupport::tempDir());
     ConfigManager::createInstance(TestSupport::tempDir());
 
-    QCOMPARE(Defaults::apiTemperature, -0.1);
+    QCOMPARE(Defaults::apiTemperature, 0.0);
     const QJsonObject body = TranslationEngine::buildRequestBody(
         {QString(), QStringLiteral("Hello")}, false);
-    QVERIFY(!body.contains(QStringLiteral("temperature")));
+    QCOMPARE(body.value(QStringLiteral("temperature")).toDouble(), 0.0);
+
+    // A negative temperature is the opt-out that leaves sampling to the provider.
+    ConfigManager::instance()->setValue(Keys::apiTemperature, ApiTemperature::providerDefaultSentinel);
+    const QJsonObject untuned = TranslationEngine::buildRequestBody(
+        {QString(), QStringLiteral("Hello")}, false);
+    QVERIFY(!untuned.contains(QStringLiteral("temperature")));
 
     ConfigManager::instance()->setValue(Keys::apiTemperature, 0.7);
     const QJsonObject tuned = TranslationEngine::buildRequestBody(

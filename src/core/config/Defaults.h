@@ -7,10 +7,14 @@
 
 namespace CandidateMarks {
 
-// Wrapped around the selection before a fragment reaches the model. A paired
-// glyph is used because single-character markers get echoed back inside `old`.
 inline const QString selectionOpen = QStringLiteral("[[");
 inline const QString selectionClose = QStringLiteral("]]");
+
+}
+
+namespace ApiTemperature {
+
+inline const double providerDefaultSentinel = -0.1;
 
 }
 
@@ -97,8 +101,7 @@ inline const QString apiBaseUrl = QStringLiteral("https://api.openai.com/v1");
 inline const QString apiKey = QString();
 inline const QString apiModel = QStringLiteral("gpt-4o-mini");
 inline const int apiTimeoutMs = 10000;
-// Negative values keep the temperature parameter out of API requests.
-inline const double apiTemperature = -0.1;
+inline const double apiTemperature = 0.0;
 inline const int apiMaxTokens = 4096;
 inline const bool apiStream = true;
 inline const QString apiExtraBody = QString();
