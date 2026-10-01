@@ -109,8 +109,8 @@ private:
     QTcpServer m_server;
 };
 
-// Document of \p windows windows holding \p linesPerWindow distinct lines of
-// four words each, so the word limits split it exactly where it is asked to.
+// Document of \p windows windows holding \p linesPerWindow distinct lines each,
+// sized so a window holds exactly the lines it is asked to.
 QVector<DocumentWindow> document(int windows, int linesPerWindow)
 {
     QStringList lines;
@@ -119,8 +119,12 @@ QVector<DocumentWindow> document(int windows, int linesPerWindow)
             lines << QStringLiteral("window %1 line %2").arg(window).arg(line);
         lines << QString();
     }
+    // Every line of a window is \p chars long, so a window holds \p
+    // linesPerWindow of them, separated by the newlines between them.
+    const int chars = QStringLiteral("window 0 line 0").size();
     return DocumentSegmenter::partition(lines.join(QLatin1Char('\n')),
-                                        linesPerWindow * 4, linesPerWindow * 4 + 4);
+                                        chars * linesPerWindow + linesPerWindow - 1,
+                                        linesPerWindow);
 }
 
 } // namespace

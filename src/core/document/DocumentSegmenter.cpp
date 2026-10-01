@@ -243,21 +243,20 @@ QString DocumentWindow::source() const
     return texts.join(QLatin1Char('\n'));
 }
 
-QVector<DocumentWindow> DocumentSegmenter::partition(const QString& document,
-                                                     int wordLimit, int snapLimit,
+QVector<DocumentWindow> DocumentSegmenter::partition(const QString& document, int charLimit,
                                                      int lineLimit)
 {
     QVector<DocumentWindow> windows;
     DocumentWindow window;
-    int windowWordCount = 0;
+    int characters = 0;
     int blanks = 0;
 
-    const auto closeWindow = [&windows, &window, &windowWordCount]() {
+    const auto closeWindow = [&windows, &window, &characters]() {
         if (window.lines.isEmpty())
             return;
         windows.append(window);
         window = DocumentWindow();
-        windowWordCount = 0;
+        characters = 0;
     };
 
     const QStringList lines = document.split(QLatin1Char('\n'));
@@ -273,19 +272,17 @@ QVector<DocumentWindow> DocumentSegmenter::partition(const QString& document,
             continue;
         }
 
-        const int words = TextUtils::wordCount(line);
-        // The line that crosses the word limit still joins the window while the
-        // total stays within the snap limit; past that it opens the next window.
-        // A line over both limits fills a window on its own.
-        if (!window.lines.isEmpty() && windowWordCount + words > wordLimit
-            && windowWordCount + words > snapLimit) {
+        // The joined window keeps the newlines that separate its lines, so the
+        // limit applies to the text the model receives. A line longer than the
+        // limit fills a window on its own.
+        const int length = line.size();
+        if (!window.lines.isEmpty() && characters + length + 1 > charLimit)
             closeWindow();
-        }
 
+        characters += length + (window.lines.isEmpty() ? 0 : 1);
         window.lines.append({line, 1, blanks});
         blanks = 0;
-        windowWordCount += words;
-        if (windowWordCount >= wordLimit || window.lines.size() >= lineLimit)
+        if (window.lines.size() >= lineLimit)
             closeWindow();
     }
     closeWindow();

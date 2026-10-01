@@ -48,14 +48,16 @@ class TestDocumentSegmenter : public QObject
 
 private slots:
     void partitionsIntoWholeLineWindows();
-    void packsByWordsWhenLinesAllow();
-    void limitsWindowsToTenLines();
-    void snapsLineWithinSnapLimit();
-    void movesLinePastSnapLimitToNextWindow();
+    void packsByCharactersWhenLinesAllow();
+    void fillsWindowsUpToTheDefaultCharacterLimit();
+    void fitsExactlyTheCharacterLimit();
     void keepsOversizedLineInItsOwnWindow();
     void recordsBlankLinesAndRepeats();
     void keepsBlankLineBetweenEqualLines();
     void restoresDocumentFromTranslations();
+    void yieldsNoWindowForCaptionsAndBlankText();
+    void endsWindowAtLineLimitBeforeCharacterLimit();
+    void countsCharactersAfterCollapsingRepeats();
     void rendersWindowWithRepeatsAndBlanks();
     void splitsWindowByLineNumber();
     void readsKeysInNumberOrder();
@@ -94,76 +96,122 @@ void TestDocumentSegmenter::partitionsIntoWholeLineWindows()
     QCOMPARE(start, lines.size());
 }
 
-// With the lines to spare, the word target is what closes a window.
-void TestDocumentSegmenter::packsByWordsWhenLinesAllow()
+// With the lines to spare, the character limit is what closes a window.
+void TestDocumentSegmenter::packsByCharactersWhenLinesAllow()
 {
     QStringList lines;
-    for (int index = 0; index < 100; ++index)
-        lines << QStringLiteral("l%1 a b c d e f g h i j k").arg(index);
+    for (int index = 0; index < 25; ++index)
+        lines << QString::number(index).rightJustified(3, QLatin1Char('0'))
+              + QStringLiteral(" abcdefghijklm");
     const QString document = lines.join(QLatin1Char('\n'));
 
-    const QVector<DocumentWindow> windows =
-        DocumentSegmenter::partition(document, DocumentSegmenter::windowWords,
-                                     DocumentSegmenter::snapWords, 100);
-    QCOMPARE(windows.size(), 3);
-    QCOMPARE(windows.at(0).lineCount(), 42);
-    QCOMPARE(windows.at(1).lineCount(), 42);
-    QCOMPARE(windows.at(2).lineCount(), 16);
+    // 17 characters per line plus the newline separating them: five lines fill
+    // 89 characters, a sixth would reach 107.
+    const QVector<DocumentWindow> windows = DocumentSegmenter::partition(document, 100, 100);
+    QCOMPARE(windows.size(), 5);
+    for (const DocumentWindow& window : windows)
+        QCOMPARE(window.lineCount(), 5);
+
+    // Every line reaches the model exactly once, and no window overshoots.
+    QCOMPARE(DocumentSegmenter::assemble(windows, sourceLines(windows)), document);
+    for (const DocumentWindow& window : windows) {
+        int characters = window.lineCount() - 1;
+        for (const DocumentLine& line : window.lines)
+            characters += line.text.size();
+        QVERIFY2(characters <= 100, qPrintable(window.source()));
+    }
 }
 
-void TestDocumentSegmenter::limitsWindowsToTenLines()
+// Lines that sum to the default limit fill a window; one character more opens
+// the next.
+void TestDocumentSegmenter::fillsWindowsUpToTheDefaultCharacterLimit()
 {
-    QStringList lines;
-    for (int index = 0; index < 23; ++index)
-        lines << QStringLiteral("line %1 carries a few words").arg(index);
+    // Two lines whose joined text is exactly the limit stay together.
+    const QString exact = QStringLiteral("1\n") + QString(498, QLatin1Char('a'));
+    const QVector<DocumentWindow> fitted = DocumentSegmenter::partition(exact);
+    QCOMPARE(fitted.size(), 1);
+    QCOMPARE(fitted.first().lineCount(), 2);
+    QCOMPARE(fitted.first().source().size(), DocumentSegmenter::windowCharacters);
 
-    // Short lines never reach the word target, so only the line limit closes windows.
-    const QVector<DocumentWindow> windows =
-        DocumentSegmenter::partition(lines.join(QLatin1Char('\n')));
-    QCOMPARE(windows.size(), 3);
-    QCOMPARE(windows.at(0).lineCount(), 10);
-    QCOMPARE(windows.at(1).lineCount(), 10);
-    QCOMPARE(windows.at(2).lineCount(), 3);
+    // One character more on the long line puts it in a window of its own.
+    const QString over = QStringLiteral("11\n") + QString(498, QLatin1Char('a'));
+    const QVector<DocumentWindow> split = DocumentSegmenter::partition(over);
+    QCOMPARE(split.size(), 2);
+    QCOMPARE(split.at(0).source(), QStringLiteral("11"));
+    QCOMPARE(split.at(1).source(), QString(498, QLatin1Char('a')));
 
-    // Every line still reaches the model exactly once.
-    QCOMPARE(DocumentSegmenter::assemble(windows, sourceLines(windows)),
-             lines.join(QLatin1Char('\n')));
+    // 500 short lines reach the window's line limit long before its character
+    // limit.
+    QStringList many;
+    for (int index = 0; index < DocumentSegmenter::windowCharacters; ++index)
+        many << QStringLiteral("x%1").arg(index);
+    const QVector<DocumentWindow> capped =
+        DocumentSegmenter::partition(many.join(QLatin1Char('\n')));
+    QCOMPARE(capped.size(), 50);
+    for (const DocumentWindow& window : capped)
+        QCOMPARE(window.lineCount(), DocumentSegmenter::windowLines);
+    QCOMPARE(DocumentSegmenter::assemble(capped, sourceLines(capped)),
+             many.join(QLatin1Char('\n')));
 }
 
-void TestDocumentSegmenter::snapsLineWithinSnapLimit()
+// A window fills up to the limit without crossing it.
+void TestDocumentSegmenter::fitsExactlyTheCharacterLimit()
 {
-    const QString document = QStringLiteral("a b c d\n"
-                                            "e f g h\n"
-                                            "i j k l");
+    const QString document = QStringLiteral("1111111111\n"
+                                            "2222222222\n"
+                                            "3333333333");
 
-    const QVector<DocumentWindow> windows = DocumentSegmenter::partition(document, 10, 12);
-    QCOMPARE(windows.size(), 1);
-    QCOMPARE(windows.first().lineCount(), 3);
-}
-
-void TestDocumentSegmenter::movesLinePastSnapLimitToNextWindow()
-{
-    const QString document = QStringLiteral("a b c d\n"
-                                            "e f g h\n"
-                                            "i j k l m n");
-
-    const QVector<DocumentWindow> windows = DocumentSegmenter::partition(document, 10, 12);
+    const QVector<DocumentWindow> windows = DocumentSegmenter::partition(document, 21, 10);
     QCOMPARE(windows.size(), 2);
-    QCOMPARE(windows.at(0).source(), QStringLiteral("a b c d\ne f g h"));
-    QCOMPARE(windows.at(1).source(), QStringLiteral("i j k l m n"));
+    QCOMPARE(windows.at(0).lineCount(), 2);
+    QCOMPARE(windows.at(0).source(), QStringLiteral("1111111111\n2222222222"));
+    QCOMPARE(windows.at(1).source(), QStringLiteral("3333333333"));
+
+    // A single line whose own text is the limit closes alone.
+    const QVector<DocumentWindow> single =
+        DocumentSegmenter::partition(QStringLiteral("111111111111111111111"), 21, 10);
+    QCOMPARE(single.size(), 1);
+    QCOMPARE(single.first().lineCount(), 1);
 }
 
+// A line over the character limit fills a window on its own, and one over the
+// line limit leaves with the lines that fitted before it.
 void TestDocumentSegmenter::keepsOversizedLineInItsOwnWindow()
 {
-    const QString oversized = QStringLiteral("a b c d e f g h i j k l m n o p q r s t u v w x");
+    const QString oversized(QString(501, QLatin1Char('a')));
     const QString document = QStringLiteral("a b c\n") + oversized + QStringLiteral("\na b c");
 
-    const QVector<DocumentWindow> windows = DocumentSegmenter::partition(document, 4, 6);
+    const QVector<DocumentWindow> windows = DocumentSegmenter::partition(document);
     QCOMPARE(windows.size(), 3);
     QCOMPARE(windows.at(0).source(), QStringLiteral("a b c"));
     QCOMPARE(windows.at(1).lineCount(), 1);
     QCOMPARE(windows.at(1).source(), oversized);
     QCOMPARE(windows.at(2).source(), QStringLiteral("a b c"));
+
+    const QString tenLines = QStringLiteral("a\nb\nc\nd\ne\nf\ng\nh\ni\n")
+                             + QString(150, QLatin1Char('z'));
+    const QVector<DocumentWindow> capped = DocumentSegmenter::partition(tenLines, 100, 10);
+    QCOMPARE(capped.size(), 2);
+    QCOMPARE(capped.at(0).lineCount(), 9);
+    QCOMPARE(capped.at(1).source(), QString(150, QLatin1Char('z')));
+
+    // Two lines that together cross the limit do not share a window, even
+    // though each of them fits it alone, while a short line leaves room for one
+    // that crosses it.
+    const QString first(QString(300, QLatin1Char('a')));
+    const QString second(QString(300, QLatin1Char('b')));
+    const QVector<DocumentWindow> pair =
+        DocumentSegmenter::partition(first + QStringLiteral("\n") + second);
+    QCOMPARE(pair.size(), 2);
+    QCOMPARE(pair.at(0).source(), first);
+    QCOMPARE(pair.at(1).source(), second);
+
+    const QString shortLine(QString(100, QLatin1Char('s')));
+    const QVector<DocumentWindow> mixed =
+        DocumentSegmenter::partition(shortLine + QStringLiteral("\n") + first);
+    QCOMPARE(mixed.size(), 1);
+    QCOMPARE(mixed.first().lineCount(), 2);
+    QCOMPARE(mixed.first().source().size(), 401);
 }
 
 void TestDocumentSegmenter::recordsBlankLinesAndRepeats()
@@ -219,7 +267,7 @@ void TestDocumentSegmenter::restoresDocumentFromTranslations()
                                             "\n"
                                             "\n"
                                             "third line");
-    const QVector<DocumentWindow> windows = DocumentSegmenter::partition(document, 4, 6);
+    const QVector<DocumentWindow> windows = DocumentSegmenter::partition(document, 12, 10);
     QVERIFY(windows.size() >= 2);
 
     // Leading blanks normalise, and every line comes back: repeats and blanks by count.
@@ -233,6 +281,71 @@ void TestDocumentSegmenter::restoresDocumentFromTranslations()
                                       "\n"
                                       "\n"
                                       "third line"));
+}
+
+void TestDocumentSegmenter::yieldsNoWindowForCaptionsAndBlankText()
+{
+    // A document whose lines carry no text yields no window.
+    const QStringList documents = {QString(), QStringLiteral("\n"), QStringLiteral("   "),
+                                   QStringLiteral("\n \n\t\n"), QStringLiteral("\r\n")};
+    for (const QString& document : documents) {
+        QVERIFY2(DocumentSegmenter::partition(document).isEmpty(), qPrintable(document));
+    }
+
+    // Blank lines carry no text, so they only keep the shape of the document.
+    const QVector<DocumentWindow> windows =
+        DocumentSegmenter::partition(QStringLiteral("\nalpha\n"));
+    QCOMPARE(windows.size(), 1);
+    QCOMPARE(windows.first().source(), QStringLiteral("alpha"));
+    QCOMPARE(windows.first().lines.first().blanksBefore, 1);
+    QCOMPARE(windows.first().trailingBlanks, 1);
+    QCOMPARE(DocumentSegmenter::assemble(windows, {}), QStringLiteral("\nalpha\n"));
+
+    // Blank lines never take part in the character limit.
+    const QString blanks(DocumentSegmenter::windowCharacters, QLatin1Char('\n'));
+    QVERIFY(DocumentSegmenter::partition(blanks).isEmpty());
+}
+
+// The line limit closes a window the character limit left short.
+void TestDocumentSegmenter::endsWindowAtLineLimitBeforeCharacterLimit()
+{
+    QStringList lines;
+    for (int index = 0; index < 23; ++index)
+        lines << QStringLiteral("line %1").arg(index);
+
+    const QVector<DocumentWindow> windows =
+        DocumentSegmenter::partition(lines.join(QLatin1Char('\n')));
+    QCOMPARE(windows.size(), 3);
+    QCOMPARE(windows.at(0).lineCount(), DocumentSegmenter::windowLines);
+    QCOMPARE(windows.at(1).lineCount(), DocumentSegmenter::windowLines);
+    QCOMPARE(windows.at(2).lineCount(), 3);
+
+    // Every line still reaches the model exactly once.
+    QCOMPARE(DocumentSegmenter::assemble(windows, sourceLines(windows)),
+             lines.join(QLatin1Char('\n')));
+}
+
+// Only the lines that reach the model count towards the limit.
+void TestDocumentSegmenter::countsCharactersAfterCollapsingRepeats()
+{
+    QStringList lines;
+    const int length = 30;
+    for (int index = 0; index < 6; ++index) {
+        const QString repeated = QString(QLatin1Char('a' + index)).repeated(length);
+        for (int repeat = 0; repeat < 4; ++repeat)
+            lines << repeated;
+    }
+    const QVector<DocumentWindow> windows =
+        DocumentSegmenter::partition(lines.join(QLatin1Char('\n')), 2 * length + 1, 10);
+
+    // The six distinct lines of 30 characters collapse their repeats and fill
+    // three windows of two lines each; the 24 occurrences are longer than that
+    // but reach the model once per line.
+    QCOMPARE(windows.size(), 3);
+    for (const DocumentWindow& window : windows) {
+        QCOMPARE(window.lineCount(), 2);
+        QCOMPARE(window.lines.first().repeats, 4);
+    }
 }
 
 void TestDocumentSegmenter::rendersWindowWithRepeatsAndBlanks()

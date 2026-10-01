@@ -34,20 +34,16 @@ struct DocumentWindow
 class DocumentSegmenter
 {
 public:
-    // Words a window aims for, the count it may reach by taking the line that
-    // crosses it, and the lines it may hold at most.
-    static constexpr int windowWords = 500;
-    static constexpr int snapWords = 600;
+    // Characters a window may hold, and the lines it may hold at most.
+    static constexpr int windowCharacters = 500;
     static constexpr int windowLines = 10;
 
-    // Splits \p document into windows of whole lines, about \p wordLimit words
-    // each and never more than \p lineLimit lines. The line that crosses the word
-    // limit is taken while the window stays within \p snapLimit, and opens the
-    // next window past it. A document without a line carrying text yields no
-    // window.
+    // Splits \p document into windows of whole lines, taking lines while they fit
+    // \p charLimit characters and never holding more than \p lineLimit lines. A
+    // line longer than \p charLimit fills a window on its own. A document without
+    // a line carrying text yields no window.
     static QVector<DocumentWindow> partition(const QString& document,
-                                             int wordLimit = windowWords,
-                                             int snapLimit = snapWords,
+                                             int charLimit = windowCharacters,
                                              int lineLimit = windowLines);
     // Answers, one per window line, keyed in the response by the line number
     // 1..lineCount(); nothing when the response does not hold those lines, each
