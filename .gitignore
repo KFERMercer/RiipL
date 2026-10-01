@@ -21,3 +21,5 @@ RiipL
 .env
 .env.*
 .agents/
+.sec
+.sec/
