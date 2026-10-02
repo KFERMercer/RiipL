@@ -6,6 +6,7 @@
 #include "ToneDialog.h"
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
+#include "core/document/DocumentCache.h"
 #include "core/document/DocumentSegmenter.h"
 #include "core/history/HistoryManager.h"
 #include "core/translation/PromptBuilder.h"
@@ -559,6 +560,19 @@ QWidget* SettingsDialog::createDocumentPage()
                   new ConfigSpinBox(Keys::documentRetryCount, 0, 999, 1, page));
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Translate concurrently"),
                   new ConfigCheckBox(Keys::documentConcurrent, page));
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Cache translations"),
+                  new ConfigCheckBox(Keys::documentCacheEnabled, page));
+
+    auto* clearButton = new QPushButton(page);
+    connect(clearButton, &QPushButton::clicked, this, [this]() {
+        if (QMessageBox::question(this, tr("RiipL"),
+                                  tr("Delete all document translation caches?"))
+            == QMessageBox::Yes) {
+            DocumentCache::clearAll();
+        }
+    });
+    form->addRow(QString(), clearButton);
+    bindText([clearButton]() { clearButton->setText(tr("Clear document cache now")); });
     return page;
 }
 

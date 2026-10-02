@@ -73,6 +73,7 @@ inline const QString documentWindowCharacters = QStringLiteral("document.window_
 inline const QString documentWindowLines = QStringLiteral("document.window_lines");
 inline const QString documentRetryCount = QStringLiteral("document.retry_count");
 inline const QString documentConcurrent = QStringLiteral("document.concurrent");
+inline const QString documentCacheEnabled = QStringLiteral("document.cache_enabled");
 
 inline const QString glossaryEnabled = QStringLiteral("glossary.enabled");
 inline const QString glossaryEntries = QStringLiteral("glossary.entries");
@@ -115,6 +116,7 @@ inline const int documentWindowCharacters = 500;
 inline const int documentWindowLines = 10;
 inline const int documentRetryCount = 3;
 inline const bool documentConcurrent = true;
+inline const bool documentCacheEnabled = true;
 
 inline const bool glossaryEnabled = false;
 
@@ -271,6 +273,7 @@ inline QJsonValue value(const QString& key)
     if (key == Keys::documentWindowLines) return QJsonValue(documentWindowLines);
     if (key == Keys::documentRetryCount) return QJsonValue(documentRetryCount);
     if (key == Keys::documentConcurrent) return QJsonValue(documentConcurrent);
+    if (key == Keys::documentCacheEnabled) return QJsonValue(documentCacheEnabled);
     if (key == Keys::glossaryEnabled) return QJsonValue(glossaryEnabled);
     if (key == Keys::glossaryEntries) return QJsonArray();
     if (key == Keys::promptSystem) return QJsonValue(promptSystem);

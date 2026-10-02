@@ -31,6 +31,7 @@ target_link_libraries(riipl_utils PUBLIC Qt6::Core Qt6::Network)
 
 set(CORE_SOURCES
     src/core/config/ConfigManager.cpp
+    src/core/document/DocumentCache.cpp
     src/core/document/DocumentSegmenter.cpp
     src/core/network/ApiClient.cpp
     src/core/translation/PromptBuilder.cpp
@@ -42,6 +43,7 @@ set(CORE_SOURCES
 set(CORE_HEADERS
     src/core/config/Defaults.h
     src/core/config/ConfigManager.h
+    src/core/document/DocumentCache.h
     src/core/document/DocumentSegmenter.h
     src/core/network/ApiClient.h
     src/core/translation/Language.h

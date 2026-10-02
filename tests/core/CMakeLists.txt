@@ -4,6 +4,7 @@ set(RIIPL_TEST_SUITES
     tst_apptranslator
     tst_apipresets
     tst_configmanager
+    tst_documentcache
     tst_documentsegmenter
     tst_documenttranslator
     tst_glossary

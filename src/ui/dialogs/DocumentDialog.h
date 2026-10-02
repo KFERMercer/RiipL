@@ -5,7 +5,6 @@
 #include <QVector>
 
 #include "core/document/DocumentSegmenter.h"
-#include "core/network/ApiClient.h"
 #include "core/translation/DocumentTranslator.h"
 #include "core/translation/PromptBuilder.h"
 
@@ -34,9 +33,11 @@ private slots:
     void exportResult();
 
 private:
-    // Loads the document the path box holds; false when it could not be read,
-    // with the failure already reported.
+    // Reads the document the path box holds; false when there is nothing to
+    // translate, with the reason already reported.
     bool loadFile();
+    // Drops the result on screen without touching the loaded document.
+    void clearResult();
     void setRunning(bool running);
     void endRun();
     void setStatus(const QString& text, bool error = false);
@@ -44,8 +45,7 @@ private:
     TranslationContext m_baseContext;
     DocumentTranslator m_translator;
     QVector<DocumentWindow> m_windows;
-    // Path the loaded windows came from, so the box and the document cannot
-    // disagree about what Translate translates.
+    // Path the loaded windows came from; the export dialog suggests its name.
     QString m_loadedPath;
     // Document as it stands, sent once a window has been accepted; the windows the
     // run has not reached yet carry their source text.

@@ -3,6 +3,9 @@
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
 
+#include <QCryptographicHash>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QTimer>
 
 #include <utility>
@@ -11,6 +14,17 @@ namespace {
 
 // Pause before each attempt after the first.
 constexpr int kRetryDelayMs = 1000;
+// Characters of the request digest that name a shard's cache file.
+constexpr int kShardDigestCharacters = 8;
+
+// Accepted lines as the JSON object a cache file holds.
+QString answerJson(const QStringList& lines)
+{
+    QJsonObject answer;
+    for (int line = 0; line < lines.size(); ++line)
+        answer.insert(QString::number(line + 1), lines.at(line));
+    return QString::fromUtf8(QJsonDocument(answer).toJson(QJsonDocument::Indented));
+}
 
 }
 
@@ -43,7 +57,7 @@ void DocumentTranslator::ensureWorkers(int count)
         connect(worker.engine, &TranslationEngine::finished, this,
                 [this, index](const QString& response) { handleWindowFinished(index, response); });
         connect(worker.engine, &TranslationEngine::error, this,
-                [this, index](const ApiClient::Error& failure) { retryOrFail(index, failure); });
+                [this, index](const ApiClient::Error&) { retryOrFail(index); });
         connect(worker.retryTimer, &QTimer::timeout, this,
                 [this, index]() { resendWindow(index); });
         m_workers.append(worker);
@@ -51,7 +65,7 @@ void DocumentTranslator::ensureWorkers(int count)
 }
 
 void DocumentTranslator::start(const QVector<DocumentWindow>& windows,
-                               const TranslationContext& context)
+                               const TranslationContext& context, DocumentCache cache)
 {
     cancelRun();
     m_windows = windows;
@@ -65,18 +79,92 @@ void DocumentTranslator::start(const QVector<DocumentWindow>& windows,
     // what the document shows for the windows a run has not reached.
     m_translations.resize(m_windows.size());
     m_context = context;
+    m_cache = std::move(cache);
+    m_shardIds.clear();
+    m_failedShards.clear();
     m_nextWindow = 0;
     m_completed = 0;
+
+    // The windows the cache answers are accepted up front, the rest reaches the
+    // model; the failures of the previous run go with it.
+    if (m_cache.isValid()) {
+        m_cache.removeFailures();
+        m_shardIds.reserve(m_windows.size());
+        for (int index = 0; index < m_windows.size(); ++index) {
+            m_shardIds.append(shardId(index));
+            const std::optional<QStringList> lines = cachedTranslation(index);
+            if (!lines)
+                continue;
+            m_translations[index] = *lines;
+            ++m_completed;
+        }
+    }
 
     if (m_windows.isEmpty()) {
         emit finished(QString());
         return;
     }
 
+    // A document the cache holds in full is answered without a run.
+    if (m_completed == m_windows.size()) {
+        emit progressChanged(m_completed, m_windows.size());
+        emit finished(DocumentSegmenter::assemble(m_windows, m_translations));
+        return;
+    }
+
     ensureWorkers(qMin(requestedWorkers(), m_windows.size()));
     m_active = true;
-    emit progressChanged(0, m_windows.size());
+    // Reported once the run is under way, so a slot that stops here stops it for
+    // good.
+    emit progressChanged(m_completed, m_windows.size());
+    // The windows the cache answered are part of the document already.
+    if (m_completed > 0)
+        emit windowTranslated(DocumentSegmenter::assemble(m_windows, m_translations));
     dispatchPending();
+}
+
+// The request of one window: its collapsed lines, its neighbours as context.
+DocumentWindowPrompt DocumentTranslator::windowPrompt(int index) const
+{
+    DocumentWindowPrompt prompt;
+    for (const DocumentLine& line : m_windows.at(index).lines)
+        prompt.lines.append(line.text);
+    if (index > 0)
+        prompt.previous = m_sources.at(index - 1);
+    if (index + 1 < m_windows.size())
+        prompt.next = m_sources.at(index + 1);
+    return prompt;
+}
+
+// The request decides the answer, so the digest covers the body the window is sent
+// with, extra body included; the window number keeps windows of a document apart.
+QString DocumentTranslator::shardId(int index) const
+{
+    if (index < m_shardIds.size())
+        return m_shardIds.at(index);
+
+    TranslationContext context = m_context;
+    context.sourceText = m_sources.at(index);
+    const PromptBuilder::Result prompt =
+        PromptBuilder::buildDocument(context, windowPrompt(index));
+
+    ConfigManager* config = ConfigManager::instance();
+    const QJsonObject body =
+        TranslationEngine::buildRequestBody(prompt, config->boolValue(Keys::apiStream));
+
+    QCryptographicHash hash(QCryptographicHash::Sha256);
+    hash.addData(QJsonDocument(body).toJson(QJsonDocument::Compact));
+    hash.addData(config->stringValue(Keys::apiExtraBody).toUtf8());
+    return QString::number(index) + QLatin1Char('.')
+        + QString::fromLatin1(hash.result().toHex().left(kShardDigestCharacters));
+}
+
+std::optional<QStringList> DocumentTranslator::cachedTranslation(int index) const
+{
+    const std::optional<QString> answer = m_cache.cachedShard(m_shardIds.value(index));
+    if (!answer)
+        return std::nullopt;
+    return DocumentSegmenter::splitTranslation(m_windows.at(index), *answer);
 }
 
 void DocumentTranslator::stop()
@@ -107,6 +195,11 @@ void DocumentTranslator::dispatchPending()
         Worker& worker = m_workers[index];
         if (worker.window >= 0)
             continue;
+        // The windows the cache answered are done already and are passed over.
+        while (m_nextWindow < m_windows.size() && !m_translations.at(m_nextWindow).isEmpty())
+            ++m_nextWindow;
+        if (m_nextWindow >= m_windows.size())
+            return;
         sendWindow(index, m_nextWindow);
         ++m_nextWindow;
     }
@@ -130,21 +223,9 @@ void DocumentTranslator::resendWindow(int workerIndex)
         return;
     ++worker.attempts;
 
-    DocumentWindowPrompt prompt;
-    // A line repeated in the document reaches the model once; the text is put
-    // back at every occurrence when the window is rendered.
-    for (const DocumentLine& line : m_windows.at(index).lines)
-        prompt.lines.append(line.text);
-    // Neighbouring windows supply the surrounding prose; the document edges have
-    // none.
-    if (index > 0)
-        prompt.previous = m_sources.at(index - 1);
-    if (index + 1 < m_windows.size())
-        prompt.next = m_sources.at(index + 1);
-
     TranslationContext context = m_context;
     context.sourceText = m_sources.at(index);
-    worker.engine->translateDocument(context, prompt);
+    worker.engine->translateDocument(context, windowPrompt(index));
 }
 
 void DocumentTranslator::handleWindowFinished(int workerIndex, const QString& response)
@@ -159,14 +240,17 @@ void DocumentTranslator::handleWindowFinished(int workerIndex, const QString& re
     const DocumentWindow& window = m_windows.at(index);
     const std::optional<QStringList> lines = DocumentSegmenter::splitTranslation(window, response);
     if (!lines) {
-        ApiClient::Error failure;
-        failure.code = ApiClient::ErrorCode::LineCountMismatch;
-        failure.detail = QString::number(window.lineCount());
-        retryOrFail(workerIndex, failure);
+        // Kept as it came back, so a window that keeps failing can be inspected.
+        m_cache.storeFailure(m_shardIds.value(index), response);
+        retryOrFail(workerIndex);
         return;
     }
 
     m_translations[index] = *lines;
+    // The answer is kept for the next run; the failures of the attempts before it
+    // go.
+    m_cache.storeShard(m_shardIds.value(index), answerJson(*lines));
+    m_cache.removeFailure(m_shardIds.value(index));
     worker.window = -1;
     ++m_completed;
     emit progressChanged(m_completed, m_windows.size());
@@ -177,28 +261,51 @@ void DocumentTranslator::handleWindowFinished(int workerIndex, const QString& re
     const QString document = DocumentSegmenter::assemble(m_windows, m_translations);
     emit windowTranslated(document);
 
-    if (m_completed == m_windows.size()) {
-        m_active = false;
-        emit finished(document);
+    if (allWindowsSettled()) {
+        finishRun();
         return;
     }
     dispatchPending();
 }
 
-void DocumentTranslator::retryOrFail(int workerIndex, const ApiClient::Error& failure)
+// A window that has used its attempts is left out while the run carries on, so one
+// bad reply does not cost the rest of the document.
+void DocumentTranslator::retryOrFail(int workerIndex)
 {
     if (!m_active)
         return;
     Worker& worker = m_workers[workerIndex];
     const int retries = qMax(0, ConfigManager::instance()->intValue(Keys::documentRetryCount));
-    if (worker.attempts > retries) {
-        // The run gives up here, so the requests beside the failed window are
-        // dropped rather than left on the wire.
-        cancelRun();
-        emit failed(failure);
+    if (worker.attempts <= retries) {
+        // The retry is settled before the pause starts, so a slot that stops the
+        // run here stops it for good.
+        worker.retryTimer->start(kRetryDelayMs * worker.attempts);
         return;
     }
-    // The retry is settled before the pause starts, so a slot that stops the run
-    // here stops it for good.
-    worker.retryTimer->start(kRetryDelayMs * worker.attempts);
+
+    const int window = worker.window;
+    worker.window = -1;
+    if (window >= 0)
+        m_failedShards.append(shardId(window));
+
+    if (allWindowsSettled()) {
+        finishRun();
+        return;
+    }
+    dispatchPending();
+}
+
+bool DocumentTranslator::allWindowsSettled() const
+{
+    return m_completed + m_failedShards.size() == m_windows.size();
+}
+
+void DocumentTranslator::finishRun()
+{
+    m_active = false;
+    if (!m_failedShards.isEmpty()) {
+        emit failed(m_failedShards);
+        return;
+    }
+    emit finished(DocumentSegmenter::assemble(m_windows, m_translations));
 }

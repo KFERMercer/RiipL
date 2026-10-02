@@ -1,6 +1,7 @@
 #include "DocumentDialog.h"
 
 #include "core/config/ConfigManager.h"
+#include "core/document/DocumentCache.h"
 #include "ui/widgets/AppFonts.h"
 #include "ui/widgets/ThemeColors.h"
 #include "ui/widgets/TranslationEdit.h"
@@ -114,11 +115,13 @@ DocumentDialog::DocumentDialog(const TranslationContext& baseContext, QWidget* p
         endRun();
         setStatus(tr("Translation finished"));
     });
-    connect(&m_translator, &DocumentTranslator::failed, this, [this](const ApiClient::Error& failure) {
-        m_preview->setResult(m_completedText);
-        endRun();
-        setStatus(tr("Error: %1").arg(failure.text()), true);
-    });
+    connect(&m_translator, &DocumentTranslator::failed, this,
+            [this](const QStringList& shards) {
+                m_preview->setResult(m_completedText);
+                endRun();
+                setStatus(tr("Failed shards: %1")
+                              .arg(shards.join(QStringLiteral(", "))), true);
+            });
     connect(&m_translator, &DocumentTranslator::stopped, this, [this]() {
         endRun();
         setStatus(tr("Stopped"));
@@ -134,25 +137,33 @@ void DocumentDialog::browse()
     if (path.isEmpty())
         return;
     m_pathEdit->setText(path);
-    loadFile();
+    clearResult();
 }
 
-bool DocumentDialog::loadFile()
+// Drops what the last run left on screen, so a path the dialog has not read yet
+// does not sit beside the result of another one.
+void DocumentDialog::clearResult()
 {
-    // Nothing on screen belongs to the path in the box once loading starts, so a
-    // run cannot translate the document of a previous path.
-    const QString path = m_pathEdit->text().trimmed();
-    m_loadedPath.clear();
-    m_windows.clear();
     m_completedText.clear();
     m_preview->setResult(QString());
     m_progress->setRange(0, 1);
     m_progress->setValue(0);
     m_exportButton->setEnabled(false);
+    setStatus(tr("Ready"));
+}
+
+bool DocumentDialog::loadFile()
+{
+    // What is on screen belongs to the path the box held before, so it is dropped
+    // before the file is read.
+    const QString path = m_pathEdit->text().trimmed();
+    m_loadedPath.clear();
+    m_windows.clear();
+    clearResult();
 
     if (path.isEmpty()) {
         setStatus(tr("Choose a .txt file"));
-        return true;
+        return false;
     }
 
     QFile file(path);
@@ -168,15 +179,11 @@ bool DocumentDialog::loadFile()
     m_windows = DocumentSegmenter::partition(content,
                                              config->intValue(Keys::documentWindowCharacters),
                                              config->intValue(Keys::documentWindowLines));
-    m_progress->setRange(0, qMax(1, m_windows.size()));
     if (m_windows.isEmpty()) {
         setStatus(tr("No content to translate"));
-        return true;
+        QMessageBox::information(this, tr("RiipL"), tr("No content to translate"));
+        return false;
     }
-    setStatus(tr("Loaded %1, %2 characters, %3 windows")
-                  .arg(QFileInfo(path).fileName())
-                  .arg(content.size())
-                  .arg(m_windows.size()));
     return true;
 }
 
@@ -184,21 +191,23 @@ void DocumentDialog::start()
 {
     if (m_running)
         return;
-    if (m_pathEdit->text().trimmed() != m_loadedPath && !loadFile())
+    // The document is read here rather than on Browse, so a run always translates
+    // the file the path box holds.
+    if (!loadFile())
         return;
 
-    if (m_windows.isEmpty()) {
-        QMessageBox::information(this, tr("RiipL"), tr("No content to translate"));
-        return;
+    ConfigManager* config = ConfigManager::instance();
+    DocumentCache cache;
+    if (config->boolValue(Keys::documentCacheEnabled)) {
+        cache = DocumentCache(DocumentCache::checksumOf(m_loadedPath));
+        cache.storeDocument(m_loadedPath);
     }
 
-    m_completedText.clear();
-    m_preview->setResult(QString());
     m_progress->setRange(0, m_windows.size());
     m_progress->setValue(0);
     setRunning(true);
     setStatus(tr("Translating..."));
-    m_translator.start(m_windows, m_baseContext);
+    m_translator.start(m_windows, m_baseContext, cache);
 }
 
 void DocumentDialog::stop()
