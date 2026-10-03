@@ -12,8 +12,9 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
-#include <QTreeWidget>
-#include <QTreeWidgetItem>
+#include <QSortFilterProxyModel>
+#include <QStandardItemModel>
+#include <QTreeView>
 #include <QVBoxLayout>
 
 #include <iterator>
@@ -59,18 +60,6 @@ const ColumnSpec kColumns[] = {
 
 constexpr int kColumnCount = int(std::size(kColumns));
 
-// The record index travels as item metadata rather than as another column.
-constexpr int kRowIndexColumn = 0;
-
-// Row index of the record an item shows, or -1 when there is no such item.
-int rowIndex(QTreeWidgetItem* item)
-{
-    if (!item)
-        return -1;
-    const QVariant stored = item->data(kRowIndexColumn, Qt::UserRole);
-    return stored.isValid() ? stored.toInt() : -1;
-}
-
 }
 
 HistoryDialog::HistoryDialog(HistoryManager* history, QWidget* parent)
@@ -87,12 +76,20 @@ HistoryDialog::HistoryDialog(HistoryManager* history, QWidget* parent)
     topRow->addWidget(m_search, 1);
     layout->addLayout(topRow);
 
-    m_tree = new QTreeWidget(this);
+    m_tree = new QTreeView(this);
     m_tree->setRootIsDecorated(false);
     m_tree->setAlternatingRowColors(true);
     m_tree->setAllColumnsShowFocus(true);
     m_tree->setSelectionMode(QAbstractItemView::SingleSelection);
     layout->addWidget(m_tree, 1);
+
+    m_model = new QStandardItemModel(this);
+    m_proxy = new QSortFilterProxyModel(this);
+    m_proxy->setSourceModel(m_model);
+    // A record matches when any of its columns contains the search text.
+    m_proxy->setFilterKeyColumn(-1);
+    m_proxy->setFilterCaseSensitivity(Qt::CaseInsensitive);
+    m_tree->setModel(m_proxy);
 
     auto* buttonRow = new QHBoxLayout();
     auto reuseButton = new QPushButton(tr("Reuse"), this);
@@ -107,17 +104,19 @@ HistoryDialog::HistoryDialog(HistoryManager* history, QWidget* parent)
     layout->addLayout(buttonRow);
 
     connect(m_history, &HistoryManager::changed, this, [this]() { reload(); });
-    connect(m_search, &QLineEdit::textChanged, this, [this]() { applyFilter(); });
-    connect(m_tree, &QTreeWidget::itemDoubleClicked, this, [this](QTreeWidgetItem* item, int) {
-        reuseItem(item);
+    connect(m_search, &QLineEdit::textChanged, this, [this](const QString& text) {
+        m_proxy->setFilterFixedString(text.trimmed());
+    });
+    connect(m_tree, &QTreeView::doubleClicked, this, [this](const QModelIndex& index) {
+        reuseItem(index);
     });
     connect(reuseButton, &QPushButton::clicked, this, [this]() {
-        reuseItem(m_tree->currentItem());
+        reuseItem(m_tree->currentIndex());
     });
     connect(deleteButton, &QPushButton::clicked, this, [this]() {
-        const int index = rowIndex(m_tree->currentItem());
-        if (index >= 0)
-            m_history->removeRecord(index);
+        const QModelIndex index = m_tree->currentIndex();
+        if (index.isValid())
+            m_history->removeRecord(m_proxy->mapToSource(index).row());
     });
     connect(clearButton, &QPushButton::clicked, this, [this]() { m_history->clear(); });
     connect(closeButton, &QPushButton::clicked, this, &QDialog::close);
@@ -136,52 +135,38 @@ void HistoryDialog::reload()
     headers.reserve(kColumnCount);
     for (const ColumnSpec& spec : kColumns)
         headers.append(QCoreApplication::translate("HistoryDialog", spec.header));
-    m_tree->setColumnCount(kColumnCount);
-    m_tree->setHeaderLabels(headers);
+
+    m_model->removeRows(0, m_model->rowCount());
+    m_model->setColumnCount(kColumnCount);
+    m_model->setHorizontalHeaderLabels(headers);
 
     QHeaderView* header = m_tree->header();
     for (int i = 0; i < kColumnCount; ++i)
         header->setSectionResizeMode(i, kColumns[i].resizeMode);
 
-    m_tree->clear();
     for (int i = 0; i < m_records.size(); ++i) {
         const TranslationRecord& record = m_records.at(i);
-        auto* item = new QTreeWidgetItem(m_tree);
+        QList<QStandardItem*> row;
+        row.reserve(kColumnCount);
         for (int column = 0; column < kColumnCount; ++column) {
             const QString text = kColumns[column].text(record);
-            item->setText(column, text);
+            auto* item = new QStandardItem(text);
+            item->setEditable(false);
             if (kColumns[column].tooltip)
-                item->setToolTip(column, text);
+                item->setToolTip(text);
+            row.append(item);
         }
-        item->setData(kRowIndexColumn, Qt::UserRole, i);
+        m_model->appendRow(row);
     }
-    applyFilter();
 }
 
-void HistoryDialog::reuseItem(QTreeWidgetItem* item)
+void HistoryDialog::reuseItem(const QModelIndex& index)
 {
-    const int index = rowIndex(item);
-    if (index < 0 || index >= m_records.size())
+    if (!index.isValid())
         return;
-    emit reuseRequested(m_records.at(index));
+    const int record = m_proxy->mapToSource(index).row();
+    if (record < 0 || record >= m_records.size())
+        return;
+    emit reuseRequested(m_records.at(record));
     accept();
-}
-
-void HistoryDialog::applyFilter()
-{
-    const QString needle = m_search ? m_search->text().trimmed() : QString();
-    for (int i = 0; i < m_tree->topLevelItemCount(); ++i) {
-        QTreeWidgetItem* item = m_tree->topLevelItem(i);
-        bool match = true;
-        if (!needle.isEmpty()) {
-            match = false;
-            for (int column = 0; column < m_tree->columnCount(); ++column) {
-                if (item->text(column).contains(needle, Qt::CaseInsensitive)) {
-                    match = true;
-                    break;
-                }
-            }
-        }
-        item->setHidden(!match);
-    }
 }

@@ -7,7 +7,9 @@
 
 class QLineEdit;
 class QPushButton;
-class QTableWidget;
+class QSortFilterProxyModel;
+class QStandardItemModel;
+class QTableView;
 class QToolButton;
 
 class GlossaryTable : public QWidget
@@ -29,9 +31,9 @@ private slots:
     void refreshButtons();
 
 private:
-    void applyFilter();
-
-    QTableWidget* m_table = nullptr;
+    QTableView* m_table = nullptr;
+    QStandardItemModel* m_model = nullptr;
+    QSortFilterProxyModel* m_proxy = nullptr;
     QLineEdit* m_filter = nullptr;
     QPushButton* m_removeButton = nullptr;
     QToolButton* m_moveUpButton = nullptr;

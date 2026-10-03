@@ -5,8 +5,10 @@
 #include "core/history/HistoryManager.h"
 
 class QLineEdit;
-class QTreeWidget;
-class QTreeWidgetItem;
+class QModelIndex;
+class QSortFilterProxyModel;
+class QStandardItemModel;
+class QTreeView;
 
 class HistoryDialog : public QDialog
 {
@@ -20,11 +22,12 @@ signals:
 
 private:
     void reload();
-    void applyFilter();
-    void reuseItem(QTreeWidgetItem* item);
+    void reuseItem(const QModelIndex& index);
 
     HistoryManager* m_history = nullptr;
-    QTreeWidget* m_tree = nullptr;
+    QTreeView* m_tree = nullptr;
+    QStandardItemModel* m_model = nullptr;
+    QSortFilterProxyModel* m_proxy = nullptr;
     QLineEdit* m_search = nullptr;
     QVector<TranslationRecord> m_records;
 };

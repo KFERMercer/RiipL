@@ -9,13 +9,16 @@
 #include <QFileDialog>
 #include <QHeaderView>
 #include <QHBoxLayout>
+#include <QItemSelectionModel>
 #include <QJsonDocument>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QSaveFile>
-#include <QTableWidget>
+#include <QSortFilterProxyModel>
+#include <QStandardItemModel>
+#include <QTableView>
 #include <QToolButton>
 #include <QVBoxLayout>
 
@@ -37,13 +40,23 @@ GlossaryTable::GlossaryTable(QWidget* parent)
     topRow->addWidget(m_filter, 1);
     layout->addLayout(topRow);
 
-    m_table = new QTableWidget(0, 2, this);
-    m_table->setHorizontalHeaderLabels({tr("Source term"), tr("Translation (leave empty to keep source)")});
-    m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    m_table->verticalHeader()->setVisible(false);
+    m_table = new QTableView(this);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_table->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_table->verticalHeader()->setVisible(false);
     layout->addWidget(m_table, 1);
+
+    m_model = new QStandardItemModel(this);
+    m_model->setColumnCount(2);
+    m_model->setHorizontalHeaderLabels(
+        {tr("Source term"), tr("Translation (leave empty to keep source)")});
+    m_proxy = new QSortFilterProxyModel(this);
+    m_proxy->setSourceModel(m_model);
+    // A term matches when either of its columns contains the search text.
+    m_proxy->setFilterKeyColumn(-1);
+    m_proxy->setFilterCaseSensitivity(Qt::CaseInsensitive);
+    m_table->setModel(m_proxy);
 
     auto* buttonRow = new QHBoxLayout();
     auto addButton = new QPushButton(tr("Add"), this);
@@ -71,36 +84,35 @@ GlossaryTable::GlossaryTable(QWidget* parent)
     connect(m_moveDownButton, &QToolButton::clicked, this, [this]() { moveRow(1); });
     connect(importButton, &QPushButton::clicked, this, &GlossaryTable::importJson);
     connect(exportButton, &QPushButton::clicked, this, &GlossaryTable::exportJson);
-    connect(m_filter, &QLineEdit::textChanged, this, [this]() { applyFilter(); });
-    connect(m_table, &QTableWidget::itemSelectionChanged, this, &GlossaryTable::refreshButtons);
-    connect(m_table, &QTableWidget::itemChanged, this, [this](QTableWidgetItem*) {
-        applyFilter();
+    connect(m_filter, &QLineEdit::textChanged, this, [this](const QString& text) {
+        m_proxy->setFilterFixedString(text.trimmed());
     });
+    // The buttons act on the current row, so they follow the current index.
+    connect(m_table->selectionModel(), &QItemSelectionModel::currentChanged, this,
+            &GlossaryTable::refreshButtons);
 }
 
 void GlossaryTable::setEntries(const QVector<GlossaryEntry>& entries)
 {
-    m_table->setRowCount(entries.size());
-    for (int i = 0; i < entries.size(); ++i) {
-        auto* sourceItem = new QTableWidgetItem(entries.at(i).source);
-        auto* targetItem = new QTableWidgetItem(entries.at(i).target);
+    m_model->removeRows(0, m_model->rowCount());
+    for (const GlossaryEntry& entry : entries) {
+        auto* sourceItem = new QStandardItem(entry.source);
+        auto* targetItem = new QStandardItem(entry.target);
         targetItem->setToolTip(tr("Leave empty to keep the term untranslated"));
-        m_table->setItem(i, kSourceColumn, sourceItem);
-        m_table->setItem(i, kTargetColumn, targetItem);
+        m_model->appendRow({sourceItem, targetItem});
     }
-    applyFilter();
     refreshButtons();
 }
 
 QVector<GlossaryEntry> GlossaryTable::entries() const
 {
     QVector<GlossaryEntry> result;
-    result.reserve(m_table->rowCount());
-    for (int i = 0; i < m_table->rowCount(); ++i) {
+    result.reserve(m_model->rowCount());
+    for (int i = 0; i < m_model->rowCount(); ++i) {
         GlossaryEntry entry;
-        if (const QTableWidgetItem* source = m_table->item(i, kSourceColumn))
+        if (const QStandardItem* source = m_model->item(i, kSourceColumn))
             entry.source = source->text().trimmed();
-        if (const QTableWidgetItem* target = m_table->item(i, kTargetColumn))
+        if (const QStandardItem* target = m_model->item(i, kTargetColumn))
             entry.target = target->text().trimmed();
         // Rows without a source term carry no glossary mapping and are dropped.
         if (!entry.source.isEmpty())
@@ -111,68 +123,52 @@ QVector<GlossaryEntry> GlossaryTable::entries() const
 
 void GlossaryTable::refreshButtons()
 {
-    const int row = m_table->currentRow();
-    const bool hasSelection = row >= 0;
+    const QModelIndex current = m_table->currentIndex();
+    const bool hasSelection = current.isValid();
     m_removeButton->setEnabled(hasSelection);
-    m_moveUpButton->setEnabled(hasSelection && row > 0);
-    m_moveDownButton->setEnabled(hasSelection && row < m_table->rowCount() - 1);
+    m_moveUpButton->setEnabled(hasSelection && current.row() > 0);
+    m_moveDownButton->setEnabled(hasSelection && current.row() < m_proxy->rowCount() - 1);
 }
 
 void GlossaryTable::addRow()
 {
-    const int row = m_table->rowCount();
-    m_table->insertRow(row);
-    m_table->setItem(row, kSourceColumn, new QTableWidgetItem());
-    m_table->setItem(row, kTargetColumn, new QTableWidgetItem());
-    m_table->editItem(m_table->item(row, kSourceColumn));
-    m_table->setCurrentCell(row, kSourceColumn);
-    applyFilter();
+    // A row the active filter hides could not be seen or edited.
+    if (!m_filter->text().isEmpty())
+        m_filter->clear();
+    const int row = m_model->rowCount();
+    m_model->appendRow({new QStandardItem, new QStandardItem});
+    const QModelIndex index = m_proxy->mapFromSource(m_model->index(row, kSourceColumn));
+    m_table->setCurrentIndex(index);
+    m_table->edit(index);
     refreshButtons();
 }
 
 void GlossaryTable::removeSelected()
 {
-    const int row = m_table->currentRow();
-    if (row < 0)
+    const QModelIndex current = m_table->currentIndex();
+    if (!current.isValid())
         return;
-    m_table->removeRow(row);
+    m_model->removeRow(m_proxy->mapToSource(current).row());
     refreshButtons();
 }
 
 void GlossaryTable::moveRow(int offset)
 {
-    const int row = m_table->currentRow();
-    if (row < 0)
+    const QModelIndex current = m_table->currentIndex();
+    if (!current.isValid())
         return;
-    const int target = row + offset;
-    if (target < 0 || target >= m_table->rowCount())
+    const int target = current.row() + offset;
+    if (target < 0 || target >= m_proxy->rowCount())
         return;
-    // moveRows keeps the row data and view state; destinationChild is the index
-    // the row is inserted before, so a downward move lands past the row it swaps
-    // with.
-    m_table->model()->moveRows(QModelIndex(), row, 1, QModelIndex(), offset < 0 ? target : target + 1);
-    m_table->selectRow(target);
+    // Swapping the visible neighbours keeps filtered-out rows out of the move.
+    const int row = m_proxy->mapToSource(current).row();
+    const int targetRow = m_proxy->mapToSource(m_proxy->index(target, kSourceColumn)).row();
+    // The row is taken out first, which leaves targetRow as the insert index for
+    // either direction.
+    m_model->insertRow(targetRow, m_model->takeRow(row));
+    m_table->setCurrentIndex(m_proxy->index(target, kSourceColumn));
     // The current row is unchanged, so the end-of-list states are refreshed here.
     refreshButtons();
-}
-
-void GlossaryTable::applyFilter()
-{
-    const QString needle = m_filter ? m_filter->text().trimmed() : QString();
-    for (int i = 0; i < m_table->rowCount(); ++i) {
-        bool match = true;
-        if (!needle.isEmpty()) {
-            match = false;
-            for (int column = 0; column < m_table->columnCount(); ++column) {
-                const QTableWidgetItem* item = m_table->item(i, column);
-                if (item && item->text().contains(needle, Qt::CaseInsensitive)) {
-                    match = true;
-                    break;
-                }
-            }
-        }
-        m_table->setRowHidden(i, !match);
-    }
 }
 
 void GlossaryTable::importJson()
