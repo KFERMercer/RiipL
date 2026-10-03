@@ -1,7 +1,6 @@
 #include "MainWindow.h"
 
 #include "ui/widgets/CandidatePopup.h"
-#include "ui/dialogs/AboutDialog.h"
 #include "ui/dialogs/DocumentDialog.h"
 #include "ui/dialogs/ApiPresetDialog.h"
 #include "ui/dialogs/GlossaryDialog.h"
@@ -27,6 +26,7 @@
 #include <QClipboard>
 #include <QCloseEvent>
 #include <QComboBox>
+#include <QCoreApplication>
 #include <QDateTime>
 #include <QFileDialog>
 #include <QFont>
@@ -34,6 +34,7 @@
 #include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
+#include <QMessageBox>
 #include <QPalette>
 #include <QPlainTextEdit>
 #include <QResizeEvent>
@@ -55,6 +56,8 @@
 namespace {
 
 constexpr int kMaxResultSteps = 30;
+
+constexpr char kProjectUrl[] = "https://github.com/KFERMercer/RiipL";
 
 // One undoable edit of the translation pane.
 class ResultTextCommand : public QUndoCommand
@@ -466,8 +469,14 @@ void MainWindow::buildMenus()
             [this]() { ApiPresetDialog::manage(this); });
     connect(m_settingsAction, &QAction::triggered, this, &MainWindow::showSettingsDialog);
     connect(m_aboutAction, &QAction::triggered, this, [this]() {
-        AboutDialog dialog(this);
-        dialog.exec();
+        QMessageBox::about(this, tr("About RiipL"),
+                           tr("<b>RiipL %1</b><br/>"
+                              "An AI-powered desktop translator.<br/>"
+                              "Built with Qt %2.<br/>"
+                              "Project homepage: <a href=\"%3\">%3</a>")
+                               .arg(QCoreApplication::applicationVersion(),
+                                    QString::fromLatin1(qVersion()),
+                                    QString::fromLatin1(kProjectUrl)));
     });
 }
 

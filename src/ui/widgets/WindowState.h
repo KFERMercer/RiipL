@@ -9,7 +9,6 @@ namespace WindowState {
 
 namespace Id {
 inline const QString main = QStringLiteral("main");
-inline const QString about = QStringLiteral("about");
 inline const QString apiPresets = QStringLiteral("api_presets");
 inline const QString document = QStringLiteral("document");
 inline const QString glossary = QStringLiteral("glossary");
