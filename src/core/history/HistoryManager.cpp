@@ -116,5 +116,10 @@ void HistoryManager::clear()
 void HistoryManager::setMaxRecords(int maxRecords)
 {
     m_maxRecords = maxRecords;
+    const int before = m_records.size();
     trim();
+    if (m_records.size() == before)
+        return;
+    scheduleSave();
+    emit changed();
 }

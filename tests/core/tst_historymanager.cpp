@@ -11,6 +11,7 @@ class TestHistoryManager : public QObject
 
 private slots:
     void trimsToMaxRecords();
+    void announcesRecordsDroppedByALowerLimit();
     void debouncesSavesUntilFlush();
 };
 
@@ -67,6 +68,36 @@ void TestHistoryManager::debouncesSavesUntilFlush()
         QCOMPARE(array.first().toObject().value(QStringLiteral("source")).toString(),
                  QStringLiteral("hello"));
     }
+}
+
+// Records a lower limit drops are announced to the dialog that shows them.
+void TestHistoryManager::announcesRecordsDroppedByALowerLimit()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    const QString path = TestSupport::tempDir() + QStringLiteral("/history.json");
+
+    HistoryManager manager(path);
+    manager.setMaxRecords(5);
+    for (int i = 0; i < 5; ++i) {
+        TranslationRecord record;
+        record.timestamp = i + 1;
+        record.source = QStringLiteral("s%1").arg(i);
+        record.target = QStringLiteral("t%1").arg(i);
+        manager.addRecord(record);
+    }
+
+    QSignalSpy changedSpy(&manager, &HistoryManager::changed);
+    // A limit that drops nothing is not a change.
+    manager.setMaxRecords(5);
+    QCOMPARE(changedSpy.count(), 0);
+
+    manager.setMaxRecords(2);
+    QCOMPARE(changedSpy.count(), 1);
+    QCOMPARE(manager.records().size(), 2);
+
+    // Nor is one that drops nothing more.
+    manager.setMaxRecords(2);
+    QCOMPARE(changedSpy.count(), 1);
 }
 
 QTEST_MAIN(TestHistoryManager)
