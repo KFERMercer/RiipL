@@ -13,6 +13,7 @@
 #include <QUrl>
 
 #include <chrono>
+#include <utility>
 
 namespace {
 const QString kChatCompletionsPath = QStringLiteral("/chat/completions");

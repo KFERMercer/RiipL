@@ -40,6 +40,7 @@
 #include <QToolButton>
 #include <QToolTip>
 #include <QVBoxLayout>
+#include <utility>
 
 namespace {
 

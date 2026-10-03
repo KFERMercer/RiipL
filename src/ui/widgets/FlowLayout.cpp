@@ -1,5 +1,7 @@
 #include "FlowLayout.h"
 
+#include <utility>
+
 FlowLayout::FlowLayout(QWidget* parent, int margin, int hSpacing, int vSpacing)
     : QLayout(parent)
     , m_hSpace(hSpacing)

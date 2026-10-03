@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QString>
+#include <functional>
 
 #include "core/network/ApiClient.h"
 #include "core/translation/PromptBuilder.h"

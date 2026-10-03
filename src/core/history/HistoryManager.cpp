@@ -6,6 +6,7 @@
 #include <QJsonObject>
 #include <QJsonParseError>
 #include <QSaveFile>
+#include <utility>
 
 HistoryManager::HistoryManager(const QString& filePath, QObject* parent)
     : QObject(parent)

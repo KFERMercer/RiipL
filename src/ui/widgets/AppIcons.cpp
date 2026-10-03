@@ -6,6 +6,7 @@
 #include <QPalette>
 #include <QPen>
 #include <QStyle>
+#include <functional>
 
 namespace {
 
