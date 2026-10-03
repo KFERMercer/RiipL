@@ -3,6 +3,7 @@
 
 #include "FlowLayout.h"
 
+#include <algorithm>
 #include <utility>
 
 FlowLayout::FlowLayout(QWidget* parent, int margin, int hSpacing, int vSpacing)
@@ -120,7 +121,7 @@ int FlowLayout::doLayout(const QRect& rect, bool testOnly) const
             item->setGeometry(QRect(QPoint(x, y), item->sizeHint()));
 
         x = nextX;
-        lineHeight = qMax(lineHeight, item->sizeHint().height());
+        lineHeight = (std::max)(lineHeight, item->sizeHint().height());
     }
     return y + lineHeight - rect.y() + margins.bottom();
 }

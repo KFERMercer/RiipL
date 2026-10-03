@@ -8,6 +8,7 @@
 #include <QJsonObject>
 #include <QTimer>
 
+#include <algorithm>
 #include <utility>
 
 namespace {
@@ -40,7 +41,7 @@ int DocumentTranslator::requestedWorkers() const
     // have in flight when it is on.
     if (!config->boolValue(Keys::documentConcurrent))
         return 1;
-    return qMax(1, config->intValue(Keys::apiMaxConcurrency));
+    return (std::max)(1, config->intValue(Keys::apiMaxConcurrency));
 }
 
 // The pool grows to the largest count a run has needed and is kept, so a second
@@ -112,7 +113,7 @@ void DocumentTranslator::start(const QVector<DocumentWindow>& windows,
         return;
     }
 
-    ensureWorkers(qMin(requestedWorkers(), m_windows.size()));
+    ensureWorkers((std::min)(requestedWorkers(), static_cast<int>(m_windows.size())));
     m_active = true;
     // Reported once the run is under way, so a slot that stops here stops it for
     // good.
@@ -285,7 +286,7 @@ void DocumentTranslator::retryOrFail(int workerIndex)
     if (!m_active)
         return;
     Worker& worker = m_workers[workerIndex];
-    const int retries = qMax(0, ConfigManager::instance()->intValue(Keys::documentRetryCount));
+    const int retries = (std::max)(0, ConfigManager::instance()->intValue(Keys::documentRetryCount));
     if (worker.attempts <= retries) {
         // The retry is settled before the pause starts, so a slot that stops the
         // run here stops it for good.

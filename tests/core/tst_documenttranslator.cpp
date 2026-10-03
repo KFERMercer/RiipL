@@ -18,6 +18,7 @@
 #include <QTcpSocket>
 #include <QTimer>
 
+#include <algorithm>
 #include <memory>
 #include <utility>
 
@@ -87,7 +88,7 @@ private:
             prompts.append(prompt);
             windows.append(TestSupport::documentWindowIn(prompt));
             ++pending;
-            peakPending = qMax(peakPending, pending);
+            peakPending = (std::max)(peakPending, pending);
             // The delayed failure targets one window; a failure counter is spent
             // by whichever request arrives first.
             const bool named = !failingPrompt.isEmpty() && prompt.contains(failingPrompt);

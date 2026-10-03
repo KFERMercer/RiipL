@@ -17,6 +17,8 @@
 #include <QToolButton>
 #include <QVBoxLayout>
 
+#include <algorithm>
+
 namespace {
 // Captured API fields of the item's preset.
 constexpr int kValuesRole = Qt::UserRole;
@@ -198,7 +200,7 @@ void ApiPresetDialog::removeSelected()
 
     delete m_list->takeItem(row);
     if (m_list->count() > 0)
-        m_list->setCurrentRow(qMin(row, m_list->count() - 1));
+        m_list->setCurrentRow((std::min)(row, m_list->count() - 1));
     refreshButtons();
 }
 

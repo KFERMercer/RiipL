@@ -140,7 +140,8 @@ TextUtils::WordSpan absorbRestatedEdges(const QString& text, int start, int end,
                                         const QStringList& replacements, int maxChars)
 {
     const auto restatedRun = [&](int edge, bool left) {
-        for (int length = qMin(maxChars, left ? edge : text.size() - edge); length > 0; --length) {
+        const int available = left ? edge : static_cast<int>(text.size()) - edge;
+        for (int length = (std::min)(maxChars, available); length > 0; --length) {
             const QString run = text.mid(left ? edge - length : edge, length);
             const bool blank = std::any_of(run.cbegin(), run.cend(),
                                            [](QChar ch) { return ch.isSpace(); });
@@ -191,7 +192,7 @@ WordSpan wordSpanAt(const QString& text, int position)
     if (text.isEmpty())
         return {};
 
-    position = qBound(0, position, text.size());
+    position = std::clamp(position, 0, static_cast<int>(text.size()));
     if (position < text.size() && text.at(position).isSpace())
         return {};
 
@@ -219,8 +220,8 @@ Fragment candidateFragment(const QString& text, int selectionStart, int selectio
     if (text.isEmpty())
         return {};
 
-    selectionStart = qBound(0, selectionStart, text.size());
-    selectionEnd = qBound(selectionStart, selectionEnd, text.size());
+    selectionStart = std::clamp(selectionStart, 0, static_cast<int>(text.size()));
+    selectionEnd = std::clamp(selectionEnd, selectionStart, static_cast<int>(text.size()));
     if (selectionEnd <= selectionStart)
         return {};
 
@@ -230,7 +231,7 @@ Fragment candidateFragment(const QString& text, int selectionStart, int selectio
     int end = selectionEnd;
     const QList<WordSpan> segments = wordSegments(text);
     const WordSpan markedStart = trimmed(segmentAt(segments, selectionStart), text);
-    const WordSpan markedEnd = trimmed(segmentAt(segments, qMax(selectionStart, selectionEnd - 1)), text);
+    const WordSpan markedEnd = trimmed(segmentAt(segments, (std::max)(selectionStart, selectionEnd - 1)), text);
     if (markedStart.isValid())
         start = markedStart.start;
     if (markedEnd.isValid())
@@ -272,8 +273,8 @@ WordSpan replacementSpan(const QString& text, int selectionStart, int selectionE
 {
     if (target.isEmpty())
         return {};
-    selectionStart = qBound(0, selectionStart, text.size());
-    selectionEnd = qBound(selectionStart, selectionEnd, text.size());
+    selectionStart = std::clamp(selectionStart, 0, static_cast<int>(text.size()));
+    selectionEnd = std::clamp(selectionEnd, selectionStart, static_cast<int>(text.size()));
 
     const int length = target.size();
     QList<int> starts = coveringStarts(text, target, selectionStart, selectionEnd);

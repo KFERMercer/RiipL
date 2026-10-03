@@ -12,6 +12,7 @@
 #include <QNetworkRequestFactory>
 #include <QUrl>
 
+#include <algorithm>
 #include <chrono>
 #include <utility>
 
@@ -110,12 +111,12 @@ void ApiClient::sendChatRequest(const QJsonObject& body,
 
     const QString apiKeyValue = config->stringValue(Keys::apiKey).trimmed();
 
-    QNetworkRequestFactory factory{endpoint};
+    QNetworkRequestFactory factory(endpoint);
     if (!apiKeyValue.isEmpty())
         factory.setBearerToken(apiKeyValue.toUtf8());
     // Abort the request when the server exchanges no data within the
     // user-configured window, covering both connection and idle phases.
-    factory.setTransferTimeout(std::chrono::milliseconds(qMax(1000, config->intValue(Keys::apiTimeoutMs))));
+    factory.setTransferTimeout(std::chrono::milliseconds((std::max)(1000, config->intValue(Keys::apiTimeoutMs))));
     factory.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                          QNetworkRequest::NoLessSafeRedirectPolicy);
 
@@ -215,7 +216,7 @@ void ApiClient::consumeStreamBuffer(bool flush)
         }
     }
     if (start > 0)
-        m_streamBuffer.remove(0, qMin(start, int(m_streamBuffer.size())));
+        m_streamBuffer.remove(0, (std::min)(start, static_cast<int>(m_streamBuffer.size())));
 }
 
 void ApiClient::onFinished()
