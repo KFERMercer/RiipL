@@ -102,7 +102,7 @@ void ConfigManager::scheduleSave()
 
 QJsonValue ConfigManager::value(const QString& key) const
 {
-    const QJsonValue userValue = JsonUtils::getByPath(m_user, key);
+    const QJsonValue userValue = JsonUtils::valueAt(m_user, key);
     if (!userValue.isUndefined())
         return userValue;
     return Defaults::value(key);
@@ -163,7 +163,7 @@ void ConfigManager::setValue(const QString& key, const QJsonValue& value)
         removeValue(key);
         return;
     }
-    if (JsonUtils::getByPath(m_user, key) == value)
+    if (JsonUtils::valueAt(m_user, key) == value)
         return;
     JsonUtils::setByPath(m_user, key, value);
     scheduleSave();
@@ -172,7 +172,7 @@ void ConfigManager::setValue(const QString& key, const QJsonValue& value)
 
 void ConfigManager::removeValue(const QString& key)
 {
-    if (JsonUtils::getByPath(m_user, key).isUndefined())
+    if (JsonUtils::valueAt(m_user, key).isUndefined())
         return;
     JsonUtils::removeByPath(m_user, key);
     scheduleSave();

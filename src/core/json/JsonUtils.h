@@ -12,7 +12,7 @@ inline QStringList splitPath(const QString& key)
     return key.split(QLatin1Char('.'), Qt::SkipEmptyParts);
 }
 
-inline QJsonValue getByPath(const QJsonObject& root, const QString& key)
+inline QJsonValue valueAt(const QJsonObject& root, const QString& key)
 {
     QJsonValue current(root);
     const QStringList parts = splitPath(key);
