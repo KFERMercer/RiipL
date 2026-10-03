@@ -8,8 +8,62 @@
 #include <QHostAddress>
 #include <QHttpHeaders>
 #include <QTcpServer>
+#include <QTcpSocket>
 
 #include <optional>
+
+namespace {
+
+// Serves one canned reply to the request that reaches it.
+class OneShotServer
+{
+public:
+    bool listen() { return m_server.listen(QHostAddress::LocalHost); }
+    quint16 port() const { return m_server.serverPort(); }
+
+    void serve(const QByteArray& response)
+    {
+        QObject::connect(&m_server, &QTcpServer::newConnection, &m_server, [this, response]() {
+            QTcpSocket* socket = m_server.nextPendingConnection();
+            QObject::connect(socket, &QTcpSocket::readyRead, socket, [socket, response]() {
+                socket->readAll();
+                socket->write(response);
+                socket->flush();
+                socket->disconnectFromHost();
+            });
+        });
+    }
+
+private:
+    QTcpServer m_server;
+};
+
+QByteArray jsonReply(const QByteArray& body)
+{
+    return QByteArrayLiteral("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: ")
+        + QByteArray::number(body.size()) + QByteArrayLiteral("\r\n\r\n") + body;
+}
+
+// A stream carries no length: its frames run until the server closes.
+QByteArray streamReply(const QByteArray& frames)
+{
+    return QByteArrayLiteral("HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\n\r\n") + frames;
+}
+
+QByteArray streamFrame(const char* content)
+{
+    return QByteArrayLiteral("data: {\"choices\":[{\"delta\":{\"content\":\"") + content
+        + QByteArrayLiteral("\"}}]}");
+}
+
+QJsonObject chatBody()
+{
+    QJsonObject body;
+    body.insert(QStringLiteral("stream"), false);
+    return body;
+}
+
+}
 
 class TestApiClient : public QObject
 {
@@ -19,6 +73,10 @@ private slots:
     void normalizesBaseUrl();
     void requestsDerivedEndpoint();
     void parsesCustomHeaderLines();
+    void reportsIdleBeforeDelivering();
+    void readsTrailingStreamFrame();
+    void rejectsStreamWithoutContent();
+    void dropsOversizedResponse();
 };
 
 void TestApiClient::normalizesBaseUrl()
@@ -103,6 +161,106 @@ void TestApiClient::parsesCustomHeaderLines()
     QCOMPARE(headers.valueAt(1), QByteArrayView("Bearer secret"));
     QCOMPARE(headers.nameAt(2), QByteArrayView("x-retry"));
     QCOMPARE(headers.valueAt(2), QByteArrayView("3"));
+}
+
+// The client reports itself idle before it hands the result over.
+void TestApiClient::reportsIdleBeforeDelivering()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    ConfigManager::createInstance(TestSupport::tempDir());
+
+    OneShotServer server;
+    QVERIFY(server.listen());
+    server.serve(jsonReply(QByteArrayLiteral(R"({"choices":[{"message":{"content":"ok"}}]})")));
+    ConfigManager::instance()->setValue(
+        Keys::apiBaseUrl, QStringLiteral("http://127.0.0.1:%1/v1").arg(server.port()));
+
+    ApiClient client;
+    QStringList order;
+    QObject::connect(&client, &ApiClient::requestFinished, &client,
+                     [&order]() { order << QStringLiteral("finished"); });
+    client.sendChatRequest(chatBody(),
+                           [&order](const QString&) { order << QStringLiteral("done"); },
+                           nullptr, nullptr);
+
+    QTRY_COMPARE_WITH_TIMEOUT(order.size(), 2, 5000);
+    QCOMPARE(order, QStringList({QStringLiteral("finished"), QStringLiteral("done")}));
+}
+
+// The last frame arrives without a closing newline when the connection ends.
+void TestApiClient::readsTrailingStreamFrame()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    ConfigManager::createInstance(TestSupport::tempDir());
+
+    OneShotServer server;
+    QVERIFY(server.listen());
+    server.serve(streamReply(streamFrame("Hel") + "\n\n" + streamFrame("lo")));
+    ConfigManager::instance()->setValue(
+        Keys::apiBaseUrl, QStringLiteral("http://127.0.0.1:%1/v1").arg(server.port()));
+
+    ApiClient client;
+    QSignalSpy finishedSpy(&client, &ApiClient::requestFinished);
+    QString result;
+    std::optional<ApiClient::Error> error;
+    QJsonObject body = chatBody();
+    body.insert(QStringLiteral("stream"), true);
+    client.sendChatRequest(body, [&result](const QString& text) { result = text; }, nullptr,
+                           [&error](const ApiClient::Error& failure) { error = failure; });
+
+    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 5000);
+    QVERIFY2(!error.has_value(), "the trailing frame must be read");
+    QCOMPARE(result, QStringLiteral("Hello"));
+}
+
+// A stream without content is a failure, not an empty translation.
+void TestApiClient::rejectsStreamWithoutContent()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    ConfigManager::createInstance(TestSupport::tempDir());
+
+    OneShotServer server;
+    QVERIFY(server.listen());
+    server.serve(streamReply(QByteArrayLiteral("data: [DONE]\n\n")));
+    ConfigManager::instance()->setValue(
+        Keys::apiBaseUrl, QStringLiteral("http://127.0.0.1:%1/v1").arg(server.port()));
+
+    ApiClient client;
+    QSignalSpy finishedSpy(&client, &ApiClient::requestFinished);
+    std::optional<ApiClient::Error> error;
+    QJsonObject body = chatBody();
+    body.insert(QStringLiteral("stream"), true);
+    client.sendChatRequest(body, nullptr, nullptr,
+                           [&error](const ApiClient::Error& failure) { error = failure; });
+
+    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 5000);
+    QVERIFY(error.has_value());
+    QCOMPARE(error->code, ApiClient::ErrorCode::InvalidResponse);
+}
+
+// A body past the cap is dropped instead of being buffered to the end.
+void TestApiClient::dropsOversizedResponse()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    ConfigManager::createInstance(TestSupport::tempDir());
+
+    OneShotServer server;
+    QVERIFY(server.listen());
+    const QByteArray filler(5 * 1024 * 1024, 'a');
+    server.serve(jsonReply(QByteArrayLiteral(R"({"choices":[{"message":{"content":")") + filler
+                                              + QByteArrayLiteral(R"("}}]})")));
+    ConfigManager::instance()->setValue(
+        Keys::apiBaseUrl, QStringLiteral("http://127.0.0.1:%1/v1").arg(server.port()));
+
+    ApiClient client;
+    QSignalSpy finishedSpy(&client, &ApiClient::requestFinished);
+    std::optional<ApiClient::Error> error;
+    client.sendChatRequest(chatBody(), nullptr, nullptr,
+                           [&error](const ApiClient::Error& failure) { error = failure; });
+
+    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 15000);
+    QVERIFY(error.has_value());
+    QCOMPARE(error->code, ApiClient::ErrorCode::ResponseTooLarge);
 }
 
 QTEST_MAIN(TestApiClient)

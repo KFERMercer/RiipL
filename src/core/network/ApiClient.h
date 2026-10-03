@@ -32,6 +32,8 @@ public:
         ServerMessage,
         InvalidResponse,
         NoChoices,
+        // The response passed the size cap and was dropped.
+        ResponseTooLarge,
         NothingToTranslate,
         NothingToLookUp,
     };
@@ -71,7 +73,8 @@ signals:
 private:
     void onReadyRead();
     void onFinished();
-    void consumeStreamBuffer();
+    // \p flush reads a trailing frame the stream ended without a newline after.
+    void consumeStreamBuffer(bool flush);
     QString apiErrorMessage(const QString& body) const;
 
     QNetworkAccessManager* m_nam = nullptr;
@@ -79,9 +82,11 @@ private:
     QByteArray m_streamBuffer;
     QByteArray m_rawBuffer;
     QString m_accumulated;
+    qsizetype m_receivedBytes = 0;
     bool m_streaming = false;
     bool m_doneSent = false;
     bool m_userCancelled = false;
+    bool m_overflowed = false;
     DoneCallback m_onDone;
     DeltaCallback m_onDelta;
     ErrorCallback m_onError;
