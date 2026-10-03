@@ -34,11 +34,11 @@ ToneDialog::ToneDialog(const QJsonArray& customTones, QWidget* parent)
     m_presets->setHeaderLabels({tr("Display name"), tr("Key")});
     m_presets->setRootIsDecorated(false);
     m_presets->header()->setSectionResizeMode(QHeaderView::Stretch);
+    // Default item flags already keep a preset name readable and out of editing.
     for (const ToneItem& item : Tones::presets()) {
         auto* presetItem = new QTreeWidgetItem(m_presets);
         presetItem->setText(kNameColumn, toneLabel(item.key));
         presetItem->setText(kKeyColumn, item.key);
-        presetItem->setFlags(Qt::NoItemFlags);
     }
     m_presets->setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
     m_presets->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
