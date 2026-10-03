@@ -15,6 +15,13 @@ struct TranslationRecord
     QString tone;
 
     bool isValid() const { return !source.isEmpty() && !target.isEmpty(); }
+
+    bool operator==(const TranslationRecord& other) const
+    {
+        return timestamp == other.timestamp && sourceLang == other.sourceLang
+            && targetLang == other.targetLang && source == other.source && target == other.target
+            && tone == other.tone;
+    }
 };
 
 class HistoryManager : public QObject
