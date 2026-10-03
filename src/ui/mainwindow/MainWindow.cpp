@@ -646,6 +646,8 @@ void MainWindow::applyClipboardMonitoring(bool enabled)
     m_clipboardTimer->stop();
     if (enabled) {
         connect(QApplication::clipboard(), &QClipboard::dataChanged, this, [this]() {
+            if (QApplication::clipboard()->ownsClipboard())
+                return;
             if (QApplication::clipboard()->text().trimmed() == m_lastClipboard)
                 return;
             m_clipboardTimer->start();
