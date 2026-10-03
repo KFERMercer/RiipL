@@ -9,6 +9,7 @@
 #include "core/document/DocumentCache.h"
 #include "core/document/DocumentSegmenter.h"
 #include "core/history/HistoryManager.h"
+#include "core/network/ApiClient.h"
 #include "core/translation/PromptBuilder.h"
 #include "core/translation/TranslationEngine.h"
 #include "ui/widgets/AppFonts.h"
@@ -345,7 +346,7 @@ QWidget* SettingsDialog::createApiPage()
 
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Model"), new ConfigLineEdit(Keys::apiModel, false, page));
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Server connection timeout (ms)"),
-                  new ConfigSpinBox(Keys::apiTimeoutMs, 1000, 300000, 1000, page));
+                  new ConfigSpinBox(Keys::apiTimeoutMs, ApiTimeout::minimumMs, 300000, 1000, page));
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Max tokens"),
                   new ConfigSpinBox(Keys::apiMaxTokens, 1, 1000000, 256, page));
 

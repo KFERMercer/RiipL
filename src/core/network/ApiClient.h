@@ -12,6 +12,13 @@
 class QNetworkAccessManager;
 class QNetworkReply;
 
+namespace ApiTimeout {
+
+// Shortest window a request may run with; the settings page offers the same floor.
+inline constexpr int minimumMs = 1000;
+
+}
+
 class ApiClient : public QObject
 {
     Q_OBJECT

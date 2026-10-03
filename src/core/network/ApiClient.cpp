@@ -116,7 +116,7 @@ void ApiClient::sendChatRequest(const QJsonObject& body,
         factory.setBearerToken(apiKeyValue.toUtf8());
     // Abort the request when the server exchanges no data within the
     // user-configured window, covering both connection and idle phases.
-    factory.setTransferTimeout(std::chrono::milliseconds((std::max)(1000, config->intValue(Keys::apiTimeoutMs))));
+    factory.setTransferTimeout(std::chrono::milliseconds((std::max)(ApiTimeout::minimumMs, config->intValue(Keys::apiTimeoutMs))));
     factory.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                          QNetworkRequest::NoLessSafeRedirectPolicy);
 
