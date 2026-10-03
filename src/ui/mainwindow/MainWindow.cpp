@@ -474,7 +474,9 @@ void MainWindow::buildTray()
     if (!QSystemTrayIcon::isSystemTrayAvailable())
         return;
     m_tray = new QSystemTrayIcon(QIcon(QStringLiteral(":/icons/app.svg")), this);
-    QMenu* menu = new QMenu();
+    // The tray icon does not take ownership of its context menu, so the window
+    // owns it.
+    QMenu* menu = new QMenu(this);
     m_trayShowHideAction = menu->addAction(QString());
     menu->addAction(m_clipboardAction);
     m_trayTranslateClipAction = menu->addAction(QString());
