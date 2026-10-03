@@ -20,6 +20,7 @@ private slots:
     void resolvesUiLocaleScript();
     void rejectsUnofferedUiLanguage();
     void ignoresUnchangedSetValue();
+    void keepsTheConfigFileToItsOwner();
 };
 
 void TestConfigManager::fallsBackToDefaults()
@@ -200,6 +201,23 @@ void TestConfigManager::ignoresUnchangedSetValue()
     const int afterFirstRemove = spy.count();
     ConfigManager::instance()->removeValue(Keys::uiLanguage);
     QCOMPARE(spy.count(), afterFirstRemove);
+}
+
+// The stored API key is not for other accounts on the machine.
+void TestConfigManager::keepsTheConfigFileToItsOwner()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    ConfigManager::createInstance(TestSupport::tempDir());
+    ConfigManager::instance()->setValue(Keys::apiKey, QStringLiteral("secret"));
+    ConfigManager::instance()->flush();
+
+    const QFile::Permissions permissions =
+        QFileInfo(ConfigManager::instance()->configFilePath()).permissions();
+    QVERIFY(permissions & QFile::ReadOwner);
+    QVERIFY(!(permissions & QFile::ReadGroup));
+    QVERIFY(!(permissions & QFile::ReadOther));
+    QVERIFY(!(permissions & QFile::WriteGroup));
+    QVERIFY(!(permissions & QFile::WriteOther));
 }
 
 QTEST_MAIN(TestConfigManager)

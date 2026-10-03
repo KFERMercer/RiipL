@@ -91,8 +91,12 @@ void ConfigManager::save()
         qWarning() << "RiipL: cannot write config file" << file.fileName() << file.errorString();
         return;
     }
-    if (!file.commit())
+    if (!file.commit()) {
         qWarning() << "RiipL: cannot commit config file" << file.fileName() << file.errorString();
+        return;
+    }
+    if (!QFile::setPermissions(configFilePath(), QFile::ReadOwner | QFile::WriteOwner))
+        qWarning() << "RiipL: cannot restrict config file permissions" << configFilePath();
 }
 
 void ConfigManager::scheduleSave()
