@@ -113,7 +113,7 @@ void TestTranslationEngine::resolvesReplacementSpans()
         QStringList{QStringLiteral("小猫咪")});
     QCOMPARE(grown.start, cat);
     QCOMPARE(grown.end, cat + 2);
-    QCOMPARE(chinese.mid(grown.start, grown.length()), QStringLiteral("小猫"));
+    QCOMPARE(chinese.mid(grown.start, grown.size()), QStringLiteral("小猫"));
 
     // A replacement that shares no character with the neighbour leaves the span
     // alone, so an ordinary alternative is not widened by accident.
@@ -147,10 +147,10 @@ void TestTranslationEngine::replacesCompleteWord()
         translated, span.start, span.end, target, {QStringLiteral("君主")});
     QVERIFY(resolved.isValid());
     QCOMPARE(resolved.start, span.start);
-    QCOMPARE(translated.mid(resolved.start, resolved.length()), target);
+    QCOMPARE(translated.mid(resolved.start, resolved.size()), target);
 
     QString replaced = translated;
-    replaced.replace(resolved.start, resolved.length(), QStringLiteral("君主"));
+    replaced.replace(resolved.start, resolved.size(), QStringLiteral("君主"));
     QCOMPARE(replaced,
              QStringLiteral("莫卧儿君主是从什么时候开始觉得自己是印度人的？"));
 }

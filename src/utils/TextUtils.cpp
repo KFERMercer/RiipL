@@ -84,8 +84,8 @@ bool isSelectableWord(const QString& text, const TextUtils::WordSpan& span)
     if (!span.isValid())
         return false;
     const int cjkCount = countCjkCodePoints(text, span.start, span.end);
-    const bool cjkDominant = cjkCount * 2 >= span.length();
-    return !cjkDominant || span.length() <= kMaxCjkRunLength;
+    const bool cjkDominant = cjkCount * 2 >= span.size();
+    return !cjkDominant || span.size() <= kMaxCjkRunLength;
 }
 
 // Segment containing \p position, or an invalid span when no segment does.

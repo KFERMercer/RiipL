@@ -20,11 +20,11 @@ void TestTextUtils::findsWordsAtBoundaries()
     const QString english = QStringLiteral("Hello world");
     const TextUtils::WordSpan hello = TextUtils::wordSpanAt(english, 1);
     QVERIFY(hello.isValid());
-    QCOMPARE(english.mid(hello.start, hello.length()), QStringLiteral("Hello"));
+    QCOMPARE(english.mid(hello.start, hello.size()), QStringLiteral("Hello"));
 
     const TextUtils::WordSpan world = TextUtils::wordSpanAt(english, 8);
     QVERIFY(world.isValid());
-    QCOMPARE(english.mid(world.start, world.length()), QStringLiteral("world"));
+    QCOMPARE(english.mid(world.start, world.size()), QStringLiteral("world"));
 
     QVERIFY(!TextUtils::wordSpanAt(english, 5).isValid());
     QVERIFY(TextUtils::wordSpanAt(english, -5).isValid());
@@ -33,14 +33,14 @@ void TestTextUtils::findsWordsAtBoundaries()
     const int shiIndex = cjk.indexOf(QStringLiteral("\u4e16"));
     const TextUtils::WordSpan span = TextUtils::wordSpanAt(cjk, shiIndex);
     QVERIFY(span.isValid());
-    const QString segment = cjk.mid(span.start, span.length());
+    const QString segment = cjk.mid(span.start, span.size());
     QVERIFY(!segment.contains(QChar(0xFF0C)));
     QVERIFY(segment.size() <= 8);
 
     const QString longRun = QStringLiteral("\u8fd9\u662f\u4e00\u6bb5\u6ca1\u6709\u4efb\u4f55\u6807\u70b9\u7684\u5f88\u957f\u4e2d\u6587\u6587\u672c");
     const TextUtils::WordSpan longSpan = TextUtils::wordSpanAt(longRun, longRun.size() / 2);
     if (longSpan.isValid())
-        QVERIFY(longSpan.length() <= 8);
+        QVERIFY(longSpan.size() <= 8);
 }
 
 void TestTextUtils::windowsCandidateFragments()
@@ -53,7 +53,7 @@ void TestTextUtils::windowsCandidateFragments()
     QVERIFY(target > 0);
     const TextUtils::WordSpan word = TextUtils::wordSpanAt(text, target);
     QVERIFY(word.isValid());
-    QCOMPARE(text.mid(word.start, word.length()), QStringLiteral("target"));
+    QCOMPARE(text.mid(word.start, word.size()), QStringLiteral("target"));
 
     // Without surrounding words the fragment is the selection itself.
     const TextUtils::Fragment tight =
@@ -61,7 +61,7 @@ void TestTextUtils::windowsCandidateFragments()
     QVERIFY(tight.isValid());
     QCOMPARE(tight.text, QStringLiteral("target"));
     QCOMPARE(tight.markStart, 0);
-    QCOMPARE(tight.markEnd, word.length());
+    QCOMPARE(tight.markEnd, word.size());
 
     // The window reaches exactly as many words as it is granted on each side,
     // and its edges sit on whole words.
@@ -105,7 +105,7 @@ void TestTextUtils::countsWordsInFragmentWindow()
     const QString chinese = QStringLiteral("你好，世界！");
     const TextUtils::WordSpan shi = TextUtils::wordSpanAt(chinese, chinese.indexOf(QStringLiteral("世")));
     QVERIFY(shi.isValid());
-    QCOMPARE(chinese.mid(shi.start, shi.length()), QStringLiteral("世"));
+    QCOMPARE(chinese.mid(shi.start, shi.size()), QStringLiteral("世"));
     QCOMPARE(TextUtils::candidateFragment(chinese, shi.start, shi.end, {2, 0}).text,
              QStringLiteral("好，世"));
     QCOMPARE(TextUtils::candidateFragment(chinese, shi.start, shi.end, {0, 1}).text,
@@ -129,12 +129,12 @@ void TestTextUtils::countsSupplementaryIdeographs()
     // unit rather than by code point misreports the run length.
     const TextUtils::WordSpan single = TextUtils::wordSpanAt(ideograph, 0);
     QVERIFY(single.isValid());
-    QCOMPARE(single.length(), 2);
+    QCOMPARE(single.size(), 2);
 
     const QString run = ideograph.repeated(3);
     const TextUtils::WordSpan first = TextUtils::wordSpanAt(run, 0);
     QVERIFY(first.isValid());
-    QCOMPARE(run.mid(first.start, first.length()), ideograph);
+    QCOMPARE(run.mid(first.start, first.size()), ideograph);
 
     // Hangul Jamo Extended-A carries the Hangul script, so a run of nine is
     // rejected for length exactly as nine Hangul syllables are.
@@ -151,7 +151,7 @@ void TestTextUtils::listsWordsOfAText()
     const QList<TextUtils::WordSpan> spans = TextUtils::words(text);
     QStringList words;
     for (const TextUtils::WordSpan& span : spans)
-        words << text.mid(span.start, span.length());
+        words << text.mid(span.start, span.size());
     QCOMPARE(words, QStringList({QStringLiteral("Hello"), QStringLiteral(","),
                                  QStringLiteral("world"), QStringLiteral("!"),
                                  QStringLiteral("It's"), QStringLiteral("fine"),

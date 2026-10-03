@@ -12,7 +12,7 @@ struct WordSpan
     int end = -1;
 
     bool isValid() const { return start >= 0 && end > start; }
-    int length() const { return end - start; }
+    int size() const { return end - start; }
 };
 
 // A slice of a longer text together with the offsets of the selection inside it.

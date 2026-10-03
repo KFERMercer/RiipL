@@ -232,7 +232,7 @@ QVector<TranslationEngine::CandidateGroup> TranslationEngine::resolveGroups(
         if (!span.isValid())
             continue;
         group.start = span.start;
-        group.length = span.length();
+        group.length = span.size();
 
         QVector<CandidateOption> aligned;
         aligned.reserve(group.options.size());
@@ -243,9 +243,9 @@ QVector<TranslationEngine::CandidateGroup> TranslationEngine::resolveGroups(
             // target left behind. One that resolves to nothing, or that no
             // longer covers the target, would overwrite the wrong run.
             if (!optionSpan.isValid() || optionSpan.start > span.start
-                || optionSpan.start + optionSpan.length() < span.start + span.length())
+                || optionSpan.start + optionSpan.size() < span.start + span.size())
                 continue;
-            aligned.append({option.text, optionSpan.start, optionSpan.length()});
+            aligned.append({option.text, optionSpan.start, optionSpan.size()});
         }
         group.options = aligned;
         if (!group.options.isEmpty())
