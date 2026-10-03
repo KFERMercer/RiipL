@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QHash>
 #include <QJsonArray>
 #include <QJsonValue>
 #include <QString>
@@ -246,51 +247,53 @@ Output only the following JSON array, with no explanation and no code fences, on
 
 inline QJsonValue value(const QString& key)
 {
-    if (key == Keys::apiBaseUrl) return QJsonValue(apiBaseUrl);
-    if (key == Keys::apiKey) return QJsonValue(apiKey);
-    if (key == Keys::apiModel) return QJsonValue(apiModel);
-    if (key == Keys::apiTimeoutMs) return QJsonValue(apiTimeoutMs);
-    if (key == Keys::apiTemperature) return QJsonValue(apiTemperature);
-    if (key == Keys::apiMaxTokens) return QJsonValue(apiMaxTokens);
-    if (key == Keys::apiMaxConcurrency) return QJsonValue(apiMaxConcurrency);
-    if (key == Keys::apiStream) return QJsonValue(apiStream);
-    if (key == Keys::apiExtraBody) return QJsonValue(apiExtraBody);
-    if (key == Keys::apiCustomHeaders) return QJsonValue(apiCustomHeaders);
-    if (key == Keys::apiPresets) return QJsonArray();
-    if (key == Keys::uiLanguage) return QJsonValue(uiLanguage);
-    if (key == Keys::uiAutoTranslate) return QJsonValue(uiAutoTranslate);
-    if (key == Keys::uiAutoTranslateDelay) return QJsonValue(uiAutoTranslateDelay);
-    if (key == Keys::uiAlwaysOnTop) return QJsonValue(uiAlwaysOnTop);
-    if (key == Keys::uiMinimizeToTray) return QJsonValue(uiMinimizeToTray);
-    if (key == Keys::uiFontSize) return QJsonValue(uiFontSize);
-    if (key == Keys::translationSourceLang) return QJsonValue(translationSourceLang);
-    if (key == Keys::translationTargetLang) return QJsonValue(translationTargetLang);
-    if (key == Keys::translationTone) return QJsonValue(translationTone);
-    if (key == Keys::translationCustomTones) return QJsonArray();
-    if (key == Keys::translationStyle) return QJsonValue(translationStyle);
-    if (key == Keys::translationBackground) return QJsonValue(translationBackground);
-    if (key == Keys::documentWindowCharacters) return QJsonValue(documentWindowCharacters);
-    if (key == Keys::documentWindowLines) return QJsonValue(documentWindowLines);
-    if (key == Keys::documentRetryCount) return QJsonValue(documentRetryCount);
-    if (key == Keys::documentConcurrent) return QJsonValue(documentConcurrent);
-    if (key == Keys::documentCacheEnabled) return QJsonValue(documentCacheEnabled);
-    if (key == Keys::glossaryEnabled) return QJsonValue(glossaryEnabled);
-    if (key == Keys::glossaryEntries) return QJsonArray();
-    if (key == Keys::promptSystem) return QJsonValue(promptSystem);
-    if (key == Keys::promptReference) return QJsonValue(promptReference);
-    if (key == Keys::promptTone) return QJsonValue(promptTone);
-    if (key == Keys::promptStyle) return QJsonValue(promptStyle);
-    if (key == Keys::promptBackground) return QJsonValue(promptBackground);
-    if (key == Keys::promptGlossary) return QJsonValue(promptGlossary);
-    if (key == Keys::promptDefault) return QJsonValue(promptDefault);
-    if (key == Keys::promptDocument) return QJsonValue(promptDocument);
-    if (key == Keys::promptCandidate) return QJsonValue(promptCandidate);
-    if (key == Keys::promptCandidateShort) return QJsonValue(promptCandidateShort);
-    if (key == Keys::clipboardMonitor) return QJsonValue(clipboardMonitor);
-    if (key == Keys::clipboardDelayMs) return QJsonValue(clipboardDelayMs);
-    if (key == Keys::historyEnabled) return QJsonValue(historyEnabled);
-    if (key == Keys::historyMaxRecords) return QJsonValue(historyMaxRecords);
-    return QJsonValue(QJsonValue::Undefined);
+    static const QHash<QString, QJsonValue> defaults = {
+        {Keys::apiBaseUrl, apiBaseUrl},
+        {Keys::apiKey, apiKey},
+        {Keys::apiModel, apiModel},
+        {Keys::apiTimeoutMs, apiTimeoutMs},
+        {Keys::apiTemperature, apiTemperature},
+        {Keys::apiMaxTokens, apiMaxTokens},
+        {Keys::apiMaxConcurrency, apiMaxConcurrency},
+        {Keys::apiStream, apiStream},
+        {Keys::apiExtraBody, apiExtraBody},
+        {Keys::apiCustomHeaders, apiCustomHeaders},
+        {Keys::apiPresets, QJsonArray()},
+        {Keys::uiLanguage, uiLanguage},
+        {Keys::uiAutoTranslate, uiAutoTranslate},
+        {Keys::uiAutoTranslateDelay, uiAutoTranslateDelay},
+        {Keys::uiAlwaysOnTop, uiAlwaysOnTop},
+        {Keys::uiMinimizeToTray, uiMinimizeToTray},
+        {Keys::uiFontSize, uiFontSize},
+        {Keys::translationSourceLang, translationSourceLang},
+        {Keys::translationTargetLang, translationTargetLang},
+        {Keys::translationTone, translationTone},
+        {Keys::translationCustomTones, QJsonArray()},
+        {Keys::translationStyle, translationStyle},
+        {Keys::translationBackground, translationBackground},
+        {Keys::documentWindowCharacters, documentWindowCharacters},
+        {Keys::documentWindowLines, documentWindowLines},
+        {Keys::documentRetryCount, documentRetryCount},
+        {Keys::documentConcurrent, documentConcurrent},
+        {Keys::documentCacheEnabled, documentCacheEnabled},
+        {Keys::glossaryEnabled, glossaryEnabled},
+        {Keys::glossaryEntries, QJsonArray()},
+        {Keys::promptSystem, promptSystem},
+        {Keys::promptReference, promptReference},
+        {Keys::promptTone, promptTone},
+        {Keys::promptStyle, promptStyle},
+        {Keys::promptBackground, promptBackground},
+        {Keys::promptGlossary, promptGlossary},
+        {Keys::promptDefault, promptDefault},
+        {Keys::promptDocument, promptDocument},
+        {Keys::promptCandidate, promptCandidate},
+        {Keys::promptCandidateShort, promptCandidateShort},
+        {Keys::clipboardMonitor, clipboardMonitor},
+        {Keys::clipboardDelayMs, clipboardDelayMs},
+        {Keys::historyEnabled, historyEnabled},
+        {Keys::historyMaxRecords, historyMaxRecords},
+    };
+    return defaults.value(key, QJsonValue(QJsonValue::Undefined));
 }
 
 }
