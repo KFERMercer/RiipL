@@ -25,7 +25,7 @@ TranslationEngine::TranslationEngine(QObject* parent)
         setBusy(false);
     });
     connect(&m_candidateApi, &ApiClient::requestFinished, this, [this]() {
-        if (!m_translateApi.busy())
+        if (!m_translateApi.isBusy())
             setBusy(false);
     });
 }
@@ -38,7 +38,7 @@ void TranslationEngine::setBusy(bool busy)
     emit stateChanged(m_busy);
 }
 
-bool TranslationEngine::busy() const
+bool TranslationEngine::isBusy() const
 {
     return m_busy;
 }
@@ -83,7 +83,7 @@ void TranslationEngine::translateDocument(const TranslationContext& context,
 
 void TranslationEngine::dispatch(const PromptBuilder::Result& prompt)
 {
-    if (m_translateApi.busy())
+    if (m_translateApi.isBusy())
         m_translateApi.cancel();
 
     if (prompt.user.isEmpty()) {
@@ -117,14 +117,14 @@ void TranslationEngine::requestCandidates(const TranslationContext& context,
                                           const std::function<void(const QVector<CandidateGroup>&)>& onDone,
                                           const std::function<void(const ApiClient::Error&)>& onError)
 {
-    if (m_candidateApi.busy())
+    if (m_candidateApi.isBusy())
         m_candidateApi.cancel();
 
     // The request carries only the words around the selection, so the prompt
     // stays small no matter how long the document is.
     const TextUtils::Fragment fragment = TextUtils::candidateFragment(
         context.translatedText, selectionStart, selectionEnd, kCandidateContextWords);
-    if (!fragment.valid()) {
+    if (!fragment.isValid()) {
         if (onError)
             onError({ApiClient::ErrorCode::NothingToLookUp, QString()});
         return;
@@ -230,7 +230,7 @@ QVector<TranslationEngine::CandidateGroup> TranslationEngine::resolveGroups(
 
         const TextUtils::WordSpan span = TextUtils::replacementSpan(
             translatedText, selectionStart, selectionEnd, group.target, options);
-        if (!span.valid())
+        if (!span.isValid())
             continue;
         group.start = span.start;
         group.length = span.length();
@@ -243,7 +243,7 @@ QVector<TranslationEngine::CandidateGroup> TranslationEngine::resolveGroups(
             // An option carries its own span because it may absorb characters the
             // target left behind. One that resolves to nothing, or that no
             // longer covers the target, would overwrite the wrong run.
-            if (!optionSpan.valid() || optionSpan.start > span.start
+            if (!optionSpan.isValid() || optionSpan.start > span.start
                 || optionSpan.start + optionSpan.length() < span.start + span.length())
                 continue;
             aligned.append({option.text, optionSpan.start, optionSpan.length()});
@@ -299,7 +299,7 @@ QVector<TranslationEngine::CandidateGroup> TranslationEngine::parseCandidateResp
 
 void TranslationEngine::stop()
 {
-    if (!m_translateApi.busy()) {
+    if (!m_translateApi.isBusy()) {
         setBusy(false);
         return;
     }

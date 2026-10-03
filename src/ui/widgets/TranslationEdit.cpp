@@ -65,7 +65,7 @@ void TranslationEdit::mousePressEvent(QMouseEvent* event)
         const TextUtils::WordSpan span = onCharacter && charPosition >= 0
             ? TextUtils::wordSpanAt(toPlainText(), charPosition)
             : TextUtils::WordSpan{};
-        if (span.valid()) {
+        if (span.isValid()) {
             QTextCursor cursor(document());
             cursor.setPosition(span.start);
             cursor.setPosition(span.end, QTextCursor::KeepAnchor);

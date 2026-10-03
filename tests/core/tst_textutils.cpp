@@ -19,27 +19,27 @@ void TestTextUtils::findsWordsAtBoundaries()
 {
     const QString english = QStringLiteral("Hello world");
     const TextUtils::WordSpan hello = TextUtils::wordSpanAt(english, 1);
-    QVERIFY(hello.valid());
+    QVERIFY(hello.isValid());
     QCOMPARE(english.mid(hello.start, hello.length()), QStringLiteral("Hello"));
 
     const TextUtils::WordSpan world = TextUtils::wordSpanAt(english, 8);
-    QVERIFY(world.valid());
+    QVERIFY(world.isValid());
     QCOMPARE(english.mid(world.start, world.length()), QStringLiteral("world"));
 
-    QVERIFY(!TextUtils::wordSpanAt(english, 5).valid());
-    QVERIFY(TextUtils::wordSpanAt(english, -5).valid());
+    QVERIFY(!TextUtils::wordSpanAt(english, 5).isValid());
+    QVERIFY(TextUtils::wordSpanAt(english, -5).isValid());
 
     const QString cjk = QStringLiteral("\u4f60\u597d\uff0c\u4e16\u754c\uff01");
     const int shiIndex = cjk.indexOf(QStringLiteral("\u4e16"));
     const TextUtils::WordSpan span = TextUtils::wordSpanAt(cjk, shiIndex);
-    QVERIFY(span.valid());
+    QVERIFY(span.isValid());
     const QString segment = cjk.mid(span.start, span.length());
     QVERIFY(!segment.contains(QChar(0xFF0C)));
     QVERIFY(segment.size() <= 8);
 
     const QString longRun = QStringLiteral("\u8fd9\u662f\u4e00\u6bb5\u6ca1\u6709\u4efb\u4f55\u6807\u70b9\u7684\u5f88\u957f\u4e2d\u6587\u6587\u672c");
     const TextUtils::WordSpan longSpan = TextUtils::wordSpanAt(longRun, longRun.size() / 2);
-    if (longSpan.valid())
+    if (longSpan.isValid())
         QVERIFY(longSpan.length() <= 8);
 }
 
@@ -52,13 +52,13 @@ void TestTextUtils::windowsCandidateFragments()
     const int target = text.indexOf(QStringLiteral("target"));
     QVERIFY(target > 0);
     const TextUtils::WordSpan word = TextUtils::wordSpanAt(text, target);
-    QVERIFY(word.valid());
+    QVERIFY(word.isValid());
     QCOMPARE(text.mid(word.start, word.length()), QStringLiteral("target"));
 
     // Without surrounding words the fragment is the selection itself.
     const TextUtils::Fragment tight =
         TextUtils::candidateFragment(text, word.start, word.end, {0, 0});
-    QVERIFY(tight.valid());
+    QVERIFY(tight.isValid());
     QCOMPARE(tight.text, QStringLiteral("target"));
     QCOMPARE(tight.markStart, 0);
     QCOMPARE(tight.markEnd, word.length());
@@ -67,7 +67,7 @@ void TestTextUtils::windowsCandidateFragments()
     // and its edges sit on whole words.
     const TextUtils::Fragment wide =
         TextUtils::candidateFragment(text, word.start, word.end, {3, 2});
-    QVERIFY(wide.valid());
+    QVERIFY(wide.isValid());
     QCOMPARE(wide.text, QStringLiteral("sentence carries the target word here"));
     QCOMPARE(wide.text.mid(wide.markStart, wide.markEnd - wide.markStart),
              QStringLiteral("target"));
@@ -77,7 +77,7 @@ void TestTextUtils::windowsCandidateFragments()
     // the caller tell a window over a short translation from a local one.
     const TextUtils::Fragment all =
         TextUtils::candidateFragment(text, word.start, word.end, {100, 100});
-    QVERIFY(all.valid());
+    QVERIFY(all.isValid());
     QCOMPARE(all.text, text);
     QVERIFY(all.text != wide.text);
 }
@@ -89,7 +89,7 @@ void TestTextUtils::countsWordsInFragmentWindow()
     // none.
     const QString english = QStringLiteral("Hello, world! It's fine.");
     const TextUtils::WordSpan world = TextUtils::wordSpanAt(english, english.indexOf(QStringLiteral("world")));
-    QVERIFY(world.valid());
+    QVERIFY(world.isValid());
     const auto window = [&](int before, int after) {
         return TextUtils::candidateFragment(english, world.start, world.end, {before, after}).text;
     };
@@ -104,7 +104,7 @@ void TestTextUtils::countsWordsInFragmentWindow()
     // its own word and the full-width comma is one too.
     const QString chinese = QStringLiteral("你好，世界！");
     const TextUtils::WordSpan shi = TextUtils::wordSpanAt(chinese, chinese.indexOf(QStringLiteral("世")));
-    QVERIFY(shi.valid());
+    QVERIFY(shi.isValid());
     QCOMPARE(chinese.mid(shi.start, shi.length()), QStringLiteral("世"));
     QCOMPARE(TextUtils::candidateFragment(chinese, shi.start, shi.end, {2, 0}).text,
              QStringLiteral("好，世"));
@@ -117,7 +117,7 @@ void TestTextUtils::countsWordsInFragmentWindow()
     // character, which is what the editor hands out there.
     const QString run = QStringLiteral("\u8fd9\u662f\u4e00\u6bb5\u6ca1\u6709\u4efb\u4f55\u6807\u70b9\u7684\u5f88\u957f\u4e2d\u6587\u6587\u672c");
     const TextUtils::Fragment local = TextUtils::candidateFragment(run, 5, 6, {1, 1});
-    QVERIFY(local.valid());
+    QVERIFY(local.isValid());
     QCOMPARE(local.text, run.mid(4, 3));
 }
 
@@ -128,19 +128,19 @@ void TestTextUtils::countsSupplementaryIdeographs()
     // One supplementary ideograph occupies two UTF-16 units; classifying by
     // unit rather than by code point misreports the run length.
     const TextUtils::WordSpan single = TextUtils::wordSpanAt(ideograph, 0);
-    QVERIFY(single.valid());
+    QVERIFY(single.isValid());
     QCOMPARE(single.length(), 2);
 
     const QString run = ideograph.repeated(3);
     const TextUtils::WordSpan first = TextUtils::wordSpanAt(run, 0);
-    QVERIFY(first.valid());
+    QVERIFY(first.isValid());
     QCOMPARE(run.mid(first.start, first.length()), ideograph);
 
     // Hangul Jamo Extended-A carries the Hangul script, so a run of nine is
     // rejected for length exactly as nine Hangul syllables are.
-    QCOMPARE(TextUtils::wordSpanAt(QStringLiteral("\uA960").repeated(8), 0).valid(), true);
-    QCOMPARE(TextUtils::wordSpanAt(QStringLiteral("\uA960").repeated(9), 0).valid(), false);
-    QCOMPARE(TextUtils::wordSpanAt(QStringLiteral("\u11A8").repeated(9), 0).valid(), false);
+    QCOMPARE(TextUtils::wordSpanAt(QStringLiteral("\uA960").repeated(8), 0).isValid(), true);
+    QCOMPARE(TextUtils::wordSpanAt(QStringLiteral("\uA960").repeated(9), 0).isValid(), false);
+    QCOMPARE(TextUtils::wordSpanAt(QStringLiteral("\u11A8").repeated(9), 0).isValid(), false);
 }
 
 // The words of a text are the editor's words, in order, which is what a window counts.

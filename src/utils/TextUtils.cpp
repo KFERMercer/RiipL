@@ -81,7 +81,7 @@ TextUtils::WordSpan trimmed(const TextUtils::WordSpan& segment, const QString& t
 // CJK-dominant run past \p kMaxCjkRunLength.
 bool isSelectableWord(const QString& text, const TextUtils::WordSpan& span)
 {
-    if (!span.valid())
+    if (!span.isValid())
         return false;
     const int cjkCount = countCjkCodePoints(text, span.start, span.end);
     const bool cjkDominant = cjkCount * 2 >= span.length();
@@ -231,9 +231,9 @@ Fragment candidateFragment(const QString& text, int selectionStart, int selectio
     const QList<WordSpan> segments = wordSegments(text);
     const WordSpan markedStart = trimmed(segmentAt(segments, selectionStart), text);
     const WordSpan markedEnd = trimmed(segmentAt(segments, qMax(selectionStart, selectionEnd - 1)), text);
-    if (markedStart.valid())
+    if (markedStart.isValid())
         start = markedStart.start;
-    if (markedEnd.valid())
+    if (markedEnd.isValid())
         end = markedEnd.end;
 
     int remaining = window.before;

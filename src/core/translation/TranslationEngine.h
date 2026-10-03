@@ -26,7 +26,7 @@ public:
         int start = -1;
         int length = 0;
 
-        bool valid() const { return start >= 0 && length > 0; }
+        bool isValid() const { return start >= 0 && length > 0; }
     };
 
     // One replacement target plus the alternatives proposed for it. \p start and
@@ -38,7 +38,7 @@ public:
         int length = 0;
         QVector<CandidateOption> options;
 
-        bool valid() const { return start >= 0 && length > 0; }
+        bool isValid() const { return start >= 0 && length > 0; }
     };
 
     explicit TranslationEngine(QObject* parent = nullptr);
@@ -55,7 +55,7 @@ public:
     // Drops the in-flight candidate request and reports nothing back.
     void cancelCandidates();
     void stop();
-    bool busy() const;
+    bool isBusy() const;
 
     // Assembles a chat-completions request body from the current configuration.
     // A negative configured temperature omits the parameter from the body.

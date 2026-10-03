@@ -56,7 +56,7 @@ public:
                          DeltaCallback onStream,
                          ErrorCallback onError);
     void cancel();
-    bool busy() const { return m_reply != nullptr; }
+    bool isBusy() const { return m_reply != nullptr; }
 
     // Parses user-configured header lines of the form "Name: value";
     // malformed lines are ignored.

@@ -11,7 +11,7 @@ struct WordSpan
     int start = -1;
     int end = -1;
 
-    bool valid() const { return start >= 0 && end > start; }
+    bool isValid() const { return start >= 0 && end > start; }
     int length() const { return end - start; }
 };
 
@@ -22,7 +22,7 @@ struct Fragment
     int markStart = -1;
     int markEnd = -1;
 
-    bool valid() const { return markStart >= 0 && markEnd > markStart; }
+    bool isValid() const { return markStart >= 0 && markEnd > markStart; }
 };
 
 // Window of \p before words in front of a selection and \p after words behind it.

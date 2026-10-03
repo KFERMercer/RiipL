@@ -80,7 +80,7 @@ void TestTranslationEngine::resolvesReplacementSpans()
     // A target that does not cover the selection is rejected even though it
     // appears in the text, which keeps the replacement off an unrelated word.
     QVERIFY(!TextUtils::replacementSpan(text, manAt + 4, manAt + 7,
-                                        QStringLiteral("the old story"), {}).valid());
+                                        QStringLiteral("the old story"), {}).isValid());
 
     // A dropped sentence-initial capital still resolves, case-insensitively.
     const QString sentence = QStringLiteral("Wandering thoughts filled her mind.");
@@ -99,9 +99,9 @@ void TestTranslationEngine::resolvesReplacementSpans()
     // Two overlapping occurrences that both cover the selection are genuinely
     // ambiguous and are rejected rather than guessed.
     QVERIFY(!TextUtils::replacementSpan(QStringLiteral("aaa"), 1, 2,
-                                        QStringLiteral("aa"), {}).valid());
+                                        QStringLiteral("aa"), {}).isValid());
 
-    QVERIFY(!TextUtils::replacementSpan(text, manAt + 4, manAt + 7, QString(), {}).valid());
+    QVERIFY(!TextUtils::replacementSpan(text, manAt + 4, manAt + 7, QString(), {}).isValid());
 
     // A replacement that restates the character left outside the target absorbs
     // it, so a model that returned only the clicked character cannot splice its
@@ -137,7 +137,7 @@ void TestTranslationEngine::replacesCompleteWord()
     const QString translated = QStringLiteral("莫卧儿皇帝是从什么时候开始觉得自己是印度人的？");
     const int huangIndex = translated.indexOf(QStringLiteral("皇"));
     const TextUtils::WordSpan span = TextUtils::wordSpanAt(translated, huangIndex);
-    QVERIFY(span.valid());
+    QVERIFY(span.isValid());
 
     // The clicked span acts only as an anchor; the target from the candidate
     // response may cover a longer run than the clicked word, and it resolves
@@ -145,7 +145,7 @@ void TestTranslationEngine::replacesCompleteWord()
     const QString target = QStringLiteral("皇帝");
     const TextUtils::WordSpan resolved = TextUtils::replacementSpan(
         translated, span.start, span.end, target, {QStringLiteral("君主")});
-    QVERIFY(resolved.valid());
+    QVERIFY(resolved.isValid());
     QCOMPARE(resolved.start, span.start);
     QCOMPARE(translated.mid(resolved.start, resolved.length()), target);
 
@@ -238,13 +238,13 @@ void TestTranslationEngine::stopCancelsActiveRequest()
     context.sourceText = QStringLiteral("Hello");
     context.targetLang = QStringLiteral("zh");
     engine.translateText(context);
-    QVERIFY(engine.busy());
+    QVERIFY(engine.isBusy());
 
     engine.stop();
 
     QCOMPARE(stoppedSpy.count(), 1);
     QCOMPARE(errorSpy.count(), 0);
-    QVERIFY(!engine.busy());
+    QVERIFY(!engine.isBusy());
     QVERIFY(!stateSpy.isEmpty());
     QCOMPARE(stateSpy.last().last().toBool(), false);
 }
@@ -304,7 +304,7 @@ void TestTranslationEngine::retriesEmptyCandidateReply()
     // The engine hands back the resolved span, so the caller never re-searches.
     QCOMPARE(received.first().start, start);
     QCOMPARE(received.first().length, word.size());
-    QVERIFY(received.first().valid());
+    QVERIFY(received.first().isValid());
 }
 
 // The candidate request must open with the configured system prompt.
@@ -480,7 +480,7 @@ void TestTranslationEngine::failedDispatchReturnsToIdle()
     QCOMPARE(errorSpy.first().first().value<ApiClient::Error>().code,
              ApiClient::ErrorCode::BaseUrlMissing);
     QCOMPARE(stoppedSpy.count(), 0);
-    QVERIFY(!engine.busy());
+    QVERIFY(!engine.isBusy());
     QCOMPARE(stateSpy.last().last().toBool(), false);
 }
 
@@ -493,7 +493,7 @@ void TestTranslationEngine::stopWhenIdleIsNoOp()
     engine.stop();
 
     QCOMPARE(stoppedSpy.count(), 0);
-    QVERIFY(!engine.busy());
+    QVERIFY(!engine.isBusy());
     QVERIFY(stateSpy.isEmpty());
 }
 

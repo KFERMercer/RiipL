@@ -180,7 +180,7 @@ void DocumentTranslator::cancelRun()
     m_active = false;
     for (Worker& worker : m_workers) {
         worker.retryTimer->stop();
-        if (worker.engine->busy())
+        if (worker.engine->isBusy())
             worker.engine->stop();
         worker.window = -1;
     }
