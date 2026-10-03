@@ -90,8 +90,11 @@ QSize FlowLayout::minimumSize() const
 
 int FlowLayout::doLayout(const QRect& rect, bool testOnly) const
 {
-    int x = rect.x();
-    int y = rect.y();
+    const QMargins margins = contentsMargins();
+    const QRect effectiveRect =
+        rect.adjusted(margins.left(), margins.top(), -margins.right(), -margins.bottom());
+    int x = effectiveRect.x();
+    int y = effectiveRect.y();
     int lineHeight = 0;
 
     for (QLayoutItem* item : std::as_const(m_items)) {
@@ -106,8 +109,8 @@ int FlowLayout::doLayout(const QRect& rect, bool testOnly) const
                 QSizePolicy::PushButton, QSizePolicy::PushButton, Qt::Vertical);
 
         int nextX = x + item->sizeHint().width() + spaceX;
-        if (nextX - spaceX > rect.right() && lineHeight > 0) {
-            x = rect.x();
+        if (nextX - spaceX > effectiveRect.right() && lineHeight > 0) {
+            x = effectiveRect.x();
             y = y + lineHeight + spaceY;
             nextX = x + item->sizeHint().width() + spaceX;
             lineHeight = 0;
@@ -119,7 +122,7 @@ int FlowLayout::doLayout(const QRect& rect, bool testOnly) const
         x = nextX;
         lineHeight = qMax(lineHeight, item->sizeHint().height());
     }
-    return y + lineHeight - rect.y() + contentsMargins().bottom();
+    return y + lineHeight - rect.y() + margins.bottom();
 }
 
 int FlowLayout::smartSpacing(QStyle::PixelMetric metric) const
