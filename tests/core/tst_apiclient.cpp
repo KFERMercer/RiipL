@@ -86,6 +86,7 @@ private slots:
     void refusesUnusableBaseUrl();
     void reportsIdleBeforeDelivering();
     void keepsResultWhenHandlerStartsNextRequest();
+    void reportsIdleTimeout();
     void readsTrailingStreamFrame();
     void rejectsStreamWithoutContent();
     void dropsOversizedResponse();
@@ -253,6 +254,29 @@ void TestApiClient::keepsResultWhenHandlerStartsNextRequest()
     QTRY_COMPARE_WITH_TIMEOUT(results.size(), 2, 5000);
     QVERIFY2(!error.has_value(), "the next request must not change this one's outcome");
     QCOMPARE(results, QStringList({QStringLiteral("first"), QStringLiteral("second")}));
+}
+
+// A server that never answers leaves the transfer timeout as the only end.
+void TestApiClient::reportsIdleTimeout()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    ConfigManager::createInstance(TestSupport::tempDir());
+
+    QTcpServer server;
+    QVERIFY(server.listen(QHostAddress::LocalHost));
+    ConfigManager::instance()->setValue(
+        Keys::apiBaseUrl, QStringLiteral("http://127.0.0.1:%1/v1").arg(server.serverPort()));
+    ConfigManager::instance()->setValue(Keys::apiTimeoutMs, ApiTimeout::minimumMs);
+
+    ApiClient client;
+    QSignalSpy finishedSpy(&client, &ApiClient::requestFinished);
+    std::optional<ApiClient::Error> error;
+    client.sendChatRequest(chatBody(), nullptr, nullptr,
+                           [&error](const ApiClient::Error& failure) { error = failure; });
+
+    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 10000);
+    QVERIFY(error.has_value());
+    QCOMPARE(error->code, ApiClient::ErrorCode::TimedOut);
 }
 
 // The last frame arrives without a closing newline when the connection ends.

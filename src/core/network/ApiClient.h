@@ -30,7 +30,6 @@ public:
     enum class ErrorCode {
         BaseUrlMissing,
         BaseUrlInvalid,
-        Cancelled,
         TimedOut,
         // detail: the Qt error string.
         NetworkFailure,
@@ -93,7 +92,6 @@ private:
     qsizetype m_receivedBytes = 0;
     bool m_streaming = false;
     bool m_doneSent = false;
-    bool m_userCancelled = false;
     bool m_overflowed = false;
     DoneCallback m_onDone;
     DeltaCallback m_onDelta;

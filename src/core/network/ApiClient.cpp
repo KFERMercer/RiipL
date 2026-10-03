@@ -41,7 +41,6 @@ void ApiClient::cancel()
 {
     if (!m_reply)
         return;
-    m_userCancelled = true;
     QNetworkReply* reply = m_reply;
     m_reply = nullptr;
     disconnect(reply, nullptr, this, nullptr);
@@ -151,7 +150,6 @@ void ApiClient::sendChatRequest(const QJsonObject& body,
     m_accumulated.clear();
     m_receivedBytes = 0;
     m_doneSent = false;
-    m_userCancelled = false;
     m_overflowed = false;
     m_onDone = std::move(onDone);
     m_onDelta = std::move(onStream);
@@ -228,7 +226,8 @@ void ApiClient::onFinished()
 
     const bool overflowed = std::exchange(m_overflowed, false);
     // An aborted reply has nothing left to read.
-    const QByteArray remaining = overflowed ? QByteArray() : reply->readAll();
+    const QByteArray remaining =
+        !overflowed && reply->isOpen() ? reply->readAll() : QByteArray();
     const bool tooLarge = overflowed || m_receivedBytes + remaining.size() > kMaxResponseBytes;
     if (!tooLarge) {
         m_rawBuffer += remaining;
@@ -262,7 +261,8 @@ void ApiClient::onFinished()
     if (tooLarge) {
         fail(ErrorCode::ResponseTooLarge);
     } else if (reply->error() == QNetworkReply::OperationCanceledError && !m_doneSent) {
-        fail(m_userCancelled ? ErrorCode::Cancelled : ErrorCode::TimedOut);
+        // The client's own aborts never reach their handlers, so this is the timeout.
+        fail(ErrorCode::TimedOut);
     } else if (reply->error() != QNetworkReply::NoError && statusCode == 0) {
         fail(ErrorCode::NetworkFailure, errorString);
     } else if (statusCode >= 400 || reply->error() != QNetworkReply::NoError) {
@@ -315,8 +315,6 @@ QString ApiClient::Error::text() const
         return tr("API base URL is not configured");
     case ErrorCode::BaseUrlInvalid:
         return tr("API base URL must be an absolute http or https URL");
-    case ErrorCode::Cancelled:
-        return tr("Translation cancelled");
     case ErrorCode::TimedOut:
         return tr("Translation timed out");
     case ErrorCode::NetworkFailure:
