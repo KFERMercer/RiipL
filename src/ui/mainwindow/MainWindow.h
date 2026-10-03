@@ -88,7 +88,10 @@ private:
     void setBusy(bool busy);
     void translateClipboard();
 
-    void beginResultStep();
+    // The pane grows while a translation streams; closing the run turns it into
+    // one undo entry.
+    void appendStreamedResult(const QString& piece);
+    void endResultStream();
     void setResultText(const QString& text);
 
     QSplitter* m_splitter = nullptr;
@@ -148,5 +151,6 @@ private:
     ApiClient::Error m_statusFailure;
     QString m_lastClipboard;
     QUndoStack m_resultHistory;
-    int m_resultStep = 0;
+    QString m_streamOrigin;
+    bool m_streamOpen = false;
 };

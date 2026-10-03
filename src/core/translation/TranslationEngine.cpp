@@ -103,7 +103,6 @@ void TranslationEngine::dispatch(const PromptBuilder::Result& prompt)
         },
         [this](const QString& delta) {
             m_accumulated += delta;
-            emit partialResult(m_accumulated);
             emit partialDelta(delta);
         },
         [this](const ApiClient::Error& failure) {

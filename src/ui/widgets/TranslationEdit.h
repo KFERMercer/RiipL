@@ -15,6 +15,8 @@ public:
 
     void setResult(const QString& text);
     QString result() const;
+    // Grows the result by \p piece without rebuilding the document.
+    void appendResult(const QString& piece);
     // Replaces the \p length characters at \p start, so a replacement is
     // rejected outright once the translation has moved on.
     bool replaceWordAt(int start, int length, const QString& replacement);

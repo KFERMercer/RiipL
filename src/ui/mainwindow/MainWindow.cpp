@@ -50,21 +50,20 @@
 #include <QWindow>
 #include <QVBoxLayout>
 
+#include <utility>
+
 namespace {
 
 constexpr int kMaxResultSteps = 30;
-constexpr int kResultTextCommandId = 1;
 
-// One undoable edit of the translation pane. Edits carrying the same step are
-// merged, which turns a streamed translation into a single undo entry.
+// One undoable edit of the translation pane.
 class ResultTextCommand : public QUndoCommand
 {
 public:
-    ResultTextCommand(TranslationEdit* edit, const QString& before, const QString& after, int step)
+    ResultTextCommand(TranslationEdit* edit, const QString& before, const QString& after)
         : m_edit(edit)
         , m_before(before)
         , m_after(after)
-        , m_step(step)
     {
     }
 
@@ -82,22 +81,10 @@ public:
         m_applied = true;
     }
 
-    int id() const override { return kResultTextCommandId; }
-
-    bool mergeWith(const QUndoCommand* command) override
-    {
-        const auto* next = static_cast<const ResultTextCommand*>(command);
-        if (m_step != next->m_step)
-            return false;
-        m_after = next->m_after;
-        return true;
-    }
-
 private:
     TranslationEdit* m_edit;
     QString m_before;
     QString m_after;
-    int m_step;
     bool m_applied = true;
 };
 
@@ -159,20 +146,15 @@ MainWindow::MainWindow(QWidget* parent)
     connect(m_popup, &CandidatePopup::candidateChosen, this,
             [this](int start, int length, const QString& replacement) {
                 const QString before = m_resultEdit->result();
-                beginResultStep();
                 if (!m_resultEdit->replaceWordAt(start, length, replacement)) {
                     setStatus(Status::ReplacementSkipped);
                     return;
                 }
                 m_resultHistory.push(
-                    new ResultTextCommand(m_resultEdit, before, m_resultEdit->result(), m_resultStep));
+                    new ResultTextCommand(m_resultEdit, before, m_resultEdit->result()));
             });
 
-    connect(&m_engine, &TranslationEngine::partialResult, this, [this](const QString& text) {
-        setResultText(text);
-        auto* bar = m_resultEdit->verticalScrollBar();
-        bar->setValue(bar->maximum());
-    });
+    connect(&m_engine, &TranslationEngine::partialDelta, this, &MainWindow::appendStreamedResult);
     connect(&m_engine, &TranslationEngine::finished, this, [this](const QString& text) {
         setResultText(text);
         setStatus(Status::Finished);
@@ -188,6 +170,7 @@ MainWindow::MainWindow(QWidget* parent)
         }
     });
     connect(&m_engine, &TranslationEngine::errorOccurred, this, [this](const ApiClient::Error& failure) {
+        endResultStream();
         setStatusFailure(failure);
     });
     connect(&m_engine, &TranslationEngine::stateChanged, this, [this](bool busy) {
@@ -196,6 +179,7 @@ MainWindow::MainWindow(QWidget* parent)
             setStatus(Status::Translating);
     });
     connect(&m_engine, &TranslationEngine::stopped, this, [this]() {
+        endResultStream();
         setStatus(Status::Cancelled);
     });
 
@@ -353,7 +337,6 @@ QWidget* MainWindow::createRightPane()
 
     connect(m_copyAction, &QAction::triggered, this, &MainWindow::copyResult);
     connect(m_clearResultAction, &QAction::triggered, this, [this]() {
-        beginResultStep();
         setResultText(QString());
     });
     return pane;
@@ -732,7 +715,7 @@ void MainWindow::translateNow()
         setStatus(Status::EmptySource);
         return;
     }
-    beginResultStep();
+    endResultStream();
     m_engine.translateText(currentContext());
 }
 
@@ -800,7 +783,7 @@ void MainWindow::changeEvent(QEvent* event)
 
 void MainWindow::swapLanguages()
 {
-    beginResultStep();
+    endResultStream();
     const QString sourceCode = m_sourceLang->currentData().toString();
     const QString targetCode = m_targetLang->currentData().toString();
     if (sourceCode == QLatin1String("auto")) {
@@ -854,18 +837,39 @@ void MainWindow::toggleVisible()
     activateWindow();
 }
 
-void MainWindow::beginResultStep()
+void MainWindow::appendStreamedResult(const QString& piece)
 {
-    ++m_resultStep;
+    if (!m_streamOpen) {
+        m_streamOrigin = m_resultEdit->result();
+        m_streamOpen = true;
+        m_resultEdit->setResult(QString());
+    }
+    m_resultEdit->appendResult(piece);
+}
+
+void MainWindow::endResultStream()
+{
+    if (m_streamOpen)
+        setResultText(m_resultEdit->result());
 }
 
 void MainWindow::setResultText(const QString& text)
 {
+    // A streamed run is one undo entry, opened with the text the pane held before
+    // it.
+    if (m_streamOpen) {
+        m_streamOpen = false;
+        const QString origin = std::exchange(m_streamOrigin, QString());
+        if (m_resultEdit->result() != text)
+            m_resultEdit->setResult(text);
+        m_resultHistory.push(new ResultTextCommand(m_resultEdit, origin, text));
+        return;
+    }
     const QString before = m_resultEdit->result();
     if (before == text)
         return;
     m_resultEdit->setResult(text);
-    m_resultHistory.push(new ResultTextCommand(m_resultEdit, before, text, m_resultStep));
+    m_resultHistory.push(new ResultTextCommand(m_resultEdit, before, text));
 }
 
 void MainWindow::copyResult()
@@ -912,7 +916,7 @@ void MainWindow::showHistoryDialog()
 {
     HistoryDialog dialog(&m_history, this);
     connect(&dialog, &HistoryDialog::reuseRequested, this, [this](const TranslationRecord& record) {
-        beginResultStep();
+        endResultStream();
         m_sourceEdit->setPlainText(record.source);
         const int sourceIndex = m_sourceLang->findData(record.sourceLang);
         if (sourceIndex >= 0)

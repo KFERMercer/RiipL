@@ -77,9 +77,8 @@ public:
                                                  int selectionEnd);
 
 signals:
-    void partialResult(const QString& text);
-    // Piece the latest partial result added, so a longer result can be appended
-    // to instead of rewritten.
+    // Piece the result grew by, so a pane can append instead of rewriting its
+    // whole text.
     void partialDelta(const QString& piece);
     void finished(const QString& text);
     void errorOccurred(const ApiClient::Error& failure);

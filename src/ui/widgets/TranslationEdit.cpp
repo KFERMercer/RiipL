@@ -33,6 +33,17 @@ QString TranslationEdit::result() const
     return toPlainText();
 }
 
+void TranslationEdit::appendResult(const QString& piece)
+{
+    if (piece.isEmpty())
+        return;
+    QTextCursor cursor(document());
+    cursor.movePosition(QTextCursor::End);
+    cursor.insertText(piece);
+    auto* bar = verticalScrollBar();
+    bar->setValue(bar->maximum());
+}
+
 void TranslationEdit::clearHighlight()
 {
     setExtraSelections({});
