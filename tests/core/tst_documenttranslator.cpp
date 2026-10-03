@@ -216,6 +216,7 @@ private slots:
     void stopsDuringResultDelivery();
     void stopsWhileARetryIsPending();
     void finishesEmptyInputWithoutRequest();
+    void failsEveryWindowOnceWithoutAnEndpoint();
 
 private:
     StubApi m_api;
@@ -1148,6 +1149,37 @@ void TestDocumentTranslator::finishesEmptyInputWithoutRequest()
     translator.start({}, TranslationContext());
     QCOMPARE(finished, QString());
     QCOMPARE(m_api.requests, 0);
+}
+
+// A window failing on its own stack must not be dispatched twice, which would
+// settle it before the windows behind it were sent.
+void TestDocumentTranslator::failsEveryWindowOnceWithoutAnEndpoint()
+{
+    ConfigManager* config = ConfigManager::instance();
+    config->setValue(Keys::apiBaseUrl, QString());
+    config->setValue(Keys::documentRetryCount, 0);
+
+    const QVector<DocumentWindow> windows = document(4, 3);
+    const int count = windows.size();
+
+    DocumentTranslator translator;
+    QStringList failed;
+    QString finished;
+    connect(&translator, &DocumentTranslator::failed, this,
+            [&failed](const QStringList& shards) { failed = shards; });
+    connect(&translator, &DocumentTranslator::finished, this,
+            [&finished](const QString& text) { finished = text; });
+
+    translator.start(windows, TranslationContext());
+    QTRY_COMPARE(failed.size(), count);
+    QVERIFY(finished.isEmpty());
+    QCOMPARE(m_api.requests, 0);
+
+    // One entry per window, in document order, so none was skipped or counted
+    // twice.
+    QCOMPARE(QSet<QString>(failed.cbegin(), failed.cend()).size(), count);
+    QVERIFY(failed.first().startsWith(QStringLiteral("0.")));
+    QVERIFY(failed.last().startsWith(QString::number(count - 1) + QLatin1Char('.')));
 }
 
 QTEST_MAIN(TestDocumentTranslator)

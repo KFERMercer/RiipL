@@ -95,4 +95,6 @@ private:
     int m_completed = 0;
     // Holds while a run is under way, including the pauses between retries.
     bool m_active = false;
+    // Keeps a send that reports back on its own stack from dispatching twice.
+    bool m_dispatching = false;
 };

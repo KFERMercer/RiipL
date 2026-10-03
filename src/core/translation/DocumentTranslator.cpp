@@ -189,20 +189,30 @@ void DocumentTranslator::cancelRun()
 
 void DocumentTranslator::dispatchPending()
 {
-    if (!m_active)
+    if (!m_active || m_dispatching)
         return;
-    for (int index = 0; index < m_workers.size() && m_nextWindow < m_windows.size(); ++index) {
-        Worker& worker = m_workers[index];
-        if (worker.window >= 0)
-            continue;
-        // The windows the cache answered are done already and are passed over.
-        while (m_nextWindow < m_windows.size() && !m_translations.at(m_nextWindow).isEmpty())
-            ++m_nextWindow;
-        if (m_nextWindow >= m_windows.size())
-            return;
-        sendWindow(index, m_nextWindow);
-        ++m_nextWindow;
+    m_dispatching = true;
+    // A send can fail on this stack and free its worker again, so windows are
+    // handed out until no worker can take one.
+    for (bool dispatched = true; dispatched && m_active;) {
+        dispatched = false;
+        for (int index = 0; index < m_workers.size() && m_nextWindow < m_windows.size(); ++index) {
+            Worker& worker = m_workers[index];
+            if (worker.window >= 0)
+                continue;
+            // The windows the cache answered are done already and are passed over.
+            while (m_nextWindow < m_windows.size() && !m_translations.at(m_nextWindow).isEmpty())
+                ++m_nextWindow;
+            if (m_nextWindow >= m_windows.size())
+                break;
+            // Taken before the send, so a send that reports back on this stack
+            // does not see this window again.
+            const int window = m_nextWindow++;
+            sendWindow(index, window);
+            dispatched = true;
+        }
     }
+    m_dispatching = false;
 }
 
 void DocumentTranslator::sendWindow(int workerIndex, int window)
