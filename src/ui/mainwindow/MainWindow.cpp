@@ -140,12 +140,18 @@ MainWindow::MainWindow(QWidget* parent)
             [this](const QString& word, int selectionStart, int selectionEnd,
                    const QPoint& globalPos) {
                 TranslationContext context = currentContext();
-                context.translatedText = m_resultEdit->result();
+                m_candidateOrigin = m_resultEdit->result();
+                context.translatedText = m_candidateOrigin;
                 m_popup->openFor(word, selectionStart, selectionEnd, globalPos, context);
             });
     connect(m_popup, &CandidatePopup::candidateChosen, this,
             [this](int start, int length, const QString& replacement) {
-                const QString before = m_resultEdit->result();
+                // The spans belong to the translation the popup was opened for.
+                if (m_resultEdit->result() != m_candidateOrigin) {
+                    setStatus(Status::ReplacementSkipped);
+                    return;
+                }
+                const QString before = m_candidateOrigin;
                 if (!m_resultEdit->replaceWordAt(start, length, replacement)) {
                     setStatus(Status::ReplacementSkipped);
                     return;

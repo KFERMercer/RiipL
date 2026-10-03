@@ -150,6 +150,8 @@ private:
     QString m_statusArgument;
     ApiClient::Error m_statusFailure;
     QString m_lastClipboard;
+    // Translation the popup's replacement spans were resolved against.
+    QString m_candidateOrigin;
     QUndoStack m_resultHistory;
     QString m_streamOrigin;
     bool m_streamOpen = false;
