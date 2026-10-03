@@ -28,7 +28,6 @@
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
-#include <QHostAddress>
 #include <QInputDialog>
 #include <QJsonDocument>
 #include <QLabel>
@@ -41,7 +40,6 @@
 #include <QTabWidget>
 #include <QToolButton>
 #include <QToolTip>
-#include <QUrl>
 #include <QVBoxLayout>
 #include <utility>
 
@@ -297,41 +295,8 @@ QWidget* SettingsDialog::createApiPage()
     presetLayout->addLayout(presetRow);
     form->addRow(presetGroup);
 
-    auto* baseUrlEdit = new ConfigLineEdit(Keys::apiBaseUrl, false, page);
-    auto* baseUrlHint = new QLabel(page);
-    auto applyBaseUrlHint = [baseUrlEdit, baseUrlHint]() {
-        const QString text = baseUrlEdit->edit()->text().trimmed();
-        const QUrl url(text);
-        if (text.isEmpty()) {
-            baseUrlHint->setText(tr("Empty: no request can be sent"));
-            ThemeColors::setTextColor(baseUrlHint, ThemeColors::neutralText(baseUrlHint));
-            return;
-        }
-        if (!url.isValid() || url.isRelative() || url.host().isEmpty()
-            || (url.scheme() != QLatin1String("http") && url.scheme() != QLatin1String("https"))) {
-            baseUrlHint->setText(QStringLiteral("\u2717 ")
-                                 + tr("Invalid: an absolute http or https URL is expected"));
-            ThemeColors::setTextColor(baseUrlHint, ThemeColors::errorText(baseUrlHint));
-            return;
-        }
-        // Plain http sends the key unencrypted; an address on this machine does
-        // not.
-        const QString host = url.host();
-        if (url.scheme() == QLatin1String("http") && host != QLatin1String("localhost")
-            && !QHostAddress(host).isLoopback()) {
-            baseUrlHint->setText(QStringLiteral("\u26a0 ")
-                                 + tr("Plain http: the API key and the text are sent unencrypted"));
-            ThemeColors::setTextColor(baseUrlHint, ThemeColors::errorText(baseUrlHint));
-            return;
-        }
-        baseUrlHint->setText(QStringLiteral("\u2713 ") + tr("Valid URL"));
-        ThemeColors::setTextColor(baseUrlHint, ThemeColors::successText(baseUrlHint));
-    };
-    connect(baseUrlEdit->edit(), &QLineEdit::textChanged, page, applyBaseUrlHint);
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Base URL"),
-                  fieldWithHint(baseUrlEdit, baseUrlHint));
-    applyBaseUrlHint();
-    bindText(applyBaseUrlHint);
+                  new ConfigLineEdit(Keys::apiBaseUrl, false, page));
 
     auto* apiKeyEdit = new ConfigLineEdit(Keys::apiKey, true, page);
     auto* apiKeyHint = new QLabel(page);
