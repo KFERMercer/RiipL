@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Widgets Network LinguistTools)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Widgets Network Svg LinguistTools)
 qt_standard_project_setup(REQUIRES 6.8)
 
 # qt_standard_project_setup enables MOC and UIC but not RCC.
@@ -109,7 +109,11 @@ qt_add_executable(RiipL
     ${UI_HEADERS}
     resources/riipl.qrc
 )
-target_link_libraries(RiipL PRIVATE riipl_core riipl_utils Qt6::Widgets)
+target_link_libraries(RiipL PRIVATE riipl_core riipl_utils Qt6::Widgets Qt6::Svg)
+
+if(TARGET Qt6::QSvgPlugin)
+    qt_import_plugins(RiipL INCLUDE Qt6::QSvgPlugin)
+endif()
 target_compile_definitions(RiipL PRIVATE RIIPL_VERSION="${PROJECT_VERSION}")
 
 # Compiles the .ts catalogs into .qm files and embeds them at :/i18n, and

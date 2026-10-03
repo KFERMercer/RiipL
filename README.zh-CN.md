@@ -66,14 +66,14 @@ DeepL 仅向会员开放的功能，RiipL 完全免费：
 
 | 依赖 | 版本 |
 | :- | :- |
-| Qt 6（Widgets、Network、LinguistTools） | 6.8+ |
+| Qt 6（Widgets、Network、Svg、LinguistTools） | 6.8+ |
 | CMake | 3.21+ |
 | C++ 编译器 | 支持 C++17（GCC、Clang、MSVC） |
 
 Debian / Ubuntu：
 
 ```bash
-sudo apt install build-essential cmake qt6-base-dev qt6-tools-dev qt6-l10n-tools
+sudo apt install build-essential cmake qt6-base-dev qt6-tools-dev qt6-l10n-tools qt6-svg-dev
 ```
 
 Windows 与 macOS 安装常规 Qt 6（在线安装器或 `brew install qt cmake`），

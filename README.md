@@ -66,14 +66,14 @@ See [Manual Build](#manual-build).
 
 | Dependency | Version |
 | :- | :- |
-| Qt 6 (Widgets, Network, LinguistTools) | 6.8+ |
+| Qt 6 (Widgets, Network, Svg, LinguistTools) | 6.8+ |
 | CMake | 3.21+ |
 | C++ compiler | C++17 capable (GCC, Clang, MSVC) |
 
 Debian / Ubuntu:
 
 ```bash
-sudo apt install build-essential cmake qt6-base-dev qt6-tools-dev qt6-l10n-tools
+sudo apt install build-essential cmake qt6-base-dev qt6-tools-dev qt6-l10n-tools qt6-svg-dev
 ```
 
 Windows and macOS need a regular Qt 6 installation (online installer or `brew install qt cmake`); deploy with `windeployqt` / `macdeployqt` respectively.
