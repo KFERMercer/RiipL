@@ -218,14 +218,17 @@ void DocumentDialog::stop()
 
 void DocumentDialog::reject()
 {
-    if (m_running
-        && QMessageBox::question(this, tr("RiipL"), tr("Stop the translation and close?"),
-                                 QMessageBox::Yes | QMessageBox::No, QMessageBox::No)
-            != QMessageBox::Yes) {
+    if (!m_running)
+        return QDialog::reject();
+    if (QMessageBox::question(this, tr("RiipL"), tr("Stop the translation and close?"),
+                              QMessageBox::Yes | QMessageBox::No, QMessageBox::No)
+        != QMessageBox::Yes) {
         return;
     }
-    if (m_running)
-        m_translator.stop();
+    // The question runs its own event loop, so the run can finish while it is up.
+    if (!m_running)
+        return;
+    m_translator.stop();
     QDialog::reject();
 }
 
