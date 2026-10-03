@@ -161,9 +161,9 @@ QWidget* SettingsDialog::fieldWithHint(QWidget* field, QLabel* hint)
     return column;
 }
 
-void SettingsDialog::bindText(const std::function<void()>& apply)
+void SettingsDialog::bindText(std::function<void()> apply)
 {
-    m_boundText.append(apply);
+    m_boundText.append(std::move(apply));
 }
 
 void SettingsDialog::retranslateUi()

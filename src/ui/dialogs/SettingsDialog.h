@@ -57,7 +57,7 @@ private:
     // Re-applies every registered string. Rebuilding the pages instead would
     // discard pending edits.
     void retranslateUi();
-    void bindText(const std::function<void()>& apply);
+    void bindText(std::function<void()> apply);
 
     // The layout variant serves a row whose field holds several widgets.
     QLabel* createRowLabel(QWidget* parent, const char* source);
