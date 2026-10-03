@@ -94,34 +94,37 @@ int FlowLayout::doLayout(const QRect& rect, bool testOnly) const
     const QMargins margins = contentsMargins();
     const QRect effectiveRect =
         rect.adjusted(margins.left(), margins.top(), -margins.right(), -margins.bottom());
+    const int baseSpaceX = horizontalSpacing();
+    const int baseSpaceY = verticalSpacing();
     int x = effectiveRect.x();
     int y = effectiveRect.y();
     int lineHeight = 0;
 
     for (QLayoutItem* item : std::as_const(m_items)) {
         const QWidget* widget = item->widget();
-        int spaceX = horizontalSpacing();
-        if (spaceX == -1)
-            spaceX = widget->style()->layoutSpacing(
-                QSizePolicy::PushButton, QSizePolicy::PushButton, Qt::Horizontal);
-        int spaceY = verticalSpacing();
-        if (spaceY == -1)
-            spaceY = widget->style()->layoutSpacing(
-                QSizePolicy::PushButton, QSizePolicy::PushButton, Qt::Vertical);
+        const QSize hint = item->sizeHint();
+        const auto styleSpacing = [widget](Qt::Orientation orientation) {
+            if (!widget)
+                return 0;
+            return widget->style()->layoutSpacing(QSizePolicy::PushButton, QSizePolicy::PushButton,
+                                                  orientation);
+        };
+        const int spaceX = baseSpaceX == -1 ? styleSpacing(Qt::Horizontal) : baseSpaceX;
+        const int spaceY = baseSpaceY == -1 ? styleSpacing(Qt::Vertical) : baseSpaceY;
 
-        int nextX = x + item->sizeHint().width() + spaceX;
+        int nextX = x + hint.width() + spaceX;
         if (nextX - spaceX > effectiveRect.right() && lineHeight > 0) {
             x = effectiveRect.x();
             y = y + lineHeight + spaceY;
-            nextX = x + item->sizeHint().width() + spaceX;
+            nextX = x + hint.width() + spaceX;
             lineHeight = 0;
         }
 
         if (!testOnly)
-            item->setGeometry(QRect(QPoint(x, y), item->sizeHint()));
+            item->setGeometry(QRect(QPoint(x, y), hint));
 
         x = nextX;
-        lineHeight = (std::max)(lineHeight, item->sizeHint().height());
+        lineHeight = (std::max)(lineHeight, hint.height());
     }
     return y + lineHeight - rect.y() + margins.bottom();
 }
