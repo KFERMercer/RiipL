@@ -27,52 +27,62 @@
 <context>
     <name>ApiClient</name>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="277"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="330"/>
         <source>API base URL is not configured</source>
         <translation>未配置 API 基础地址</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="279"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="332"/>
+        <source>API base URL must be an absolute http or https URL</source>
+        <translation>API 基础地址必须是绝对的 http 或 https URL</translation>
+    </message>
+    <message>
+        <location filename="../../src/core/network/ApiClient.cpp" line="334"/>
         <source>Translation cancelled</source>
         <translation>翻译已取消</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="281"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="336"/>
         <source>Translation timed out</source>
         <translation>翻译已超时</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="283"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="338"/>
         <source>Network request failed</source>
         <translation>网络请求失败</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="284"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="339"/>
         <source>Network request failed: %1</source>
         <translation>网络请求失败：%1</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="286"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="341"/>
         <source>Request failed with status %1</source>
         <translation>请求失败，状态码 %1</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="291"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="346"/>
         <source>Failed to parse API response</source>
         <translation>解析 API 响应失败</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="293"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="348"/>
         <source>API response contains no choices</source>
         <translation>API 响应中没有选项内容</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="295"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="350"/>
+        <source>API response is too large to accept</source>
+        <translation>API 响应过大，无法接收</translation>
+    </message>
+    <message>
+        <location filename="../../src/core/network/ApiClient.cpp" line="352"/>
         <source>Nothing to translate</source>
         <translation>没有需要翻译的内容</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="297"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="354"/>
         <source>Nothing to look up</source>
         <translation>没有可查询的内容</translation>
     </message>
@@ -435,57 +445,57 @@
 <context>
     <name>HistoryDialog</name>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="69"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="85"/>
         <source>Translation history</source>
         <translation>翻译历史</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="73"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="89"/>
         <source>Search:</source>
         <translation>搜索：</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="95"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="120"/>
         <source>Reuse</source>
         <translation>重新使用</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="96"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="121"/>
         <source>Delete</source>
         <translation>删除</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="97"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="122"/>
         <source>Clear all</source>
         <translation>全部清空</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="98"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="123"/>
         <source>Close</source>
         <translation>关闭</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="38"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="39"/>
         <source>Time</source>
         <translation>时间</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="50"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="51"/>
         <source>Direction</source>
         <translation>方向</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="44"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="45"/>
         <source>Source</source>
         <translation>原文</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="47"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="48"/>
         <source>Translation</source>
         <translation>译文</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="56"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="57"/>
         <source>Tone</source>
         <translation>语气</translation>
     </message>
@@ -691,262 +701,262 @@
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="765"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="757"/>
         <source>Ready</source>
         <translation>就绪</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="769"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="761"/>
         <source>Translation has changed; replacement skipped</source>
         <translation>译文已变化，已跳过替换</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="767"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="759"/>
         <source>Translation finished</source>
         <translation>翻译完成</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="766"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="758"/>
         <source>Translating...</source>
         <translation>翻译中...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="268"/>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="773"/>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="985"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="259"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="765"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="998"/>
         <source>Enter text to translate</source>
         <translation>输入要翻译的文本</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="956"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="969"/>
         <source>Follow system</source>
         <translation>跟随系统</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="966"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="979"/>
         <source>About RiipL</source>
         <translation>关于 RiipL</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="770"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="762"/>
         <source>Restored previous translation</source>
         <translation>已恢复上一版译文</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="768"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="760"/>
         <source>Translation cancelled</source>
         <translation>翻译已取消</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="988"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1001"/>
         <source>No presets</source>
         <translation>无预设</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="791"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="783"/>
         <source>%n character(s)</source>
         <translation>
             <numerusform>%n 个字符</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="771"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="763"/>
         <source>Re-applied translation</source>
         <translation>重新应用译文</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="772"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="764"/>
         <source>Translation copied to clipboard</source>
         <translation>译文已复制到剪贴板</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="774"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="766"/>
         <source>Nothing to export</source>
         <translation>没有可导出的内容</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="888"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="901"/>
         <source>Export translation</source>
         <translation>导出译文</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="776"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="768"/>
         <source>Cannot write file: %1</source>
         <translation>无法写入文件：%1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="775"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="767"/>
         <source>Exported to %1</source>
         <translation>已导出到 %1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="930"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="943"/>
         <source>RiipL Translator</source>
         <translation>RiipL 翻译</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="932"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="945"/>
         <source>&amp;File</source>
         <translation>文件(&amp;F)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="933"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="946"/>
         <source>Open document...</source>
         <translation>打开文档...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="935"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="948"/>
         <source>Export translation...</source>
         <translation>导出译文...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="937"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="950"/>
         <source>Exit</source>
         <translation>退出</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="940"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="953"/>
         <source>&amp;Edit</source>
         <translation>编辑(&amp;E)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="941"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="954"/>
         <source>Glossary...</source>
         <translation>术语表...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="943"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="956"/>
         <source>Manage tones...</source>
         <translation>管理语气...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="945"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="958"/>
         <source>History...</source>
         <translation>历史记录...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="947"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="960"/>
         <source>Manage API presets...</source>
         <translation>管理 API 预设...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="950"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="963"/>
         <source>&amp;View</source>
         <translation>视图(&amp;V)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="951"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="964"/>
         <source>Auto translate</source>
         <translation>自动翻译</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="952"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="965"/>
         <source>Always on top</source>
         <translation>窗口置顶</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="953"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="966"/>
         <source>Interface language</source>
         <translation>界面语言</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="960"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="973"/>
         <source>&amp;Tools</source>
         <translation>工具(&amp;T)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="961"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="974"/>
         <source>Monitor clipboard</source>
         <translation>监听剪贴板</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="962"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="975"/>
         <source>API preset</source>
         <translation>API 预设</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="963"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="976"/>
         <source>Settings...</source>
         <translation>设置...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="965"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="978"/>
         <source>&amp;Help</source>
         <translation>帮助(&amp;H)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="968"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="981"/>
         <source>Translate</source>
         <translation>翻译</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="969"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="982"/>
         <source>Stop</source>
         <translation>停止</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="972"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="985"/>
         <source>Document</source>
         <translation>文档</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="973"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="986"/>
         <source>History</source>
         <translation>历史</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="974"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="987"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="975"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="988"/>
         <source>Translate now (Ctrl+Return)</source>
         <translation>立即翻译（Ctrl+Return）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="976"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="989"/>
         <source>Stop translation</source>
         <translation>停止翻译</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="977"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="990"/>
         <source>Restore previous translation</source>
         <translation>恢复上一版译文</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="978"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="991"/>
         <source>Redo translation</source>
         <translation>重做译文</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="979"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="992"/>
         <source>Swap languages</source>
         <translation>交换语言</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="980"/>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="983"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="993"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="996"/>
         <source>Clear</source>
         <translation>清空</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="981"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="994"/>
         <source>Paste</source>
         <translation>粘贴</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="982"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="995"/>
         <source>Copy</source>
         <translation>复制</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="993"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1006"/>
         <source>Show/Hide window</source>
         <translation>显示/隐藏窗口</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="994"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1007"/>
         <source>Translate clipboard</source>
         <translation>翻译剪贴板</translation>
     </message>
@@ -997,470 +1007,495 @@
 <context>
     <name>SettingsDialog</name>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="94"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="96"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="95"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="97"/>
         <source>API</source>
         <translation>API</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="96"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="98"/>
         <source>Translation</source>
         <translation>翻译</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="64"/>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="536"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="66"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="590"/>
         <source>Glossary</source>
         <translation>术语表</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="100"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="102"/>
         <source>Prompt templates</source>
         <translation>Prompt 模板</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="98"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="100"/>
         <source>Interface</source>
         <translation>界面</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="59"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="61"/>
         <source>System prompt</source>
         <translation>系统提示词</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="60"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="62"/>
         <source>Reference header</source>
         <translation>参考信息标题</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="65"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="67"/>
         <source>Default instruction</source>
         <translation>默认指令</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="67"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="69"/>
         <source>Candidate wording</source>
         <translation>候选遣词</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="69"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="71"/>
         <source>Candidate wording (short text)</source>
         <translation>候选遣词（短文本）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="99"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="101"/>
         <source>History</source>
         <translation>历史</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="339"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="393"/>
         <source>API preset</source>
         <translation>API 预设</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="345"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="399"/>
         <source>Save as...</source>
         <translation>另存为...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="347"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="401"/>
         <source>Save the current API settings under a new name</source>
         <translation>以新名称保存当前 API 设置</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="348"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="402"/>
         <source>Rename, copy, reorder, delete or load API presets</source>
         <translation>重命名、复制、排序、删除或加载 API 预设</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="349"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="403"/>
         <source>API default</source>
         <translation>API 默认</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="200"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="214"/>
         <source>Overwrite &quot;%1&quot; with the current API settings</source>
         <translation>用当前 API 设置覆盖“%1”</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="66"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="68"/>
         <source>Document translation</source>
         <translation>文档翻译</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="201"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="215"/>
         <source>Save the current API settings as a new preset</source>
         <translation>将当前 API 设置保存为新预设</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="286"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="331"/>
         <source>Base URL</source>
         <translation>基础地址</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="287"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="342"/>
         <source>API key</source>
         <translation>API 密钥</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="288"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="347"/>
         <source>Model</source>
         <translation>模型</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="289"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="348"/>
         <source>Server connection timeout (ms)</source>
         <translation>服务器连接超时（毫秒）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="291"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="350"/>
         <source>Max tokens</source>
         <translation>最大 Token 数</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="296"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="355"/>
         <source>Temperature</source>
         <translation>温度</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="302"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="361"/>
         <source>Stream responses</source>
         <translation>流式输出</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="306"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="365"/>
         <source>Custom headers</source>
         <translation>自定义请求头</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="334"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="387"/>
         <source>Extra body (JSON)</source>
         <translation>额外参数（JSON）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="341"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="395"/>
         <source>New</source>
         <translation>新建</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="344"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="398"/>
         <source>Save preset</source>
         <translation>保存预设</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="445"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="499"/>
         <source>Save API preset</source>
         <translation>保存 API 预设</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="445"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="499"/>
         <source>Preset name</source>
         <translation>预设名称</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="343"/>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="414"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="397"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="468"/>
         <source>New preset</source>
         <translation>新建预设</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="97"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="99"/>
         <source>Document</source>
         <translation>文档</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="298"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="306"/>
+        <source>Empty: no request can be sent</source>
+        <translation>为空：无法发送请求</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="313"/>
+        <source>Invalid: an absolute http or https URL is expected</source>
+        <translation>无效：应为绝对的 http 或 https URL</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="323"/>
+        <source>Plain http: the API key and the text are sent unencrypted</source>
+        <translation>明文 http：API 密钥与待翻译文本将以未加密方式发送</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="327"/>
+        <source>Valid URL</source>
+        <translation>有效的 URL</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="339"/>
+        <source>Stored in the configuration file as plain text</source>
+        <translation>以明文保存在配置文件中</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="357"/>
         <source>Max concurrency</source>
         <translation>最大并发数</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="340"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="394"/>
         <source>Empty preset</source>
         <translation>空预设</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="342"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="396"/>
         <source>Create an empty preset</source>
         <translation>新建空预设</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="415"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="469"/>
         <source>The API fields hold changes that have not been applied yet.</source>
         <translation>API 字段中有尚未应用的更改。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="416"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="470"/>
         <source>Discard them and start from the defaults?</source>
         <translation>要放弃这些更改并从默认值开始吗？</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="500"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="554"/>
         <source>Source language</source>
         <translation>源语言</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="501"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="555"/>
         <source>Target language</source>
         <translation>目标语言</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="542"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="596"/>
         <source>Auto translate after typing</source>
         <translation>输入后自动翻译</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="543"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="597"/>
         <source>Auto translate delay (ms)</source>
         <translation>自动翻译延迟（毫秒）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="555"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="610"/>
         <source>Unlimited</source>
         <translation>不限制</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="558"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="613"/>
         <source>Window characters</source>
         <translation>窗口字符上限</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="559"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="614"/>
         <source>Window lines</source>
         <translation>窗口行数上限</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="564"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="619"/>
         <source>Cache translations</source>
         <translation>缓存翻译结果</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="570"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="625"/>
         <source>Delete all document translation caches?</source>
         <translation>确定删除全部文档翻译缓存？</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="576"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="631"/>
         <source>Clear document cache now</source>
         <translation>立即清空文档翻译缓存</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="587"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="642"/>
         <source>Interface language</source>
         <translation>界面语言</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="590"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="645"/>
         <source>Keep window on top</source>
         <translation>保持窗口置顶</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="593"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="648"/>
         <source>Minimize to tray on close</source>
         <translation>关闭时最小化到托盘</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="595"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="650"/>
         <source>Font size</source>
         <translation>字体大小</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="598"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="654"/>
         <source>Monitor clipboard and translate automatically</source>
         <translation>监听剪贴板并自动翻译</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="599"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="655"/>
         <source>Monitor delay (ms)</source>
         <translation>监听延迟（毫秒）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="608"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="664"/>
         <source>Save translation history</source>
         <translation>保存翻译历史</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="609"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="665"/>
         <source>Max records</source>
         <translation>最大记录数</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="650"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="706"/>
         <source>Available placeholders (click to copy)</source>
         <translation>可用占位符（点击复制）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="655"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="711"/>
         <source>Language of the source text</source>
         <translation>原文语言</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="656"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="712"/>
         <source>Language to translate into</source>
         <translation>目标语言</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="657"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="713"/>
         <source>Tone applied to the translation</source>
         <translation>译文语气</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="658"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="714"/>
         <source>Style applied to the translation</source>
         <translation>译文风格</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="659"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="715"/>
         <source>Background information</source>
         <translation>背景信息</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="660"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="716"/>
         <source>Glossary entries, rendered as JSON</source>
         <translation>术语表条目，以 JSON 渲染</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="661"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="717"/>
         <source>Text to be translated</source>
         <translation>待翻译的文本</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="662"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="718"/>
         <source>Full translated text</source>
         <translation>译文全文</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="663"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="719"/>
         <source>Translation fragment around the selected word (candidate wording only)</source>
         <translation>选中词附近的译文片段（候选遣词专用）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="664"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="720"/>
         <source>Word selected in the translation pane (candidate wording only)</source>
         <translation>在译文区选中的词（候选遣词专用）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="665"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="721"/>
         <source>Marker placed before the selected word (candidate wording only)</source>
         <translation>标记选中词的记号 - 左（候选遣词专用）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="666"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="722"/>
         <source>Marker placed after the selected word (candidate wording only)</source>
         <translation>标记选中词的记号 - 右（候选遣词专用）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="668"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="724"/>
         <source>Number of lines in the translation window (document translation only)</source>
         <translation>翻译窗口段落数（文档翻译专用）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="669"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="725"/>
         <source>Previous segment to translate (document translation only)</source>
         <translation>上一个待翻译片段（文档翻译专用）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="670"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="726"/>
         <source>Next segment to translate (document translation only)</source>
         <translation>下一个待翻译片段（文档翻译专用）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="685"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="741"/>
         <source>Copied</source>
         <translation>已复制</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="314"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="373"/>
         <source>Empty: no extra parameters</source>
         <translation>为空：不附加额外参数</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="320"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="379"/>
         <source>Valid JSON object</source>
         <translation>有效的 JSON 对象</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="323"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="382"/>
         <source>Invalid JSON: an object with key-value pairs is expected</source>
         <translation>JSON 无效：应为键值对对象</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="61"/>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="524"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="63"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="578"/>
         <source>Tone</source>
         <translation>语气</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="62"/>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="538"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="64"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="592"/>
         <source>Style</source>
         <translation>风格</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="63"/>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="539"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="65"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="593"/>
         <source>Background</source>
         <translation>背景信息</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="346"/>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="513"/>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="529"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="400"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="567"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="583"/>
         <source>Manage...</source>
         <translation>管理...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="188"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="202"/>
         <source>Unsaved changes</source>
         <translation>未保存的更改</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="188"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="202"/>
         <source>Your changes have not been applied yet.</source>
         <translation>更改尚未应用。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="351"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="405"/>
         <source>One per line: Header-Name: value</source>
         <translation>每行一条：请求头名: 值</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="667"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="723"/>
         <source>Translation window, rendered as JSON (document translation only)</source>
         <translation>翻译窗口，以 JSON 渲染（文档翻译专用）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="700"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="756"/>
         <source>Preview prompt...</source>
         <translation>预览提示词...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="618"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="674"/>
         <source>Clear history now</source>
         <translation>立即清空历史</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="560"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="615"/>
         <source>Retries</source>
         <translation>重试次数</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="562"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="617"/>
         <source>Translate concurrently</source>
         <translation>并发翻译</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="569"/>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="613"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="624"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="669"/>
         <source>RiipL</source>
         <translation>RiipL</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="613"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="669"/>
         <source>Delete all history records?</source>
         <translation>确定删除全部历史记录？</translation>
     </message>
@@ -1473,13 +1508,13 @@
         <translation>预设语气</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="47"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="48"/>
         <source>Custom tones</source>
         <translation>自定义语气</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="34"/>
-        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="49"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="50"/>
         <source>Key</source>
         <translation>键名</translation>
     </message>
@@ -1490,27 +1525,27 @@
     </message>
     <message>
         <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="34"/>
-        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="49"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="50"/>
         <source>Display name</source>
         <translation>显示名称</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="59"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="60"/>
         <source>Add</source>
         <translation>添加</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="60"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="61"/>
         <source>Remove</source>
         <translation>删除</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="63"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="64"/>
         <source>Move up</source>
         <translation>上移</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="66"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="67"/>
         <source>Move down</source>
         <translation>下移</translation>
     </message>
