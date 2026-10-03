@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QUndoStack>
 
 #include "core/history/HistoryManager.h"
 #include "core/translation/TranslationEngine.h"
@@ -36,8 +37,6 @@ private slots:
     void translateNow();
     void swapLanguages();
     void pasteSource();
-    void undoResult();
-    void redoResult();
     void copyResult();
     void exportTranslation();
     void showSettingsDialog();
@@ -89,8 +88,8 @@ private:
     void setBusy(bool busy);
     void translateClipboard();
 
-    void pushResultSnapshot();
-    void updateUndoRedoActions();
+    void beginResultStep();
+    void setResultText(const QString& text);
 
     QSplitter* m_splitter = nullptr;
     QComboBox* m_sourceLang = nullptr;
@@ -148,6 +147,6 @@ private:
     QString m_statusArgument;
     ApiClient::Error m_statusFailure;
     QString m_lastClipboard;
-    QStringList m_resultSnapshots;
-    QStringList m_redoSnapshots;
+    QUndoStack m_resultHistory;
+    int m_resultStep = 0;
 };

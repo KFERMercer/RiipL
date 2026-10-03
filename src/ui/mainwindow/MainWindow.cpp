@@ -45,11 +45,61 @@
 #include <QTimer>
 #include <QToolBar>
 #include <QToolButton>
+#include <QUndoCommand>
 #include <QWindow>
 #include <QVBoxLayout>
 
 namespace {
-constexpr int kMaxResultSnapshots = 30;
+
+constexpr int kMaxResultSteps = 30;
+constexpr int kResultTextCommandId = 1;
+
+// One undoable edit of the translation pane. Edits carrying the same step are
+// merged, which turns a streamed translation into a single undo entry.
+class ResultTextCommand : public QUndoCommand
+{
+public:
+    ResultTextCommand(TranslationEdit* edit, const QString& before, const QString& after, int step)
+        : m_edit(edit)
+        , m_before(before)
+        , m_after(after)
+        , m_step(step)
+    {
+    }
+
+    void undo() override
+    {
+        m_edit->setResult(m_before);
+        m_applied = false;
+    }
+
+    void redo() override
+    {
+        if (m_applied)
+            return;
+        m_edit->setResult(m_after);
+        m_applied = true;
+    }
+
+    int id() const override { return kResultTextCommandId; }
+
+    bool mergeWith(const QUndoCommand* command) override
+    {
+        const auto* next = static_cast<const ResultTextCommand*>(command);
+        if (m_step != next->m_step)
+            return false;
+        m_after = next->m_after;
+        return true;
+    }
+
+private:
+    TranslationEdit* m_edit;
+    QString m_before;
+    QString m_after;
+    int m_step;
+    bool m_applied = true;
+};
+
 }
 
 MainWindow::MainWindow(QWidget* parent)
@@ -59,6 +109,7 @@ MainWindow::MainWindow(QWidget* parent)
 {
     setWindowIcon(QIcon(QStringLiteral(":/icons/app.svg")));
     setUnifiedTitleAndToolBarOnMac(true);
+    m_resultHistory.setUndoLimit(kMaxResultSteps);
 
     auto* centralArea = new QWidget(this);
     auto* centralLayout = new QVBoxLayout(centralArea);
@@ -106,21 +157,23 @@ MainWindow::MainWindow(QWidget* parent)
             });
     connect(m_popup, &CandidatePopup::candidateChosen, this,
             [this](int start, int length, const QString& replacement) {
-                pushResultSnapshot();
+                const QString before = m_resultEdit->result();
+                beginResultStep();
                 if (!m_resultEdit->replaceWordAt(start, length, replacement)) {
-                    m_resultSnapshots.removeLast();
-                    updateUndoRedoActions();
                     setStatus(Status::ReplacementSkipped);
+                    return;
                 }
+                m_resultHistory.push(
+                    new ResultTextCommand(m_resultEdit, before, m_resultEdit->result(), m_resultStep));
             });
 
     connect(&m_engine, &TranslationEngine::partialResult, this, [this](const QString& text) {
-        m_resultEdit->setResult(text);
+        setResultText(text);
         auto* bar = m_resultEdit->verticalScrollBar();
         bar->setValue(bar->maximum());
     });
     connect(&m_engine, &TranslationEngine::finished, this, [this](const QString& text) {
-        m_resultEdit->setResult(text);
+        setResultText(text);
         setStatus(Status::Finished);
         if (ConfigManager::instance()->boolValue(Keys::historyEnabled)) {
             TranslationRecord record;
@@ -262,11 +315,20 @@ QWidget* MainWindow::createRightPane()
     m_undoAction = new QAction(pane);
     m_undoAction->setIcon(AppIcons::undo());
     m_undoAction->setEnabled(false);
-    connect(m_undoAction, &QAction::triggered, this, &MainWindow::undoResult);
+    connect(m_undoAction, &QAction::triggered, this, [this]() {
+        m_resultHistory.undo();
+        setStatus(Status::Restored);
+    });
     m_redoAction = new QAction(pane);
     m_redoAction->setIcon(AppIcons::redo());
     m_redoAction->setEnabled(false);
-    connect(m_redoAction, &QAction::triggered, this, &MainWindow::redoResult);
+    connect(m_redoAction, &QAction::triggered, this, [this]() {
+        m_resultHistory.redo();
+        setStatus(Status::Reapplied);
+    });
+    // The window retranslates its own labels, so the stack only drives the enabled state.
+    connect(&m_resultHistory, &QUndoStack::canUndoChanged, m_undoAction, &QAction::setEnabled);
+    connect(&m_resultHistory, &QUndoStack::canRedoChanged, m_redoAction, &QAction::setEnabled);
     m_copyAction = new QAction(pane);
     m_clearResultAction = new QAction(pane);
     auto* undoButton = new QToolButton(pane);
@@ -290,8 +352,8 @@ QWidget* MainWindow::createRightPane()
 
     connect(m_copyAction, &QAction::triggered, this, &MainWindow::copyResult);
     connect(m_clearResultAction, &QAction::triggered, this, [this]() {
-        pushResultSnapshot();
-        m_resultEdit->setResult(QString());
+        beginResultStep();
+        setResultText(QString());
     });
     return pane;
 }
@@ -667,7 +729,7 @@ void MainWindow::translateNow()
         setStatus(Status::EmptySource);
         return;
     }
-    pushResultSnapshot();
+    beginResultStep();
     m_engine.translateText(currentContext());
 }
 
@@ -735,7 +797,7 @@ void MainWindow::changeEvent(QEvent* event)
 
 void MainWindow::swapLanguages()
 {
-    pushResultSnapshot();
+    beginResultStep();
     const QString sourceCode = m_sourceLang->currentData().toString();
     const QString targetCode = m_targetLang->currentData().toString();
     if (sourceCode == QLatin1String("auto")) {
@@ -755,7 +817,7 @@ void MainWindow::swapLanguages()
     const QString resultText = m_resultEdit->result();
     if (!resultText.isEmpty()) {
         m_sourceEdit->setPlainText(resultText);
-        m_resultEdit->setResult(sourceText);
+        setResultText(sourceText);
     }
 }
 
@@ -789,54 +851,18 @@ void MainWindow::toggleVisible()
     activateWindow();
 }
 
-void MainWindow::pushResultSnapshot()
+void MainWindow::beginResultStep()
 {
-    const QString current = m_resultEdit->toPlainText();
-    if (current.isEmpty())
-        return;
-    if (!m_resultSnapshots.isEmpty() && m_resultSnapshots.last() == current)
-        return;
-    m_resultSnapshots.append(current);
-    while (m_resultSnapshots.size() > kMaxResultSnapshots)
-        m_resultSnapshots.removeFirst();
-    m_redoSnapshots.clear();
-    updateUndoRedoActions();
+    ++m_resultStep;
 }
 
-void MainWindow::undoResult()
+void MainWindow::setResultText(const QString& text)
 {
-    if (m_resultSnapshots.isEmpty())
+    const QString before = m_resultEdit->result();
+    if (before == text)
         return;
-    const QString current = m_resultEdit->toPlainText();
-    if (!current.isEmpty()
-        && (m_redoSnapshots.isEmpty() || m_redoSnapshots.last() != current))
-        m_redoSnapshots.append(current);
-    while (m_redoSnapshots.size() > kMaxResultSnapshots)
-        m_redoSnapshots.removeFirst();
-    m_resultEdit->setResult(m_resultSnapshots.takeLast());
-    updateUndoRedoActions();
-    setStatus(Status::Restored);
-}
-
-void MainWindow::redoResult()
-{
-    if (m_redoSnapshots.isEmpty())
-        return;
-    const QString current = m_resultEdit->toPlainText();
-    if (!current.isEmpty()
-        && (m_resultSnapshots.isEmpty() || m_resultSnapshots.last() != current))
-        m_resultSnapshots.append(current);
-    while (m_resultSnapshots.size() > kMaxResultSnapshots)
-        m_resultSnapshots.removeFirst();
-    m_resultEdit->setResult(m_redoSnapshots.takeLast());
-    updateUndoRedoActions();
-    setStatus(Status::Reapplied);
-}
-
-void MainWindow::updateUndoRedoActions()
-{
-    m_undoAction->setEnabled(!m_resultSnapshots.isEmpty());
-    m_redoAction->setEnabled(!m_redoSnapshots.isEmpty());
+    m_resultEdit->setResult(text);
+    m_resultHistory.push(new ResultTextCommand(m_resultEdit, before, text, m_resultStep));
 }
 
 void MainWindow::copyResult()
@@ -879,7 +905,7 @@ void MainWindow::showHistoryDialog()
 {
     HistoryDialog dialog(&m_history, this);
     connect(&dialog, &HistoryDialog::reuseRequested, this, [this](const TranslationRecord& record) {
-        pushResultSnapshot();
+        beginResultStep();
         m_sourceEdit->setPlainText(record.source);
         const int sourceIndex = m_sourceLang->findData(record.sourceLang);
         if (sourceIndex >= 0)
@@ -887,7 +913,7 @@ void MainWindow::showHistoryDialog()
         const int targetIndex = m_targetLang->findData(record.targetLang);
         if (targetIndex >= 0)
             m_targetLang->setCurrentIndex(targetIndex);
-        m_resultEdit->setResult(record.target);
+        setResultText(record.target);
     });
     dialog.exec();
 }
