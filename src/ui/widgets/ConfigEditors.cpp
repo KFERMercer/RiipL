@@ -161,7 +161,7 @@ void ConfigComboBox::setControlValue(const QJsonValue& v)
     m_box->setCurrentIndex(index < 0 ? 0 : index);
 }
 
-void ConfigComboBox::setItems(const QList<QPair<QString, QString>>& items)
+void ConfigComboBox::setItems(const QList<std::pair<QString, QString>>& items)
 {
     const bool initialSelection = m_box->count() == 0;
     const QString wanted = initialSelection
@@ -170,7 +170,7 @@ void ConfigComboBox::setItems(const QList<QPair<QString, QString>>& items)
 
     QSignalBlocker blocker(m_box);
     m_box->clear();
-    for (const QPair<QString, QString>& item : items)
+    for (const std::pair<QString, QString>& item : items)
         m_box->addItem(item.first, item.second);
 
     int index = m_box->findData(wanted);
@@ -314,9 +314,9 @@ QString toneLabel(const QString& key)
     return source ? QCoreApplication::translate("Tones", source) : key;
 }
 
-QList<QPair<QString, QString>> uiLanguageItems()
+QList<std::pair<QString, QString>> uiLanguageItems()
 {
-    QList<QPair<QString, QString>> items;
+    QList<std::pair<QString, QString>> items;
     items.append({ConfigEditorsTr::tr("Follow system"), Keys::uiLanguageAuto});
     // A language list names each language in itself, which is what a reader
     // looking for their own language recognises. The World country drops the
@@ -328,9 +328,9 @@ QList<QPair<QString, QString>> uiLanguageItems()
     return items;
 }
 
-QList<QPair<QString, QString>> languageItems(bool includeAuto)
+QList<std::pair<QString, QString>> languageItems(bool includeAuto)
 {
-    QList<QPair<QString, QString>> items;
+    QList<std::pair<QString, QString>> items;
     for (const LangItem& lang : Languages::all()) {
         if (!includeAuto && lang.code == QLatin1String("auto"))
             continue;
@@ -339,9 +339,9 @@ QList<QPair<QString, QString>> languageItems(bool includeAuto)
     return items;
 }
 
-QList<QPair<QString, QString>> toneItems(const QJsonArray& customTones)
+QList<std::pair<QString, QString>> toneItems(const QJsonArray& customTones)
 {
-    QList<QPair<QString, QString>> items;
+    QList<std::pair<QString, QString>> items;
     for (const ToneItem& tone : Tones::presets())
         items.append({toneLabel(tone.key), tone.key});
     for (const QJsonValue& value : customTones) {

@@ -19,6 +19,7 @@
 #include <QTimer>
 
 #include <memory>
+#include <utility>
 
 namespace {
 
@@ -50,7 +51,7 @@ public:
     // Delay before a request is answered: the delay of the first marker the prompt
     // holds wins, otherwise \p answerDelayMs. A marker is the window's own JSON
     // key, since the neighbouring segments are plain text.
-    QVector<QPair<QString, int>> answerDelays;
+    QVector<std::pair<QString, int>> answerDelays;
     // Requests answered with a window of the wrong shape before one is answered
     // normally.
     int malformedLeft = 0;
@@ -103,7 +104,7 @@ private:
             // keeps them on the wire when the run gives up. A marker delay lets a
             // test place one window's answer before or after the others.
             int delay = answerDelayMs;
-            for (const QPair<QString, int>& marker : answerDelays) {
+            for (const std::pair<QString, int>& marker : answerDelays) {
                 if (prompt.contains(marker.first)) {
                     delay = marker.second;
                     break;
@@ -256,7 +257,7 @@ void TestDocumentTranslator::translatesEveryWindowInOrder()
 
     DocumentTranslator translator;
     QString finished;
-    QVector<QPair<int, int>> progress;
+    QVector<std::pair<int, int>> progress;
     connect(&translator, &DocumentTranslator::finished, this,
             [&finished](const QString& text) { finished = text; });
     connect(&translator, &DocumentTranslator::progressChanged, this,
@@ -649,7 +650,7 @@ void TestDocumentTranslator::reusesCachedAnswersOnTheNextRun()
 
     DocumentTranslator translator;
     QStringList finished;
-    QVector<QPair<int, int>> progress;
+    QVector<std::pair<int, int>> progress;
     connect(&translator, &DocumentTranslator::finished, this,
             [&finished](const QString& text) { finished.append(text); });
     connect(&translator, &DocumentTranslator::progressChanged, this,

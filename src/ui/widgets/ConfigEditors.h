@@ -3,9 +3,10 @@
 #include <QJsonArray>
 #include <QJsonValue>
 #include <QList>
-#include <QPair>
 #include <QString>
 #include <QWidget>
+
+#include <utility>
 
 class QCheckBox;
 class QComboBox;
@@ -87,7 +88,7 @@ public:
 
     QJsonValue value() const override;
     QComboBox* box() const { return m_box; }
-    void setItems(const QList<QPair<QString, QString>>& items);
+    void setItems(const QList<std::pair<QString, QString>>& items);
 
 protected:
     void setControlValue(const QJsonValue& v) override;
@@ -171,9 +172,9 @@ private:
 
 // Item lists for the language and tone selectors, shared by every editor that
 // offers the same choice so the display names stay in step.
-QList<QPair<QString, QString>> languageItems(bool includeAuto);
-QList<QPair<QString, QString>> uiLanguageItems();
-QList<QPair<QString, QString>> toneItems(const QJsonArray& customTones);
+QList<std::pair<QString, QString>> languageItems(bool includeAuto);
+QList<std::pair<QString, QString>> uiLanguageItems();
+QList<std::pair<QString, QString>> toneItems(const QJsonArray& customTones);
 // Display name of one language or tone preset, resolved through its catalog.
 QString languageLabel(const QString& code);
 QString toneLabel(const QString& key);

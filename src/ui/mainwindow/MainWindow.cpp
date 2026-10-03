@@ -373,8 +373,8 @@ void MainWindow::buildMenus()
     m_languageMenu = m_viewMenu->addMenu(QString());
     auto* languageGroup = new QActionGroup(m_languageMenu);
     languageGroup->setExclusive(true);
-    const QList<QPair<QString, QString>> languageOptions = uiLanguageItems();
-    for (const QPair<QString, QString>& option : languageOptions) {
+    const QList<std::pair<QString, QString>> languageOptions = uiLanguageItems();
+    for (const std::pair<QString, QString>& option : languageOptions) {
         QAction* languageAction = m_languageMenu->addAction(option.first);
         languageAction->setData(option.second);
         languageAction->setCheckable(true);
