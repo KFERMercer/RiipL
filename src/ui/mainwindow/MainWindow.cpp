@@ -187,7 +187,7 @@ MainWindow::MainWindow(QWidget* parent)
             m_history.addRecord(record);
         }
     });
-    connect(&m_engine, &TranslationEngine::error, this, [this](const ApiClient::Error& failure) {
+    connect(&m_engine, &TranslationEngine::errorOccurred, this, [this](const ApiClient::Error& failure) {
         setStatusFailure(failure);
     });
     connect(&m_engine, &TranslationEngine::stateChanged, this, [this](bool busy) {

@@ -87,7 +87,7 @@ void TranslationEngine::dispatch(const PromptBuilder::Result& prompt)
         m_translateApi.cancel();
 
     if (prompt.user.isEmpty()) {
-        emit error({ApiClient::ErrorCode::NothingToTranslate, QString()});
+        emit errorOccurred({ApiClient::ErrorCode::NothingToTranslate, QString()});
         return;
     }
 
@@ -107,7 +107,7 @@ void TranslationEngine::dispatch(const PromptBuilder::Result& prompt)
             emit partialDelta(delta);
         },
         [this](const ApiClient::Error& failure) {
-            emit error(failure);
+            emit errorOccurred(failure);
         });
 }
 

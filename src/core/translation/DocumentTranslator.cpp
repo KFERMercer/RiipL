@@ -56,7 +56,7 @@ void DocumentTranslator::ensureWorkers(int count)
 
         connect(worker.engine, &TranslationEngine::finished, this,
                 [this, index](const QString& response) { handleWindowFinished(index, response); });
-        connect(worker.engine, &TranslationEngine::error, this,
+        connect(worker.engine, &TranslationEngine::errorOccurred, this,
                 [this, index](const ApiClient::Error&) { retryOrFail(index); });
         connect(worker.retryTimer, &QTimer::timeout, this,
                 [this, index]() { resendWindow(index); });

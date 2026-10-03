@@ -81,7 +81,7 @@ signals:
     // to instead of rewritten.
     void partialDelta(const QString& piece);
     void finished(const QString& text);
-    void error(const ApiClient::Error& failure);
+    void errorOccurred(const ApiClient::Error& failure);
     void stopped();
     void stateChanged(bool busy);
 

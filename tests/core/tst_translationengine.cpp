@@ -231,7 +231,7 @@ void TestTranslationEngine::stopCancelsActiveRequest()
 
     TranslationEngine engine;
     QSignalSpy stoppedSpy(&engine, &TranslationEngine::stopped);
-    QSignalSpy errorSpy(&engine, &TranslationEngine::error);
+    QSignalSpy errorSpy(&engine, &TranslationEngine::errorOccurred);
     QSignalSpy stateSpy(&engine, &TranslationEngine::stateChanged);
 
     TranslationContext context;
@@ -466,7 +466,7 @@ void TestTranslationEngine::failedDispatchReturnsToIdle()
 
     TranslationEngine engine;
     QSignalSpy stoppedSpy(&engine, &TranslationEngine::stopped);
-    QSignalSpy errorSpy(&engine, &TranslationEngine::error);
+    QSignalSpy errorSpy(&engine, &TranslationEngine::errorOccurred);
     QSignalSpy stateSpy(&engine, &TranslationEngine::stateChanged);
 
     TranslationContext context;
