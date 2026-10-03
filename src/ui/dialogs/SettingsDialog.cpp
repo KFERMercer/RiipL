@@ -37,6 +37,7 @@
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QStackedWidget>
+#include <QStringList>
 #include <QTabWidget>
 #include <QToolButton>
 #include <QToolTip>
@@ -309,7 +310,11 @@ QWidget* SettingsDialog::createApiPage()
     applyApiKeyHint();
     bindText(applyApiKeyHint);
 
-    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Model"), new ConfigLineEdit(Keys::apiModel, false, page));
+    m_modelCombo = new ConfigEditableComboBox(Keys::apiModel, page);
+    connect(m_modelCombo, &ConfigEditableComboBox::popupAboutToShow, this,
+            &SettingsDialog::reloadModels);
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Model"), m_modelCombo);
+
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Server connection timeout (ms)"),
                   new ConfigSpinBox(Keys::apiTimeoutMs, ApiTimeout::minimumMs, 300000, 1000, page));
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Max tokens"),
@@ -393,6 +398,24 @@ void SettingsDialog::reloadPresets()
         m_presetCombo->addItem(preset.name);
     const bool held = m_selectedPreset >= 0 && m_selectedPreset < m_apiPresets.size();
     m_presetCombo->setCurrentIndex(held ? m_selectedPreset : -1);
+}
+
+// Lists the models the API fields describe, including edits that are not applied
+// yet; the popup reports the request while it runs.
+void SettingsDialog::reloadModels()
+{
+    m_modelCombo->setMessage(tr("Loading the model list..."));
+    m_apiClient.listModels(ApiClient::Connection::fromValues(editedApiValues()),
+                           [this](const QStringList& models) {
+                               if (models.isEmpty())
+                                   m_modelCombo->setMessage(tr("The endpoint reported no models"));
+                               else
+                                   m_modelCombo->setItems(models);
+                           },
+                           [this](const ApiClient::Error& failure) {
+                               m_modelCombo->setMessage(
+                                   tr("Cannot load the model list: %1").arg(failure.text()));
+                           });
 }
 
 // API fields as currently shown by the editors, so a preset records pending

@@ -14,10 +14,12 @@
 
 #include <algorithm>
 #include <chrono>
+#include <optional>
 #include <utility>
 
 namespace {
 const QString kChatCompletionsPath = QStringLiteral("/chat/completions");
+const QString kModelsPath = QStringLiteral("/models");
 
 // Cap on a response body: a translation never comes close, so a larger body is
 // not worth buffering.
@@ -27,6 +29,101 @@ bool isRequestableScheme(const QUrl& url)
 {
     const QString scheme = url.scheme();
     return scheme == QLatin1String("http") || scheme == QLatin1String("https");
+}
+
+// Message the API worded itself for a failed response.
+QString apiErrorMessage(const QByteArray& body)
+{
+    if (!body.isEmpty()) {
+        const QJsonDocument doc = QJsonDocument::fromJson(body);
+        if (doc.isObject()) {
+            const QJsonValue message =
+                doc.object().value(QStringLiteral("error")).toObject().value(QStringLiteral("message"));
+            if (!message.toString().isEmpty())
+                return message.toString();
+        }
+    }
+    return QString();
+}
+
+// Failure a finished reply reports, or nothing when it carried a body the caller
+// can read. \p abortedIsFailure is false for a request whose payload arrived
+// before the abort.
+std::optional<ApiClient::Error> replyFailure(QNetworkReply* reply,
+                                            const QByteArray& body,
+                                            bool tooLarge,
+                                            bool abortedIsFailure)
+{
+    if (tooLarge)
+        return ApiClient::Error{ApiClient::ErrorCode::ResponseTooLarge, QString()};
+
+    const QVariant statusAttribute = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute);
+    const int statusCode = statusAttribute.isValid() ? statusAttribute.toInt() : 0;
+    const QNetworkReply::NetworkError replyError = reply->error();
+
+    // The client's own aborts never reach their handlers, so this is the timeout.
+    if (replyError == QNetworkReply::OperationCanceledError && abortedIsFailure)
+        return ApiClient::Error{ApiClient::ErrorCode::TimedOut, QString()};
+    if (replyError != QNetworkReply::NoError && statusCode == 0)
+        return ApiClient::Error{ApiClient::ErrorCode::NetworkFailure, reply->errorString()};
+    if (replyError == QNetworkReply::NoError && statusCode < 400)
+        return std::nullopt;
+
+    const QString serverMessage = apiErrorMessage(body);
+    if (!serverMessage.isEmpty())
+        return ApiClient::Error{ApiClient::ErrorCode::ServerMessage, serverMessage};
+    if (statusCode > 0)
+        return ApiClient::Error{ApiClient::ErrorCode::HttpStatus, QString::number(statusCode)};
+    return ApiClient::Error{ApiClient::ErrorCode::NetworkFailure, QString()};
+}
+
+// Request every endpoint below the base URL shares. The failure is reported,
+// and nothing returned, when \p connection cannot carry a request.
+std::optional<QNetworkRequest> createRequest(const QString& path,
+                                             const QByteArray& contentType,
+                                             const ApiClient::Connection& connection,
+                                             const ApiClient::ErrorCallback& onError)
+{
+    const QString baseUrl = connection.baseUrl.trimmed();
+    if (baseUrl.isEmpty()) {
+        if (onError)
+            onError({ApiClient::ErrorCode::BaseUrlMissing, QString()});
+        return std::nullopt;
+    }
+
+    // Refused before a request exists: a relative or non-HTTP endpoint cannot
+    // carry the key.
+    const QUrl endpoint = ApiClient::normalizedBaseUrl(baseUrl);
+    if (!endpoint.isValid() || endpoint.isRelative() || endpoint.host().isEmpty()
+        || !isRequestableScheme(endpoint)) {
+        if (onError)
+            onError({ApiClient::ErrorCode::BaseUrlInvalid, QString()});
+        return std::nullopt;
+    }
+
+    QNetworkRequestFactory factory(endpoint);
+    const QString apiKey = connection.apiKey.trimmed();
+    if (!apiKey.isEmpty())
+        factory.setBearerToken(apiKey.toUtf8());
+    // Abort the request when the server exchanges no data within the
+    // configured window, covering both connection and idle phases.
+    factory.setTransferTimeout(
+        std::chrono::milliseconds((std::max)(ApiTimeout::minimumMs, connection.timeoutMs)));
+    factory.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                         QNetworkRequest::NoLessSafeRedirectPolicy);
+
+    QNetworkRequest request = factory.createRequest(path);
+    if (!contentType.isEmpty())
+        request.setHeader(QNetworkRequest::ContentTypeHeader, contentType);
+    // Applied last so custom headers can intentionally override built-ins.
+    const QHttpHeaders customHeaders = ApiClient::parseCustomHeaders(connection.customHeaders);
+    if (!customHeaders.isEmpty()) {
+        QHttpHeaders headers = request.headers();
+        for (qsizetype i = 0; i < customHeaders.size(); ++i)
+            headers.replaceOrAppend(customHeaders.nameAt(i), customHeaders.valueAt(i));
+        request.setHeaders(std::move(headers));
+    }
+    return request;
 }
 
 }
@@ -89,46 +186,11 @@ void ApiClient::sendChatRequest(const QJsonObject& body,
 {
     ConfigManager* config = ConfigManager::instance();
 
-    const QString baseUrl = config->stringValue(Keys::apiBaseUrl).trimmed();
-    if (baseUrl.isEmpty()) {
-        if (onError)
-            onError({ErrorCode::BaseUrlMissing, QString()});
+    const std::optional<QNetworkRequest> request = createRequest(
+        kChatCompletionsPath, QByteArrayLiteral("application/json"), Connection::configured(), onError);
+    if (!request.has_value()) {
         emit requestFinished();
         return;
-    }
-
-    // Refused before a request exists: a relative or non-HTTP endpoint cannot
-    // carry the key.
-    const QUrl endpoint = normalizedBaseUrl(baseUrl);
-    if (!endpoint.isValid() || endpoint.isRelative() || endpoint.host().isEmpty()
-        || !isRequestableScheme(endpoint)) {
-        if (onError)
-            onError({ErrorCode::BaseUrlInvalid, QString()});
-        emit requestFinished();
-        return;
-    }
-
-    const QString apiKeyValue = config->stringValue(Keys::apiKey).trimmed();
-
-    QNetworkRequestFactory factory(endpoint);
-    if (!apiKeyValue.isEmpty())
-        factory.setBearerToken(apiKeyValue.toUtf8());
-    // Abort the request when the server exchanges no data within the
-    // user-configured window, covering both connection and idle phases.
-    factory.setTransferTimeout(std::chrono::milliseconds((std::max)(ApiTimeout::minimumMs, config->intValue(Keys::apiTimeoutMs))));
-    factory.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
-                         QNetworkRequest::NoLessSafeRedirectPolicy);
-
-    QNetworkRequest request = factory.createRequest(kChatCompletionsPath);
-    request.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
-    // Applied last so custom headers can intentionally override built-ins.
-    const QHttpHeaders customHeaders =
-        parseCustomHeaders(config->stringValue(Keys::apiCustomHeaders));
-    if (!customHeaders.isEmpty()) {
-        QHttpHeaders headers = request.headers();
-        for (qsizetype i = 0; i < customHeaders.size(); ++i)
-            headers.replaceOrAppend(customHeaders.nameAt(i), customHeaders.valueAt(i));
-        request.setHeaders(std::move(headers));
     }
 
     QJsonObject payload = body;
@@ -155,9 +217,126 @@ void ApiClient::sendChatRequest(const QJsonObject& body,
     m_onDelta = std::move(onStream);
     m_onError = std::move(onError);
 
-    m_reply = m_nam->post(request, QJsonDocument(payload).toJson(QJsonDocument::Compact));
+    m_reply = m_nam->post(*request, QJsonDocument(payload).toJson(QJsonDocument::Compact));
     connect(m_reply, &QNetworkReply::readyRead, this, &ApiClient::onReadyRead);
     connect(m_reply, &QNetworkReply::finished, this, &ApiClient::onFinished);
+}
+
+ApiClient::Connection ApiClient::Connection::configured()
+{
+    ConfigManager* config = ConfigManager::instance();
+    Connection connection;
+    connection.baseUrl = config->stringValue(Keys::apiBaseUrl);
+    connection.apiKey = config->stringValue(Keys::apiKey);
+    connection.customHeaders = config->stringValue(Keys::apiCustomHeaders);
+    connection.timeoutMs = config->intValue(Keys::apiTimeoutMs);
+    return connection;
+}
+
+ApiClient::Connection ApiClient::Connection::fromValues(const QJsonObject& values)
+{
+    Connection connection;
+    connection.baseUrl = values.value(Keys::apiBaseUrl).toString();
+    connection.apiKey = values.value(Keys::apiKey).toString();
+    connection.customHeaders = values.value(Keys::apiCustomHeaders).toString();
+    connection.timeoutMs = values.value(Keys::apiTimeoutMs).toInt();
+    return connection;
+}
+
+void ApiClient::listModels(const Connection& connection, ModelsCallback onDone, ErrorCallback onError)
+{
+    cancelModels();
+
+    const std::optional<QNetworkRequest> request =
+        createRequest(kModelsPath, QByteArray(), connection, onError);
+    if (!request.has_value())
+        return;
+
+    m_modelsBuffer.clear();
+    m_modelsOverflowed = false;
+    m_modelsOnDone = std::move(onDone);
+    m_modelsOnError = std::move(onError);
+
+    m_modelsReply = m_nam->get(*request);
+    connect(m_modelsReply, &QNetworkReply::readyRead, this, &ApiClient::onModelsReadyRead);
+    connect(m_modelsReply, &QNetworkReply::finished, this, &ApiClient::onModelsFinished);
+}
+
+void ApiClient::cancelModels()
+{
+    if (!m_modelsReply)
+        return;
+    QNetworkReply* reply = m_modelsReply;
+    m_modelsReply = nullptr;
+    disconnect(reply, nullptr, this, nullptr);
+    reply->abort();
+    reply->deleteLater();
+    m_modelsOnDone = nullptr;
+    m_modelsOnError = nullptr;
+}
+
+std::optional<QStringList> ApiClient::parseModelIds(const QByteArray& body)
+{
+    const QJsonDocument doc = QJsonDocument::fromJson(body);
+    if (!doc.isObject())
+        return std::nullopt;
+    const QJsonValue data = doc.object().value(QStringLiteral("data"));
+    if (!data.isArray())
+        return std::nullopt;
+
+    QStringList ids;
+    for (const QJsonValue& entry : data.toArray()) {
+        const QString id = entry.toObject().value(QStringLiteral("id")).toString();
+        if (!id.isEmpty())
+            ids.append(id);
+    }
+    return ids;
+}
+
+void ApiClient::onModelsReadyRead()
+{
+    if (!m_modelsReply)
+        return;
+    m_modelsBuffer += m_modelsReply->readAll();
+    if (m_modelsBuffer.size() > kMaxResponseBytes) {
+        m_modelsOverflowed = true;
+        m_modelsReply->abort();
+    }
+}
+
+void ApiClient::onModelsFinished()
+{
+    if (!m_modelsReply)
+        return;
+    QNetworkReply* reply = m_modelsReply;
+    m_modelsReply = nullptr;
+
+    const bool overflowed = std::exchange(m_modelsOverflowed, false);
+    // An aborted reply has nothing left to read.
+    if (!overflowed && reply->isOpen())
+        m_modelsBuffer += reply->readAll();
+    const QByteArray body = std::exchange(m_modelsBuffer, QByteArray());
+    const bool tooLarge = overflowed || body.size() > kMaxResponseBytes;
+
+    auto done = m_modelsOnDone;
+    auto errorCb = m_modelsOnError;
+    m_modelsOnDone = nullptr;
+    m_modelsOnError = nullptr;
+    reply->deleteLater();
+
+    if (const std::optional<Error> failure = replyFailure(reply, body, tooLarge, true)) {
+        if (errorCb)
+            errorCb(*failure);
+        return;
+    }
+
+    const std::optional<QStringList> models = parseModelIds(body);
+    if (models.has_value()) {
+        if (done)
+            done(*models);
+    } else if (errorCb) {
+        errorCb({ErrorCode::InvalidResponse, QString()});
+    }
 }
 
 void ApiClient::onReadyRead()
@@ -237,10 +416,6 @@ void ApiClient::onFinished()
         }
     }
 
-    const QVariant statusAttribute = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute);
-    const int statusCode = statusAttribute.isValid() ? statusAttribute.toInt() : 0;
-    const QString errorString = reply->errorString();
-
     auto done = m_onDone;
     auto errorCb = m_onError;
     m_onDone = nullptr;
@@ -250,56 +425,37 @@ void ApiClient::onFinished()
 
     // Settled before the notification, so a slot that starts the next request
     // cannot change it.
-    Error failure;
     QString result;
-    bool failed = false;
-    const auto fail = [&failure, &failed](ErrorCode code, const QString& detail = QString()) {
-        failed = true;
-        failure = {code, detail};
-    };
-
-    if (tooLarge) {
-        fail(ErrorCode::ResponseTooLarge);
-    } else if (reply->error() == QNetworkReply::OperationCanceledError && !m_doneSent) {
-        // The client's own aborts never reach their handlers, so this is the timeout.
-        fail(ErrorCode::TimedOut);
-    } else if (reply->error() != QNetworkReply::NoError && statusCode == 0) {
-        fail(ErrorCode::NetworkFailure, errorString);
-    } else if (statusCode >= 400 || reply->error() != QNetworkReply::NoError) {
-        const QString serverMessage = apiErrorMessage(QString::fromUtf8(m_rawBuffer));
-        if (!serverMessage.isEmpty())
-            fail(ErrorCode::ServerMessage, serverMessage);
-        else if (statusCode > 0)
-            fail(ErrorCode::HttpStatus, QString::number(statusCode));
-        else
-            fail(ErrorCode::NetworkFailure);
-    } else if (m_streaming) {
-        // A stream without content failed like an unusable body, not as an empty
-        // translation.
-        result = m_accumulated;
-        if (result.isEmpty())
-            fail(ErrorCode::InvalidResponse);
-    } else {
-        const QJsonDocument doc = QJsonDocument::fromJson(m_rawBuffer);
-        if (!doc.isObject()) {
-            fail(ErrorCode::InvalidResponse);
+    std::optional<Error> failure = replyFailure(reply, m_rawBuffer, tooLarge, !m_doneSent);
+    if (!failure.has_value()) {
+        if (m_streaming) {
+            // A stream without content failed like an unusable body, not as an
+            // empty translation.
+            result = m_accumulated;
+            if (result.isEmpty())
+                failure = Error{ErrorCode::InvalidResponse, QString()};
         } else {
-            const QJsonArray choices = doc.object().value(QStringLiteral("choices")).toArray();
-            if (choices.isEmpty())
-                fail(ErrorCode::NoChoices);
-            else
-                result = choices.first().toObject()
-                             .value(QStringLiteral("message"))
-                             .toObject()
-                             .value(QStringLiteral("content"))
-                             .toString();
+            const QJsonDocument doc = QJsonDocument::fromJson(m_rawBuffer);
+            if (!doc.isObject()) {
+                failure = Error{ErrorCode::InvalidResponse, QString()};
+            } else {
+                const QJsonArray choices = doc.object().value(QStringLiteral("choices")).toArray();
+                if (choices.isEmpty())
+                    failure = Error{ErrorCode::NoChoices, QString()};
+                else
+                    result = choices.first().toObject()
+                                 .value(QStringLiteral("message"))
+                                 .toObject()
+                                 .value(QStringLiteral("content"))
+                                 .toString();
+            }
         }
     }
 
     emit requestFinished();
-    if (failed) {
+    if (failure.has_value()) {
         if (errorCb)
-            errorCb(failure);
+            errorCb(*failure);
         return;
     }
     if (done)
@@ -316,7 +472,7 @@ QString ApiClient::Error::text() const
     case ErrorCode::BaseUrlInvalid:
         return tr("API base URL must be an absolute http or https URL");
     case ErrorCode::TimedOut:
-        return tr("Translation timed out");
+        return tr("Request timed out");
     case ErrorCode::NetworkFailure:
         return detail.isEmpty() ? tr("Network request failed")
                                 : tr("Network request failed: %1").arg(detail);
@@ -335,19 +491,6 @@ QString ApiClient::Error::text() const
         return tr("Nothing to translate");
     case ErrorCode::NothingToLookUp:
         return tr("Nothing to look up");
-    }
-    return QString();
-}
-
-QString ApiClient::apiErrorMessage(const QString& body) const
-{
-    if (!body.isEmpty()) {
-        const QJsonDocument doc = QJsonDocument::fromJson(body.toUtf8());
-        if (doc.isObject()) {
-            const QJsonValue message = doc.object().value(QStringLiteral("error")).toObject().value(QStringLiteral("message"));
-            if (!message.toString().isEmpty())
-                return message.toString();
-        }
     }
     return QString();
 }

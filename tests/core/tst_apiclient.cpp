@@ -23,7 +23,7 @@ public:
         QObject::connect(&m_server, &QTcpServer::newConnection, &m_server, [this]() {
             QTcpSocket* socket = m_server.nextPendingConnection();
             QObject::connect(socket, &QTcpSocket::readyRead, socket, [this, socket]() {
-                socket->readAll();
+                m_requests.append(socket->readAll());
                 socket->write(m_replies.isEmpty() ? QByteArray() : m_replies.takeFirst());
                 socket->flush();
                 socket->disconnectFromHost();
@@ -36,14 +36,26 @@ public:
 
     void serve(const QByteArray& response) { m_replies.append(response); }
 
+    // Raw bytes of every request that reached the server.
+    const QList<QByteArray>& requests() const { return m_requests; }
+
 private:
     QTcpServer m_server;
     QList<QByteArray> m_replies;
+    QList<QByteArray> m_requests;
 };
 
 QByteArray jsonReply(const QByteArray& body)
 {
     return QByteArrayLiteral("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: ")
+        + QByteArray::number(body.size()) + QByteArrayLiteral("\r\n\r\n") + body;
+}
+
+// A JSON body sent with a failure status.
+QByteArray failureReply(const char* status, const QByteArray& body)
+{
+    return QByteArrayLiteral("HTTP/1.1 ") + status
+        + QByteArrayLiteral("\r\nContent-Type: application/json\r\nContent-Length: ")
         + QByteArray::number(body.size()) + QByteArrayLiteral("\r\n\r\n") + body;
 }
 
@@ -90,6 +102,12 @@ private slots:
     void readsTrailingStreamFrame();
     void rejectsStreamWithoutContent();
     void dropsOversizedResponse();
+    void parsesModelIds();
+    void listsModels();
+    void listsModelsFromGivenValues();
+    void reportsModelListFailure();
+    void dropsOversizedModelList();
+    void refusesUnusableModelBaseUrl();
 };
 
 void TestApiClient::normalizesBaseUrl()
@@ -353,6 +371,176 @@ void TestApiClient::dropsOversizedResponse()
     QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 15000);
     QVERIFY(error.has_value());
     QCOMPARE(error->code, ApiClient::ErrorCode::ResponseTooLarge);
+}
+
+// A body without a model array names nothing, which is not the same as an
+// endpoint that reports no model.
+void TestApiClient::parsesModelIds()
+{
+    QVERIFY(!ApiClient::parseModelIds(QByteArrayLiteral("not json")).has_value());
+    QVERIFY(!ApiClient::parseModelIds(QByteArrayLiteral(R"({"object":"list"})")).has_value());
+    QVERIFY(!ApiClient::parseModelIds(QByteArrayLiteral(R"({"data":"none"})")).has_value());
+
+    // Entries without an id are skipped; the order the endpoint reports is kept.
+    const std::optional<QStringList> ids = ApiClient::parseModelIds(
+        QByteArrayLiteral(R"({"data":[{"id":"gpt-4o-mini"},{"id":""},{},"o3-mini",{"id":"gpt-4.1-mini"}]})"));
+    QVERIFY(ids.has_value());
+    QCOMPARE(*ids, QStringList({QStringLiteral("gpt-4o-mini"), QStringLiteral("gpt-4.1-mini")}));
+
+    const std::optional<QStringList> empty = ApiClient::parseModelIds(QByteArrayLiteral(R"({"data":[]})"));
+    QVERIFY(empty.has_value());
+    QVERIFY(empty->isEmpty());
+}
+
+// The listing is a plain GET below the configured base URL.
+void TestApiClient::listsModels()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    ConfigManager::createInstance(TestSupport::tempDir());
+
+    OneShotServer server;
+    QVERIFY(server.listen());
+    server.serve(jsonReply(
+        QByteArrayLiteral(R"({"object":"list","data":[{"id":"gpt-4o-mini"},{"id":"o3-mini"}]})")));
+    ConfigManager::instance()->setValue(
+        Keys::apiBaseUrl, QStringLiteral("http://127.0.0.1:%1/v1").arg(server.port()));
+    ConfigManager::instance()->setValue(Keys::apiKey, QStringLiteral("secret"));
+
+    ApiClient client;
+    // The listing is not a translation, so it leaves the busy state alone.
+    QSignalSpy finishedSpy(&client, &ApiClient::requestFinished);
+    QStringList ids;
+    std::optional<ApiClient::Error> error;
+    client.listModels(ApiClient::Connection::configured(),
+                      [&ids](const QStringList& models) { ids = models; },
+                      [&error](const ApiClient::Error& failure) { error = failure; });
+
+    QTRY_COMPARE_WITH_TIMEOUT(ids.size(), 2, 5000);
+    QVERIFY2(!error.has_value(), "the listing must not report a failure");
+    QCOMPARE(ids, QStringList({QStringLiteral("gpt-4o-mini"), QStringLiteral("o3-mini")}));
+    QCOMPARE(finishedSpy.count(), 0);
+
+    QCOMPARE(server.requests().size(), 1);
+    const QByteArray request = server.requests().first();
+    QCOMPARE(request.split('\n').first().trimmed(), QByteArrayLiteral("GET /v1/models HTTP/1.1"));
+    QVERIFY(request.toLower().contains("authorization: bearer secret"));
+}
+
+// Values a caller holds take precedence over the stored configuration.
+void TestApiClient::listsModelsFromGivenValues()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    ConfigManager::createInstance(TestSupport::tempDir());
+    // Stored settings that cannot carry a request: only the given ones may.
+    ConfigManager::instance()->setValue(Keys::apiBaseUrl, QString());
+
+    OneShotServer server;
+    QVERIFY(server.listen());
+    server.serve(jsonReply(QByteArrayLiteral(R"({"data":[{"id":"local-model"}]})")));
+
+    QJsonObject values;
+    values.insert(Keys::apiBaseUrl, QStringLiteral("http://127.0.0.1:%1/v1").arg(server.port()));
+    values.insert(Keys::apiKey, QStringLiteral("given-key"));
+    values.insert(Keys::apiCustomHeaders, QStringLiteral("X-Probe: 1"));
+    values.insert(Keys::apiTimeoutMs, 5000);
+
+    ApiClient client;
+    QStringList ids;
+    std::optional<ApiClient::Error> error;
+    client.listModels(ApiClient::Connection::fromValues(values),
+                      [&ids](const QStringList& models) { ids = models; },
+                      [&error](const ApiClient::Error& failure) { error = failure; });
+
+    QTRY_COMPARE_WITH_TIMEOUT(ids.size(), 1, 5000);
+    QVERIFY2(!error.has_value(), "the given settings must carry the request");
+    QCOMPARE(ids, QStringList({QStringLiteral("local-model")}));
+
+    QCOMPARE(server.requests().size(), 1);
+    const QByteArray request = server.requests().first();
+    QCOMPARE(request.split('\n').first().trimmed(), QByteArrayLiteral("GET /v1/models HTTP/1.1"));
+    const QByteArray lowered = request.toLower();
+    QVERIFY(lowered.contains("authorization: bearer given-key"));
+    QVERIFY(lowered.contains("x-probe: 1"));
+}
+
+// A request the endpoint describes with its own message reaches the caller.
+void TestApiClient::reportsModelListFailure()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    ConfigManager::createInstance(TestSupport::tempDir());
+
+    OneShotServer server;
+    QVERIFY(server.listen());
+    server.serve(failureReply("401 Unauthorized",
+                              QByteArrayLiteral(R"({"error":{"message":"invalid key"}})")));
+    ConfigManager::instance()->setValue(
+        Keys::apiBaseUrl, QStringLiteral("http://127.0.0.1:%1/v1").arg(server.port()));
+
+    ApiClient client;
+    QStringList ids;
+    std::optional<ApiClient::Error> error;
+    client.listModels(ApiClient::Connection::configured(),
+                      [&ids](const QStringList& models) { ids = models; },
+                      [&error](const ApiClient::Error& failure) { error = failure; });
+
+    QTRY_VERIFY_WITH_TIMEOUT(error.has_value(), 5000);
+    QCOMPARE(error->code, ApiClient::ErrorCode::ServerMessage);
+    QCOMPARE(error->detail, QStringLiteral("invalid key"));
+    QVERIFY(ids.isEmpty());
+}
+
+// A body past the cap is dropped instead of being buffered to the end.
+void TestApiClient::dropsOversizedModelList()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    ConfigManager::createInstance(TestSupport::tempDir());
+
+    OneShotServer server;
+    QVERIFY(server.listen());
+    const QByteArray filler(5 * 1024 * 1024, 'a');
+    server.serve(jsonReply(QByteArrayLiteral(R"({"data":[{"id":")") + filler
+                                             + QByteArrayLiteral(R"("}]})")));
+    ConfigManager::instance()->setValue(
+        Keys::apiBaseUrl, QStringLiteral("http://127.0.0.1:%1/v1").arg(server.port()));
+
+    ApiClient client;
+    QStringList ids;
+    std::optional<ApiClient::Error> error;
+    client.listModels(ApiClient::Connection::configured(),
+                      [&ids](const QStringList& models) { ids = models; },
+                      [&error](const ApiClient::Error& failure) { error = failure; });
+
+    QTRY_VERIFY_WITH_TIMEOUT(error.has_value(), 15000);
+    QCOMPARE(error->code, ApiClient::ErrorCode::ResponseTooLarge);
+    QVERIFY(ids.isEmpty());
+}
+
+// An endpoint that cannot carry the request is named before the listing starts.
+void TestApiClient::refusesUnusableModelBaseUrl()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    ConfigManager::createInstance(TestSupport::tempDir());
+
+    ApiClient client;
+    std::optional<ApiClient::Error> error;
+    const auto list = [&client, &error](const QString& baseUrl) {
+        ConfigManager::instance()->setValue(Keys::apiBaseUrl, baseUrl);
+        error.reset();
+        client.listModels(ApiClient::Connection::configured(), nullptr,
+                          [&error](const ApiClient::Error& failure) { error = failure; });
+    };
+
+    list(QString());
+    QVERIFY(error.has_value());
+    QCOMPARE(error->code, ApiClient::ErrorCode::BaseUrlMissing);
+
+    for (const QString& baseUrl : {QStringLiteral("ftp://example.com/v1"),
+                                   QStringLiteral("/v1"),
+                                   QStringLiteral("not a url")}) {
+        list(baseUrl);
+        QVERIFY(error.has_value());
+        QCOMPARE(error->code, ApiClient::ErrorCode::BaseUrlInvalid);
+    }
 }
 
 QTEST_MAIN(TestApiClient)

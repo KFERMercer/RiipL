@@ -10,6 +10,7 @@
 #include <QJsonObject>
 #include <QLocale>
 
+#include <QAbstractItemView>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDoubleSpinBox>
@@ -17,6 +18,7 @@
 #include <QLineEdit>
 #include <QPlainTextEdit>
 #include <QSpinBox>
+#include <QStandardItemModel>
 #include <QToolButton>
 
 namespace {
@@ -182,6 +184,101 @@ void ConfigComboBox::setItems(const QList<std::pair<QString, QString>>& items)
     refreshModifiedState();
     if (!initialSelection && m_box->currentData().toString() != wanted)
         handleControlChange();
+}
+
+class ConfigEditableComboBox::Box : public QComboBox
+{
+public:
+    explicit Box(ConfigEditableComboBox* editor)
+        : QComboBox(editor)
+        , m_editor(editor)
+    {
+    }
+
+    // Re-opens an open popup: it takes its height when shown, so candidates that
+    // replaced the ones it opened with would stay out of sight.
+    void refitPopup()
+    {
+        if (!view()->window()->isVisible())
+            return;
+        hidePopup();
+        QComboBox::showPopup();
+    }
+
+protected:
+    void showPopup() override
+    {
+        emit m_editor->popupAboutToShow();
+        QComboBox::showPopup();
+    }
+
+private:
+    ConfigEditableComboBox* m_editor;
+};
+
+ConfigEditableComboBox::ConfigEditableComboBox(const QString& key, QWidget* parent)
+    : ConfigEditor(key, parent)
+{
+    auto* layout = new QHBoxLayout(this);
+    layout->setContentsMargins(0, 0, 0, 0);
+    m_box = new Box(this);
+    m_box->setEditable(true);
+    // A typed entry is a value of its own, not an entry to add to the list.
+    m_box->setInsertPolicy(QComboBox::NoInsert);
+    auto* reset = createResetButton(this);
+    layout->addWidget(m_box, 1);
+    layout->addWidget(reset);
+
+    connect(m_box, &QComboBox::currentTextChanged, this,
+            [this](const QString&) { handleControlChange(); });
+    setupDisplay(reset);
+    loadConfigValue();
+}
+
+QJsonValue ConfigEditableComboBox::value() const
+{
+    return m_box->currentText();
+}
+
+void ConfigEditableComboBox::setControlValue(const QJsonValue& v)
+{
+    selectText(v.toString());
+}
+
+void ConfigEditableComboBox::setItems(const QStringList& items)
+{
+    const QString current = m_box->currentText();
+    {
+        const QSignalBlocker blocker(m_box);
+        m_box->clear();
+        m_box->addItems(items);
+        selectText(current);
+    }
+    m_box->refitPopup();
+}
+
+void ConfigEditableComboBox::setMessage(const QString& message)
+{
+    setItems({message});
+    // The popup greys out what it reports rather than offering it as a choice.
+    if (QStandardItemModel* model = qobject_cast<QStandardItemModel*>(m_box->model())) {
+        if (QStandardItem* entry = model->item(0)) {
+            entry->setEnabled(false);
+            entry->setSelectable(false);
+        }
+    }
+}
+
+void ConfigEditableComboBox::selectText(const QString& text)
+{
+    const int index = m_box->findText(text);
+    if (index >= 0) {
+        m_box->setCurrentIndex(index);
+        return;
+    }
+    // Nothing is selected, so a typed entry never highlights a candidate.
+    m_box->setCurrentIndex(-1);
+    m_box->setCurrentText(text);
 }
 
 ConfigTextEdit::ConfigTextEdit(const QString& key, QWidget* parent)

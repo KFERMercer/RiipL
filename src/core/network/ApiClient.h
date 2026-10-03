@@ -6,8 +6,10 @@
 #include <QMetaType>
 #include <QObject>
 #include <QString>
+#include <QStringList>
 #include <QUrl>
 #include <functional>
+#include <optional>
 
 class QNetworkAccessManager;
 class QNetworkReply;
@@ -54,9 +56,23 @@ public:
         QString text() const;
     };
 
+    // Settings one request runs with, so a caller can pass values it has not
+    // committed yet.
+    struct Connection
+    {
+        QString baseUrl;
+        QString apiKey;
+        QString customHeaders;
+        int timeoutMs = ApiTimeout::minimumMs;
+
+        static Connection configured();
+        static Connection fromValues(const QJsonObject& values);
+    };
+
     using DoneCallback = std::function<void(const QString&)>;
     using DeltaCallback = std::function<void(const QString&)>;
     using ErrorCallback = std::function<void(const Error&)>;
+    using ModelsCallback = std::function<void(const QStringList&)>;
 
     explicit ApiClient(QObject* parent = nullptr);
 
@@ -66,6 +82,14 @@ public:
                          ErrorCallback onError);
     void cancel();
     bool isBusy() const { return m_reply != nullptr; }
+
+    // Reads the ids the endpoint's model list reports; a body without a model
+    // array fails as ErrorCode::InvalidResponse.
+    void listModels(const Connection& connection, ModelsCallback onDone, ErrorCallback onError);
+
+    // Model ids of a /models response body, in the order it lists them; nothing
+    // when the body holds no model array.
+    static std::optional<QStringList> parseModelIds(const QByteArray& body);
 
     // Parses user-configured header lines of the form "Name: value";
     // malformed lines are ignored.
@@ -82,7 +106,9 @@ private:
     void onFinished();
     // \p flush reads a trailing frame the stream ended without a newline after.
     void consumeStreamBuffer(bool flush);
-    QString apiErrorMessage(const QString& body) const;
+    void cancelModels();
+    void onModelsReadyRead();
+    void onModelsFinished();
 
     QNetworkAccessManager* m_nam = nullptr;
     QNetworkReply* m_reply = nullptr;
@@ -96,6 +122,11 @@ private:
     DoneCallback m_onDone;
     DeltaCallback m_onDelta;
     ErrorCallback m_onError;
+    QNetworkReply* m_modelsReply = nullptr;
+    QByteArray m_modelsBuffer;
+    bool m_modelsOverflowed = false;
+    ModelsCallback m_modelsOnDone;
+    ErrorCallback m_modelsOnError;
 };
 
 Q_DECLARE_METATYPE(ApiClient::Error)

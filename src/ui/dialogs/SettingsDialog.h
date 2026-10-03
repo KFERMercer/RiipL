@@ -9,7 +9,9 @@
 #include <functional>
 
 #include "core/config/ApiPreset.h"
+#include "core/network/ApiClient.h"
 
+class ConfigEditableComboBox;
 class QComboBox;
 class QFormLayout;
 class QLabel;
@@ -40,6 +42,7 @@ private slots:
     void updateDirtyState();
     void applyChanges();
     void reloadPresets();
+    void reloadModels();
     void applySelectedPreset(int index);
     void newPreset();
     void overwritePreset();
@@ -76,6 +79,9 @@ private:
 
     QComboBox* m_presetCombo = nullptr;
     QPushButton* m_overwriteButton = nullptr;
+    ConfigEditableComboBox* m_modelCombo = nullptr;
+    // Its own client, so listing models never disturbs a running translation.
+    ApiClient m_apiClient;
     // Preset the API fields belong to, or -1 for custom settings, held across edits.
     int m_selectedPreset = -1;
     QJsonArray m_customTones;

@@ -4,6 +4,7 @@
 #include <QJsonValue>
 #include <QList>
 #include <QString>
+#include <QStringList>
 #include <QWidget>
 
 #include <utility>
@@ -95,6 +96,39 @@ protected:
 
 private:
     QComboBox* m_box = nullptr;
+};
+
+// Editable entry list: the text is the value, so an entry the list does not
+// offer can be typed in.
+class ConfigEditableComboBox : public ConfigEditor
+{
+    Q_OBJECT
+
+public:
+    explicit ConfigEditableComboBox(const QString& key, QWidget* parent = nullptr);
+
+    QJsonValue value() const override;
+    // Replaces the candidates, keeping the entry the field holds.
+    void setItems(const QStringList& items);
+    // Replaces the candidates with one entry carrying \p message, which cannot
+    // be picked.
+    void setMessage(const QString& message);
+
+signals:
+    // The popup is opening: the moment a candidate list fetched on demand has to
+    // be requested.
+    void popupAboutToShow();
+
+protected:
+    void setControlValue(const QJsonValue& v) override;
+
+private:
+    // Reports the popup to the editor that owns it.
+    class Box;
+    // Puts \p text in the field with the candidate it names highlighted.
+    void selectText(const QString& text);
+
+    Box* m_box = nullptr;
 };
 
 class ConfigTextEdit : public ConfigEditor

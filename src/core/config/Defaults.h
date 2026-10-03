@@ -91,7 +91,7 @@ namespace Defaults {
 
 inline const QString apiBaseUrl = QStringLiteral("https://api.openai.com/v1");
 inline const QString apiKey = QString();
-inline const QString apiModel = QStringLiteral("gpt-4o-mini");
+inline const QString apiModel = QString();
 inline const int apiTimeoutMs = 10000;
 inline const double apiTemperature = 0.0;
 inline const int apiMaxTokens = 4096;
