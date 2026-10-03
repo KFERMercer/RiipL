@@ -8,6 +8,7 @@ class TestSingleInstance : public QObject
 
 private slots:
     void arbitratesPrimaryAndSecondary();
+    void reportsAnUnreachableInstance();
 };
 
 void TestSingleInstance::arbitratesPrimaryAndSecondary()
@@ -23,7 +24,7 @@ void TestSingleInstance::arbitratesPrimaryAndSecondary()
             QVERIFY(!second.isPrimary());
 
             QSignalSpy activated(&first, &SingleInstance::activationRequested);
-            second.notifyExistingInstance();
+            QVERIFY(second.notifyExistingInstance());
             QVERIFY(activated.wait(2000));
             QCOMPARE(activated.count(), 1);
         }
@@ -34,6 +35,13 @@ void TestSingleInstance::arbitratesPrimaryAndSecondary()
     SingleInstance third;
     QCOMPARE(third.tryLock(), SingleInstance::Role::Primary);
     QVERIFY(third.isPrimary());
+}
+
+// A lock held by something that does not answer is reported.
+void TestSingleInstance::reportsAnUnreachableInstance()
+{
+    SingleInstance instance;
+    QVERIFY(!instance.notifyExistingInstance());
 }
 
 QTEST_MAIN(TestSingleInstance)

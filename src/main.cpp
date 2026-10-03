@@ -7,6 +7,7 @@
 #include <QApplication>
 #include <QDebug>
 #include <QFont>
+#include <QMessageBox>
 #include <QObject>
 
 int main(int argc, char* argv[])
@@ -45,7 +46,13 @@ int main(int argc, char* argv[])
     SingleInstance singleInstance;
     switch (singleInstance.tryLock()) {
     case SingleInstance::Role::Secondary:
-        singleInstance.notifyExistingInstance();
+        if (!singleInstance.notifyExistingInstance()) {
+            QMessageBox::warning(
+                nullptr, QStringLiteral("RiipL"),
+                QCoreApplication::translate(
+                    "main", "RiipL is already running and did not answer the activation request."));
+            return 1;
+        }
         return 0;
     case SingleInstance::Role::Error:
         qWarning() << "Failed to establish the single-instance IPC channel";

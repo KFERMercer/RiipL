@@ -57,11 +57,12 @@ SingleInstance::Role SingleInstance::tryLock()
     return Role::Primary;
 }
 
-void SingleInstance::notifyExistingInstance()
+bool SingleInstance::notifyExistingInstance()
 {
     QLocalSocket socket;
     socket.connectToServer(instanceKey());
     if (!socket.waitForConnected(kConnectTimeoutMs))
-        return;
+        return false;
     socket.disconnectFromServer();
+    return true;
 }

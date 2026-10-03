@@ -24,7 +24,8 @@ public:
 
     Role tryLock();
     bool isPrimary() const { return m_server != nullptr; }
-    void notifyExistingInstance();
+    // False when the running instance could not be reached.
+    bool notifyExistingInstance();
 
 signals:
     void activationRequested();
