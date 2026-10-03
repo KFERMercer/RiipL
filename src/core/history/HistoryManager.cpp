@@ -1,5 +1,6 @@
 #include "HistoryManager.h"
 
+#include <QDebug>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -75,10 +76,17 @@ void HistoryManager::save()
         array.append(object);
     }
     QSaveFile file(m_filePath);
-    if (!file.open(QIODevice::WriteOnly))
+    if (!file.open(QIODevice::WriteOnly)) {
+        qWarning() << "RiipL: cannot write history file" << file.fileName() << file.errorString();
         return;
-    file.write(QJsonDocument(array).toJson(QJsonDocument::Indented));
-    file.commit();
+    }
+    const QByteArray data = QJsonDocument(array).toJson(QJsonDocument::Indented);
+    if (file.write(data) != data.size()) {
+        qWarning() << "RiipL: cannot write history file" << file.fileName() << file.errorString();
+        return;
+    }
+    if (!file.commit())
+        qWarning() << "RiipL: cannot commit history file" << file.fileName() << file.errorString();
 }
 
 void HistoryManager::trim()
