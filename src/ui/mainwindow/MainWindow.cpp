@@ -23,11 +23,11 @@
 #include <QAction>
 #include <QActionGroup>
 #include <QApplication>
+#include <QByteArray>
 #include <QClipboard>
 #include <QCloseEvent>
 #include <QComboBox>
 #include <QDateTime>
-#include <QFile>
 #include <QFileDialog>
 #include <QFont>
 #include <QHBoxLayout>
@@ -37,6 +37,7 @@
 #include <QPalette>
 #include <QPlainTextEdit>
 #include <QResizeEvent>
+#include <QSaveFile>
 #include <QScreen>
 #include <QScrollBar>
 #include <QSplitter>
@@ -886,12 +887,16 @@ void MainWindow::exportTranslation()
                                                       QStringLiteral("translation.txt"));
     if (path.isEmpty())
         return;
-    QFile file(path);
+    QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         setStatus(Status::CannotWrite, path);
         return;
     }
-    file.write(text.toUtf8());
+    const QByteArray data = text.toUtf8();
+    if (file.write(data) != data.size() || !file.commit()) {
+        setStatus(Status::CannotWrite, path);
+        return;
+    }
     setStatus(Status::Exported, path);
 }
 

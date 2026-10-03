@@ -6,6 +6,7 @@
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonParseError>
+#include <QSaveFile>
 #include <QStandardPaths>
 
 ConfigManager* ConfigManager::s_instance = nullptr;
@@ -31,7 +32,8 @@ void ConfigManager::createInstance(const QString& configDir)
 ConfigManager::ConfigManager(const QString& configDir)
     : m_dir(configDir)
 {
-    QDir().mkpath(m_dir);
+    if (!QDir().mkpath(m_dir))
+        qWarning() << "RiipL: cannot create config directory" << m_dir;
     m_saveTimer.setSingleShot(true);
     m_saveTimer.setInterval(400);
     connect(&m_saveTimer, &QTimer::timeout, this, &ConfigManager::save);
@@ -79,10 +81,18 @@ void ConfigManager::repairUiLanguage()
 
 void ConfigManager::save()
 {
-    QFile file(configFilePath());
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
+    QSaveFile file(configFilePath());
+    if (!file.open(QIODevice::WriteOnly)) {
+        qWarning() << "RiipL: cannot write config file" << file.fileName() << file.errorString();
         return;
-    file.write(QJsonDocument(m_user).toJson(QJsonDocument::Indented));
+    }
+    const QByteArray data = QJsonDocument(m_user).toJson(QJsonDocument::Indented);
+    if (file.write(data) != data.size()) {
+        qWarning() << "RiipL: cannot write config file" << file.fileName() << file.errorString();
+        return;
+    }
+    if (!file.commit())
+        qWarning() << "RiipL: cannot commit config file" << file.fileName() << file.errorString();
 }
 
 void ConfigManager::scheduleSave()

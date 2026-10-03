@@ -14,6 +14,7 @@
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QSaveFile>
 #include <QTableWidget>
 #include <QToolButton>
 #include <QVBoxLayout>
@@ -201,12 +202,15 @@ void GlossaryTable::exportJson()
                                                       tr("JSON files (*.json)"));
     if (path.isEmpty())
         return;
-    QFile file(path);
+    QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly)) {
         QMessageBox::warning(this, tr("RiipL"), tr("Cannot write file: %1").arg(path));
         return;
     }
-    file.write(QJsonDocument(Glossary::toJson(entries())).toJson(QJsonDocument::Indented));
+    const QJsonDocument doc(Glossary::toJson(entries()));
+    const QByteArray json = doc.toJson(QJsonDocument::Indented);
+    if (file.write(json) != json.size() || !file.commit())
+        QMessageBox::warning(this, tr("RiipL"), tr("Cannot write file: %1").arg(path));
 }
 
 GlossaryDialog::GlossaryDialog(QWidget* parent)

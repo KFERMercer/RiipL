@@ -21,6 +21,7 @@
 #include <QPalette>
 #include <QProgressBar>
 #include <QPushButton>
+#include <QSaveFile>
 #include <QScrollBar>
 #include <QToolButton>
 #include <QVBoxLayout>
@@ -239,9 +240,10 @@ void DocumentDialog::exportResult()
     const QString path = QFileDialog::getSaveFileName(this, tr("Export translation"), suggested);
     if (path.isEmpty())
         return;
-    QFile file(path);
+    QSaveFile file(path);
     const QByteArray data = m_completedText.toUtf8();
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text) || file.write(data) != data.size()) {
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text) || file.write(data) != data.size()
+        || !file.commit()) {
         QMessageBox::warning(this, tr("RiipL"), tr("Cannot write file: %1").arg(path));
         return;
     }
