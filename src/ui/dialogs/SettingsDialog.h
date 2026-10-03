@@ -63,6 +63,8 @@ private:
     QLabel* createRowLabel(QWidget* parent, const char* source);
     void addLabeledRow(QFormLayout* form, const char* source, QWidget* field);
     void addLabeledRow(QFormLayout* form, const char* source, QLayout* row);
+    // \p field stacked over \p hint, for a row whose value needs a line of its own.
+    static QWidget* fieldWithHint(QWidget* field, QLabel* hint);
 
     bool isDirty() const;
     bool canSavePreset() const;

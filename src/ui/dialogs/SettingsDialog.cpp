@@ -27,6 +27,7 @@
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QHostAddress>
 #include <QInputDialog>
 #include <QJsonDocument>
 #include <QLabel>
@@ -39,6 +40,7 @@
 #include <QTabWidget>
 #include <QToolButton>
 #include <QToolTip>
+#include <QUrl>
 #include <QVBoxLayout>
 #include <utility>
 
@@ -145,6 +147,17 @@ void SettingsDialog::addLabeledRow(QFormLayout* form, const char* source, QWidge
 void SettingsDialog::addLabeledRow(QFormLayout* form, const char* source, QLayout* row)
 {
     form->addRow(createRowLabel(form->parentWidget(), source), row);
+}
+
+QWidget* SettingsDialog::fieldWithHint(QWidget* field, QLabel* hint)
+{
+    auto* column = new QWidget(field->parentWidget());
+    auto* layout = new QVBoxLayout(column);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+    layout->addWidget(field);
+    layout->addWidget(hint);
+    return column;
 }
 
 void SettingsDialog::bindText(const std::function<void()>& apply)
@@ -283,8 +296,53 @@ QWidget* SettingsDialog::createApiPage()
     presetLayout->addLayout(presetRow);
     form->addRow(presetGroup);
 
-    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Base URL"), new ConfigLineEdit(Keys::apiBaseUrl, false, page));
-    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "API key"), new ConfigLineEdit(Keys::apiKey, true, page));
+    auto* baseUrlEdit = new ConfigLineEdit(Keys::apiBaseUrl, false, page);
+    auto* baseUrlHint = new QLabel(page);
+    auto applyBaseUrlHint = [baseUrlEdit, baseUrlHint]() {
+        const QString text = baseUrlEdit->edit()->text().trimmed();
+        const QUrl url(text);
+        if (text.isEmpty()) {
+            baseUrlHint->setText(tr("Empty: no request can be sent"));
+            ThemeColors::setTextColor(baseUrlHint, ThemeColors::neutralText(baseUrlHint));
+            return;
+        }
+        if (!url.isValid() || url.isRelative() || url.host().isEmpty()
+            || (url.scheme() != QLatin1String("http") && url.scheme() != QLatin1String("https"))) {
+            baseUrlHint->setText(QStringLiteral("\u2717 ")
+                                 + tr("Invalid: an absolute http or https URL is expected"));
+            ThemeColors::setTextColor(baseUrlHint, ThemeColors::errorText(baseUrlHint));
+            return;
+        }
+        // Plain http sends the key unencrypted; an address on this machine does
+        // not.
+        const QString host = url.host();
+        if (url.scheme() == QLatin1String("http") && host != QLatin1String("localhost")
+            && !QHostAddress(host).isLoopback()) {
+            baseUrlHint->setText(QStringLiteral("\u26a0 ")
+                                 + tr("Plain http: the API key and the text are sent unencrypted"));
+            ThemeColors::setTextColor(baseUrlHint, ThemeColors::errorText(baseUrlHint));
+            return;
+        }
+        baseUrlHint->setText(QStringLiteral("\u2713 ") + tr("Valid URL"));
+        ThemeColors::setTextColor(baseUrlHint, ThemeColors::successText(baseUrlHint));
+    };
+    connect(baseUrlEdit->edit(), &QLineEdit::textChanged, page, applyBaseUrlHint);
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Base URL"),
+                  fieldWithHint(baseUrlEdit, baseUrlHint));
+    applyBaseUrlHint();
+    bindText(applyBaseUrlHint);
+
+    auto* apiKeyEdit = new ConfigLineEdit(Keys::apiKey, true, page);
+    auto* apiKeyHint = new QLabel(page);
+    auto applyApiKeyHint = [apiKeyHint]() {
+        apiKeyHint->setText(tr("Stored in the configuration file as plain text"));
+        ThemeColors::setTextColor(apiKeyHint, ThemeColors::neutralText(apiKeyHint));
+    };
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "API key"),
+                  fieldWithHint(apiKeyEdit, apiKeyHint));
+    applyApiKeyHint();
+    bindText(applyApiKeyHint);
+
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Model"), new ConfigLineEdit(Keys::apiModel, false, page));
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Server connection timeout (ms)"),
                   new ConfigSpinBox(Keys::apiTimeoutMs, 1000, 300000, 1000, page));
@@ -325,13 +383,8 @@ QWidget* SettingsDialog::createApiPage()
         }
     };
     connect(extraEdit->edit(), &QPlainTextEdit::textChanged, page, updateValidation);
-    auto* extraField = new QWidget(page);
-    auto* extraLayout = new QVBoxLayout(extraField);
-    extraLayout->setContentsMargins(0, 0, 0, 0);
-    extraLayout->setSpacing(0);
-    extraLayout->addWidget(extraEdit);
-    extraLayout->addWidget(validation);
-    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Extra body (JSON)"), extraField);
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Extra body (JSON)"),
+                  fieldWithHint(extraEdit, validation));
     updateValidation();
     bindText(updateValidation);
 
