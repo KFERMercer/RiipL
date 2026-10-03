@@ -60,6 +60,8 @@ DocumentDialog::DocumentDialog(const TranslationContext& baseContext, QWidget* p
     layout->addWidget(previewGroup, 1);
 
     m_status = new QLabel(tr("Ready"), this);
+    // Status text can repeat a path the user typed, so it takes no markup.
+    m_status->setTextFormat(Qt::PlainText);
     layout->addWidget(m_status);
 
     auto* buttonRow = new QHBoxLayout();

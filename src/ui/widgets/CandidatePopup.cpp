@@ -18,6 +18,9 @@ CandidatePopup::CandidatePopup(TranslationEngine* engine, QWidget* parent)
     headerFont.setBold(true);
     m_header->setFont(headerFont);
     m_status = new QLabel(this);
+    // Both repeat text the app did not author, so neither renders markup.
+    m_header->setTextFormat(Qt::PlainText);
+    m_status->setTextFormat(Qt::PlainText);
     m_list = new QListWidget(this);
     m_list->setFrameShape(QFrame::NoFrame);
     m_list->hide();

@@ -132,6 +132,8 @@ MainWindow::MainWindow(QWidget* parent)
     buildTray();
 
     m_statusLabel = new QLabel(this);
+    // A provider words its own failures, so this label takes no markup.
+    m_statusLabel->setTextFormat(Qt::PlainText);
     statusBar()->addWidget(m_statusLabel, 1);
     setStatus(Status::Ready);
 
