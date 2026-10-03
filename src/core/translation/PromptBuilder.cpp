@@ -29,6 +29,22 @@ QString joined(const QStringList& fragments)
     return parts.join(QStringLiteral("\n\n"));
 }
 
+// A multi-line value takes the indentation of the line its placeholder sits on,
+// read from the template rather than from what an earlier placeholder left there.
+QString indentedValue(const QString& value, const QString& text, int lineStart, int placeholder)
+{
+    if (!value.contains(QLatin1Char('\n')))
+        return value;
+    QString indent;
+    for (int at = lineStart; at < placeholder && text.at(at).isSpace(); ++at)
+        indent += text.at(at);
+    if (indent.isEmpty())
+        return value;
+    QString result = value;
+    result.replace(QLatin1Char('\n'), QLatin1Char('\n') + indent);
+    return result;
+}
+
 }
 
 QString PromptBuilder::glossaryData(const QVector<GlossaryEntry>& entries)
@@ -93,34 +109,40 @@ QStringList PromptBuilder::knownPlaceholders()
     };
 }
 
-QString PromptBuilder::substitute(QString text, const QHash<QString, QString>& variables)
+QString PromptBuilder::substitute(const QString& text, const QHash<QString, QString>& variables)
 {
-    for (auto it = variables.constBegin(); it != variables.constEnd(); ++it) {
-        const QString token = QLatin1Char('{') + it.key() + QLatin1Char('}');
-        const QString& value = it.value();
-        if (!value.contains(QLatin1Char('\n'))) {
-            text.replace(token, value);
+    // One pass over the template: text a placeholder brings in is never scanned
+    // again, and only a brace run naming a variable counts as a placeholder.
+    QString result;
+    result.reserve(text.size());
+    int lineStart = 0;
+    int at = 0;
+    while (at < text.size()) {
+        const QChar character = text.at(at);
+        if (character == QLatin1Char('\n')) {
+            result += character;
+            lineStart = ++at;
             continue;
         }
-        // A multi-line value inherits the indentation of the line holding its
-        // placeholder. Occurrences are rewritten back to front so earlier
-        // positions stay valid.
-        int at = text.lastIndexOf(token);
-        while (at >= 0) {
-            int lineStart = text.lastIndexOf(QLatin1Char('\n'), at) + 1;
-            QString indent;
-            while (lineStart < at && text.at(lineStart).isSpace()) {
-                indent += text.at(lineStart);
-                ++lineStart;
+        if (character == QLatin1Char('{')) {
+            int end = at + 1;
+            while (end < text.size()
+                   && (text.at(end).isLetterOrNumber() || text.at(end) == QLatin1Char('_')))
+                ++end;
+            const bool named = end > at + 1 && end < text.size()
+                && text.at(end) == QLatin1Char('}');
+            const auto value = named ? variables.constFind(text.mid(at + 1, end - at - 1))
+                                     : variables.constEnd();
+            if (value != variables.constEnd()) {
+                result += indentedValue(*value, text, lineStart, at);
+                at = end + 1;
+                continue;
             }
-            QString replacement = value;
-            if (!indent.isEmpty())
-                replacement.replace(QLatin1Char('\n'), QLatin1Char('\n') + indent);
-            text.replace(at, token.size(), replacement);
-            at = text.lastIndexOf(token, at - 1);
         }
+        result += character;
+        ++at;
     }
-    return text;
+    return result;
 }
 
 QHash<QString, QString> PromptBuilder::variablesFor(const TranslationContext& context)

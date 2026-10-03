@@ -63,7 +63,7 @@ public:
     // System prompt for a request that is not a translation.
     static QString systemPrompt(const TranslationContext& context);
     static QStringList knownPlaceholders();
-    static QString substitute(QString text, const QHash<QString, QString>& variables);
+    static QString substitute(const QString& text, const QHash<QString, QString>& variables);
     // Renders the glossary as a JSON array so the model reads the pairs as data.
     // A term with no target is mapped to itself.
     static QString glossaryData(const QVector<GlossaryEntry>& entries);

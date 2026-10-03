@@ -16,6 +16,7 @@ private slots:
     void writesToneEntries();
     void formatsGlossaryAsJson();
     void indentsMultiLineEntries();
+    void keepsPlaceholdersInsideValuesLiteral();
     void marksSelectionInCandidatePrompt();
     void rendersShortTextTemplate();
     void buildsDocumentPrompt();
@@ -204,6 +205,26 @@ void TestPromptBuilder::indentsMultiLineEntries()
     // An unset option removes its whole entry, indentation included.
     single.style.clear();
     QVERIFY(!PromptBuilder::build(single).user.contains(QStringLiteral("- Language style:")));
+}
+
+void TestPromptBuilder::keepsPlaceholdersInsideValuesLiteral()
+{
+    // A value is never scanned again, so a source text naming a placeholder
+    // reaches the model as the user wrote it.
+    const QHash<QString, QString> variables = {
+        {QStringLiteral("source_text"), QStringLiteral("keep {tone} as written")},
+        {QStringLiteral("tone"), QStringLiteral("formal")},
+    };
+    QCOMPARE(PromptBuilder::substitute(QStringLiteral("[{source_text}]"), variables),
+             QStringLiteral("[keep {tone} as written]"));
+
+    // A placeholder the template names itself is still filled.
+    QCOMPARE(PromptBuilder::substitute(QStringLiteral("{source_text} / {tone}"), variables),
+             QStringLiteral("keep {tone} as written / formal"));
+
+    // Braces that belong to the template stay as they are.
+    QCOMPARE(PromptBuilder::substitute(QStringLiteral("{\"old\": \"{tone}\"}"), variables),
+             QStringLiteral("{\"old\": \"formal\"}"));
 }
 
 void TestPromptBuilder::marksSelectionInCandidatePrompt()
