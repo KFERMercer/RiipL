@@ -36,14 +36,7 @@ void HistoryManager::load()
     m_records.clear();
     const QJsonArray array = doc.array();
     for (const QJsonValue& value : array) {
-        const QJsonObject object = value.toObject();
-        TranslationRecord record;
-        record.timestamp = static_cast<qint64>(object.value(QStringLiteral("timestamp")).toDouble());
-        record.sourceLang = object.value(QStringLiteral("source_lang")).toString();
-        record.targetLang = object.value(QStringLiteral("target_lang")).toString();
-        record.source = object.value(QStringLiteral("source")).toString();
-        record.target = object.value(QStringLiteral("target")).toString();
-        record.tone = object.value(QStringLiteral("tone")).toString();
+        const TranslationRecord record = fromJson(value.toObject());
         if (record.isValid())
             m_records.append(record);
     }
@@ -65,16 +58,8 @@ void HistoryManager::flush()
 void HistoryManager::save()
 {
     QJsonArray array;
-    for (const TranslationRecord& record : std::as_const(m_records)) {
-        QJsonObject object;
-        object.insert(QStringLiteral("timestamp"), static_cast<double>(record.timestamp));
-        object.insert(QStringLiteral("source_lang"), record.sourceLang);
-        object.insert(QStringLiteral("target_lang"), record.targetLang);
-        object.insert(QStringLiteral("source"), record.source);
-        object.insert(QStringLiteral("target"), record.target);
-        object.insert(QStringLiteral("tone"), record.tone);
-        array.append(object);
-    }
+    for (const TranslationRecord& record : std::as_const(m_records))
+        array.append(toJson(record));
     QSaveFile file(m_filePath);
     if (!file.open(QIODevice::WriteOnly)) {
         qWarning() << "RiipL: cannot write history file" << file.fileName() << file.errorString();
@@ -87,6 +72,30 @@ void HistoryManager::save()
     }
     if (!file.commit())
         qWarning() << "RiipL: cannot commit history file" << file.fileName() << file.errorString();
+}
+
+QJsonObject HistoryManager::toJson(const TranslationRecord& record)
+{
+    QJsonObject object;
+    object.insert(QStringLiteral("timestamp"), static_cast<double>(record.timestamp));
+    object.insert(QStringLiteral("source_lang"), record.sourceLang);
+    object.insert(QStringLiteral("target_lang"), record.targetLang);
+    object.insert(QStringLiteral("source"), record.source);
+    object.insert(QStringLiteral("target"), record.target);
+    object.insert(QStringLiteral("tone"), record.tone);
+    return object;
+}
+
+TranslationRecord HistoryManager::fromJson(const QJsonObject& object)
+{
+    TranslationRecord record;
+    record.timestamp = static_cast<qint64>(object.value(QStringLiteral("timestamp")).toDouble());
+    record.sourceLang = object.value(QStringLiteral("source_lang")).toString();
+    record.targetLang = object.value(QStringLiteral("target_lang")).toString();
+    record.source = object.value(QStringLiteral("source")).toString();
+    record.target = object.value(QStringLiteral("target")).toString();
+    record.tone = object.value(QStringLiteral("tone")).toString();
+    return record;
 }
 
 void HistoryManager::trim()

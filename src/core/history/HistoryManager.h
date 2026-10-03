@@ -5,6 +5,8 @@
 #include <QTimer>
 #include <QVector>
 
+class QJsonObject;
+
 struct TranslationRecord
 {
     qint64 timestamp = 0;
@@ -47,6 +49,9 @@ private:
     void save();
     void scheduleSave();
     void trim();
+
+    static QJsonObject toJson(const TranslationRecord& record);
+    static TranslationRecord fromJson(const QJsonObject& object);
 
     QString m_filePath;
     QVector<TranslationRecord> m_records;
