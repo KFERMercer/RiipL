@@ -226,11 +226,11 @@ void ApiClient::onFinished()
     QNetworkReply* reply = m_reply;
     m_reply = nullptr;
 
+    const bool overflowed = std::exchange(m_overflowed, false);
     // An aborted reply has nothing left to read.
-    const QByteArray remaining = m_overflowed ? QByteArray() : reply->readAll();
-    if (m_receivedBytes + remaining.size() > kMaxResponseBytes) {
-        m_overflowed = true;
-    } else {
+    const QByteArray remaining = overflowed ? QByteArray() : reply->readAll();
+    const bool tooLarge = overflowed || m_receivedBytes + remaining.size() > kMaxResponseBytes;
+    if (!tooLarge) {
         m_rawBuffer += remaining;
         if (m_streaming) {
             m_streamBuffer += remaining;
@@ -249,68 +249,58 @@ void ApiClient::onFinished()
     m_onError = nullptr;
     reply->deleteLater();
 
-    // Reported before the result reaches its callbacks, so a handler that starts
-    // the next request is not left reported as idle.
-    emit requestFinished();
+    // Settled before the notification, so a slot that starts the next request
+    // cannot change it.
+    Error failure;
+    QString result;
+    bool failed = false;
+    const auto fail = [&failure, &failed](ErrorCode code, const QString& detail = QString()) {
+        failed = true;
+        failure = {code, detail};
+    };
 
-    if (m_overflowed) {
-        m_overflowed = false;
-        if (errorCb)
-            errorCb({ErrorCode::ResponseTooLarge, QString()});
-        return;
-    }
-
-    const bool aborted = reply->error() == QNetworkReply::OperationCanceledError;
-    if (aborted && !m_doneSent) {
-        if (errorCb)
-            errorCb({m_userCancelled ? ErrorCode::Cancelled : ErrorCode::TimedOut, QString()});
-        return;
-    }
-    if (reply->error() != QNetworkReply::NoError && statusCode == 0) {
-        if (errorCb)
-            errorCb({ErrorCode::NetworkFailure, errorString});
-        return;
-    }
-    if (statusCode >= 400 || reply->error() != QNetworkReply::NoError) {
+    if (tooLarge) {
+        fail(ErrorCode::ResponseTooLarge);
+    } else if (reply->error() == QNetworkReply::OperationCanceledError && !m_doneSent) {
+        fail(m_userCancelled ? ErrorCode::Cancelled : ErrorCode::TimedOut);
+    } else if (reply->error() != QNetworkReply::NoError && statusCode == 0) {
+        fail(ErrorCode::NetworkFailure, errorString);
+    } else if (statusCode >= 400 || reply->error() != QNetworkReply::NoError) {
         const QString serverMessage = apiErrorMessage(QString::fromUtf8(m_rawBuffer));
-        if (!errorCb)
-            return;
         if (!serverMessage.isEmpty())
-            errorCb({ErrorCode::ServerMessage, serverMessage});
+            fail(ErrorCode::ServerMessage, serverMessage);
         else if (statusCode > 0)
-            errorCb({ErrorCode::HttpStatus, QString::number(statusCode)});
+            fail(ErrorCode::HttpStatus, QString::number(statusCode));
         else
-            errorCb({ErrorCode::NetworkFailure, QString()});
-        return;
-    }
-
-    QString result = m_accumulated;
-    if (m_streaming) {
+            fail(ErrorCode::NetworkFailure);
+    } else if (m_streaming) {
         // A stream without content failed like an unusable body, not as an empty
         // translation.
-        if (result.isEmpty()) {
-            if (errorCb)
-                errorCb({ErrorCode::InvalidResponse, QString()});
-            return;
-        }
+        result = m_accumulated;
+        if (result.isEmpty())
+            fail(ErrorCode::InvalidResponse);
     } else {
         const QJsonDocument doc = QJsonDocument::fromJson(m_rawBuffer);
         if (!doc.isObject()) {
-            if (errorCb)
-                errorCb({ErrorCode::InvalidResponse, QString()});
-            return;
+            fail(ErrorCode::InvalidResponse);
+        } else {
+            const QJsonArray choices = doc.object().value(QStringLiteral("choices")).toArray();
+            if (choices.isEmpty())
+                fail(ErrorCode::NoChoices);
+            else
+                result = choices.first().toObject()
+                             .value(QStringLiteral("message"))
+                             .toObject()
+                             .value(QStringLiteral("content"))
+                             .toString();
         }
-        const QJsonArray choices = doc.object().value(QStringLiteral("choices")).toArray();
-        if (choices.isEmpty()) {
-            if (errorCb)
-                errorCb({ErrorCode::NoChoices, QString()});
-            return;
-        }
-        result = choices.first().toObject()
-                     .value(QStringLiteral("message"))
-                     .toObject()
-                     .value(QStringLiteral("content"))
-                     .toString();
+    }
+
+    emit requestFinished();
+    if (failed) {
+        if (errorCb)
+            errorCb(failure);
+        return;
     }
     if (done)
         done(result);

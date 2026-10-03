@@ -14,33 +14,43 @@
 
 namespace {
 
-// Serves one canned reply to the request that reaches it.
+// Serves the queued replies to the requests that reach it, one per connection.
 class OneShotServer
 {
 public:
-    bool listen() { return m_server.listen(QHostAddress::LocalHost); }
-    quint16 port() const { return m_server.serverPort(); }
-
-    void serve(const QByteArray& response)
+    OneShotServer()
     {
-        QObject::connect(&m_server, &QTcpServer::newConnection, &m_server, [this, response]() {
+        QObject::connect(&m_server, &QTcpServer::newConnection, &m_server, [this]() {
             QTcpSocket* socket = m_server.nextPendingConnection();
-            QObject::connect(socket, &QTcpSocket::readyRead, socket, [socket, response]() {
+            QObject::connect(socket, &QTcpSocket::readyRead, socket, [this, socket]() {
                 socket->readAll();
-                socket->write(response);
+                socket->write(m_replies.isEmpty() ? QByteArray() : m_replies.takeFirst());
                 socket->flush();
                 socket->disconnectFromHost();
             });
         });
     }
 
+    bool listen() { return m_server.listen(QHostAddress::LocalHost); }
+    quint16 port() const { return m_server.serverPort(); }
+
+    void serve(const QByteArray& response) { m_replies.append(response); }
+
 private:
     QTcpServer m_server;
+    QList<QByteArray> m_replies;
 };
 
 QByteArray jsonReply(const QByteArray& body)
 {
     return QByteArrayLiteral("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: ")
+        + QByteArray::number(body.size()) + QByteArrayLiteral("\r\n\r\n") + body;
+}
+
+// Closes the connection with the reply, so the next request opens its own.
+QByteArray closingJsonReply(const QByteArray& body)
+{
+    return QByteArrayLiteral("HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Type: application/json\r\nContent-Length: ")
         + QByteArray::number(body.size()) + QByteArrayLiteral("\r\n\r\n") + body;
 }
 
@@ -75,6 +85,7 @@ private slots:
     void parsesCustomHeaderLines();
     void refusesUnusableBaseUrl();
     void reportsIdleBeforeDelivering();
+    void keepsResultWhenHandlerStartsNextRequest();
     void readsTrailingStreamFrame();
     void rejectsStreamWithoutContent();
     void dropsOversizedResponse();
@@ -207,6 +218,41 @@ void TestApiClient::reportsIdleBeforeDelivering()
 
     QTRY_COMPARE_WITH_TIMEOUT(order.size(), 2, 5000);
     QCOMPARE(order, QStringList({QStringLiteral("finished"), QStringLiteral("done")}));
+}
+
+// A slot that starts the next request must not change what the finished one delivers.
+void TestApiClient::keepsResultWhenHandlerStartsNextRequest()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    ConfigManager::createInstance(TestSupport::tempDir());
+
+    OneShotServer server;
+    QVERIFY(server.listen());
+    server.serve(closingJsonReply(QByteArrayLiteral(R"({"choices":[{"message":{"content":"first"}}]})")));
+    server.serve(closingJsonReply(QByteArrayLiteral(R"({"choices":[{"message":{"content":"second"}}]})")));
+    ConfigManager::instance()->setValue(
+        Keys::apiBaseUrl, QStringLiteral("http://127.0.0.1:%1/v1").arg(server.port()));
+
+    ApiClient client;
+    QStringList results;
+    std::optional<ApiClient::Error> error;
+    bool nextRequestSent = false;
+    QObject::connect(&client, &ApiClient::requestFinished, &client, [&]() {
+        if (nextRequestSent)
+            return;
+        nextRequestSent = true;
+        client.sendChatRequest(chatBody(),
+                               [&results](const QString& text) { results << text; },
+                               nullptr, nullptr);
+    });
+    client.sendChatRequest(chatBody(),
+                           [&results](const QString& text) { results << text; },
+                           nullptr,
+                           [&error](const ApiClient::Error& failure) { error = failure; });
+
+    QTRY_COMPARE_WITH_TIMEOUT(results.size(), 2, 5000);
+    QVERIFY2(!error.has_value(), "the next request must not change this one's outcome");
+    QCOMPARE(results, QStringList({QStringLiteral("first"), QStringLiteral("second")}));
 }
 
 // The last frame arrives without a closing newline when the connection ends.
