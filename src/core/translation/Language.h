@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <iterator>
-#include <QMap>
 #include <QString>
 #include <QVector>
 
@@ -95,43 +94,50 @@ inline const char* labelFor(const QString& code)
 // punctuation and combining marks report Common or Inherited (an Arabic comma,
 // a Devanagari danda, the katakana prolonged sound mark), so text made up
 // solely of them yields no language. Latin-script languages share one alphabet
-// and cannot be told apart here.
+// and cannot be told apart here. A tie goes to the language listed first.
 inline QString guessFromScript(const QString& text)
 {
-    QMap<QString, int> counts;
+    enum Language : int {
+        Arabic, Bengali, Tibetan, Gujarati, Hebrew, Hindi, Japanese, Khmer,
+        Korean, Mongolian, Burmese, Russian, Tamil, Telugu, Thai, Chinese,
+        LanguageCount
+    };
+    static constexpr const char* kCodes[LanguageCount] = {
+        "ar", "bn", "bo", "gu", "he", "hi", "ja", "km",
+        "ko", "mn", "my", "ru", "ta", "te", "th", "zh"
+    };
+
+    int counts[LanguageCount] = {};
     const QList<uint> codePoints = text.toUcs4();
     for (uint codePoint : codePoints) {
         switch (QChar::script(codePoint)) {
-        case QChar::Script_Cyrillic: ++counts[QStringLiteral("ru")]; break;
-        case QChar::Script_Hebrew: ++counts[QStringLiteral("he")]; break;
-        case QChar::Script_Arabic: ++counts[QStringLiteral("ar")]; break;
-        case QChar::Script_Devanagari: ++counts[QStringLiteral("hi")]; break;
-        case QChar::Script_Bengali: ++counts[QStringLiteral("bn")]; break;
-        case QChar::Script_Gujarati: ++counts[QStringLiteral("gu")]; break;
-        case QChar::Script_Tamil: ++counts[QStringLiteral("ta")]; break;
-        case QChar::Script_Telugu: ++counts[QStringLiteral("te")]; break;
-        case QChar::Script_Thai: ++counts[QStringLiteral("th")]; break;
-        case QChar::Script_Tibetan: ++counts[QStringLiteral("bo")]; break;
-        case QChar::Script_Myanmar: ++counts[QStringLiteral("my")]; break;
-        case QChar::Script_Hangul: ++counts[QStringLiteral("ko")]; break;
-        case QChar::Script_Khmer: ++counts[QStringLiteral("km")]; break;
-        case QChar::Script_Mongolian: ++counts[QStringLiteral("mn")]; break;
+        case QChar::Script_Arabic: ++counts[Arabic]; break;
+        case QChar::Script_Bengali: ++counts[Bengali]; break;
+        case QChar::Script_Tibetan: ++counts[Tibetan]; break;
+        case QChar::Script_Gujarati: ++counts[Gujarati]; break;
+        case QChar::Script_Hebrew: ++counts[Hebrew]; break;
+        case QChar::Script_Devanagari: ++counts[Hindi]; break;
         case QChar::Script_Hiragana:
-        case QChar::Script_Katakana: ++counts[QStringLiteral("ja")]; break;
-        case QChar::Script_Han: ++counts[QStringLiteral("zh")]; break;
+        case QChar::Script_Katakana: ++counts[Japanese]; break;
+        case QChar::Script_Khmer: ++counts[Khmer]; break;
+        case QChar::Script_Hangul: ++counts[Korean]; break;
+        case QChar::Script_Mongolian: ++counts[Mongolian]; break;
+        case QChar::Script_Myanmar: ++counts[Burmese]; break;
+        case QChar::Script_Cyrillic: ++counts[Russian]; break;
+        case QChar::Script_Tamil: ++counts[Tamil]; break;
+        case QChar::Script_Telugu: ++counts[Telugu]; break;
+        case QChar::Script_Thai: ++counts[Thai]; break;
+        case QChar::Script_Han: ++counts[Chinese]; break;
         default: break;
         }
     }
 
-    QString best;
-    int bestCount = 0;
-    for (auto it = counts.constBegin(); it != counts.constEnd(); ++it) {
-        if (it.value() > bestCount) {
-            best = it.key();
-            bestCount = it.value();
-        }
+    int best = -1;
+    for (int i = 0; i < LanguageCount; ++i) {
+        if (counts[i] > 0 && (best < 0 || counts[i] > counts[best]))
+            best = i;
     }
-    return best;
+    return best < 0 ? QString() : QString::fromLatin1(kCodes[best]);
 }
 
 // Resolves the "auto" pseudo-language into a concrete code for operations that

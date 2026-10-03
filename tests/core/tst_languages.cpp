@@ -10,6 +10,7 @@ private slots:
     void guessesLanguageFromScript();
     void detectsSupplementaryPlanes();
     void ignoresScriptlessAttachments();
+    void breaksTiesDeterministically();
     void resolveAutoExcludesTarget();
     void exposesTranslatableNames();
 };
@@ -69,6 +70,19 @@ void TestLanguages::ignoresScriptlessAttachments()
     QCOMPARE(guessFromScript(QStringLiteral("\u30ab\u30bf\u30ab\u30ca\u30fb\u30c6\u30ad\u30b9\u30c8")), QStringLiteral("ja"));
     QCOMPARE(guessFromScript(QStringLiteral("\u4e2d\u6587\u3002\u6d4b\u8bd5")), QStringLiteral("zh"));
     QCOMPARE(guessFromScript(QStringLiteral("\u0645\u0631\u062d\u0628\u0627 abc")), QStringLiteral("ar"));
+}
+
+void TestLanguages::breaksTiesDeterministically()
+{
+    using namespace Languages;
+    // Hiragana and katakana count towards one language, so a text holding as many
+    // Han characters as kana resolves to Japanese rather than Chinese.
+    QCOMPARE(guessFromScript(QStringLiteral("あ漢")), QStringLiteral("ja"));
+    QCOMPARE(guessFromScript(QStringLiteral("ア漢")), QStringLiteral("ja"));
+    QCOMPARE(guessFromScript(QStringLiteral("あア漢")), QStringLiteral("ja"));
+    // When two languages tie, the one listed first wins.
+    QCOMPARE(guessFromScript(QStringLiteral("אב Пр")), QStringLiteral("he"));
+    QCOMPARE(guessFromScript(QStringLiteral("Пр אב")), QStringLiteral("he"));
 }
 
 void TestLanguages::resolveAutoExcludesTarget()
