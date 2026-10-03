@@ -28,7 +28,6 @@ signals:
     void candidateChosen(int start, int length, const QString& replacement);
 
 protected:
-    void keyPressEvent(QKeyEvent* event) override;
     void hideEvent(QHideEvent* event) override;
 
 private:

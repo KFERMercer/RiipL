@@ -2,7 +2,6 @@
 
 #include "core/translation/TranslationEngine.h"
 
-#include <QKeyEvent>
 #include <QLabel>
 #include <QListWidget>
 #include <QVBoxLayout>
@@ -94,13 +93,4 @@ void CandidatePopup::hideEvent(QHideEvent* event)
 {
     m_engine->cancelCandidates();
     QWidget::hideEvent(event);
-}
-
-void CandidatePopup::keyPressEvent(QKeyEvent* event)
-{
-    if (event->key() == Qt::Key_Escape) {
-        close();
-        return;
-    }
-    QWidget::keyPressEvent(event);
 }

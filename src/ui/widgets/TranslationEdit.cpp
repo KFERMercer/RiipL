@@ -3,6 +3,7 @@
 #include "utils/TextUtils.h"
 
 #include <QAbstractTextDocumentLayout>
+#include <QApplication>
 #include <QMouseEvent>
 #include <QScrollBar>
 #include <QTextDocument>
@@ -88,7 +89,8 @@ void TranslationEdit::mousePressEvent(QMouseEvent* event)
 void TranslationEdit::mouseReleaseEvent(QMouseEvent* event)
 {
     if (m_pressValid && event->button() == Qt::LeftButton
-        && (event->pos() - m_pressPos).manhattanLength() <= 4) {
+        && (event->pos() - m_pressPos).manhattanLength()
+            <= QApplication::startDragDistance()) {
         m_pressValid = false;
         const QTextCursor cursor = m_wordCursor;
         const QString word = cursor.selectedText().trimmed();
