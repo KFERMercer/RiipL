@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+#include <iterator>
 #include <QMap>
 #include <QString>
 #include <QVector>
@@ -63,11 +65,12 @@ inline const QVector<LangItem>& all()
 inline int indexOf(const QString& code)
 {
     const QVector<LangItem>& list = all();
-    for (int i = 0; i < list.size(); ++i) {
-        if (list.at(i).code == code)
-            return i;
-    }
-    return -1;
+    const auto found = std::find_if(list.cbegin(), list.cend(),
+                                    [&code](const LangItem& lang) {
+                                        return lang.code == code;
+                                    });
+    return found == list.cend() ? -1
+                                : static_cast<int>(std::distance(list.cbegin(), found));
 }
 
 inline QString englishName(const QString& code)

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+#include <iterator>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QString>
@@ -80,11 +82,13 @@ inline QVector<ApiPreset> fromJson(const QJsonArray& stored)
 // Index of the first preset named \p name, or -1.
 inline int indexOf(const QVector<ApiPreset>& presets, const QString& name)
 {
-    for (qsizetype i = 0; i < presets.size(); ++i) {
-        if (presets.at(i).name == name)
-            return int(i);
-    }
-    return -1;
+    const auto found = std::find_if(presets.cbegin(), presets.cend(),
+                                    [&name](const ApiPreset& preset) {
+                                        return preset.name == name;
+                                    });
+    return found == presets.cend()
+        ? -1
+        : static_cast<int>(std::distance(presets.cbegin(), found));
 }
 
 // Index of the preset matching \p values, or -1 when the settings have drifted

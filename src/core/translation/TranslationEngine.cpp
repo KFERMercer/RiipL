@@ -4,6 +4,7 @@
 #include "core/config/Defaults.h"
 #include "utils/TextUtils.h"
 
+#include <algorithm>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -282,14 +283,12 @@ QVector<TranslationEngine::CandidateGroup> TranslationEngine::parseCandidateResp
                                                    : QJsonArray{options};
         for (const QJsonValue& option : array) {
             const QString text = option.toString().trimmed();
-            const auto alreadyListed = [&group](const QString& text) {
-                for (const CandidateOption& listed : group.options) {
-                    if (listed.text == text)
-                        return true;
-                }
-                return false;
-            };
-            if (!text.isEmpty() && text != target && !alreadyListed(text))
+            const bool alreadyListed = std::find_if(
+                group.options.cbegin(), group.options.cend(),
+                [&text](const CandidateOption& listed) {
+                    return listed.text == text;
+                }) != group.options.cend();
+            if (!text.isEmpty() && text != target && !alreadyListed)
                 group.options.append({text, -1, 0});
         }
         if (!group.options.isEmpty())
