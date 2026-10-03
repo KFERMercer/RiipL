@@ -26,15 +26,20 @@ int main(int argc, char* argv[])
     font.setPointSize(config->intValue(Keys::uiFontSize));
     app.setFont(font);
 
-    QObject::connect(config, &ConfigManager::changed, &app,
+    // The translator dies before the application, so it is the connection's context.
+    QObject::connect(config, &ConfigManager::changed, &translator,
         [&translator, config](const QString& key) {
             if (key == Keys::uiLanguage)
                 translator.apply(config->uiLocale());
-            else if (key == Keys::uiFontSize) {
-                QFont updated = QApplication::font();
-                updated.setPointSize(config->intValue(key));
-                QApplication::setFont(updated);
-            }
+        });
+
+    QObject::connect(config, &ConfigManager::changed, &app,
+        [config](const QString& key) {
+            if (key != Keys::uiFontSize)
+                return;
+            QFont updated = QApplication::font();
+            updated.setPointSize(config->intValue(key));
+            QApplication::setFont(updated);
         });
 
     SingleInstance singleInstance;

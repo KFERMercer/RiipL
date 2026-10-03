@@ -1,12 +1,16 @@
 #pragma once
 
 #include <QLocale>
+#include <QObject>
 #include <QString>
 #include <QTranslator>
 
-// Owns the translators for the application catalog and the Qt built-in one.
-class AppTranslator
+// Owns the translators for the application catalog and the Qt built-in one; a
+// QObject so a connection can be bound to its lifetime.
+class AppTranslator : public QObject
 {
+    Q_OBJECT
+
 public:
     explicit AppTranslator(const QString& applicationCatalogRoot = QStringLiteral(":/i18n"));
 
