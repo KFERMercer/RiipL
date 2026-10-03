@@ -60,7 +60,7 @@ private:
         NothingToExport,
         Exported,
         CannotWrite,
-        Failure
+        Failure,
     };
 
     void setStatus(Status status, const QString& argument = QString());

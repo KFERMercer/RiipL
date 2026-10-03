@@ -14,7 +14,11 @@ public:
     // Startup arbitration outcome. Primary owns both the lock file and the
     // activation listener, Secondary defers to the already running instance,
     // and Error means the lock was won but the listener could not be created.
-    enum class Role { Primary, Secondary, Error };
+    enum class Role {
+        Primary,
+        Secondary,
+        Error,
+    };
 
     explicit SingleInstance(QObject* parent = nullptr);
 

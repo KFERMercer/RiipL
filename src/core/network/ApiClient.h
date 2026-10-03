@@ -33,7 +33,7 @@ public:
         InvalidResponse,
         NoChoices,
         NothingToTranslate,
-        NothingToLookUp
+        NothingToLookUp,
     };
 
     struct Error
