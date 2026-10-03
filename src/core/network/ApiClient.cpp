@@ -21,6 +21,13 @@ const QString kChatCompletionsPath = QStringLiteral("/chat/completions");
 // Cap on a response body: a translation never comes close, so a larger body is
 // not worth buffering.
 constexpr qsizetype kMaxResponseBytes = 4 * 1024 * 1024;
+
+bool isRequestableScheme(const QUrl& url)
+{
+    const QString scheme = url.scheme();
+    return scheme == QLatin1String("http") || scheme == QLatin1String("https");
+}
+
 }
 
 ApiClient::ApiClient(QObject* parent)
@@ -90,9 +97,20 @@ void ApiClient::sendChatRequest(const QJsonObject& body,
         return;
     }
 
+    // Refused before a request exists: a relative or non-HTTP endpoint cannot
+    // carry the key.
+    const QUrl endpoint = normalizedBaseUrl(baseUrl);
+    if (!endpoint.isValid() || endpoint.isRelative() || endpoint.host().isEmpty()
+        || !isRequestableScheme(endpoint)) {
+        if (onError)
+            onError({ErrorCode::BaseUrlInvalid, QString()});
+        emit requestFinished();
+        return;
+    }
+
     const QString apiKeyValue = config->stringValue(Keys::apiKey).trimmed();
 
-    QNetworkRequestFactory factory{normalizedBaseUrl(baseUrl)};
+    QNetworkRequestFactory factory{endpoint};
     if (!apiKeyValue.isEmpty())
         factory.setBearerToken(apiKeyValue.toUtf8());
     // Abort the request when the server exchanges no data within the
@@ -304,6 +322,8 @@ QString ApiClient::Error::text() const
     switch (code) {
     case ErrorCode::BaseUrlMissing:
         return tr("API base URL is not configured");
+    case ErrorCode::BaseUrlInvalid:
+        return tr("API base URL must be an absolute http or https URL");
     case ErrorCode::Cancelled:
         return tr("Translation cancelled");
     case ErrorCode::TimedOut:

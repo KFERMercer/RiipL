@@ -73,6 +73,7 @@ private slots:
     void normalizesBaseUrl();
     void requestsDerivedEndpoint();
     void parsesCustomHeaderLines();
+    void refusesUnusableBaseUrl();
     void reportsIdleBeforeDelivering();
     void readsTrailingStreamFrame();
     void rejectsStreamWithoutContent();
@@ -161,6 +162,27 @@ void TestApiClient::parsesCustomHeaderLines()
     QCOMPARE(headers.valueAt(1), QByteArrayView("Bearer secret"));
     QCOMPARE(headers.nameAt(2), QByteArrayView("x-retry"));
     QCOMPARE(headers.valueAt(2), QByteArrayView("3"));
+}
+
+// An endpoint that cannot carry the request is named before one is built.
+void TestApiClient::refusesUnusableBaseUrl()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    ConfigManager::createInstance(TestSupport::tempDir());
+
+    ApiClient client;
+    for (const QString& baseUrl : {QStringLiteral("ftp://example.com/v1"),
+                                   QStringLiteral("/v1"),
+                                   QStringLiteral("not a url")}) {
+        ConfigManager::instance()->setValue(Keys::apiBaseUrl, baseUrl);
+        QSignalSpy finishedSpy(&client, &ApiClient::requestFinished);
+        std::optional<ApiClient::Error> error;
+        client.sendChatRequest(chatBody(), nullptr, nullptr,
+                               [&error](const ApiClient::Error& failure) { error = failure; });
+        QCOMPARE(finishedSpy.count(), 1);
+        QVERIFY(error.has_value());
+        QCOMPARE(error->code, ApiClient::ErrorCode::BaseUrlInvalid);
+    }
 }
 
 // The client reports itself idle before it hands the result over.

@@ -22,6 +22,7 @@ public:
     // language in force when it is shown rather than when the request failed.
     enum class ErrorCode {
         BaseUrlMissing,
+        BaseUrlInvalid,
         Cancelled,
         TimedOut,
         // detail: the Qt error string.
