@@ -46,9 +46,13 @@ signals:
 
 private:
     void load();
+    // Rewrites the file from memory, dropping lines no record accounts for.
     void save();
+    void append(const TranslationRecord& record);
     void scheduleSave();
     void trim();
+    // Waits for the appended lines to outnumber an eighth of the cap, so a rewrite stays rare.
+    bool shouldCompact() const;
 
     static QJsonObject toJson(const TranslationRecord& record);
     static TranslationRecord fromJson(const QJsonObject& object);
@@ -56,5 +60,7 @@ private:
     QString m_filePath;
     QVector<TranslationRecord> m_records;
     int m_maxRecords = 500;
+    // Records the file holds: appends raise it, a rewrite resets it.
+    int m_fileRecords = 0;
     QTimer m_saveTimer;
 };

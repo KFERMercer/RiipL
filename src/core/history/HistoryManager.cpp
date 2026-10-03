@@ -2,12 +2,9 @@
 
 #include <QDebug>
 #include <QFile>
-#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QJsonParseError>
 #include <QSaveFile>
-#include <utility>
 
 HistoryManager::HistoryManager(const QString& filePath, QObject* parent)
     : QObject(parent)
@@ -24,22 +21,29 @@ HistoryManager::~HistoryManager()
     flush();
 }
 
+// One record per line, oldest first, so a new record costs one append.
 void HistoryManager::load()
 {
     QFile file(m_filePath);
     if (!file.open(QIODevice::ReadOnly))
         return;
-    QJsonParseError error;
-    const QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &error);
-    if (error.error != QJsonParseError::NoError || !doc.isArray())
-        return;
+    const QByteArray data = file.readAll();
+    file.close();
+
     m_records.clear();
-    const QJsonArray array = doc.array();
-    for (const QJsonValue& value : array) {
-        const TranslationRecord record = fromJson(value.toObject());
+    QVector<TranslationRecord> oldestFirst;
+    // A line a crash cut short fails to parse and is skipped.
+    for (const QByteArray& line : data.split('\n')) {
+        if (line.trimmed().isEmpty())
+            continue;
+        const TranslationRecord record = fromJson(QJsonDocument::fromJson(line).object());
         if (record.isValid())
-            m_records.append(record);
+            oldestFirst.append(record);
     }
+    m_records.reserve(oldestFirst.size());
+    for (auto it = oldestFirst.crbegin(); it != oldestFirst.crend(); ++it)
+        m_records.append(*it);
+    m_fileRecords = m_records.size();
 }
 
 void HistoryManager::scheduleSave()
@@ -57,21 +61,45 @@ void HistoryManager::flush()
 
 void HistoryManager::save()
 {
-    QJsonArray array;
-    for (const TranslationRecord& record : std::as_const(m_records))
-        array.append(toJson(record));
     QSaveFile file(m_filePath);
     if (!file.open(QIODevice::WriteOnly)) {
         qWarning() << "RiipL: cannot write history file" << file.fileName() << file.errorString();
         return;
     }
-    const QByteArray data = QJsonDocument(array).toJson(QJsonDocument::Indented);
+    QByteArray data;
+    for (auto it = m_records.crbegin(); it != m_records.crend(); ++it)
+        data += QJsonDocument(toJson(*it)).toJson(QJsonDocument::Compact) + '\n';
     if (file.write(data) != data.size()) {
         qWarning() << "RiipL: cannot write history file" << file.fileName() << file.errorString();
         return;
     }
-    if (!file.commit())
+    if (!file.commit()) {
         qWarning() << "RiipL: cannot commit history file" << file.fileName() << file.errorString();
+        return;
+    }
+    m_fileRecords = m_records.size();
+}
+
+void HistoryManager::append(const TranslationRecord& record)
+{
+    QFile file(m_filePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Append)) {
+        qWarning() << "RiipL: cannot append to history file" << file.fileName()
+                   << file.errorString();
+        return;
+    }
+    const QByteArray line = QJsonDocument(toJson(record)).toJson(QJsonDocument::Compact) + '\n';
+    if (file.write(line) != line.size()) {
+        qWarning() << "RiipL: cannot append to history file" << file.fileName()
+                   << file.errorString();
+        return;
+    }
+    ++m_fileRecords;
+}
+
+bool HistoryManager::shouldCompact() const
+{
+    return m_fileRecords * 8 > m_maxRecords * 9;
 }
 
 QJsonObject HistoryManager::toJson(const TranslationRecord& record)
@@ -110,7 +138,9 @@ void HistoryManager::addRecord(const TranslationRecord& record)
         return;
     m_records.prepend(record);
     trim();
-    scheduleSave();
+    append(record);
+    if (shouldCompact())
+        scheduleSave();
     emit changed();
 }
 
