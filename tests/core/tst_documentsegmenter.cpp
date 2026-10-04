@@ -66,8 +66,11 @@ private slots:
     void acceptsAnEchoWrappedInLines();
     void rejectsInvalidKeySets();
     void rejectsAnswersThatAreNotAWindow();
+    void givesUpOnAnAnswerWithoutEntries();
     void decodesEscapedValues();
     void keepsNewlineInsideValue();
+    void readsQuotesTheAnswerLeftUnescaped();
+    void salvagesValuesTheAnswerLeftUnclosed();
     void mapsRepeatedLinesOntoFoldedLines();
     void stripsCodeFenceFromAnswer();
     void parsesAnswerOfAWindowOfFences();
@@ -576,6 +579,23 @@ void TestDocumentSegmenter::rejectsAnswersThatAreNotAWindow()
     }
 }
 
+// A long answer of quoted words names no line, and the scan gives up on it.
+void TestDocumentSegmenter::givesUpOnAnAnswerWithoutEntries()
+{
+    const DocumentWindow window = windowOf({QStringLiteral("a"), QStringLiteral("b")});
+
+    QStringList words;
+    for (int index = 0; index < 2000; ++index)
+        words << QStringLiteral("\"word %1\"").arg(index);
+
+    // The comma closing the answer is its only punctuation, so every candidate
+    // key reads up to it; without it the whole answer is one unterminated run.
+    const QString quoted = words.join(QLatin1Char(' '));
+    QVERIFY(quoted.size() > 20000);
+    QVERIFY(!DocumentSegmenter::splitTranslation(window, quoted + QLatin1Char(',')).has_value());
+    QVERIFY(!DocumentSegmenter::splitTranslation(window, quoted).has_value());
+}
+
 void TestDocumentSegmenter::decodesEscapedValues()
 {
     const DocumentWindow window = windowOf({QStringLiteral("a"), QStringLiteral("b"),
@@ -601,6 +621,76 @@ void TestDocumentSegmenter::keepsNewlineInsideValue()
         window, QStringLiteral("{\"1\":\"第一行\n续行\",\"2\":\"第二行\"}"));
     QVERIFY(lines.has_value());
     QCOMPARE(*lines, QStringList({QStringLiteral("第一行\n续行"), QStringLiteral("第二行")}));
+}
+
+// A model that leaves a value's quotes unescaped still gets the whole line
+// across: a quote stays in the value while no entry follows the punctuation
+// behind it.
+void TestDocumentSegmenter::readsQuotesTheAnswerLeftUnescaped()
+{
+    const DocumentWindow window =
+        windowOf({QStringLiteral("He said \"hi\", then left."),
+                  QStringLiteral("Use print(\"hello\", \"world\")."),
+                  QStringLiteral("Time is \"12:30\" now.")});
+
+    const std::optional<QStringList> lines = DocumentSegmenter::splitTranslation(
+        window,
+        QStringLiteral("{\"1\": \"He said \"hi\", then left.\",\n"
+                       " \"2\": \"使用 print(\"hello\", \"world\")。\",\n"
+                       " \"3\": \"现在是 \"12:30\"。\"}"));
+    QVERIFY(lines.has_value());
+    QCOMPARE(*lines, QStringList({QStringLiteral("He said \"hi\", then left."),
+                                  QStringLiteral("使用 print(\"hello\", \"world\")。"),
+                                  QStringLiteral("现在是 \"12:30\"。")}));
+
+    // A lone entry has no next entry to look for behind its comma.
+    const std::optional<QStringList> lone = DocumentSegmenter::splitTranslation(
+        windowOf({QStringLiteral("a")}), QStringLiteral("{\"1\": \"He said \"hi\", then left.\"}"));
+    QVERIFY(lone.has_value());
+    QCOMPARE(*lone, QStringList({QStringLiteral("He said \"hi\", then left.")}));
+
+    // The quote closing a value keeps ending it, so the keys stay whole.
+    const std::optional<QStringList> pair = DocumentSegmenter::splitTranslation(
+        windowOf({QStringLiteral("a"), QStringLiteral("b")}),
+        QStringLiteral("{\"1\": \"他说：\"你好\"\", \"2\": \"第二行\"}"));
+    QVERIFY(pair.has_value());
+    QCOMPARE(*pair, QStringList({QStringLiteral("他说：\"你好\""), QStringLiteral("第二行")}));
+}
+
+// A model that drops the quote closing a value leaves it unclosed; its text
+// runs up to the entry behind it, so the line is not lost.
+void TestDocumentSegmenter::salvagesValuesTheAnswerLeftUnclosed()
+{
+    const DocumentWindow window = windowOf({QStringLiteral("a"), QStringLiteral("b"),
+                                            QStringLiteral("c")});
+
+    const std::optional<QStringList> lines = DocumentSegmenter::splitTranslation(
+        window,
+        QStringLiteral("{\n"
+                       "    \"1\": \"第一行\",\n"
+                       "    \"2\": \"他说：‘你好’。”,\n"
+                       "    \"3\": \"第三行\"\n"
+                       "}"));
+    QVERIFY(lines.has_value());
+    QCOMPARE(*lines, QStringList({QStringLiteral("第一行"), QStringLiteral("他说：‘你好’。”"),
+                                  QStringLiteral("第三行")}));
+
+    // The comma separating the two members is not part of the value, and a
+    // value left unclosed at the end of the answer ends with the text.
+    const std::optional<QStringList> last = DocumentSegmenter::splitTranslation(
+        windowOf({QStringLiteral("a"), QStringLiteral("b")}),
+        QStringLiteral("{\"1\": \"第一行\", \"2\": \"他说：‘你好’。”}"));
+    QVERIFY(last.has_value());
+    QCOMPARE(*last, QStringList({QStringLiteral("第一行"), QStringLiteral("他说：‘你好’。”")}));
+
+    // Only an entry the answer still owes ends a value, so a quoted word with a
+    // colon behind it stays part of the line it was written in.
+    const std::optional<QStringList> keyed = DocumentSegmenter::splitTranslation(
+        windowOf({QStringLiteral("a"), QStringLiteral("b")}),
+        QStringLiteral("{\"1\": \"字段 \"code\": \"x\" 结束\", \"2\": \"第二行\"}"));
+    QVERIFY(keyed.has_value());
+    QCOMPARE(*keyed, QStringList({QStringLiteral("字段 \"code\": \"x\" 结束"),
+                                  QStringLiteral("第二行")}));
 }
 
 void TestDocumentSegmenter::mapsRepeatedLinesOntoFoldedLines()

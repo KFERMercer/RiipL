@@ -66,8 +66,9 @@ public:
     // Renders the glossary as a JSON array so the model reads the pairs as data.
     // A term with no target is mapped to itself.
     static QString glossaryData(const QVector<GlossaryEntry>& entries);
-    // Renders a window as a JSON object keyed by line number, so the model reads
-    // the line count as data rather than as prose.
+    // Renders lines as a JSON object keyed by line number, in line order, so the
+    // model reads the line count as data. Each value is a JSON string, which
+    // keeps a line's quotes and backslashes inside it.
     static QString documentWindowData(const QStringList& lines);
 
 private:

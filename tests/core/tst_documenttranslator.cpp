@@ -189,6 +189,7 @@ private slots:
     void init();
     void translatesEveryWindowInOrder();
     void foldsRepeatsAcrossBlankLines();
+    void sendsQuotedLinesAsEscapedValues();
     void sendsWindowsUpToTheConfiguredConcurrency();
     void capsConcurrencyAfterTheLastWindow();
     void runsSerialWhenConcurrencyIsOff();
@@ -321,6 +322,37 @@ void TestDocumentTranslator::foldsRepeatsAcrossBlankLines()
     // blank lines the document holds come back with it.
     QCOMPARE(finished, QStringLiteral("译文 aaa\n译文 bbb\n\n译文 bbb\n\n\n译文 bbb\n译文 ccc\n"));
 }
+
+// Original text that would break the JSON of a request is escaped in the value it
+// is sent as.
+void TestDocumentTranslator::sendsQuotedLinesAsEscapedValues()
+{
+    const QStringList lines = {QStringLiteral("\"I'm glad you could come to the party,\" He said."),
+                               QStringLiteral("Path: C:\\tmp\\a.txt")};
+    const QVector<DocumentWindow> windows =
+        DocumentSegmenter::partition(lines.join(QLatin1Char('\n')));
+    QCOMPARE(windows.size(), 1);
+
+    TranslationContext context;
+    DocumentTranslator translator;
+    QString finished;
+    connect(&translator, &DocumentTranslator::finished, this,
+            [&finished](const QString& text) { finished = text; });
+
+    translator.start(windows, context);
+    QTRY_VERIFY(!finished.isEmpty());
+    QCOMPARE(m_api.requests, 1);
+
+    const QString escapedQuote =
+        QStringLiteral("\"1\": \"\\\"I'm glad you could come to the party,\\\" He said.\"");
+    QVERIFY2(m_api.prompts.first().contains(escapedQuote), qPrintable(m_api.prompts.first()));
+    QCOMPARE(m_api.windows.first().value(QStringLiteral("1")).toString(), lines.at(0));
+    QCOMPARE(m_api.windows.first().value(QStringLiteral("2")).toString(), lines.at(1));
+
+    // The answer reaches the document unescaped.
+    QCOMPARE(finished, QStringLiteral("译文 %1\n译文 %2").arg(lines.at(0), lines.at(1)));
+}
+
 // The configured count is how many windows a run sends at once.
 void TestDocumentTranslator::sendsWindowsUpToTheConfiguredConcurrency()
 {

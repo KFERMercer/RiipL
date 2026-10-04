@@ -16,6 +16,18 @@ struct AnswerEntry
     QString value;
 };
 
+// What a quoted run is read up to: a key at its colon, a value at the
+// punctuation closing it.
+enum class Quoted { Key, Value };
+
+// Index of the first character from \p index that is not a space.
+qsizetype skipSpace(const QString& text, qsizetype index)
+{
+    while (index < text.size() && text.at(index).isSpace())
+        ++index;
+    return index;
+}
+
 // Whether the quote at \p quote opens a "key": pair.
 bool startsEntry(const QString& text, qsizetype quote)
 {
@@ -26,27 +38,38 @@ bool startsEntry(const QString& text, qsizetype quote)
     }
     if (cursor >= text.size() || text.at(cursor) != QLatin1Char('"'))
         return false;
-    ++cursor;
-    while (cursor < text.size() && text.at(cursor).isSpace())
-        ++cursor;
+    cursor = skipSpace(text, cursor + 1);
     return cursor < text.size() && text.at(cursor) == QLatin1Char(':');
 }
 
-// A quote ends a string when a separator follows it, so quotes inside a value do
-// not cut it short. An unterminated string ends with the text.
-bool closesString(const QString& text, qsizetype quote)
+// Whether the quote at \p quote ends the string it opened: a key before the
+// punctuation of the answer behind it, a value only before the punctuation that
+// closes it. A colon or comma the value holds stays in it, and a string the
+// answer never closed ends with the text.
+bool closesString(const QString& text, qsizetype quote, Quoted quoted)
 {
-    qsizetype cursor = quote + 1;
-    while (cursor < text.size() && text.at(cursor).isSpace())
-        ++cursor;
-    if (cursor >= text.size())
+    const qsizetype next = skipSpace(text, quote + 1);
+    if (next >= text.size())
         return true;
-    const QChar next = text.at(cursor);
-    if (next == QLatin1Char(',') || next == QLatin1Char('}') || next == QLatin1Char(']')
-        || next == QLatin1Char(':')) {
+    const QChar character = text.at(next);
+    if (character == QLatin1Char(':'))
+        return quoted == Quoted::Key;
+    if (character == QLatin1Char('}') || character == QLatin1Char(']'))
+        return true;
+    if (character == QLatin1Char('"'))
+        return startsEntry(text, next);
+    if (character != QLatin1Char(','))
+        return false;
+    if (quoted == Quoted::Key)
+        return true;
+    // A comma ends a value when an entry or the object follows it; prose there
+    // means the quote was part of the value.
+    const qsizetype rest = skipSpace(text, next + 1);
+    if (rest >= text.size() || text.at(rest) == QLatin1Char('}')
+        || text.at(rest) == QLatin1Char(']')) {
         return true;
     }
-    return next == QLatin1Char('"') && startsEntry(text, cursor);
+    return text.at(rest) == QLatin1Char('"') && startsEntry(text, rest);
 }
 
 // Appends the character the escape at \p index stands for and returns the index
@@ -84,9 +107,40 @@ qsizetype appendEscape(const QString& text, qsizetype index, QString& value)
     }
 }
 
-// Reads the quoted string opening at \p index and returns the index past its
-// closing quote; control characters left unescaped stay in the value.
-qsizetype readQuoted(const QString& text, qsizetype index, QString& value)
+// Trims the spaces and the member punctuation off a value the answer left
+// unclosed; both are structure, not text.
+void trimUnclosedValue(QString& value)
+{
+    qsizetype end = value.size();
+    while (end > 0 && value.at(end - 1).isSpace())
+        --end;
+    if (end > 0 && (value.at(end - 1) == QLatin1Char(',')
+                    || value.at(end - 1) == QLatin1Char('}')
+                    || value.at(end - 1) == QLatin1Char(']'))) {
+        --end;
+    }
+    value.truncate(end);
+}
+
+// Whether the quote at \p quote opens the entry of a line number within
+// \p lineCount, where a value the answer never closed ends.
+bool startsNumberedEntry(const QString& text, qsizetype quote, int lineCount)
+{
+    if (!startsEntry(text, quote))
+        return false;
+    qsizetype end = quote + 1;
+    while (end < text.size() && text.at(end) != QLatin1Char('"'))
+        ++end;
+    bool numbered = false;
+    const int number = QStringView(text).mid(quote + 1, end - quote - 1).toInt(&numbered);
+    return numbered && number >= 1 && number <= lineCount;
+}
+
+// Reads the quoted run opening at \p index and returns the index past its closing
+// quote, or the index of the entry behind a value the answer never closed.
+// Control characters left unescaped stay in the value.
+qsizetype readQuoted(const QString& text, qsizetype index, QString& value, Quoted quoted,
+                     int lineCount)
 {
     qsizetype cursor = index + 1;
     while (cursor < text.size()) {
@@ -95,11 +149,19 @@ qsizetype readQuoted(const QString& text, qsizetype index, QString& value)
             cursor = appendEscape(text, cursor, value);
             continue;
         }
-        if (character == QLatin1Char('"') && closesString(text, cursor))
-            return cursor + 1;
+        if (character == QLatin1Char('"')) {
+            if (closesString(text, cursor, quoted))
+                return cursor + 1;
+            if (quoted == Quoted::Value && startsNumberedEntry(text, cursor, lineCount)) {
+                trimUnclosedValue(value);
+                return cursor;
+            }
+        }
         value.append(character);
         ++cursor;
     }
+    if (quoted == Quoted::Value)
+        trimUnclosedValue(value);
     return text.size();
 }
 
@@ -111,9 +173,7 @@ int keyOccurrences(const QString& text, const QString& key)
     int count = 0;
     qsizetype from = 0;
     while ((from = text.indexOf(quoted, from)) >= 0) {
-        qsizetype after = from + quoted.size();
-        while (after < text.size() && text.at(after).isSpace())
-            ++after;
+        const qsizetype after = skipSpace(text, from + quoted.size());
         if (after < text.size() && text.at(after) == QLatin1Char(':'))
             ++count;
         from = after;
@@ -159,33 +219,40 @@ std::optional<QStringList> objectAnswers(const QJsonObject& object, const QStrin
 // Numbered entries of an answer that is not valid JSON, read pair by pair. Text
 // around the answer is skipped, and so is a key that is no line number, since
 // prose may hold quoted words followed by a colon.
-QVector<AnswerEntry> scanEntries(const QString& text)
+QVector<AnswerEntry> scanEntries(const QString& text, int count)
 {
     QVector<AnswerEntry> entries;
+    // The scan gives up once the runs it read add up to this many times the
+    // answer. A candidate naming no entry is retried one character later, so an
+    // answer without punctuation could otherwise be read once per quote.
+    constexpr qsizetype kScanPasses = 4;
+    qsizetype budget = text.size() * kScanPasses;
     qsizetype index = 0;
     while (index < text.size()) {
         const qsizetype quote = text.indexOf(QLatin1Char('"'), index);
         if (quote < 0)
             break;
         QString key;
-        qsizetype cursor = readQuoted(text, quote, key);
+        qsizetype cursor = readQuoted(text, quote, key, Quoted::Key, count);
 
-        while (cursor < text.size() && text.at(cursor).isSpace())
-            ++cursor;
+        cursor = skipSpace(text, cursor);
         if (cursor >= text.size() || text.at(cursor) != QLatin1Char(':')) {
+            // A run reaching the end of the answer carries no entry: another one
+            // would have ended the run at its colon.
+            budget -= cursor - quote;
+            if (cursor >= text.size() || budget < 0)
+                break;
             index = quote + 1;
             continue;
         }
-        ++cursor;
-        while (cursor < text.size() && text.at(cursor).isSpace())
-            ++cursor;
+        cursor = skipSpace(text, cursor + 1);
         if (cursor >= text.size() || text.at(cursor) != QLatin1Char('"')) {
             index = cursor;
             continue;
         }
 
         QString value;
-        index = readQuoted(text, cursor, value);
+        index = readQuoted(text, cursor, value, Quoted::Value, count);
         entries.append({key, value});
     }
     return entries;
@@ -229,7 +296,7 @@ std::optional<QStringList> parseAnswers(const QString& response, int count)
     const QString raw = TextUtils::stripCodeFence(response);
     if (const std::optional<QJsonObject> object = parseObject(raw))
         return objectAnswers(*object, raw, count);
-    return scannedAnswers(scanEntries(raw), count);
+    return scannedAnswers(scanEntries(raw, count), count);
 }
 
 }

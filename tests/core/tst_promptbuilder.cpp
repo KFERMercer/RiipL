@@ -416,12 +416,24 @@ void TestPromptBuilder::rendersWindowAsNumberedJson()
     for (int index = 0; index < many.size(); ++index)
         QCOMPARE(wide.at(index + 1).section(QLatin1Char('"'), 1, 1), QString::number(index + 1));
 
-    // Text needing escapes still round-trips through the object.
+    // Text that would break the object is escaped in the value it is sent as,
+    // quotes and backslashes alike.
     const QStringList quoted = {QStringLiteral("He said \"hi\""), QStringLiteral("C:\\path")};
     const QJsonObject roundTrip =
         QJsonDocument::fromJson(PromptBuilder::documentWindowData(quoted).toUtf8()).object();
     QCOMPARE(roundTrip.value(QStringLiteral("1")).toString(), quoted.at(0));
     QCOMPARE(roundTrip.value(QStringLiteral("2")).toString(), quoted.at(1));
+
+    const QStringList spoken = {QStringLiteral("\"I'm glad you could come to the party,\" He said.")};
+    QCOMPARE(PromptBuilder::documentWindowData(spoken),
+             QStringLiteral("{\n"
+                            "    \"1\": \"\\\"I'm glad you could come to the party,\\\" He said.\"\n"
+                            "}"));
+
+    // A tab and a line break stay inside the value as well.
+    const QStringList control = {QStringLiteral("a\tb\nc")};
+    QCOMPARE(PromptBuilder::documentWindowData(control),
+             QStringLiteral("{\n    \"1\": \"a\\tb\\nc\"\n}"));
 }
 
 void TestPromptBuilder::offersEveryPlaceholderToEveryTemplate()
