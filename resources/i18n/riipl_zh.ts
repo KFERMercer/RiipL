@@ -1232,11 +1232,6 @@
         <translation>不限制</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="600"/>
-        <source>Window characters</source>
-        <translation>窗口字符上限</translation>
-    </message>
-    <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="601"/>
         <source>Window lines</source>
         <translation>窗口行数上限</translation>
@@ -1435,6 +1430,11 @@
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="375"/>
         <source>One per line: Header-Name: value</source>
         <translation>每行一条：请求头名: 值</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="600"/>
+        <source>Window words</source>
+        <translation>窗口词数上限</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="709"/>
