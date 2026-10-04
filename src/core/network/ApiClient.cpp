@@ -46,6 +46,18 @@ QString apiErrorMessage(const QByteArray& body)
     return QString();
 }
 
+ApiClient::Error streamError(const QByteArray& frame)
+{
+    const QJsonValue error = QJsonDocument::fromJson(frame).object().value(QStringLiteral("error"));
+    const QString message = apiErrorMessage(frame);
+    if (!message.isEmpty())
+        return {ApiClient::ErrorCode::ServerMessage, message};
+    const int code = error.toObject().value(QStringLiteral("code")).toInt();
+    if (code > 0)
+        return {ApiClient::ErrorCode::HttpStatus, QString::number(code)};
+    return {ApiClient::ErrorCode::InvalidResponse, QString()};
+}
+
 // Failure a finished reply reports, or nothing when it carried a body the caller
 // can read. \p abortedIsFailure is false for a request whose payload arrived
 // before the abort.
@@ -213,6 +225,7 @@ void ApiClient::sendChatRequest(const QJsonObject& body,
     m_receivedBytes = 0;
     m_doneSent = false;
     m_overflowed = false;
+    m_streamError.reset();
     m_onDone = std::move(onDone);
     m_onDelta = std::move(onStream);
     m_onError = std::move(onError);
@@ -381,7 +394,15 @@ void ApiClient::consumeStreamBuffer(bool flush)
         const QJsonDocument doc = QJsonDocument::fromJson(payload);
         if (!doc.isObject())
             continue;
-        const QJsonArray choices = doc.object().value(QStringLiteral("choices")).toArray();
+        const QJsonObject object = doc.object();
+        // A failure the endpoint reaches mid-answer arrives as a frame of the stream.
+        if (object.contains(QStringLiteral("error"))) {
+            m_streamError = streamError(payload);
+            if (m_reply)
+                m_reply->abort();
+            return;
+        }
+        const QJsonArray choices = object.value(QStringLiteral("choices")).toArray();
         if (choices.isEmpty())
             continue;
         const QJsonObject delta = choices.first().toObject().value(QStringLiteral("delta")).toObject();
@@ -426,7 +447,9 @@ void ApiClient::onFinished()
     // Settled before the notification, so a slot that starts the next request
     // cannot change it.
     QString result;
-    std::optional<Error> failure = replyFailure(reply, m_rawBuffer, tooLarge, !m_doneSent);
+    std::optional<Error> failure = std::exchange(m_streamError, std::nullopt);
+    if (!failure.has_value())
+        failure = replyFailure(reply, m_rawBuffer, tooLarge, !m_doneSent);
     if (!failure.has_value()) {
         if (m_streaming) {
             // A stream without content failed like an unusable body, not as an

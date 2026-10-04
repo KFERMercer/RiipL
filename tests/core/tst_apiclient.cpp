@@ -78,6 +78,13 @@ QByteArray streamFrame(const char* content)
         + QByteArrayLiteral("\"}}]}");
 }
 
+// Frame the endpoint sends when it fails after the status line has gone out.
+QByteArray streamErrorFrame(const char* code, const char* message)
+{
+    return QByteArrayLiteral("data: {\"error\":{\"code\":") + code
+        + QByteArrayLiteral(",\"message\":\"") + message + QByteArrayLiteral("\"}}");
+}
+
 QJsonObject chatBody()
 {
     QJsonObject body;
@@ -101,6 +108,8 @@ private slots:
     void reportsIdleTimeout();
     void readsTrailingStreamFrame();
     void rejectsStreamWithoutContent();
+    void reportsStreamErrorFrame();
+    void reportsStreamErrorCodeWithoutMessage();
     void dropsOversizedResponse();
     void parsesModelIds();
     void listsModels();
@@ -346,6 +355,62 @@ void TestApiClient::rejectsStreamWithoutContent()
     QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 5000);
     QVERIFY(error.has_value());
     QCOMPARE(error->code, ApiClient::ErrorCode::InvalidResponse);
+}
+
+// A failure the endpoint reaches mid-answer arrives as a frame of the stream.
+void TestApiClient::reportsStreamErrorFrame()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    ConfigManager::createInstance(TestSupport::tempDir());
+
+    OneShotServer server;
+    QVERIFY(server.listen());
+    server.serve(streamReply(streamFrame("Hel") + "\n\n"
+                             + streamErrorFrame("500", "Context size has been exceeded.")));
+    ConfigManager::instance()->setValue(
+        Keys::apiBaseUrl, QStringLiteral("http://127.0.0.1:%1/v1").arg(server.port()));
+
+    ApiClient client;
+    QSignalSpy finishedSpy(&client, &ApiClient::requestFinished);
+    QString result;
+    std::optional<ApiClient::Error> error;
+    QJsonObject body = chatBody();
+    body.insert(QStringLiteral("stream"), true);
+    client.sendChatRequest(body, [&result](const QString& text) { result = text; }, nullptr,
+                           [&error](const ApiClient::Error& failure) { error = failure; });
+
+    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 5000);
+    QVERIFY(error.has_value());
+    QCOMPARE(error->code, ApiClient::ErrorCode::ServerMessage);
+    QCOMPARE(error->detail, QStringLiteral("Context size has been exceeded."));
+    QVERIFY2(result.isEmpty(), "the part sent before the failure is not an answer");
+}
+
+// An error frame without a message is reported by the status it carries.
+void TestApiClient::reportsStreamErrorCodeWithoutMessage()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    ConfigManager::createInstance(TestSupport::tempDir());
+
+    OneShotServer server;
+    QVERIFY(server.listen());
+    server.serve(streamReply(streamFrame("Hel") + "\n\n"
+                             + QByteArrayLiteral("data: {\"error\":{\"code\":503}}")));
+    ConfigManager::instance()->setValue(
+        Keys::apiBaseUrl, QStringLiteral("http://127.0.0.1:%1/v1").arg(server.port()));
+
+    ApiClient client;
+    QSignalSpy finishedSpy(&client, &ApiClient::requestFinished);
+    std::optional<ApiClient::Error> error;
+    QJsonObject body = chatBody();
+    body.insert(QStringLiteral("stream"), true);
+    client.sendChatRequest(body, nullptr, nullptr,
+                           [&error](const ApiClient::Error& failure) { error = failure; });
+
+    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 5000);
+    QVERIFY(error.has_value());
+    QCOMPARE(error->code, ApiClient::ErrorCode::HttpStatus);
+    QCOMPARE(error->detail, QStringLiteral("503"));
 }
 
 // A body past the cap is dropped instead of being buffered to the end.

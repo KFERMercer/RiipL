@@ -119,6 +119,7 @@ private:
     bool m_streaming = false;
     bool m_doneSent = false;
     bool m_overflowed = false;
+    std::optional<Error> m_streamError;
     DoneCallback m_onDone;
     DeltaCallback m_onDelta;
     ErrorCallback m_onError;
