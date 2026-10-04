@@ -265,10 +265,11 @@ QVector<DocumentWindow> DocumentSegmenter::partition(const QString& document, in
             ++blanks;
             continue;
         }
-        // Only adjacent duplicates collapse; a blank line between two equal
-        // lines is part of the structure.
-        if (blanks == 0 && !window.lines.isEmpty() && window.lines.constLast().text == line) {
-            ++window.lines.last().repeats;
+        // Blank lines carry no text, so the folding runs over the lines without
+        // them; the entry keeps the blanks of every occurrence it stands for.
+        if (!window.lines.isEmpty() && window.lines.constLast().text == line) {
+            window.lines.last().blanksBefore.append(blanks);
+            blanks = 0;
             continue;
         }
 
@@ -280,7 +281,7 @@ QVector<DocumentWindow> DocumentSegmenter::partition(const QString& document, in
             closeWindow();
 
         characters += length + (window.lines.isEmpty() ? 0 : 1);
-        window.lines.append({line, 1, blanks});
+        window.lines.append({line, {blanks}});
         blanks = 0;
         if (lineLimit != DocumentWindowLines::unlimitedSentinel
             && window.lines.size() >= lineLimit)
@@ -311,11 +312,12 @@ QString DocumentSegmenter::renderWindow(const DocumentWindow& window,
     QStringList lines;
     for (int line = 0; line < window.lines.size(); ++line) {
         const DocumentLine& entry = window.lines.at(line);
-        for (int blank = 0; blank < entry.blanksBefore; ++blank)
-            lines.append(QString());
         const QString text = complete ? translatedLines.at(line) : entry.text;
-        for (int repeat = 0; repeat < entry.repeats; ++repeat)
+        for (const int blanks : entry.blanksBefore) {
+            for (int blank = 0; blank < blanks; ++blank)
+                lines.append(QString());
             lines.append(text);
+        }
     }
     for (int blank = 0; blank < window.trailingBlanks; ++blank)
         lines.append(QString());

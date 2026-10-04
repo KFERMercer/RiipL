@@ -188,6 +188,7 @@ class TestDocumentTranslator : public QObject
 private slots:
     void init();
     void translatesEveryWindowInOrder();
+    void foldsRepeatsAcrossBlankLines();
     void sendsWindowsUpToTheConfiguredConcurrency();
     void capsConcurrencyAfterTheLastWindow();
     void runsSerialWhenConcurrencyIsOff();
@@ -294,6 +295,32 @@ void TestDocumentTranslator::translatesEveryWindowInOrder()
     QVERIFY(m_api.prompts.first().contains(QStringLiteral("window 1 line 0")));
 }
 
+// A line repeated across blank lines reaches the model once, whatever blanks
+// stand between its occurrences.
+void TestDocumentTranslator::foldsRepeatsAcrossBlankLines()
+{
+    const QVector<DocumentWindow> windows = DocumentSegmenter::partition(
+        QStringLiteral("aaa\nbbb\n\nbbb\n\n\nbbb\nccc\n"));
+    QCOMPARE(windows.size(), 1);
+    QCOMPARE(windows.first().lineCount(), 3);
+
+    TranslationContext context;
+    DocumentTranslator translator;
+    QString finished;
+    connect(&translator, &DocumentTranslator::finished, this,
+            [&finished](const QString& text) { finished = text; });
+
+    translator.start(windows, context);
+    QTRY_VERIFY(!finished.isEmpty());
+    QCOMPARE(m_api.requests, 1);
+    QCOMPARE(m_api.windows.first().keys(),
+             QStringList({QStringLiteral("1"), QStringLiteral("2"), QStringLiteral("3")}));
+    QCOMPARE(m_api.windows.first().value(QStringLiteral("2")).toString(), QStringLiteral("bbb"));
+
+    // The answer of the folded line is written back at every occurrence, and the
+    // blank lines the document holds come back with it.
+    QCOMPARE(finished, QStringLiteral("译文 aaa\n译文 bbb\n\n译文 bbb\n\n\n译文 bbb\n译文 ccc\n"));
+}
 // The configured count is how many windows a run sends at once.
 void TestDocumentTranslator::sendsWindowsUpToTheConfiguredConcurrency()
 {

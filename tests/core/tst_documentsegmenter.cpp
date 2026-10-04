@@ -28,7 +28,7 @@ DocumentWindow windowOf(const QStringList& lines)
 {
     DocumentWindow window;
     for (const QString& line : lines)
-        window.lines.append({line, 1, 0});
+        window.lines.append({line, {0}});
     return window;
 }
 
@@ -54,7 +54,8 @@ private slots:
     void fitsExactlyTheCharacterLimit();
     void keepsOversizedLineInItsOwnWindow();
     void recordsBlankLinesAndRepeats();
-    void keepsBlankLineBetweenEqualLines();
+    void foldsRepeatsAcrossBlankLines();
+    void keepsBlanksAFoldDidNotBridge();
     void restoresDocumentFromTranslations();
     void yieldsNoWindowForCaptionsAndBlankText();
     void endsWindowAtLineLimitBeforeCharacterLimit();
@@ -231,32 +232,98 @@ void TestDocumentSegmenter::recordsBlankLinesAndRepeats()
     QCOMPARE(windows.size(), 1);
     const DocumentWindow& window = windows.first();
     QCOMPARE(window.lineCount(), 3);
-    QCOMPARE(window.lines.at(0).blanksBefore, 0);
-    QCOMPARE(window.lines.at(0).repeats, 1);
+    QCOMPARE(window.lines.at(0).blanksBefore, QVector<int>({0}));
     QCOMPARE(window.lines.at(1).text, QStringLiteral("beta two"));
-    QCOMPARE(window.lines.at(1).repeats, 3);
-    QCOMPARE(window.lines.at(2).blanksBefore, 2);
+    QCOMPARE(window.lines.at(1).blanksBefore, QVector<int>({1, 0, 0}));
+    QCOMPARE(window.lines.at(2).blanksBefore, QVector<int>({2}));
     QCOMPARE(window.trailingBlanks, 1);
 
-    // The collapsed document reaches the model with one entry per line.
+    // The collapsed document reaches the model with one entry per line, and
+    // comes back from that entry with every occurrence and blank line in place.
     QCOMPARE(window.source(), QStringLiteral("alpha one\nbeta two\ngamma three"));
+    QCOMPARE(DocumentSegmenter::assemble(windows, {}),
+             QStringLiteral("alpha one\n\nbeta two\nbeta two\nbeta two\n\n\ngamma three\n"));
 }
 
-void TestDocumentSegmenter::keepsBlankLineBetweenEqualLines()
+// Blank lines carry no text, so they do not separate two equal lines: the
+// folding runs over the document without them.
+void TestDocumentSegmenter::foldsRepeatsAcrossBlankLines()
 {
-    const QString document = QStringLiteral("same line\n"
-                                            "same line\n"
+    const QString document = QStringLiteral("aaa\n"
+                                            "bbb\n"
                                             "\n"
-                                            "same line");
+                                            "bbb\n"
+                                            "\n"
+                                            "bbb\n"
+                                            "  \n"
+                                            "\n"
+                                            "bbb\n"
+                                            "ccc\n");
 
     const QVector<DocumentWindow> windows = DocumentSegmenter::partition(document);
     QCOMPARE(windows.size(), 1);
     const DocumentWindow& window = windows.first();
-    QCOMPARE(window.lineCount(), 2);
-    QCOMPARE(window.lines.at(0).repeats, 2);
-    QCOMPARE(window.lines.at(1).text, QStringLiteral("same line"));
-    QCOMPARE(window.lines.at(1).repeats, 1);
-    QCOMPARE(window.lines.at(1).blanksBefore, 1);
+
+    // The four occurrences reach the model as one line, and every one of them
+    // keeps the blank lines that stood before it.
+    QCOMPARE(window.lineCount(), 3);
+    QCOMPARE(window.lines.at(0).text, QStringLiteral("aaa"));
+    QCOMPARE(window.lines.at(1).text, QStringLiteral("bbb"));
+    QCOMPARE(window.lines.at(1).blanksBefore, QVector<int>({0, 1, 1, 2}));
+    QCOMPARE(window.lines.at(2).text, QStringLiteral("ccc"));
+    QCOMPARE(window.source(), QStringLiteral("aaa\nbbb\nccc"));
+
+    // Writing an answer back puts the line where the document wrote it, blank
+    // lines and all; a line of spaces reads as a blank one.
+    const QStringList translated = {QStringLiteral("甲"), QStringLiteral("乙"),
+                                    QStringLiteral("丙")};
+    const QString rendered = DocumentSegmenter::renderWindow(window, translated);
+    QCOMPARE(rendered, QStringLiteral("甲\n乙\n\n乙\n\n乙\n\n\n乙\n丙\n"));
+    QCOMPARE(DocumentSegmenter::assemble(windows, {translated}), rendered);
+    QCOMPARE(DocumentSegmenter::assemble(windows, {}),
+             QStringLiteral("aaa\nbbb\n\nbbb\n\nbbb\n\n\nbbb\nccc\n"));
+}
+
+// A document comes back from its windows as it was written, whatever blanks and
+// folds it holds.
+void TestDocumentSegmenter::keepsBlanksAFoldDidNotBridge()
+{
+    const QString document = QStringLiteral("aaa\n"
+                                            "\n"
+                                            "\n"
+                                            "bbb\n"
+                                            "ccc\n"
+                                            "\n"
+                                            "ccc\n"
+                                            "ddd\n");
+    const QVector<DocumentWindow> windows = DocumentSegmenter::partition(document);
+    QCOMPARE(windows.size(), 1);
+    const DocumentWindow& window = windows.first();
+
+    QCOMPARE(window.lineCount(), 4);
+    QCOMPARE(window.lines.at(1).text, QStringLiteral("bbb"));
+    QCOMPARE(window.lines.at(1).blanksBefore, QVector<int>({2}));
+    QCOMPARE(window.lines.at(2).blanksBefore, QVector<int>({0, 1}));
+    QCOMPARE(window.source(), QStringLiteral("aaa\nbbb\nccc\nddd"));
+    QCOMPARE(DocumentSegmenter::assemble(windows, {}), document);
+
+    const QStringList translated = {QStringLiteral("甲"), QStringLiteral("乙"),
+                                    QStringLiteral("丙"), QStringLiteral("丁")};
+    QCOMPARE(DocumentSegmenter::renderWindow(window, translated),
+             QStringLiteral("甲\n\n\n乙\n丙\n\n丙\n丁\n"));
+
+    // A line that comes back after another line is a line of its own, and a fold
+    // reaches over the blanks that open the document.
+    const QVector<DocumentWindow> reopened =
+        DocumentSegmenter::partition(QStringLiteral("aaa\nbbb\n\naaa\n"));
+    QCOMPARE(reopened.first().lineCount(), 3);
+    QCOMPARE(reopened.first().lines.at(2).blanksBefore, QVector<int>({1}));
+
+    const QVector<DocumentWindow> opened =
+        DocumentSegmenter::partition(QStringLiteral("\n\nbbb\n \nbbb\n"));
+    QCOMPARE(opened.first().lineCount(), 1);
+    QCOMPARE(opened.first().lines.first().blanksBefore, QVector<int>({2, 1}));
+    QCOMPARE(DocumentSegmenter::assemble(opened, {}), QStringLiteral("\n\nbbb\n\nbbb\n"));
 }
 
 void TestDocumentSegmenter::restoresDocumentFromTranslations()
@@ -299,7 +366,7 @@ void TestDocumentSegmenter::yieldsNoWindowForCaptionsAndBlankText()
         DocumentSegmenter::partition(QStringLiteral("\nalpha\n"));
     QCOMPARE(windows.size(), 1);
     QCOMPARE(windows.first().source(), QStringLiteral("alpha"));
-    QCOMPARE(windows.first().lines.first().blanksBefore, 1);
+    QCOMPARE(windows.first().lines.first().blanksBefore, QVector<int>({1}));
     QCOMPARE(windows.first().trailingBlanks, 1);
     QCOMPARE(DocumentSegmenter::assemble(windows, {}), QStringLiteral("\nalpha\n"));
 
@@ -373,7 +440,7 @@ void TestDocumentSegmenter::countsCharactersAfterCollapsingRepeats()
     QCOMPARE(windows.size(), 3);
     for (const DocumentWindow& window : windows) {
         QCOMPARE(window.lineCount(), 2);
-        QCOMPARE(window.lines.first().repeats, 4);
+        QCOMPARE(window.lines.first().blanksBefore.size(), 4);
     }
 }
 

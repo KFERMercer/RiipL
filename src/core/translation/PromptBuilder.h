@@ -30,10 +30,9 @@ struct TranslationContext
     QVector<GlossaryEntry> glossary;
 };
 
-// One window of a document: every document line of the window in reading order,
-// and the neighbouring windows given as context. A line that repeats in the
-// document is listed as often as it occurs, so an answer line maps onto the
-// window position by position.
+// One window of a document: its lines in reading order, a repeated line listed
+// once, and the neighbouring windows as context. An answer is read back by the
+// number each line is sent under.
 struct DocumentWindowPrompt
 {
     QStringList lines;

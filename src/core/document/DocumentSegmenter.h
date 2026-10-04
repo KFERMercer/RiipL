@@ -14,13 +14,14 @@ inline const int unlimitedSentinel = 0;
 
 }
 
-// One line of a document: adjacent duplicates collapse into one entry, and the
-// blank lines before it are recorded so they can be put back on export.
+// One line of a document: a line equal to the one before it, blank lines aside,
+// folds into that entry, and every occurrence keeps the blanks before it.
 struct DocumentLine
 {
     QString text;
-    int repeats = 1;
-    int blanksBefore = 0;
+    // One entry per occurrence: the blank lines standing before it, the first
+    // occurrence included.
+    QVector<int> blanksBefore;
 };
 
 // One translation window: whole lines only, so a line is never split across two
@@ -54,10 +55,10 @@ public:
     // once and carrying text.
     static std::optional<QStringList> splitTranslation(const DocumentWindow& window,
                                                        const QString& response);
-    // Text of one window as it reads in the document, repeats and blank lines
+    // Text of one window as it reads in the document, occurrences and blanks
     // included. A window without a full answer keeps its source text.
     static QString renderWindow(const DocumentWindow& window, const QStringList& translatedLines);
-    // Rebuilds the document from one line list per window.
+    // Rebuilds the document from one line list per window, as it was written.
     static QString assemble(const QVector<DocumentWindow>& windows,
                             const QVector<QStringList>& translations);
 };
