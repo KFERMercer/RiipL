@@ -49,7 +49,7 @@ void DocumentTranslator::ensureWorkers(int count)
         connect(worker.engine, &TranslationEngine::finished, this,
                 [this, index](const QString& response) { handleWindowFinished(index, response); });
         connect(worker.engine, &TranslationEngine::errorOccurred, this,
-                [this, index](const ApiClient::Error&) { retryOrFail(index); });
+                [this, index](const ApiClient::Error&) { handleWindowError(index); });
         connect(worker.retryTimer, &QTimer::timeout, this,
                 [this, index]() { resendWindow(index); });
         m_workers.append(worker);
@@ -104,7 +104,11 @@ void DocumentTranslator::start(const QVector<DocumentWindow>& windows,
         return;
     }
 
-    ensureWorkers((std::min)(requestedWorkers(), static_cast<int>(m_windows.size())));
+    const int workers = (std::min)(requestedWorkers(), static_cast<int>(m_windows.size()));
+    ensureWorkers(workers);
+    m_inFlightLimit = workers;
+    m_inFlight = 0;
+    m_waiting.clear();
     m_active = true;
     // Reported once the run is under way, so a slot that stops here stops it for
     // good.
@@ -177,6 +181,8 @@ void DocumentTranslator::cancelRun()
         worker.window = -1;
     }
     m_nextWindow = 0;
+    m_inFlight = 0;
+    m_waiting.clear();
 }
 
 void DocumentTranslator::dispatchPending()
@@ -184,11 +190,14 @@ void DocumentTranslator::dispatchPending()
     if (!m_active || m_dispatching)
         return;
     m_dispatching = true;
+    // A window that waited for a free slot comes first: it has spent an attempt already.
+    while (m_active && m_inFlight < m_inFlightLimit && !m_waiting.isEmpty())
+        resendWindow(m_waiting.takeFirst());
     // A send can fail on this stack and free its worker again, so windows are
     // handed out until no worker can take one.
-    for (bool dispatched = true; dispatched && m_active;) {
+    for (bool dispatched = true; dispatched && m_active && m_inFlight < m_inFlightLimit;) {
         dispatched = false;
-        for (int index = 0; index < m_workers.size() && m_nextWindow < m_windows.size(); ++index) {
+        for (int index = 0; index < m_workers.size() && m_inFlight < m_inFlightLimit; ++index) {
             Worker& worker = m_workers[index];
             if (worker.window >= 0)
                 continue;
@@ -223,7 +232,15 @@ void DocumentTranslator::resendWindow(int workerIndex)
     const int index = worker.window;
     if (index < 0)
         return;
+    // The endpoint is never given more requests than it has taken: a send that is
+    // due waits for a free slot.
+    if (m_inFlight >= m_inFlightLimit) {
+        if (!m_waiting.contains(workerIndex))
+            m_waiting.append(workerIndex);
+        return;
+    }
     ++worker.attempts;
+    ++m_inFlight;
 
     TranslationContext context = m_context;
     context.sourceText = m_sources.at(index);
@@ -238,6 +255,7 @@ void DocumentTranslator::handleWindowFinished(int workerIndex, const QString& re
     const int index = worker.window;
     if (index < 0)
         return;
+    --m_inFlight;
 
     const DocumentWindow& window = m_windows.at(index);
     const std::optional<QStringList> lines = DocumentSegmenter::splitTranslation(window, response);
@@ -268,6 +286,19 @@ void DocumentTranslator::handleWindowFinished(int workerIndex, const QString& re
         return;
     }
     dispatchPending();
+}
+
+// A failed request is the endpoint saying it cannot take as many: the run keeps
+// fewer in flight, so the retry does not compete for the same context again.
+void DocumentTranslator::handleWindowError(int workerIndex)
+{
+    if (!m_active)
+        return;
+    if (m_workers.at(workerIndex).window < 0)
+        return;
+    --m_inFlight;
+    m_inFlightLimit = (std::max)(1, m_inFlightLimit / 2);
+    retryOrFail(workerIndex);
 }
 
 // A window that has used its attempts is left out while the run carries on, so one

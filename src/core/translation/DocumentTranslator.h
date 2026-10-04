@@ -13,10 +13,11 @@
 #include "core/translation/TranslationEngine.h"
 
 // Sends a document to the API window by window and rebuilds the translation from
-// the answers, each window carrying its neighbours as context. Windows are in
-// flight up to the configured limit and the document is reported again whenever
-// one is accepted; a window that has used its attempts is left out while the run
-// carries on, and a cache answers the windows it already holds.
+// the answers, each window carrying its neighbours as context. The run keeps a
+// configured number of windows in flight and asks for fewer of them when the
+// endpoint fails a request. The document is reported again on every accepted
+// window; a window that has used its attempts is left out while the run carries
+// on, and a cache answers the windows it already holds.
 class DocumentTranslator : public QObject
 {
     Q_OBJECT
@@ -68,6 +69,8 @@ private:
     void sendWindow(int workerIndex, int window);
     void resendWindow(int workerIndex);
     void handleWindowFinished(int workerIndex, const QString& response);
+    // A request the endpoint failed, which lowers what the run keeps in flight.
+    void handleWindowError(int workerIndex);
     // Retries a window while it has attempts left, then leaves it out.
     void retryOrFail(int workerIndex);
     // Whether every window is accepted or left out, so nothing is in flight.
@@ -92,6 +95,11 @@ private:
     DocumentCache m_cache;
     // Next window to hand to a free worker.
     int m_nextWindow = 0;
+    // Requests the run may keep in flight, and the ones on the wire.
+    int m_inFlightLimit = 1;
+    int m_inFlight = 0;
+    // Workers holding a window that waits for a free request slot.
+    QVector<int> m_waiting;
     int m_completed = 0;
     // Holds while a run is under way, including the pauses between retries.
     bool m_active = false;

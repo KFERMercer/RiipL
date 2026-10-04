@@ -57,6 +57,11 @@ public:
     // Requests answered with a window of the wrong shape before one is answered
     // normally.
     int malformedLeft = 0;
+    // Requests answered with the failure of an endpoint out of context: every
+    // request arriving while another is unanswered. \p refusals counts them, so a
+    // run that keeps its requests apart is told from one that does not.
+    bool refusesConcurrent = false;
+    int refusals = 0;
     int requests = 0;
     // Pause between reading a request and answering it.
     int answerDelayMs = 0;
@@ -90,17 +95,23 @@ private:
             windows.append(TestSupport::documentWindowIn(prompt));
             ++pending;
             peakPending = (std::max)(peakPending, pending);
+            // An endpoint out of context refuses a request that arrives while
+            // another is unanswered.
+            const bool crowded = refusesConcurrent && pending > 1;
+            if (crowded)
+                ++refusals;
             // The delayed failure targets one window; a failure counter is spent
             // by whichever request arrives first.
             const bool named = !failingPrompt.isEmpty() && prompt.contains(failingPrompt);
-            const bool failing = (named && !failingPromptSpent)
-                || (failingPrompt.isEmpty() && failuresLeft > 0);
+            const bool failing = !crowded
+                && ((named && !failingPromptSpent)
+                    || (failingPrompt.isEmpty() && failuresLeft > 0));
             if (named && !failingPromptSpent)
                 failingPromptSpent = true;
-            const QByteArray answer = failing ? failure() : translationOf(prompt);
+            const QByteArray answer = (crowded || failing) ? failure() : translationOf(prompt);
             if (failing && !named && failuresLeft > 0)
                 --failuresLeft;
-            if (!failing && malformedLeft > 0)
+            if (!crowded && !failing && malformedLeft > 0)
                 --malformedLeft;
             // A named failure answers ahead of the requests beside it, which
             // keeps them on the wire when the run gives up. A marker delay lets a
@@ -191,6 +202,7 @@ private slots:
     void foldsRepeatsAcrossBlankLines();
     void sendsQuotedLinesAsEscapedValues();
     void sendsWindowsUpToTheConfiguredConcurrency();
+    void lowersConcurrencyWhenTheEndpointRunsOutOfContext();
     void capsConcurrencyAfterTheLastWindow();
     void runsSerialWhenConcurrencyIsOff();
     void runsSerialAtOneRequest();
@@ -231,6 +243,8 @@ void TestDocumentTranslator::init()
 {
     m_api.failuresLeft = 0;
     m_api.malformedLeft = 0;
+    m_api.refusesConcurrent = false;
+    m_api.refusals = 0;
     m_api.requests = 0;
     m_api.answerDelayMs = 0;
     m_api.pending = 0;
@@ -386,6 +400,40 @@ void TestDocumentTranslator::sendsWindowsUpToTheConfiguredConcurrency()
     QCOMPARE(finished.split(QLatin1Char('\n')).size(),
              DocumentSegmenter::assemble(windows, {}).split(QLatin1Char('\n')).size());
     QVERIFY(finished.startsWith(QStringLiteral("译文 window 0 line 0")));
+}
+
+// A run that meets an endpoint out of context keeps fewer requests in flight, so
+// the windows it refused are still translated.
+void TestDocumentTranslator::lowersConcurrencyWhenTheEndpointRunsOutOfContext()
+{
+    m_api.answerDelayMs = 20;
+    m_api.refusesConcurrent = true;
+    ConfigManager::instance()->setValue(Keys::apiMaxConcurrency, 4);
+
+    const QVector<DocumentWindow> windows = document(6, 3);
+    DocumentTranslator translator;
+    QString finished;
+    QStringList failed;
+    connect(&translator, &DocumentTranslator::finished, this,
+            [&finished](const QString& text) { finished = text; });
+    connect(&translator, &DocumentTranslator::failed, this,
+            [&failed](const QStringList& shards) { failed = shards; });
+
+    translator.start(windows, TranslationContext());
+    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty() || !failed.isEmpty(), 20000);
+
+    // Four requests went out together, the endpoint refused the three beside the
+    // first, and the run finished the document one request at a time.
+    QCOMPARE(m_api.peakPending, 4);
+    QCOMPARE(m_api.refusals, 3);
+    QCOMPARE(m_api.requests, windows.size() + 3);
+    QVERIFY(failed.isEmpty());
+    QVERIFY(!finished.isEmpty());
+    for (const DocumentWindow& window : windows) {
+        for (const DocumentLine& line : window.lines)
+            QVERIFY2(finished.contains(QStringLiteral("译文 %1").arg(line.text)),
+                     qPrintable(line.text));
+    }
 }
 
 // A run of fewer windows than the limit never leaves a request idle.
