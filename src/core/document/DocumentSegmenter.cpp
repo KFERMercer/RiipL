@@ -310,20 +310,20 @@ QString DocumentWindow::source() const
     return texts.join(QLatin1Char('\n'));
 }
 
-QVector<DocumentWindow> DocumentSegmenter::partition(const QString& document, int charLimit,
+QVector<DocumentWindow> DocumentSegmenter::partition(const QString& document, int wordLimit,
                                                      int lineLimit)
 {
     QVector<DocumentWindow> windows;
     DocumentWindow window;
-    int characters = 0;
+    int words = 0;
     int blanks = 0;
 
-    const auto closeWindow = [&windows, &window, &characters]() {
+    const auto closeWindow = [&windows, &window, &words]() {
         if (window.lines.isEmpty())
             return;
         windows.append(window);
         window = DocumentWindow();
-        characters = 0;
+        words = 0;
     };
 
     const QStringList lines = document.split(QLatin1Char('\n'));
@@ -340,14 +340,14 @@ QVector<DocumentWindow> DocumentSegmenter::partition(const QString& document, in
             continue;
         }
 
-        // The joined window keeps the newlines that separate its lines, so the
-        // limit applies to the text the model receives. A line longer than the
-        // limit fills a window on its own.
-        const int length = line.size();
-        if (!window.lines.isEmpty() && characters + length + 1 > charLimit)
+        // Only the lines reaching the model count, so a folded line costs no more
+        // than its first occurrence. A line the limit cannot hold fills a window
+        // on its own.
+        const int lineWords = TextUtils::wordCount(line);
+        if (!window.lines.isEmpty() && words + lineWords > wordLimit)
             closeWindow();
 
-        characters += length + (window.lines.isEmpty() ? 0 : 1);
+        words += lineWords;
         window.lines.append({line, {blanks}});
         blanks = 0;
         if (lineLimit != DocumentWindowLines::unlimitedSentinel

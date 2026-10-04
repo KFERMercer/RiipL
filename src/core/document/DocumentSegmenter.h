@@ -43,12 +43,13 @@ struct DocumentWindow
 class DocumentSegmenter
 {
 public:
-    // Splits \p document into windows of whole lines. A line longer than
-    // \p charLimit fills a window on its own, and \p lineLimit at
-    // DocumentWindowLines::unlimitedSentinel leaves the line count unbounded. A
-    // document without a line carrying text yields no window.
+    // Splits \p document into windows of whole lines, folding a line equal to
+    // the one before it, blank lines aside. A window fills up to \p wordLimit
+    // words and \p lineLimit lines; a line over the word limit fills a window on
+    // its own, and unlimitedSentinel in \p lineLimit leaves the line count open.
+    // A document without a line carrying text yields no window.
     static QVector<DocumentWindow> partition(const QString& document,
-                                             int charLimit = Defaults::documentWindowCharacters,
+                                             int wordLimit = Defaults::documentWindowWords,
                                              int lineLimit = Defaults::documentWindowLines);
     // Answers, one per window line, keyed in the response by the line number
     // 1..lineCount(); nothing when the response does not hold those lines, each

@@ -70,7 +70,7 @@ inline const QString translationCustomTones = QStringLiteral("translation.custom
 inline const QString translationStyle = QStringLiteral("translation.style");
 inline const QString translationBackground = QStringLiteral("translation.background");
 
-inline const QString documentWindowCharacters = QStringLiteral("document.window_characters");
+inline const QString documentWindowWords = QStringLiteral("document.window_words");
 inline const QString documentWindowLines = QStringLiteral("document.window_lines");
 inline const QString documentRetryCount = QStringLiteral("document.retry_count");
 inline const QString documentConcurrent = QStringLiteral("document.concurrent");
@@ -113,7 +113,7 @@ inline const QString translationTone = QStringLiteral("default");
 inline const QString translationStyle = QString();
 inline const QString translationBackground = QString();
 
-inline const int documentWindowCharacters = 500;
+inline const int documentWindowWords = 200;
 inline const int documentWindowLines = 10;
 inline const int documentRetryCount = 3;
 inline const bool documentConcurrent = true;
@@ -271,7 +271,7 @@ inline QJsonValue value(const QString& key)
         {Keys::translationCustomTones, QJsonArray()},
         {Keys::translationStyle, translationStyle},
         {Keys::translationBackground, translationBackground},
-        {Keys::documentWindowCharacters, documentWindowCharacters},
+        {Keys::documentWindowWords, documentWindowWords},
         {Keys::documentWindowLines, documentWindowLines},
         {Keys::documentRetryCount, documentRetryCount},
         {Keys::documentConcurrent, documentConcurrent},

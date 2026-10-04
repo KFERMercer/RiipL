@@ -180,7 +180,7 @@ bool DocumentDialog::loadFile()
     m_loadedPath = path;
     ConfigManager* config = ConfigManager::instance();
     m_windows = DocumentSegmenter::partition(content,
-                                             config->intValue(Keys::documentWindowCharacters),
+                                             config->intValue(Keys::documentWindowWords),
                                              config->intValue(Keys::documentWindowLines));
     if (m_windows.isEmpty()) {
         setStatus(tr("No content to translate"));

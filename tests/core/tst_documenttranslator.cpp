@@ -6,6 +6,7 @@
 #include "core/document/DocumentCache.h"
 #include "core/document/DocumentSegmenter.h"
 #include "core/translation/DocumentTranslator.h"
+#include "utils/TextUtils.h"
 
 #include <QDir>
 #include <QFile>
@@ -164,12 +165,11 @@ QVector<DocumentWindow> document(int windows, int linesPerWindow)
             lines << QStringLiteral("window %1 line %2").arg(window).arg(line);
         lines << QString();
     }
-    // Every line of a window is \p chars long, so a window holds \p
-    // linesPerWindow of them, separated by the newlines between them.
-    const int chars = QStringLiteral("window 0 line 0").size();
+    // Every line of a window holds four words, so a window holds \p
+    // linesPerWindow of them.
+    const int words = TextUtils::wordCount(QStringLiteral("window 0 line 0"));
     return DocumentSegmenter::partition(lines.join(QLatin1Char('\n')),
-                                        chars * linesPerWindow + linesPerWindow - 1,
-                                        linesPerWindow);
+                                        words * linesPerWindow, linesPerWindow);
 }
 
 // Cache files one document holds, sorted so a case can rely on their order.
