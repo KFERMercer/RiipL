@@ -18,15 +18,6 @@ constexpr int kRetryDelayMs = 1000;
 // Characters of the request digest that name a shard's cache file.
 constexpr int kShardDigestCharacters = 8;
 
-// Accepted lines as the JSON object a cache file holds.
-QString answerJson(const QStringList& lines)
-{
-    QJsonObject answer;
-    for (int line = 0; line < lines.size(); ++line)
-        answer.insert(QString::number(line + 1), lines.at(line));
-    return QString::fromUtf8(QJsonDocument(answer).toJson(QJsonDocument::Indented));
-}
-
 }
 
 DocumentTranslator::DocumentTranslator(QObject* parent)
@@ -260,7 +251,7 @@ void DocumentTranslator::handleWindowFinished(int workerIndex, const QString& re
     m_translations[index] = *lines;
     // The answer is kept for the next run; the failures of the attempts before it
     // go.
-    m_cache.storeShard(m_shardIds.value(index), answerJson(*lines));
+    m_cache.storeShard(m_shardIds.value(index), PromptBuilder::documentWindowData(*lines));
     m_cache.removeFailure(m_shardIds.value(index));
     worker.window = -1;
     ++m_completed;

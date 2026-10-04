@@ -201,6 +201,7 @@ private slots:
     void leavesOutAWindowThatCannotBeTranslated();
     void reusesTheSamePoolForASecondRun();
     void cachesAcceptedAnswers();
+    void cachesAnswersInLineOrder();
     void reusesCachedAnswersOnTheNextRun();
     void requestsOnlyTheWindowsTheCacheMisses();
     void separatesTheCacheByRequest();
@@ -699,6 +700,43 @@ void TestDocumentTranslator::cachesAcceptedAnswers()
         firstLines.insert(answer.value(QStringLiteral("1")).toString());
     }
     QCOMPARE(firstLines.size(), 2);
+}
+
+// A cache file lists its lines in the order of the document: the text order of
+// the keys would put line 10 before line 2.
+void TestDocumentTranslator::cachesAnswersInLineOrder()
+{
+    // Ten lines, so the text order of the keys would show.
+    const QVector<DocumentWindow> windows = document(1, 10);
+    const int count = windows.first().lineCount();
+    QVERIFY(count > 9);
+    const DocumentCache cache(QStringLiteral("abc123"),
+                              TestSupport::tempDir() + QStringLiteral("/cache"));
+
+    DocumentTranslator translator;
+    QString finished;
+    connect(&translator, &DocumentTranslator::finished, this,
+            [&finished](const QString& text) { finished = text; });
+
+    translator.start(windows, TranslationContext(), cache);
+    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+
+    const QStringList files = cacheFiles(cache, QStringLiteral(".cache.json"));
+    QCOMPARE(files.size(), 1);
+    QFile cached(cache.documentDir() + QLatin1Char('/') + files.first());
+    QVERIFY(cached.open(QIODevice::ReadOnly));
+    const QString answer = QString::fromUtf8(cached.readAll());
+
+    int previous = -1;
+    QStringList lines;
+    for (int line = 1; line <= count; ++line) {
+        const int at = answer.indexOf(QStringLiteral("\"%1\": ").arg(line));
+        QVERIFY2(at > previous, qPrintable(answer));
+        previous = at;
+    }
+    for (const DocumentLine& line : windows.first().lines)
+        lines << QStringLiteral("译文 %1").arg(line.text);
+    QCOMPARE(answer, PromptBuilder::documentWindowData(lines));
 }
 
 // A document the cache holds in full is translated without a single request.
