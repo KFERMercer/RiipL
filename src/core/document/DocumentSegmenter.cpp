@@ -316,7 +316,7 @@ QVector<DocumentWindow> DocumentSegmenter::partition(const QString& document, in
     QVector<DocumentWindow> windows;
     DocumentWindow window;
     int words = 0;
-    int blanks = 0;
+    QString whitespace;
 
     const auto closeWindow = [&windows, &window, &words]() {
         if (window.lines.isEmpty())
@@ -326,37 +326,43 @@ QVector<DocumentWindow> DocumentSegmenter::partition(const QString& document, in
         words = 0;
     };
 
-    const QStringList lines = document.split(QLatin1Char('\n'));
-    for (const QString& line : lines) {
-        if (line.trimmed().isEmpty()) {
-            ++blanks;
-            continue;
-        }
-        // Blank lines carry no text, so the folding runs over the lines without
-        // them; the entry keeps the blanks of every occurrence it stands for.
-        if (!window.lines.isEmpty() && window.lines.constLast().text == line) {
-            window.lines.last().blanksBefore.append(blanks);
-            blanks = 0;
-            continue;
-        }
+    // A text ends where the whitespace closing its line starts.
+    qsizetype cursor = 0;
+    while (cursor < document.size()) {
+        const qsizetype start = skipSpace(document, cursor);
+        whitespace = document.mid(cursor, start - cursor);
+        if (start >= document.size())
+            break;
 
-        // Only the lines reaching the model count, so a folded line costs no more
-        // than its first occurrence. A line the limit cannot hold fills a window
-        // on its own.
-        const int lineWords = TextUtils::wordCount(line);
-        if (!window.lines.isEmpty() && words + lineWords > wordLimit)
-            closeWindow();
+        const qsizetype lineBreak = document.indexOf(QLatin1Char('\n'), start);
+        qsizetype end = lineBreak < 0 ? document.size() : lineBreak;
+        while (document.at(end - 1).isSpace())
+            --end;
+        const QString text = document.mid(start, end - start);
 
-        words += lineWords;
-        window.lines.append({line, {blanks}});
-        blanks = 0;
-        if (lineLimit != DocumentWindowLines::unlimitedSentinel
-            && window.lines.size() >= lineLimit)
-            closeWindow();
+        // Only the text is asked about, so spacing does not stop a fold.
+        if (!window.lines.isEmpty() && window.lines.constLast().text == text) {
+            window.lines.last().whitespaceBefore.append(whitespace);
+        } else {
+            // Only the lines reaching the model count, so a folded line costs no more
+            // than its first occurrence; a line over the limit fills a window alone.
+            const int lineWords = TextUtils::wordCount(text);
+            if (!window.lines.isEmpty() && words + lineWords > wordLimit)
+                closeWindow();
+
+            words += lineWords;
+            window.lines.append({text, {whitespace}});
+            if (lineLimit != DocumentWindowLines::unlimitedSentinel
+                && window.lines.size() >= lineLimit)
+                closeWindow();
+        }
+        // The rest of the line opens the next run.
+        whitespace.clear();
+        cursor = end;
     }
     closeWindow();
     if (!windows.isEmpty())
-        windows.last().trailingBlanks = blanks;
+        windows.last().whitespaceAfter = whitespace;
     return windows;
 }
 
@@ -376,30 +382,28 @@ QString DocumentSegmenter::renderWindow(const DocumentWindow& window,
 {
     const bool complete = translatedLines.size() == window.lines.size();
 
-    QStringList lines;
-    for (int line = 0; line < window.lines.size(); ++line) {
-        const DocumentLine& entry = window.lines.at(line);
-        const QString text = complete ? translatedLines.at(line) : entry.text;
-        for (const int blanks : entry.blanksBefore) {
-            for (int blank = 0; blank < blanks; ++blank)
-                lines.append(QString());
-            lines.append(text);
+    QString rendered;
+    for (int index = 0; index < window.lines.size(); ++index) {
+        const DocumentLine& line = window.lines.at(index);
+        const QString& text = complete ? translatedLines.at(index) : line.text;
+        for (const QString& run : line.whitespaceBefore) {
+            rendered += run;
+            rendered += text;
         }
     }
-    for (int blank = 0; blank < window.trailingBlanks; ++blank)
-        lines.append(QString());
-    return lines.join(QLatin1Char('\n'));
+    rendered += window.whitespaceAfter;
+    return rendered;
 }
 
 QString DocumentSegmenter::assemble(const QVector<DocumentWindow>& windows,
                                     const QVector<QStringList>& translations)
 {
-    QStringList texts;
-    texts.reserve(windows.size());
+    // The runs carry the breaks, so the windows follow one another.
+    QString document;
     for (int index = 0; index < windows.size(); ++index) {
-        texts.append(renderWindow(windows.at(index),
-                                  index < translations.size() ? translations.at(index)
-                                                              : QStringList()));
+        document += renderWindow(windows.at(index),
+                                 index < translations.size() ? translations.at(index)
+                                                             : QStringList());
     }
-    return texts.join(QLatin1Char('\n'));
+    return document;
 }

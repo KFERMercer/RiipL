@@ -200,6 +200,8 @@ private slots:
     void init();
     void translatesEveryWindowInOrder();
     void foldsRepeatsAcrossBlankLines();
+    void restoresWhitespaceAroundEveryLine();
+    void sendsNeighboursWithoutTheirWhitespace();
     void sendsQuotedLinesAsEscapedValues();
     void sendsWindowsUpToTheConfiguredConcurrency();
     void lowersConcurrencyWhenTheEndpointRunsOutOfContext();
@@ -336,6 +338,60 @@ void TestDocumentTranslator::foldsRepeatsAcrossBlankLines()
     // The answer of the folded line is written back at every occurrence, and the
     // blank lines the document holds come back with it.
     QCOMPARE(finished, QStringLiteral("译文 aaa\n译文 bbb\n\n译文 bbb\n\n\n译文 bbb\n译文 ccc\n"));
+}
+
+// The whitespace around a line never reaches the model, and the answer is written
+// back between exactly those runs.
+void TestDocumentTranslator::restoresWhitespaceAroundEveryLine()
+{
+    const QString document = QStringLiteral("\tfirst line \t\n"
+                                            "    \n"
+                                            "  second line  \n"
+                                            "\tsecond line\t\n");
+    const QVector<DocumentWindow> windows = DocumentSegmenter::partition(document);
+    QCOMPARE(windows.size(), 1);
+
+    TranslationContext context;
+    DocumentTranslator translator;
+    QString finished;
+    connect(&translator, &DocumentTranslator::finished, this,
+            [&finished](const QString& text) { finished = text; });
+
+    translator.start(windows, context);
+    QTRY_VERIFY(!finished.isEmpty());
+    QCOMPARE(m_api.requests, 1);
+
+    // Both occurrences of the repeated line reach the model as one line.
+    const QJsonObject window = m_api.windows.first();
+    QCOMPARE(window.keys(), QStringList({QStringLiteral("1"), QStringLiteral("2")}));
+    QCOMPARE(window.value(QStringLiteral("1")).toString(), QStringLiteral("first line"));
+    QCOMPARE(window.value(QStringLiteral("2")).toString(), QStringLiteral("second line"));
+
+    QCOMPARE(finished, QStringLiteral("\t译文 first line \t\n    \n  译文 second line  \n"
+                                      "\t译文 second line\t\n"));
+}
+
+// A neighbour reaches a request as its text alone.
+void TestDocumentTranslator::sendsNeighboursWithoutTheirWhitespace()
+{
+    // A tab cannot come from the template, which indents with spaces.
+    const QVector<DocumentWindow> windows =
+        DocumentSegmenter::partition(QStringLiteral("\tfirst line\n\tsecond line\n"), 10, 1);
+    QCOMPARE(windows.size(), 2);
+
+    TranslationContext context;
+    DocumentTranslator translator;
+    QString finished;
+    connect(&translator, &DocumentTranslator::finished, this,
+            [&finished](const QString& text) { finished = text; });
+
+    translator.start(windows, context);
+    QTRY_VERIFY(!finished.isEmpty());
+    QCOMPARE(m_api.requests, 2);
+    for (const QString& prompt : std::as_const(m_api.prompts))
+        QVERIFY2(!prompt.contains(QLatin1Char('\t')), qPrintable(prompt));
+
+    QCOMPARE(finished, QStringLiteral("\t译文 first line\n\t译文 second line\n"));
 }
 
 // Original text that would break the JSON of a request is escaped in the value it
