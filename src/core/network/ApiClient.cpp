@@ -179,6 +179,22 @@ QHttpHeaders ApiClient::parseCustomHeaders(const QString& raw)
     return headers;
 }
 
+QJsonObject ApiClient::withExtraBody(const QJsonObject& body)
+{
+    const QString extra = ConfigManager::instance()->stringValue(Keys::apiExtraBody).trimmed();
+    if (extra.isEmpty())
+        return body;
+    const QJsonDocument extraDoc = QJsonDocument::fromJson(extra.toUtf8());
+    if (!extraDoc.isObject())
+        return body;
+
+    QJsonObject payload = body;
+    const QJsonObject extraObject = extraDoc.object();
+    for (auto it = extraObject.begin(); it != extraObject.end(); ++it)
+        payload.insert(it.key(), it.value());
+    return payload;
+}
+
 QUrl ApiClient::normalizedBaseUrl(const QString& baseUrl)
 {
     // QNetworkRequestFactory appends a relative path as-is, so trailing
@@ -196,8 +212,6 @@ void ApiClient::sendChatRequest(const QJsonObject& body,
                                 DeltaCallback onStream,
                                 ErrorCallback onError)
 {
-    ConfigManager* config = ConfigManager::instance();
-
     const std::optional<QNetworkRequest> request = createRequest(
         kChatCompletionsPath, QByteArrayLiteral("application/json"), Connection::configured(), onError);
     if (!request.has_value()) {
@@ -205,16 +219,7 @@ void ApiClient::sendChatRequest(const QJsonObject& body,
         return;
     }
 
-    QJsonObject payload = body;
-    const QString extra = config->stringValue(Keys::apiExtraBody).trimmed();
-    if (!extra.isEmpty()) {
-        const QJsonDocument extraDoc = QJsonDocument::fromJson(extra.toUtf8());
-        if (extraDoc.isObject()) {
-            const QJsonObject extraObject = extraDoc.object();
-            for (auto it = extraObject.begin(); it != extraObject.end(); ++it)
-                payload.insert(it.key(), it.value());
-        }
-    }
+    const QJsonObject payload = withExtraBody(body);
 
     cancel();
 

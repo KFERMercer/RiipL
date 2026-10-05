@@ -14,8 +14,8 @@ namespace {
 
 QString writeFile(const QString& name, const QByteArray& content)
 {
-    const QString path = TestSupport::tempDir() + QLatin1Char('/') + name;
     QDir().mkpath(TestSupport::tempDir());
+    const QString path = TestSupport::tempDir() + QLatin1Char('/') + name;
     QFile file(path);
     if (!file.open(QIODevice::WriteOnly))
         return QString();
@@ -31,6 +31,18 @@ QString readFile(const QString& path)
     return QString::fromUtf8(file.readAll());
 }
 
+// Digest a request is cached under.
+QString sampleOf(const QByteArray& request)
+{
+    return QString::fromLatin1(
+        QCryptographicHash::hash(request, QCryptographicHash::Sha256).toHex());
+}
+
+QStringList entriesWithSuffix(const QString& root, const QString& suffix)
+{
+    return QDir(root).entryList({QStringLiteral("*") + suffix}, QDir::Files, QDir::Name);
+}
+
 } // namespace
 
 class TestDocumentCache : public QObject
@@ -38,134 +50,123 @@ class TestDocumentCache : public QObject
     Q_OBJECT
 
 private slots:
-    void checksumsFileContents();
     void usesTheStandardCacheLocation();
-    void storesTheDocumentFile();
-    void roundTripsShardAnswers();
+    void roundTripsAnswersByName();
     void keepsAndClearsFailures();
-    void clearsEveryFailureOfADocument();
-    void storesNothingWithoutChecksum();
+    void removesOnlyTheNamedFailure();
+    void storesNothingWithoutASample();
+    void keepsAnswersFlatInTheCacheLocation();
     void clearsEveryDocumentCache();
     void cachesByDefault();
 };
 
-void TestDocumentCache::checksumsFileContents()
-{
-    const QByteArray content = QByteArrayLiteral("alpha\nbeta\n");
-    const QString path = writeFile(QStringLiteral("document.txt"), content);
-    QVERIFY(!path.isEmpty());
-
-    const QString checksum =
-        QString::fromLatin1(QCryptographicHash::hash(content, QCryptographicHash::Sha256).toHex());
-    QCOMPARE(DocumentCache::checksumOf(path), checksum);
-
-    // Other contents and unreadable files are named apart from it.
-    const QString other = writeFile(QStringLiteral("other.txt"), QByteArrayLiteral("alpha\n"));
-    QVERIFY(DocumentCache::checksumOf(other) != checksum);
-    QVERIFY(DocumentCache::checksumOf(TestSupport::tempDir() + QStringLiteral("/missing.txt")).isEmpty());
-}
-
-// Without a root of its own the cache lives in the standard cache directory.
+// Without a root of its own the cache lives in the standard cache directory, and
+// a given root is used as it stands.
 void TestDocumentCache::usesTheStandardCacheLocation()
 {
-    const DocumentCache cache(QStringLiteral("abc123"));
-    const QString root = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
-    QVERIFY(!root.isEmpty());
-    QCOMPARE(cache.documentDir(), QDir(root).filePath(QStringLiteral("document_abc123")));
-    QCOMPARE(cache.documentPath(), QDir(cache.documentDir()).filePath(QStringLiteral("abc123")));
+    const QString standard = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+    QVERIFY(!standard.isEmpty());
+    QCOMPARE(DocumentCache().rootPath(), standard);
+    QCOMPARE(DocumentCache(TestSupport::tempDir()).rootPath(), TestSupport::tempDir());
 }
 
-void TestDocumentCache::storesTheDocumentFile()
+// An answer lies directly below the cache location under the whole digest of the
+// request that produced it.
+void TestDocumentCache::roundTripsAnswersByName()
 {
-    const QByteArray content = QByteArrayLiteral("alpha\nbeta\n");
-    const QString source = writeFile(QStringLiteral("document.txt"), content);
-    const DocumentCache cache(DocumentCache::checksumOf(source), TestSupport::tempDir());
-
-    QVERIFY(cache.storeDocument(source));
-    QCOMPARE(readFile(cache.documentPath()), QString::fromUtf8(content));
-
-    // A copy already there is the document, so it stands even when the file it
-    // came from is gone.
-    QVERIFY(cache.storeDocument(TestSupport::tempDir() + QStringLiteral("/missing.txt")));
-    QCOMPARE(readFile(cache.documentPath()), QString::fromUtf8(content));
-}
-
-void TestDocumentCache::roundTripsShardAnswers()
-{
-    const DocumentCache cache(QStringLiteral("abc123"), TestSupport::tempDir());
-    const QString shard = QStringLiteral("0.3f9a1c22");
-    QVERIFY(!cache.cachedShard(shard));
+    const QDir root(TestSupport::tempDir());
+    const DocumentCache cache(root.path());
+    const QString sample = sampleOf(QByteArrayLiteral("window one"));
+    QCOMPARE(sample.size(), 64);
+    QVERIFY(!cache.cachedAnswer(sample));
 
     const QString answer = QStringLiteral("{\n    \"1\": \"译文\"\n}");
-    QVERIFY(cache.storeShard(shard, answer));
-    QVERIFY(cache.cachedShard(shard) == answer);
-    QVERIFY(QFile::exists(cache.documentDir() + QStringLiteral("/0.3f9a1c22.cache.json")));
-
-    // A shard without a name has no file to live in.
-    QVERIFY(!cache.storeShard(QString(), answer));
-    QVERIFY(!cache.cachedShard(QString()));
+    QVERIFY(cache.storeAnswer(sample, answer));
+    QVERIFY(cache.cachedAnswer(sample) == answer);
+    QCOMPARE(root.entryList(QDir::Files, QDir::Name),
+             QStringList{sample + QStringLiteral(".document.cache.json")});
 }
 
 void TestDocumentCache::keepsAndClearsFailures()
 {
-    const DocumentCache cache(QStringLiteral("abc123"), TestSupport::tempDir());
-    const QString shard = QStringLiteral("1.0011aabb");
+    const QDir root(TestSupport::tempDir());
+    const DocumentCache cache(root.path());
+    const QString sample = sampleOf(QByteArrayLiteral("window one"));
     const QString broken = QStringLiteral("{\"1\": \"译文\", \"2\":");
+    const QString path = root.filePath(sample + QStringLiteral(".document.failure.json"));
 
-    QVERIFY(cache.storeFailure(shard, broken));
-    const QString path = cache.documentDir() + QStringLiteral("/1.0011aabb.failure.json");
+    QVERIFY(cache.storeFailure(sample, broken));
     QCOMPARE(readFile(path), broken);
 
-    cache.removeFailure(shard);
+    cache.removeFailure(sample);
     QVERIFY(!QFile::exists(path));
 }
 
-// A run drops the failures of the previous one, leaving the answers alone.
-void TestDocumentCache::clearsEveryFailureOfADocument()
+// A request clears its own record and leaves the failure another request left.
+void TestDocumentCache::removesOnlyTheNamedFailure()
 {
-    const DocumentCache cache(QStringLiteral("abc123"), TestSupport::tempDir());
-    const QString shard = QStringLiteral("1.0011aabb");
-    QVERIFY(cache.storeShard(shard, QStringLiteral("{}")));
-    QVERIFY(cache.storeFailure(shard, QStringLiteral("{")));
-    QVERIFY(cache.storeFailure(QStringLiteral("deadbeef.0"), QStringLiteral("{")));
+    const DocumentCache cache(TestSupport::tempDir());
+    const QString first = sampleOf(QByteArrayLiteral("window one"));
+    const QString second = sampleOf(QByteArrayLiteral("window two"));
+    QVERIFY(cache.storeAnswer(first, QStringLiteral("{}")));
+    QVERIFY(cache.storeFailure(first, QStringLiteral("{")));
+    QVERIFY(cache.storeFailure(second, QStringLiteral("{")));
 
-    cache.removeFailures();
+    cache.removeFailure(first);
 
-    QVERIFY(QDir(cache.documentDir())
-                .entryList({QStringLiteral("*.failure.json")}, QDir::Files)
-                .isEmpty());
-    QVERIFY(cache.cachedShard(shard) == QStringLiteral("{}"));
+    QCOMPARE(entriesWithSuffix(TestSupport::tempDir(), QStringLiteral(".document.failure.json")),
+             QStringList{second + QStringLiteral(".document.failure.json")});
+    QVERIFY(cache.cachedAnswer(first) == QStringLiteral("{}"));
 }
 
-// A cache without a checksum is a disabled cache: it reads and writes nothing.
-void TestDocumentCache::storesNothingWithoutChecksum()
+// A request without a name is cached nowhere: nothing is written and nothing is
+// read.
+void TestDocumentCache::storesNothingWithoutASample()
 {
-    const DocumentCache cache(QString(), TestSupport::tempDir());
-    QVERIFY(!cache.isValid());
-
-    const QString source = writeFile(QStringLiteral("document.txt"), QByteArrayLiteral("alpha"));
-    QVERIFY(!cache.storeDocument(source));
-    QVERIFY(!cache.storeShard(QStringLiteral("0.3f9a1c22"), QStringLiteral("{}")));
-    QVERIFY(!cache.storeFailure(QStringLiteral("0.3f9a1c22"), QStringLiteral("{")));
-    QVERIFY(!cache.cachedShard(QStringLiteral("0.3f9a1c22")));
-    QVERIFY(!QDir(TestSupport::tempDir()).exists(QStringLiteral("document_")));
+    const DocumentCache cache(TestSupport::tempDir());
+    QVERIFY(!cache.storeAnswer(QString(), QStringLiteral("{}")));
+    QVERIFY(!cache.storeFailure(QString(), QStringLiteral("{")));
+    QVERIFY(!cache.cachedAnswer(QString()));
+    cache.removeFailure(QString());
+    QVERIFY(QDir(TestSupport::tempDir()).entryList(QDir::Files).isEmpty());
 }
 
-// Clearing takes the caches of every document and leaves the rest of the cache
-// directory alone.
+// Every answer sits in the cache location itself: a window is found by name, and
+// any cache reads what another wrote.
+void TestDocumentCache::keepsAnswersFlatInTheCacheLocation()
+{
+    const QDir root(TestSupport::tempDir());
+    const DocumentCache first(root.path());
+    const DocumentCache second(root.path());
+    const QString one = sampleOf(QByteArrayLiteral("window one"));
+    const QString two = sampleOf(QByteArrayLiteral("window two"));
+    QVERIFY(first.storeAnswer(one, QStringLiteral("{}")));
+    QVERIFY(second.storeAnswer(two, QStringLiteral("{}")));
+
+    QCOMPARE(root.entryList(QDir::Files, QDir::Name),
+             QStringList({one + QStringLiteral(".document.cache.json"),
+                          two + QStringLiteral(".document.cache.json")}));
+    QVERIFY(root.entryList(QDir::Dirs | QDir::NoDotAndDotDot).isEmpty());
+    QVERIFY(second.cachedAnswer(one) == QStringLiteral("{}"));
+}
+
+// Clearing takes the answers and failures of every request and leaves the rest of
+// the cache location alone.
 void TestDocumentCache::clearsEveryDocumentCache()
 {
-    const DocumentCache first(QStringLiteral("aaa"), TestSupport::tempDir());
-    const DocumentCache second(QStringLiteral("bbb"), TestSupport::tempDir());
-    QVERIFY(first.storeShard(QStringLiteral("0.3f9a1c22"), QStringLiteral("{}")));
-    QVERIFY(second.storeShard(QStringLiteral("0.3f9a1c22"), QStringLiteral("{}")));
-    QVERIFY(first.storeDocument(writeFile(QStringLiteral("document.txt"), QByteArrayLiteral("alpha"))));
-    const QString unrelated = writeFile(QStringLiteral("unrelated.txt"), QByteArrayLiteral("keep me"));
+    const DocumentCache cache(TestSupport::tempDir());
+    const QString sample = sampleOf(QByteArrayLiteral("window one"));
+    QVERIFY(cache.storeAnswer(sample, QStringLiteral("{}")));
+    QVERIFY(cache.storeFailure(sample, QStringLiteral("{")));
+    QVERIFY(cache.storeFailure(sampleOf(QByteArrayLiteral("window two")), QStringLiteral("{")));
+    const QString unrelated =
+        writeFile(QStringLiteral("unrelated.txt"), QByteArrayLiteral("keep me"));
 
     DocumentCache::clearAll(TestSupport::tempDir());
 
-    QVERIFY(!QFile::exists(first.documentDir()));
-    QVERIFY(!QFile::exists(second.documentDir()));
+    QVERIFY(entriesWithSuffix(TestSupport::tempDir(), QStringLiteral(".document.cache.json")).isEmpty());
+    QVERIFY(entriesWithSuffix(TestSupport::tempDir(), QStringLiteral(".document.failure.json"))
+                .isEmpty());
     QVERIFY(QFile::exists(unrelated));
 }
 

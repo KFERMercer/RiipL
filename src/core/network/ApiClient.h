@@ -95,6 +95,10 @@ public:
     // malformed lines are ignored.
     static QHttpHeaders parseCustomHeaders(const QString& raw);
 
+    // Body as the endpoint is given it: every key of the configured extra body
+    // takes the place of the one the request carries.
+    static QJsonObject withExtraBody(const QJsonObject& body);
+
     // Base URL with redundant trailing path slashes removed.
     static QUrl normalizedBaseUrl(const QString& baseUrl);
 

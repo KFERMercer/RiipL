@@ -26,6 +26,9 @@
 #include <QToolButton>
 #include <QVBoxLayout>
 
+#include <optional>
+#include <utility>
+
 DocumentDialog::DocumentDialog(const TranslationContext& baseContext, QWidget* parent)
     : QDialog(parent)
     , m_baseContext(baseContext)
@@ -119,11 +122,11 @@ DocumentDialog::DocumentDialog(const TranslationContext& baseContext, QWidget* p
         setStatus(tr("Translation finished"));
     });
     connect(&m_translator, &DocumentTranslator::failed, this,
-            [this](const QStringList& shards) {
+            [this](const QStringList& samples) {
                 m_preview->setResult(m_completedText);
                 endRun();
-                setStatus(tr("Failed shards: %1")
-                              .arg(shards.join(QStringLiteral(", "))), true);
+                setStatus(tr("Failed windows: %1")
+                              .arg(samples.join(QStringLiteral(", "))), true);
             });
     connect(&m_translator, &DocumentTranslator::stopped, this, [this]() {
         endRun();
@@ -200,17 +203,15 @@ void DocumentDialog::start()
         return;
 
     ConfigManager* config = ConfigManager::instance();
-    DocumentCache cache;
-    if (config->boolValue(Keys::documentCacheEnabled)) {
-        cache = DocumentCache(DocumentCache::checksumOf(m_loadedPath));
-        cache.storeDocument(m_loadedPath);
-    }
+    std::optional<DocumentCache> cache = std::nullopt;
+    if (config->boolValue(Keys::documentCacheEnabled))
+        cache.emplace();
 
     m_progress->setRange(0, m_windows.size());
     m_progress->setValue(0);
     setRunning(true);
     setStatus(tr("Translating..."));
-    m_translator.start(m_windows, m_baseContext, cache);
+    m_translator.start(m_windows, m_baseContext, std::move(cache));
 }
 
 void DocumentDialog::stop()

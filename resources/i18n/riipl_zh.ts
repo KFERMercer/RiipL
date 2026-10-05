@@ -4,57 +4,57 @@
 <context>
     <name>ApiClient</name>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="494"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="499"/>
         <source>API base URL is not configured</source>
         <translation>未配置 API 基础地址</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="496"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="501"/>
         <source>API base URL must be an absolute http or https URL</source>
         <translation>API 基础地址必须是绝对的 http 或 https URL</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="498"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="503"/>
         <source>Request timed out</source>
         <translation>请求超时</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="500"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="505"/>
         <source>Network request failed</source>
         <translation>网络请求失败</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="501"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="506"/>
         <source>Network request failed: %1</source>
         <translation>网络请求失败：%1</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="503"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="508"/>
         <source>Request failed with status %1</source>
         <translation>请求失败，状态码 %1</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="508"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="513"/>
         <source>Failed to parse API response</source>
         <translation>解析 API 响应失败</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="510"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="515"/>
         <source>API response contains no choices</source>
         <translation>API 响应中没有选项内容</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="512"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="517"/>
         <source>API response is too large to accept</source>
         <translation>API 响应过大，无法接收</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="514"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="519"/>
         <source>Nothing to translate</source>
         <translation>没有需要翻译的内容</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="516"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="521"/>
         <source>Nothing to look up</source>
         <translation>没有可查询的内容</translation>
     </message>
@@ -171,144 +171,144 @@
 <context>
     <name>DocumentDialog</name>
     <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="33"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="36"/>
         <source>Document translation</source>
         <translation>文档翻译</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="41"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="44"/>
         <source>Browse...</source>
         <translation>浏览...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="62"/>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="155"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="65"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="158"/>
         <source>Ready</source>
         <translation>就绪</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="83"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="86"/>
         <source>Export translation...</source>
         <translation>导出译文...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="86"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="89"/>
         <source>Close</source>
         <translation>关闭</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="39"/>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="168"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="42"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="171"/>
         <source>Choose a .txt file</source>
         <translation>选择 .txt 文件</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="40"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="43"/>
         <source>Document file</source>
         <translation>文档文件</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="55"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="58"/>
         <source>Translated document</source>
         <translation>译文文档</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="57"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="60"/>
         <source>Preview</source>
         <translation>预览</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="69"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="72"/>
         <source>Translate</source>
         <translation>翻译</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="71"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="74"/>
         <source>Translate the loaded document (Ctrl+Return)</source>
         <translation>翻译已加载的文档（Ctrl+Return）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="76"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="79"/>
         <source>Stop</source>
         <translation>停止</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="77"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="80"/>
         <source>Stop translation</source>
         <translation>停止翻译</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="113"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="116"/>
         <source>Translated %1/%2 windows</source>
         <translation>已翻译 %1/%2 个窗口</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="119"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="122"/>
         <source>Translation finished</source>
         <translation>翻译完成</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="125"/>
-        <source>Failed shards: %1</source>
-        <translation>失败分片：%1</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="130"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="133"/>
         <source>Stopped</source>
         <translation>已停止</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="138"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="141"/>
         <source>Open document</source>
         <translation>打开文档</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="139"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="142"/>
         <source>Text files (*.txt)</source>
         <translation>文本文件 (*.txt)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="212"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="213"/>
         <source>Translating...</source>
         <translation>翻译中...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="175"/>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="187"/>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="225"/>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="252"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="178"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="190"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="226"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="253"/>
         <source>RiipL</source>
         <translation>RiipL</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="174"/>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="175"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="128"/>
+        <source>Failed windows: %1</source>
+        <translation>失败窗口：%1</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="177"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="178"/>
         <source>Cannot open file: %1</source>
         <translation>无法打开文件：%1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="186"/>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="187"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="189"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="190"/>
         <source>No content to translate</source>
         <translation>没有可翻译的内容</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="225"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="226"/>
         <source>Stop the translation and close?</source>
         <translation>停止翻译并关闭吗？</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="245"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="246"/>
         <source>Export translation</source>
         <translation>导出译文</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="252"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="253"/>
         <source>Cannot write file: %1</source>
         <translation>无法写入文件：%1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="255"/>
+        <location filename="../../src/ui/dialogs/DocumentDialog.cpp" line="256"/>
         <source>Exported to %1</source>
         <translation>已导出到 %1</translation>
     </message>
