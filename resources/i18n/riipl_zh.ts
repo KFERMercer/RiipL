@@ -1247,11 +1247,6 @@
         <translation>确定删除全部文档翻译缓存？</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="618"/>
-        <source>Clear document cache now</source>
-        <translation>立即清空文档翻译缓存</translation>
-    </message>
-    <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="629"/>
         <source>Interface language</source>
         <translation>界面语言</translation>
@@ -1290,6 +1285,11 @@
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="651"/>
         <source>Max records</source>
         <translation>最大记录数</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="660"/>
+        <source>Clear translation history</source>
+        <translation>清空翻译历史</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="692"/>
@@ -1437,6 +1437,11 @@
         <translation>窗口词数上限</translation>
     </message>
     <message>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="618"/>
+        <source>Clear document translation cache</source>
+        <translation>清空文档翻译缓存</translation>
+    </message>
+    <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="709"/>
         <source>Translation window, rendered as JSON (document translation only)</source>
         <translation>翻译窗口，以 JSON 渲染（文档翻译专用）</translation>
@@ -1445,11 +1450,6 @@
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="742"/>
         <source>Preview prompt...</source>
         <translation>预览提示词...</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="660"/>
-        <source>Clear history now</source>
-        <translation>立即清空历史</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="602"/>

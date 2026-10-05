@@ -615,7 +615,7 @@ QWidget* SettingsDialog::createDocumentPage()
         }
     });
     form->addRow(QString(), clearButton);
-    bindText([clearButton]() { clearButton->setText(tr("Clear document cache now")); });
+    bindText([clearButton]() { clearButton->setText(tr("Clear document translation cache")); });
     return page;
 }
 
@@ -657,7 +657,7 @@ QWidget* SettingsDialog::createHistoryPage()
             m_history->clear();
     });
     form->addRow(QString(), clearButton);
-    bindText([clearButton]() { clearButton->setText(tr("Clear history now")); });
+    bindText([clearButton]() { clearButton->setText(tr("Clear translation history")); });
     return page;
 }
 
