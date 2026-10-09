@@ -3,6 +3,8 @@
 #include <QMainWindow>
 #include <QUndoStack>
 
+#include <memory>
+
 #include "core/history/HistoryManager.h"
 #include "core/translation/TranslationEngine.h"
 #include "ui/widgets/TranslationEdit.h"
@@ -18,6 +20,7 @@ class QSystemTrayIcon;
 class QTimer;
 class QToolButton;
 class CandidatePopup;
+class DocumentTranslationWindow;
 
 class MainWindow : public QMainWindow
 {
@@ -25,6 +28,8 @@ class MainWindow : public QMainWindow
 
 public:
     explicit MainWindow(QWidget* parent = nullptr);
+    ~MainWindow() override;
+
     void retranslateUi();
 
 protected:
@@ -41,6 +46,7 @@ private slots:
     void exportTranslation();
     void showSettingsDialog();
     void showHistoryDialog();
+    void showDocumentWindow();
     void onConfigChanged(const QString& key);
     void toggleVisible();
 
@@ -142,6 +148,8 @@ private:
 
     QTimer* m_debounce = nullptr;
     QTimer* m_clipboardTimer = nullptr;
+    // Parentless, so it is a peer of this window rather than a transient on top.
+    std::unique_ptr<DocumentTranslationWindow> m_documentWindow;
     TranslationEngine m_engine;
     HistoryManager m_history;
     QSystemTrayIcon* m_tray = nullptr;

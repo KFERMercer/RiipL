@@ -1,7 +1,7 @@
 #include "MainWindow.h"
 
 #include "ui/widgets/CandidatePopup.h"
-#include "ui/dialogs/DocumentDialog.h"
+#include "ui/windows/DocumentTranslationWindow.h"
 #include "ui/dialogs/ApiPresetDialog.h"
 #include "ui/dialogs/GlossaryDialog.h"
 #include "ui/dialogs/HistoryDialog.h"
@@ -229,6 +229,8 @@ MainWindow::MainWindow(QWidget* parent)
     retranslateUi();
 }
 
+MainWindow::~MainWindow() = default;
+
 void MainWindow::closeEvent(QCloseEvent* event)
 {
     if (m_tray && ConfigManager::instance()->boolValue(Keys::uiMinimizeToTray)) {
@@ -236,6 +238,9 @@ void MainWindow::closeEvent(QCloseEvent* event)
         event->ignore();
         return;
     }
+    // Hide the peer so its geometry is saved before the application quits.
+    if (m_documentWindow)
+        m_documentWindow->close();
     ConfigManager::instance()->flush();
     event->accept();
 }
@@ -445,10 +450,7 @@ void MainWindow::buildMenus()
     connect(m_clipboardAction, &QAction::toggled, this, [this](bool checked) {
         ConfigManager::instance()->setValue(Keys::clipboardMonitor, checked);
     });
-    connect(m_documentAction, &QAction::triggered, this, [this]() {
-        DocumentDialog dialog(currentContext(), this);
-        dialog.exec();
-    });
+    connect(m_documentAction, &QAction::triggered, this, &MainWindow::showDocumentWindow);
     connect(m_exportAction, &QAction::triggered, this, &MainWindow::exportTranslation);
     connect(m_exitAction, &QAction::triggered, this, [this]() {
         ConfigManager::instance()->flush();
@@ -929,6 +931,19 @@ void MainWindow::showSettingsDialog()
 {
     SettingsDialog dialog(&m_history, this);
     dialog.exec();
+}
+
+void MainWindow::showDocumentWindow()
+{
+    if (!m_documentWindow) {
+        m_documentWindow = std::make_unique<DocumentTranslationWindow>(
+            [this]() { return currentContext(); });
+    }
+    if (m_documentWindow->isMinimized())
+        m_documentWindow->setWindowState(m_documentWindow->windowState() & ~Qt::WindowMinimized);
+    m_documentWindow->show();
+    m_documentWindow->raise();
+    m_documentWindow->activateWindow();
 }
 
 void MainWindow::showHistoryDialog()

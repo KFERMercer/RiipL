@@ -77,7 +77,7 @@ set(UI_SOURCES
     src/ui/dialogs/ToneDialog.cpp
     src/ui/dialogs/PromptPreviewDialog.cpp
     src/ui/dialogs/HistoryDialog.cpp
-    src/ui/dialogs/DocumentDialog.cpp
+    src/ui/windows/DocumentTranslationWindow.cpp
 )
 set(UI_HEADERS
     src/ui/mainwindow/MainWindow.h
@@ -95,7 +95,7 @@ set(UI_HEADERS
     src/ui/dialogs/ToneDialog.h
     src/ui/dialogs/PromptPreviewDialog.h
     src/ui/dialogs/HistoryDialog.h
-    src/ui/dialogs/DocumentDialog.h
+    src/ui/windows/DocumentTranslationWindow.h
 )
 
 # English is the source language, so it needs no catalog: tr() falls back to the

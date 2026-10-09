@@ -1,4 +1,4 @@
-#include "DocumentDialog.h"
+#include "DocumentTranslationWindow.h"
 
 #include "core/config/ConfigManager.h"
 #include "core/document/DocumentCache.h"
@@ -9,6 +9,7 @@
 
 #include <QAction>
 #include <QByteArray>
+#include <QEvent>
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -29,20 +30,19 @@
 #include <optional>
 #include <utility>
 
-DocumentDialog::DocumentDialog(const TranslationContext& baseContext, QWidget* parent)
-    : QDialog(parent)
-    , m_baseContext(baseContext)
+DocumentTranslationWindow::DocumentTranslationWindow(ContextProvider context)
+    : QWidget(nullptr)
+    , m_contextProvider(std::move(context))
 {
-    setWindowTitle(tr("Document translation"));
+    // Closing the window must not count as the application's last window while the
+    // main window sits in the tray.
+    setAttribute(Qt::WA_QuitOnClose, false);
 
     auto* layout = new QVBoxLayout(this);
 
     auto* fileRow = new QHBoxLayout();
     m_pathEdit = new QLineEdit(this);
-    m_pathEdit->setPlaceholderText(tr("Choose a .txt file"));
-    m_pathEdit->setAccessibleName(tr("Document file"));
-    m_browseButton = new QPushButton(tr("Browse..."), this);
-    m_browseButton->setAutoDefault(false);
+    m_browseButton = new QPushButton(this);
     fileRow->addWidget(m_pathEdit, 1);
     fileRow->addWidget(m_browseButton);
     layout->addLayout(fileRow);
@@ -55,52 +55,48 @@ DocumentDialog::DocumentDialog(const TranslationContext& baseContext, QWidget* p
     m_preview = new TranslationEdit(this);
     m_preview->setFont(AppFonts::editorFont());
     m_preview->setWordSelectionEnabled(false);
-    m_preview->setAccessibleName(tr("Translated document"));
 
-    auto* previewGroup = new QGroupBox(tr("Preview"), this);
-    auto* previewLayout = new QVBoxLayout(previewGroup);
+    m_previewGroup = new QGroupBox(this);
+    auto* previewLayout = new QVBoxLayout(m_previewGroup);
     previewLayout->addWidget(m_preview);
-    layout->addWidget(previewGroup, 1);
+    layout->addWidget(m_previewGroup, 1);
 
-    m_status = new QLabel(tr("Ready"), this);
+    m_statusLabel = new QLabel(this);
     // Status text can repeat a path the user typed, so it takes no markup.
-    m_status->setTextFormat(Qt::PlainText);
-    layout->addWidget(m_status);
+    m_statusLabel->setTextFormat(Qt::PlainText);
+    layout->addWidget(m_statusLabel);
 
     auto* buttonRow = new QHBoxLayout();
 
-    m_translateAction = new QAction(tr("Translate"), this);
+    m_translateAction = new QAction(this);
     m_translateAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+Return")));
-    m_translateAction->setToolTip(tr("Translate the loaded document (Ctrl+Return)"));
     auto* translateButton = new QToolButton(this);
     translateButton->setDefaultAction(m_translateAction);
     translateButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
 
-    m_stopAction = new QAction(tr("Stop"), this);
-    m_stopAction->setToolTip(tr("Stop translation"));
+    m_stopAction = new QAction(this);
     m_stopAction->setEnabled(false);
     auto* stopButton = new QToolButton(this);
     stopButton->setDefaultAction(m_stopAction);
     stopButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
 
-    m_exportButton = new QPushButton(tr("Export translation..."), this);
+    m_exportButton = new QPushButton(this);
     m_exportButton->setEnabled(false);
-    m_exportButton->setAutoDefault(false);
-    auto* closeButton = new QPushButton(tr("Close"), this);
-    closeButton->setAutoDefault(false);
+    m_closeButton = new QPushButton(this);
 
     buttonRow->addWidget(translateButton);
     buttonRow->addWidget(stopButton);
     buttonRow->addWidget(m_exportButton);
     buttonRow->addStretch(1);
-    buttonRow->addWidget(closeButton);
+    buttonRow->addWidget(m_closeButton);
     layout->addLayout(buttonRow);
 
-    connect(m_browseButton, &QPushButton::clicked, this, &DocumentDialog::browse);
-    connect(m_translateAction, &QAction::triggered, this, &DocumentDialog::start);
-    connect(m_stopAction, &QAction::triggered, this, &DocumentDialog::stop);
-    connect(m_exportButton, &QPushButton::clicked, this, &DocumentDialog::exportResult);
-    connect(closeButton, &QPushButton::clicked, this, &QDialog::close);
+    connect(m_browseButton, &QPushButton::clicked, this, &DocumentTranslationWindow::browse);
+    connect(m_translateAction, &QAction::triggered, this, &DocumentTranslationWindow::start);
+    connect(m_stopAction, &QAction::triggered, this, &DocumentTranslationWindow::stop);
+    connect(m_exportButton, &QPushButton::clicked, this,
+            &DocumentTranslationWindow::exportResult);
+    connect(m_closeButton, &QPushButton::clicked, this, &QWidget::close);
 
     connect(&m_translator, &DocumentTranslator::windowTranslated, this, [this](const QString& text) {
         m_completedText = text;
@@ -113,30 +109,84 @@ DocumentDialog::DocumentDialog(const TranslationContext& baseContext, QWidget* p
                 m_progress->setRange(0, total);
                 m_progress->setValue(completed);
                 if (completed > 0)
-                    setStatus(tr("Translated %1/%2 windows").arg(completed).arg(total));
+                    setStatus(Status::Progress);
             });
     connect(&m_translator, &DocumentTranslator::finished, this, [this](const QString& text) {
         m_completedText = text;
         m_preview->setResult(text);
         endRun();
-        setStatus(tr("Translation finished"));
+        setStatus(Status::Finished);
     });
     connect(&m_translator, &DocumentTranslator::failed, this,
             [this](const QStringList& samples) {
-                m_preview->setResult(m_completedText);
                 endRun();
-                setStatus(tr("Failed windows: %1")
-                              .arg(samples.join(QStringLiteral(", "))), true);
+                setStatus(Status::Failed, samples.join(QStringLiteral(", ")));
             });
     connect(&m_translator, &DocumentTranslator::stopped, this, [this]() {
         endRun();
-        setStatus(tr("Stopped"));
+        setStatus(Status::Stopped);
     });
 
     WindowState::track(this, WindowState::Id::document);
+    retranslateUi();
 }
 
-void DocumentDialog::browse()
+void DocumentTranslationWindow::changeEvent(QEvent* event)
+{
+    QWidget::changeEvent(event);
+    if (event->type() == QEvent::LanguageChange)
+        retranslateUi();
+    else if (event->type() == QEvent::ApplicationFontChange)
+        m_preview->setFont(AppFonts::editorFont());
+}
+
+void DocumentTranslationWindow::retranslateUi()
+{
+    setWindowTitle(tr("Document translation"));
+    m_pathEdit->setPlaceholderText(tr("Choose a .txt file"));
+    m_pathEdit->setAccessibleName(tr("Document file"));
+    m_preview->setAccessibleName(tr("Translated document"));
+    m_previewGroup->setTitle(tr("Preview"));
+    m_browseButton->setText(tr("Browse..."));
+    m_translateAction->setText(tr("Translate"));
+    m_translateAction->setToolTip(tr("Translate the loaded document (Ctrl+Return)"));
+    m_stopAction->setText(tr("Stop"));
+    m_stopAction->setToolTip(tr("Stop translation"));
+    m_exportButton->setText(tr("Export translation..."));
+    m_closeButton->setText(tr("Close"));
+    m_statusLabel->setText(statusText());
+}
+
+QString DocumentTranslationWindow::statusText() const
+{
+    switch (m_status) {
+    case Status::Ready:
+        return tr("Ready");
+    case Status::ChooseFile:
+        return tr("Choose a .txt file");
+    case Status::CannotOpen:
+        return tr("Cannot open file: %1").arg(m_statusArgument);
+    case Status::NoContent:
+        return tr("No content to translate");
+    case Status::Translating:
+        return tr("Translating...");
+    case Status::Progress:
+        return tr("Translated %1/%2 windows").arg(m_progress->value()).arg(m_progress->maximum());
+    case Status::Finished:
+        return tr("Translation finished");
+    case Status::Failed:
+        return tr("Failed windows: %1").arg(m_statusArgument);
+    case Status::Stopped:
+        return tr("Stopped");
+    case Status::Exported:
+        return tr("Exported to %1").arg(m_statusArgument);
+    case Status::CannotWrite:
+        return tr("Cannot write file: %1").arg(m_statusArgument);
+    }
+    return QString();
+}
+
+void DocumentTranslationWindow::browse()
 {
     const QString path = QFileDialog::getOpenFileName(this, tr("Open document"), QString(),
                                                       tr("Text files (*.txt)"));
@@ -146,19 +196,19 @@ void DocumentDialog::browse()
     clearResult();
 }
 
-// Drops what the last run left on screen, so a path the dialog has not read yet
+// Drops what the last run left on screen, so a path the window has not read yet
 // does not sit beside the result of another one.
-void DocumentDialog::clearResult()
+void DocumentTranslationWindow::clearResult()
 {
     m_completedText.clear();
     m_preview->setResult(QString());
     m_progress->setRange(0, 1);
     m_progress->setValue(0);
     m_exportButton->setEnabled(false);
-    setStatus(tr("Ready"));
+    setStatus(Status::Ready);
 }
 
-bool DocumentDialog::loadFile()
+bool DocumentTranslationWindow::loadFile()
 {
     // What is on screen belongs to the path the box held before, so it is dropped
     // before the file is read.
@@ -168,13 +218,13 @@ bool DocumentDialog::loadFile()
     clearResult();
 
     if (path.isEmpty()) {
-        setStatus(tr("Choose a .txt file"));
+        setStatus(Status::ChooseFile);
         return false;
     }
 
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        setStatus(tr("Cannot open file: %1").arg(path), true);
+        setStatus(Status::CannotOpen, path);
         QMessageBox::warning(this, tr("RiipL"), tr("Cannot open file: %1").arg(path));
         return false;
     }
@@ -186,14 +236,14 @@ bool DocumentDialog::loadFile()
                                              config->intValue(Keys::documentWindowWords),
                                              config->intValue(Keys::documentWindowLines));
     if (m_windows.isEmpty()) {
-        setStatus(tr("No content to translate"));
+        setStatus(Status::NoContent);
         QMessageBox::information(this, tr("RiipL"), tr("No content to translate"));
         return false;
     }
     return true;
 }
 
-void DocumentDialog::start()
+void DocumentTranslationWindow::start()
 {
     if (m_running)
         return;
@@ -210,32 +260,16 @@ void DocumentDialog::start()
     m_progress->setRange(0, m_windows.size());
     m_progress->setValue(0);
     setRunning(true);
-    setStatus(tr("Translating..."));
-    m_translator.start(m_windows, m_baseContext, std::move(cache));
+    setStatus(Status::Translating);
+    m_translator.start(m_windows, m_contextProvider(), std::move(cache));
 }
 
-void DocumentDialog::stop()
+void DocumentTranslationWindow::stop()
 {
     m_translator.stop();
 }
 
-void DocumentDialog::reject()
-{
-    if (!m_running)
-        return QDialog::reject();
-    if (QMessageBox::question(this, tr("RiipL"), tr("Stop the translation and close?"),
-                              QMessageBox::Yes | QMessageBox::No, QMessageBox::No)
-        != QMessageBox::Yes) {
-        return;
-    }
-    // The question runs its own event loop, so the run can finish while it is up.
-    if (!m_running)
-        return;
-    m_translator.stop();
-    QDialog::reject();
-}
-
-void DocumentDialog::exportResult()
+void DocumentTranslationWindow::exportResult()
 {
     if (m_completedText.isEmpty())
         return;
@@ -250,22 +284,23 @@ void DocumentDialog::exportResult()
     const QByteArray data = m_completedText.toUtf8();
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text) || file.write(data) != data.size()
         || !file.commit()) {
+        setStatus(Status::CannotWrite, path);
         QMessageBox::warning(this, tr("RiipL"), tr("Cannot write file: %1").arg(path));
         return;
     }
-    setStatus(tr("Exported to %1").arg(path));
+    setStatus(Status::Exported, path);
 }
 
 // A run leaves the preview on the document accepted so far, which keeps the text
 // of the windows the run did not reach. The pane keeps whatever it shows, so a
 // stop does not wipe the lines already translated.
-void DocumentDialog::endRun()
+void DocumentTranslationWindow::endRun()
 {
     setRunning(false);
     m_exportButton->setEnabled(!m_completedText.isEmpty());
 }
 
-void DocumentDialog::setRunning(bool running)
+void DocumentTranslationWindow::setRunning(bool running)
 {
     m_running = running;
     m_translateAction->setEnabled(!running);
@@ -276,11 +311,15 @@ void DocumentDialog::setRunning(bool running)
         m_exportButton->setEnabled(false);
 }
 
-void DocumentDialog::setStatus(const QString& text, bool error)
+void DocumentTranslationWindow::setStatus(Status status, const QString& argument)
 {
-    m_status->setText(text);
+    m_status = status;
+    m_statusArgument = argument;
+    m_statusLabel->setText(statusText());
+    const bool error = status == Status::CannotOpen || status == Status::Failed
+        || status == Status::CannotWrite;
     if (error)
-        ThemeColors::setTextColor(m_status, ThemeColors::errorText(m_status));
+        ThemeColors::setTextColor(m_statusLabel, ThemeColors::errorText(m_statusLabel));
     else
-        m_status->setPalette(QPalette());
+        m_statusLabel->setPalette(QPalette());
 }
