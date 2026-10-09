@@ -3,9 +3,12 @@
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
 
+#include <QByteArray>
 #include <QCryptographicHash>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QMultiMap>
 #include <QTimer>
 
 #include <algorithm>
@@ -17,6 +20,16 @@ namespace {
 constexpr int kRetryDelayMs = 1000;
 // Characters of the request digest that name a window the run left out.
 constexpr int kReportedSampleCharacters = 8;
+
+QJsonArray canonicalHeaders(const QString& raw)
+{
+    const QMultiMap<QByteArray, QByteArray> headers =
+        ApiClient::parseCustomHeaders(raw).toMultiMap();
+    QJsonArray pairs;
+    for (auto it = headers.constBegin(); it != headers.constEnd(); ++it)
+        pairs.append(QJsonArray{QString::fromLatin1(it.key()), QString::fromLatin1(it.value())});
+    return pairs;
+}
 
 }
 
@@ -149,7 +162,7 @@ QString DocumentTranslator::sampleDigest(int index) const
     const ApiClient::Connection connection = ApiClient::Connection::configured();
     const QJsonObject sample{
         {QStringLiteral("base_url"), connection.baseUrl},
-        {QStringLiteral("headers"), connection.customHeaders},
+        {QStringLiteral("headers"), canonicalHeaders(connection.customHeaders)},
         {QStringLiteral("body"), body}
     };
 

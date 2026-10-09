@@ -247,6 +247,7 @@ private slots:
     void separatesTheCacheByRequest();
     void separatesTheCacheByRequestBody();
     void separatesTheCacheByConnection();
+    void ignoresTheOrderHeadersAreTypedIn();
     void ignoresSettingsThatDoNotShapeTheAnswer();
     void ignoresCachedAnswersOfTheWrongShape();
     void retiresTheFailureOfAnAnsweredRequest();
@@ -1059,6 +1060,45 @@ void TestDocumentTranslator::separatesTheCacheByConnection()
     translator.start(windows, TranslationContext(), cache);
     QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 4, 10000);
     QCOMPARE(m_api.requests, 0);
+}
+
+// The configured header lines are a set: the same headers typed in another order,
+// with other spacing or in another case name the same request, while another
+// value is another request.
+void TestDocumentTranslator::ignoresTheOrderHeadersAreTypedIn()
+{
+    const QVector<DocumentWindow> windows = document(1, 3);
+    const DocumentCache cache(TestSupport::tempDir() + QStringLiteral("/cache"));
+
+    DocumentTranslator translator;
+    QStringList finished;
+    connect(&translator, &DocumentTranslator::finished, this,
+            [&finished](const QString& text) { finished.append(text); });
+
+    ConfigManager* config = ConfigManager::instance();
+    config->setValue(Keys::apiCustomHeaders,
+                     QStringLiteral("X-Provider: mirror\nX-Trace: on"));
+    translator.start(windows, TranslationContext(), cache);
+    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 1, 10000);
+    QCOMPARE(m_api.requests, 1);
+    QCOMPARE(cacheFiles(cache, kAnswerSuffix).size(), 1);
+
+    config->setValue(Keys::apiCustomHeaders,
+                     QStringLiteral("x-trace:on\nx-provider: mirror"));
+    m_api.requests = 0;
+    translator.start(windows, TranslationContext(), cache);
+    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 2, 10000);
+    QCOMPARE(m_api.requests, 0);
+    QCOMPARE(finished.at(1), finished.at(0));
+    QCOMPARE(cacheFiles(cache, kAnswerSuffix).size(), 1);
+
+    config->setValue(Keys::apiCustomHeaders,
+                     QStringLiteral("x-trace:on\nx-provider: other"));
+    m_api.requests = 0;
+    translator.start(windows, TranslationContext(), cache);
+    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 3, 10000);
+    QCOMPARE(m_api.requests, 1);
+    QCOMPARE(cacheFiles(cache, kAnswerSuffix).size(), 2);
 }
 
 // A setting that only carries the request there leaves the key alone, so the
