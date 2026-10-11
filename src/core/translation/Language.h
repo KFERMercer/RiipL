@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <QLocale>
 #include <QString>
 #include <QVector>
 
@@ -102,9 +103,11 @@ inline QString guessFromScript(const QString& text)
         Korean, Mongolian, Burmese, Russian, Tamil, Telugu, Thai, Chinese,
         LanguageCount
     };
-    static constexpr const char* kCodes[LanguageCount] = {
-        "ar", "bn", "bo", "gu", "he", "hi", "ja", "km",
-        "ko", "mn", "my", "ru", "ta", "te", "th", "zh"
+    static constexpr QLocale::Language kLanguages[LanguageCount] = {
+        QLocale::Arabic, QLocale::Bengali, QLocale::Tibetan, QLocale::Gujarati,
+        QLocale::Hebrew, QLocale::Hindi, QLocale::Japanese, QLocale::Khmer,
+        QLocale::Korean, QLocale::Mongolian, QLocale::Burmese, QLocale::Russian,
+        QLocale::Tamil, QLocale::Telugu, QLocale::Thai, QLocale::Chinese
     };
 
     int counts[LanguageCount] = {};
@@ -137,7 +140,7 @@ inline QString guessFromScript(const QString& text)
         if (counts[i] > 0 && (best < 0 || counts[i] > counts[best]))
             best = i;
     }
-    return best < 0 ? QString() : QString::fromLatin1(kCodes[best]);
+    return best < 0 ? QString() : QLocale::languageToCode(kLanguages[best]);
 }
 
 // Resolves the "auto" pseudo-language into a concrete code for operations that

@@ -283,7 +283,7 @@
     <message>
         <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="340"/>
         <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="352"/>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="406"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="405"/>
         <source>RiipL</source>
         <translation>RiipL</translation>
     </message>
@@ -311,13 +311,13 @@
         <translation>没有可翻译的内容</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="398"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="397"/>
         <source>Export translation</source>
         <translation>导出译文</translation>
     </message>
     <message>
         <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="291"/>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="406"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="405"/>
         <source>Cannot write file: %1</source>
         <translation>无法写入文件：%1</translation>
     </message>
@@ -489,197 +489,197 @@
 <context>
     <name>Languages</name>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="21"/>
+        <location filename="../../src/core/translation/Language.h" line="22"/>
         <source>Auto detect</source>
         <translation>自动检测</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="22"/>
+        <location filename="../../src/core/translation/Language.h" line="23"/>
         <source>Chinese</source>
         <translation>中文</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="23"/>
+        <location filename="../../src/core/translation/Language.h" line="24"/>
         <source>English</source>
         <translation>英语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="24"/>
+        <location filename="../../src/core/translation/Language.h" line="25"/>
         <source>French</source>
         <translation>法语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="25"/>
+        <location filename="../../src/core/translation/Language.h" line="26"/>
         <source>Portuguese</source>
         <translation>葡萄牙语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="26"/>
+        <location filename="../../src/core/translation/Language.h" line="27"/>
         <source>Spanish</source>
         <translation>西班牙语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="27"/>
+        <location filename="../../src/core/translation/Language.h" line="28"/>
         <source>Japanese</source>
         <translation>日语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="28"/>
+        <location filename="../../src/core/translation/Language.h" line="29"/>
         <source>Turkish</source>
         <translation>土耳其语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="29"/>
+        <location filename="../../src/core/translation/Language.h" line="30"/>
         <source>Russian</source>
         <translation>俄语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="30"/>
+        <location filename="../../src/core/translation/Language.h" line="31"/>
         <source>Arabic</source>
         <translation>阿拉伯语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="31"/>
+        <location filename="../../src/core/translation/Language.h" line="32"/>
         <source>Korean</source>
         <translation>韩语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="32"/>
+        <location filename="../../src/core/translation/Language.h" line="33"/>
         <source>Thai</source>
         <translation>泰语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="33"/>
+        <location filename="../../src/core/translation/Language.h" line="34"/>
         <source>Italian</source>
         <translation>意大利语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="34"/>
+        <location filename="../../src/core/translation/Language.h" line="35"/>
         <source>German</source>
         <translation>德语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="35"/>
+        <location filename="../../src/core/translation/Language.h" line="36"/>
         <source>Vietnamese</source>
         <translation>越南语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="36"/>
+        <location filename="../../src/core/translation/Language.h" line="37"/>
         <source>Malay</source>
         <translation>马来语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="37"/>
+        <location filename="../../src/core/translation/Language.h" line="38"/>
         <source>Indonesian</source>
         <translation>印尼语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="38"/>
+        <location filename="../../src/core/translation/Language.h" line="39"/>
         <source>Filipino</source>
         <translation>菲律宾语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="39"/>
+        <location filename="../../src/core/translation/Language.h" line="40"/>
         <source>Hindi</source>
         <translation>印地语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="40"/>
+        <location filename="../../src/core/translation/Language.h" line="41"/>
         <source>Traditional Chinese</source>
         <translation>繁体中文</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="41"/>
+        <location filename="../../src/core/translation/Language.h" line="42"/>
         <source>Polish</source>
         <translation>波兰语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="42"/>
+        <location filename="../../src/core/translation/Language.h" line="43"/>
         <source>Czech</source>
         <translation>捷克语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="43"/>
+        <location filename="../../src/core/translation/Language.h" line="44"/>
         <source>Dutch</source>
         <translation>荷兰语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="44"/>
+        <location filename="../../src/core/translation/Language.h" line="45"/>
         <source>Khmer</source>
         <translation>高棉语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="45"/>
+        <location filename="../../src/core/translation/Language.h" line="46"/>
         <source>Burmese</source>
         <translation>缅甸语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="46"/>
+        <location filename="../../src/core/translation/Language.h" line="47"/>
         <source>Persian</source>
         <translation>波斯语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="47"/>
+        <location filename="../../src/core/translation/Language.h" line="48"/>
         <source>Gujarati</source>
         <translation>古吉拉特语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="48"/>
+        <location filename="../../src/core/translation/Language.h" line="49"/>
         <source>Urdu</source>
         <translation>乌尔都语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="49"/>
+        <location filename="../../src/core/translation/Language.h" line="50"/>
         <source>Telugu</source>
         <translation>泰卢固语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="50"/>
+        <location filename="../../src/core/translation/Language.h" line="51"/>
         <source>Marathi</source>
         <translation>马拉地语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="51"/>
+        <location filename="../../src/core/translation/Language.h" line="52"/>
         <source>Hebrew</source>
         <translation>希伯来语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="52"/>
+        <location filename="../../src/core/translation/Language.h" line="53"/>
         <source>Bengali</source>
         <translation>孟加拉语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="53"/>
+        <location filename="../../src/core/translation/Language.h" line="54"/>
         <source>Tamil</source>
         <translation>泰米尔语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="54"/>
+        <location filename="../../src/core/translation/Language.h" line="55"/>
         <source>Ukrainian</source>
         <translation>乌克兰语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="55"/>
+        <location filename="../../src/core/translation/Language.h" line="56"/>
         <source>Tibetan</source>
         <translation>藏语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="56"/>
+        <location filename="../../src/core/translation/Language.h" line="57"/>
         <source>Kazakh</source>
         <translation>哈萨克语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="57"/>
+        <location filename="../../src/core/translation/Language.h" line="58"/>
         <source>Mongolian</source>
         <translation>蒙古语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="58"/>
+        <location filename="../../src/core/translation/Language.h" line="59"/>
         <source>Uyghur</source>
         <translation>维吾尔语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="59"/>
+        <location filename="../../src/core/translation/Language.h" line="60"/>
         <source>Cantonese</source>
         <translation>粤语</translation>
     </message>

@@ -1,3 +1,4 @@
+#include <QSet>
 #include <QtTest>
 
 #include "core/translation/Language.h"
@@ -13,6 +14,7 @@ private slots:
     void breaksTiesDeterministically();
     void resolveAutoExcludesTarget();
     void exposesTranslatableNames();
+    void exposesBcp47Tags();
 };
 
 void TestLanguages::guessesLanguageFromScript()
@@ -112,6 +114,27 @@ void TestLanguages::exposesTranslatableNames()
     QCOMPARE(Languages::englishName(QStringLiteral("zh")), QStringLiteral("Chinese"));
     QCOMPARE(Languages::englishName(QStringLiteral("auto")), QStringLiteral("the detected language"));
     QCOMPARE(Languages::englishName(QStringLiteral("not-a-language")), QStringLiteral("not-a-language"));
+}
+
+void TestLanguages::exposesBcp47Tags()
+{
+    QSet<QString> tags;
+    for (const LangItem& lang : Languages::all()) {
+        if (lang.code == QLatin1String("auto"))
+            continue;
+        const QStringList subtags = lang.code.split(QLatin1Char('-'));
+        QCOMPARE(QLocale::languageToCode(QLocale::codeToLanguage(subtags.constFirst())),
+                 subtags.constFirst());
+        for (qsizetype i = 1; i < subtags.size(); ++i) {
+            const QString& subtag = subtags.at(i);
+            QCOMPARE(subtag.size() == 4
+                         ? QLocale::scriptToCode(QLocale::codeToScript(subtag))
+                         : QLocale::territoryToCode(QLocale::codeToTerritory(subtag)),
+                     subtag);
+        }
+        QVERIFY2(!tags.contains(lang.code), qPrintable(lang.code));
+        tags.insert(lang.code);
+    }
 }
 
 QTEST_MAIN(TestLanguages)
