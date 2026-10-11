@@ -14,6 +14,7 @@ public:
     void setWordSelectionEnabled(bool enabled);
 
     void setResult(const QString& text);
+    void updateResult(const QString& text);
     QString result() const;
     // Grows the result by \p piece without rebuilding the document.
     void appendResult(const QString& piece);

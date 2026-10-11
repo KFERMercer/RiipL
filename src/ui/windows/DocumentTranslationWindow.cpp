@@ -27,7 +27,6 @@
 #include <QProgressBar>
 #include <QPushButton>
 #include <QSaveFile>
-#include <QScrollBar>
 #include <QToolButton>
 #include <QVBoxLayout>
 
@@ -138,9 +137,7 @@ DocumentTranslationWindow::DocumentTranslationWindow(ContextProvider context)
 
     connect(&m_translator, &DocumentTranslator::windowTranslated, this, [this](const QString& text) {
         m_completedText = text;
-        m_preview->setResult(text);
-        QScrollBar* bar = m_preview->verticalScrollBar();
-        bar->setValue(bar->maximum());
+        m_preview->updateResult(text);
     });
     connect(&m_translator, &DocumentTranslator::progressChanged, this,
             [this](int completed, int total) {
@@ -151,7 +148,7 @@ DocumentTranslationWindow::DocumentTranslationWindow(ContextProvider context)
             });
     connect(&m_translator, &DocumentTranslator::finished, this, [this](const QString& text) {
         m_completedText = text;
-        m_preview->setResult(text);
+        m_preview->updateResult(text);
         endRun();
         setStatus(Status::Finished);
     });

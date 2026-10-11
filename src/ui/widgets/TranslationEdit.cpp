@@ -28,6 +28,18 @@ void TranslationEdit::setResult(const QString& text)
     setPlainText(text);
 }
 
+void TranslationEdit::updateResult(const QString& text)
+{
+    clearHighlight();
+    QTextDocument* doc = document();
+    const bool undoEnabled = doc->isUndoRedoEnabled();
+    doc->setUndoRedoEnabled(false);
+    QTextCursor cursor(doc);
+    cursor.select(QTextCursor::Document);
+    cursor.insertText(text);
+    doc->setUndoRedoEnabled(undoEnabled);
+}
+
 QString TranslationEdit::result() const
 {
     return toPlainText();
