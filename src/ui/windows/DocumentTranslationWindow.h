@@ -11,6 +11,7 @@
 #include "core/translation/PromptBuilder.h"
 
 class QAction;
+class QComboBox;
 class QGroupBox;
 class QLabel;
 class QLineEdit;
@@ -39,6 +40,7 @@ private slots:
     void start();
     void stop();
     void exportResult();
+    void onConfigChanged(const QString& key);
 
 private:
     // Reported status, held as a state so a language change can render it again.
@@ -66,6 +68,11 @@ private:
     void setStatus(Status status, const QString& argument = QString());
     QString statusText() const;
     void retranslateUi();
+    void populateApiPresets();
+    void syncApiPreset();
+    void populateTones();
+    void populateTargetLanguages();
+    void updateOptionsEnabled();
 
     ContextProvider m_contextProvider;
     DocumentTranslator m_translator;
@@ -79,6 +86,9 @@ private:
     QString m_statusArgument;
     QLineEdit* m_pathEdit = nullptr;
     QPushButton* m_browseButton = nullptr;
+    QComboBox* m_apiPreset = nullptr;
+    QComboBox* m_tone = nullptr;
+    QComboBox* m_targetLang = nullptr;
     QProgressBar* m_progress = nullptr;
     QLabel* m_statusLabel = nullptr;
     TranslationEdit* m_preview = nullptr;

@@ -1,14 +1,17 @@
 #include "DocumentTranslationWindow.h"
 
+#include "core/config/ApiPreset.h"
 #include "core/config/ConfigManager.h"
 #include "core/document/DocumentCache.h"
 #include "ui/widgets/AppFonts.h"
+#include "ui/widgets/ConfigEditors.h"
 #include "ui/widgets/ThemeColors.h"
 #include "ui/widgets/TranslationEdit.h"
 #include "ui/widgets/WindowState.h"
 
 #include <QAction>
 #include <QByteArray>
+#include <QComboBox>
 #include <QDialog>
 #include <QEvent>
 #include <QFile>
@@ -31,6 +34,15 @@
 #include <optional>
 #include <utility>
 
+namespace {
+
+QVector<ApiPreset> storedApiPresets()
+{
+    return ApiPresets::fromJson(ConfigManager::instance()->value(Keys::apiPresets).toArray());
+}
+
+}
+
 DocumentTranslationWindow::DocumentTranslationWindow(ContextProvider context)
     : QWidget(nullptr)
     , m_contextProvider(std::move(context))
@@ -47,6 +59,15 @@ DocumentTranslationWindow::DocumentTranslationWindow(ContextProvider context)
     fileRow->addWidget(m_pathEdit, 1);
     fileRow->addWidget(m_browseButton);
     layout->addLayout(fileRow);
+
+    auto* optionsRow = new QHBoxLayout();
+    m_apiPreset = new QComboBox(this);
+    m_tone = new QComboBox(this);
+    m_targetLang = new QComboBox(this);
+    optionsRow->addWidget(m_apiPreset, 1);
+    optionsRow->addWidget(m_tone, 1);
+    optionsRow->addWidget(m_targetLang, 1);
+    layout->addLayout(optionsRow);
 
     m_progress = new QProgressBar(this);
     m_progress->setRange(0, 1);
@@ -98,6 +119,22 @@ DocumentTranslationWindow::DocumentTranslationWindow(ContextProvider context)
     connect(m_exportButton, &QPushButton::clicked, this,
             &DocumentTranslationWindow::exportResult);
     connect(m_closeButton, &QPushButton::clicked, this, &QWidget::close);
+
+    connect(m_apiPreset, &QComboBox::currentIndexChanged, this, [this](int index) {
+        const QVector<ApiPreset> presets = storedApiPresets();
+        if (index >= 0 && index < presets.size())
+            ApiPresets::apply(presets.at(index));
+    });
+    connect(m_tone, &QComboBox::currentIndexChanged, this, [this](int index) {
+        ConfigManager::instance()->setValue(Keys::translationTone,
+                                            m_tone->itemData(index).toString());
+    });
+    connect(m_targetLang, &QComboBox::currentIndexChanged, this, [this](int index) {
+        ConfigManager::instance()->setValue(Keys::translationTargetLang,
+                                            m_targetLang->itemData(index).toString());
+    });
+    connect(ConfigManager::instance(), &ConfigManager::changed, this,
+            &DocumentTranslationWindow::onConfigChanged);
 
     connect(&m_translator, &DocumentTranslator::windowTranslated, this, [this](const QString& text) {
         m_completedText = text;
@@ -155,7 +192,79 @@ void DocumentTranslationWindow::retranslateUi()
     m_stopAction->setToolTip(tr("Stop translation"));
     m_exportButton->setText(tr("Export translation..."));
     m_closeButton->setText(tr("Close"));
+    m_apiPreset->setAccessibleName(tr("API preset"));
+    m_tone->setAccessibleName(tr("Tone"));
+    m_targetLang->setAccessibleName(tr("Target language"));
     m_statusLabel->setText(statusText());
+
+    populateApiPresets();
+    populateTones();
+    populateTargetLanguages();
+}
+
+void DocumentTranslationWindow::populateApiPresets()
+{
+    const QVector<ApiPreset> presets = storedApiPresets();
+    {
+        QSignalBlocker blocker(m_apiPreset);
+        m_apiPreset->clear();
+        for (const ApiPreset& preset : presets)
+            m_apiPreset->addItem(preset.name, preset.name);
+        m_apiPreset->setPlaceholderText(presets.isEmpty() ? tr("No presets") : tr("Custom"));
+    }
+    syncApiPreset();
+    updateOptionsEnabled();
+}
+
+void DocumentTranslationWindow::syncApiPreset()
+{
+    QSignalBlocker blocker(m_apiPreset);
+    m_apiPreset->setCurrentIndex(
+        ApiPresets::matchValues(storedApiPresets(), ApiPresets::capture()));
+}
+
+void DocumentTranslationWindow::populateTones()
+{
+    ConfigManager* config = ConfigManager::instance();
+    QSignalBlocker blocker(m_tone);
+    m_tone->clear();
+    for (const std::pair<QString, QString>& item
+         : toneItems(config->value(Keys::translationCustomTones).toArray())) {
+        m_tone->addItem(item.first, item.second);
+    }
+    selectComboItem(m_tone, config->stringValue(Keys::translationTone));
+}
+
+void DocumentTranslationWindow::populateTargetLanguages()
+{
+    ConfigManager* config = ConfigManager::instance();
+    QSignalBlocker blocker(m_targetLang);
+    m_targetLang->clear();
+    for (const std::pair<QString, QString>& item : languageItems(false))
+        m_targetLang->addItem(item.first, item.second);
+    selectComboItem(m_targetLang, config->stringValue(Keys::translationTargetLang));
+}
+
+void DocumentTranslationWindow::updateOptionsEnabled()
+{
+    const bool editable = !m_running;
+    m_apiPreset->setEnabled(editable && m_apiPreset->count() > 0);
+    m_tone->setEnabled(editable);
+    m_targetLang->setEnabled(editable);
+}
+
+void DocumentTranslationWindow::onConfigChanged(const QString& key)
+{
+    if (key == Keys::translationTargetLang) {
+        QSignalBlocker blocker(m_targetLang);
+        selectComboItem(m_targetLang, ConfigManager::instance()->stringValue(key));
+    } else if (key == Keys::translationTone || key == Keys::translationCustomTones) {
+        populateTones();
+    } else if (key == Keys::apiPresets) {
+        populateApiPresets();
+    } else if (Keys::apiPresetFields().contains(key)) {
+        syncApiPreset();
+    }
 }
 
 QString DocumentTranslationWindow::statusText() const
@@ -267,7 +376,10 @@ void DocumentTranslationWindow::start()
     m_progress->setValue(0);
     setRunning(true);
     setStatus(Status::Translating);
-    m_translator.start(m_windows, m_contextProvider(), std::move(cache));
+    TranslationContext context = m_contextProvider();
+    context.targetLang = m_targetLang->currentData().toString();
+    context.tone = m_tone->currentData().toString();
+    m_translator.start(m_windows, context, std::move(cache));
 }
 
 void DocumentTranslationWindow::stop()
@@ -313,6 +425,7 @@ void DocumentTranslationWindow::setRunning(bool running)
     m_stopAction->setEnabled(running);
     m_pathEdit->setEnabled(!running);
     m_browseButton->setEnabled(!running);
+    updateOptionsEnabled();
     if (running)
         m_exportButton->setEnabled(false);
 }
