@@ -231,6 +231,12 @@ MainWindow::MainWindow(QWidget* parent)
 
 MainWindow::~MainWindow() = default;
 
+void MainWindow::closeDocumentWindow()
+{
+    if (m_documentWindow)
+        m_documentWindow->close();
+}
+
 void MainWindow::closeEvent(QCloseEvent* event)
 {
     if (m_tray && ConfigManager::instance()->boolValue(Keys::uiMinimizeToTray)) {
@@ -238,9 +244,7 @@ void MainWindow::closeEvent(QCloseEvent* event)
         event->ignore();
         return;
     }
-    // Hide the peer so its geometry is saved before the application quits.
-    if (m_documentWindow)
-        m_documentWindow->close();
+    closeDocumentWindow();
     ConfigManager::instance()->flush();
     event->accept();
 }
@@ -453,8 +457,10 @@ void MainWindow::buildMenus()
     connect(m_documentAction, &QAction::triggered, this, &MainWindow::showDocumentWindow);
     connect(m_exportAction, &QAction::triggered, this, &MainWindow::exportTranslation);
     connect(m_exitAction, &QAction::triggered, this, [this]() {
+        hide();
+        closeDocumentWindow();
         ConfigManager::instance()->flush();
-        qApp->quit();
+        QCoreApplication::exit(0);
     });
     connect(m_glossaryAction, &QAction::triggered, this, [this]() {
         GlossaryDialog dialog(this);

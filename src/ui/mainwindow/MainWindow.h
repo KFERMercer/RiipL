@@ -80,6 +80,7 @@ private:
     void buildMenus();
     void buildTray();
     void updateSwapButtonGeometry();
+    void closeDocumentWindow();
 
     void populateLanguageCombos();
     void populateToneCombo();
