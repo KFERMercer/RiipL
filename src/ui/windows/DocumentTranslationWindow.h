@@ -82,6 +82,7 @@ private:
     // Document as it stands, sent once a window has been accepted; the windows the
     // run has not reached yet carry their source text.
     QString m_completedText;
+    QString m_resultLang;
     Status m_status = Status::Ready;
     QString m_statusArgument;
     QLineEdit* m_pathEdit = nullptr;

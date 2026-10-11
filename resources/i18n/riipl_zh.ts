@@ -283,7 +283,7 @@
     <message>
         <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="340"/>
         <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="352"/>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="403"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="406"/>
         <source>RiipL</source>
         <translation>RiipL</translation>
     </message>
@@ -311,13 +311,13 @@
         <translation>没有可翻译的内容</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="395"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="398"/>
         <source>Export translation</source>
         <translation>导出译文</translation>
     </message>
     <message>
         <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="291"/>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="403"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="406"/>
         <source>Cannot write file: %1</source>
         <translation>无法写入文件：%1</translation>
     </message>

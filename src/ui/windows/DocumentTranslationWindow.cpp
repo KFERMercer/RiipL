@@ -376,6 +376,7 @@ void DocumentTranslationWindow::start()
     TranslationContext context = m_contextProvider();
     context.targetLang = m_targetLang->currentData().toString();
     context.tone = m_tone->currentData().toString();
+    m_resultLang = context.targetLang;
     m_translator.start(m_windows, context, std::move(cache));
 }
 
@@ -389,10 +390,11 @@ void DocumentTranslationWindow::exportResult()
     if (m_completedText.isEmpty())
         return;
     const QFileInfo info(m_loadedPath);
-    const QString suggested = info.absolutePath().isEmpty()
-        ? QStringLiteral("translation.txt")
-        : info.dir().filePath(info.completeBaseName() + QStringLiteral(".translated.txt"));
-    const QString path = QFileDialog::getSaveFileName(this, tr("Export translation"), suggested);
+    const QString suffix = info.suffix().isEmpty() ? QStringLiteral("txt") : info.suffix();
+    const QString name = QStringLiteral("%1.translated.%2.%3")
+                             .arg(info.completeBaseName(), m_resultLang, suffix);
+    const QString path
+        = QFileDialog::getSaveFileName(this, tr("Export translation"), info.dir().filePath(name));
     if (path.isEmpty())
         return;
     QSaveFile file(path);
