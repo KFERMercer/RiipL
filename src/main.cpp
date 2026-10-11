@@ -5,6 +5,7 @@
 #include "utils/SingleInstance.h"
 
 #include <QApplication>
+#include <QCommandLineParser>
 #include <QDebug>
 #include <QFont>
 #include <QMessageBox>
@@ -16,6 +17,12 @@ int main(int argc, char* argv[])
     QApplication::setApplicationName(QStringLiteral("RiipL"));
     QApplication::setApplicationVersion(RIIPL_BUILD_VERSION);
     QApplication::setWindowIcon(QIcon(QStringLiteral(":/icons/app.svg")));
+
+    QCommandLineParser parser;
+    parser.setApplicationDescription(QStringLiteral("Local DeepL rip-off powered by any OpenAI-compatible API."));
+    parser.addHelpOption();
+    parser.addVersionOption();
+    parser.process(app);
 
     ConfigManager::createInstance();
     ConfigManager* config = ConfigManager::instance();
