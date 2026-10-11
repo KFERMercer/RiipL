@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
     QApplication::setApplicationName(QStringLiteral("RiipL"));
-    QApplication::setApplicationVersion(RIIPL_VERSION);
+    QApplication::setApplicationVersion(RIIPL_BUILD_VERSION);
     QApplication::setWindowIcon(QIcon(QStringLiteral(":/icons/app.svg")));
 
     ConfigManager::createInstance();

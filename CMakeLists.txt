@@ -1,6 +1,22 @@
 cmake_minimum_required(VERSION 3.21)
 project(RiipL VERSION 0.2 LANGUAGES CXX)
 
+set(RIIPL_BUILD_VERSION "${PROJECT_VERSION}")
+find_package(Git QUIET)
+if(Git_FOUND)
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} describe --tags --dirty
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        OUTPUT_VARIABLE RIIPL_GIT_DESCRIBE
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+        RESULT_VARIABLE RIIPL_GIT_DESCRIBE_RESULT
+    )
+    if(RIIPL_GIT_DESCRIBE_RESULT EQUAL 0)
+        set(RIIPL_BUILD_VERSION "${RIIPL_GIT_DESCRIBE}")
+    endif()
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -112,7 +128,7 @@ target_link_libraries(RiipL PRIVATE riipl_core riipl_utils Qt6::Widgets Qt6::Svg
 if(TARGET Qt6::QSvgPlugin)
     qt_import_plugins(RiipL INCLUDE Qt6::QSvgPlugin)
 endif()
-target_compile_definitions(RiipL PRIVATE RIIPL_VERSION="${PROJECT_VERSION}")
+target_compile_definitions(RiipL PRIVATE RIIPL_BUILD_VERSION="${RIIPL_BUILD_VERSION}")
 
 # Compiles the .ts catalogs into .qm files and embeds them at :/i18n, and
 # exposes the standard update_translations target for refreshing the sources.
