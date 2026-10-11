@@ -369,6 +369,7 @@ void MainWindow::buildMenus()
     m_exportAction = m_fileMenu->addAction(QString());
     m_fileMenu->addSeparator();
     m_exitAction = m_fileMenu->addAction(QString());
+    m_exitAction->setShortcutContext(Qt::ApplicationShortcut);
 
     m_editMenu = menuBar()->addMenu(QString());
     m_glossaryAction = m_editMenu->addAction(QString());
