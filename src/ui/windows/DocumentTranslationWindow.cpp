@@ -9,6 +9,7 @@
 
 #include <QAction>
 #include <QByteArray>
+#include <QDialog>
 #include <QEvent>
 #include <QFile>
 #include <QFileDialog>
@@ -143,7 +144,7 @@ void DocumentTranslationWindow::changeEvent(QEvent* event)
 void DocumentTranslationWindow::retranslateUi()
 {
     setWindowTitle(tr("Document translation"));
-    m_pathEdit->setPlaceholderText(tr("Choose a .txt file"));
+    m_pathEdit->setPlaceholderText(tr("Choose file"));
     m_pathEdit->setAccessibleName(tr("Document file"));
     m_preview->setAccessibleName(tr("Translated document"));
     m_previewGroup->setTitle(tr("Preview"));
@@ -163,7 +164,7 @@ QString DocumentTranslationWindow::statusText() const
     case Status::Ready:
         return tr("Ready");
     case Status::ChooseFile:
-        return tr("Choose a .txt file");
+        return tr("Choose file");
     case Status::CannotOpen:
         return tr("Cannot open file: %1").arg(m_statusArgument);
     case Status::NoContent:
@@ -188,8 +189,13 @@ QString DocumentTranslationWindow::statusText() const
 
 void DocumentTranslationWindow::browse()
 {
-    const QString path = QFileDialog::getOpenFileName(this, tr("Open document"), QString(),
-                                                      tr("Text files (*.txt)"));
+    QFileDialog dialog(this, tr("Open document"));
+    dialog.setFileMode(QFileDialog::ExistingFile);
+    dialog.setMimeTypeFilters(
+        {QStringLiteral("text/plain"), QStringLiteral("application/octet-stream")});
+    if (dialog.exec() != QDialog::Accepted)
+        return;
+    const QString path = dialog.selectedFiles().value(0);
     if (path.isEmpty())
         return;
     m_pathEdit->setText(path);
