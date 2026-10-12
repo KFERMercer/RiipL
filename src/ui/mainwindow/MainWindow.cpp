@@ -187,10 +187,7 @@ MainWindow::MainWindow(QWidget* parent)
         if (busy)
             setStatus(Status::Translating);
     });
-    connect(&m_engine, &TranslationEngine::stopped, this, [this]() {
-        endResultStream();
-        setStatus(Status::Cancelled);
-    });
+    connect(&m_engine, &TranslationEngine::stopped, this, &MainWindow::endResultStream);
 
     m_debounce = new QTimer(this);
     m_debounce->setSingleShot(true);
@@ -317,6 +314,7 @@ QWidget* MainWindow::createRightPane()
     m_undoAction->setIcon(AppIcons::undo());
     m_undoAction->setEnabled(false);
     connect(m_undoAction, &QAction::triggered, this, [this]() {
+        discardResultStream();
         m_resultHistory.undo();
         setStatus(Status::Restored);
     });
@@ -324,6 +322,7 @@ QWidget* MainWindow::createRightPane()
     m_redoAction->setIcon(AppIcons::redo());
     m_redoAction->setEnabled(false);
     connect(m_redoAction, &QAction::triggered, this, [this]() {
+        discardResultStream();
         m_resultHistory.redo();
         setStatus(Status::Reapplied);
     });
@@ -353,6 +352,7 @@ QWidget* MainWindow::createRightPane()
 
     connect(m_copyAction, &QAction::triggered, this, &MainWindow::copyResult);
     connect(m_clearResultAction, &QAction::triggered, this, [this]() {
+        discardResultStream();
         setResultText(QString());
     });
     return pane;
@@ -433,7 +433,10 @@ void MainWindow::buildMenus()
 
     m_stopAction = toolBar->addAction(QString());
     m_stopAction->setEnabled(false);
-    connect(m_stopAction, &QAction::triggered, this, [this]() { m_engine.stop(); });
+    connect(m_stopAction, &QAction::triggered, this, [this]() {
+        m_engine.stop();
+        setStatus(Status::Cancelled);
+    });
 
     toolBar->addSeparator();
     toolBar->addAction(m_autoTranslateAction);
@@ -807,7 +810,7 @@ void MainWindow::changeEvent(QEvent* event)
 
 void MainWindow::swapLanguages()
 {
-    endResultStream();
+    discardResultStream();
     const QString sourceCode = m_sourceLang->currentData().toString();
     const QString targetCode = m_targetLang->currentData().toString();
     if (sourceCode == QLatin1String("auto")) {
@@ -875,6 +878,17 @@ void MainWindow::endResultStream()
 {
     if (m_streamOpen)
         setResultText(m_resultEdit->result());
+}
+
+void MainWindow::discardResultStream()
+{
+    if (!m_engine.isBusy())
+        return;
+    // Left uncommitted, because the caller's own edit is the undo entry.
+    m_streamOpen = false;
+    m_streamOrigin.clear();
+    m_engine.stop();
+    setStatus(Status::Ready);
 }
 
 void MainWindow::setResultText(const QString& text)
@@ -954,7 +968,7 @@ void MainWindow::showHistoryDialog()
 {
     HistoryDialog dialog(&m_history, this);
     connect(&dialog, &HistoryDialog::reuseRequested, this, [this](const TranslationRecord& record) {
-        endResultStream();
+        discardResultStream();
         m_sourceEdit->setPlainText(record.source);
         const int sourceIndex = m_sourceLang->findData(record.sourceLang);
         if (sourceIndex >= 0)

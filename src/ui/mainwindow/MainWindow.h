@@ -102,6 +102,7 @@ private:
     // one undo entry.
     void appendStreamedResult(const QString& piece);
     void endResultStream();
+    void discardResultStream();
     void setResultText(const QString& text);
 
     QSplitter* m_splitter = nullptr;
