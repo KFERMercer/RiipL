@@ -86,7 +86,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --clean-first -j$(nproc)
 ```
 
-编译成功后的可执行文件位于 `./build/RiipL`
+编译成功后的可执行文件位于 `./build/riipl`
 
 ## 架构
 

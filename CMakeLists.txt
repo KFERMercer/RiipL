@@ -118,24 +118,24 @@ set(UI_HEADERS
 # source strings. Keeping a catalog for it would only embed an unused .qm.
 set(TS_FILES resources/i18n/riipl_zh.ts)
 
-qt_add_executable(RiipL
+qt_add_executable(riipl
     ${UI_SOURCES}
     ${UI_HEADERS}
     resources/riipl.qrc
 )
-target_link_libraries(RiipL PRIVATE riipl_core riipl_utils Qt6::Widgets Qt6::Svg)
+target_link_libraries(riipl PRIVATE riipl_core riipl_utils Qt6::Widgets Qt6::Svg)
 
 if(TARGET Qt6::QSvgPlugin)
-    qt_import_plugins(RiipL INCLUDE Qt6::QSvgPlugin)
+    qt_import_plugins(riipl INCLUDE Qt6::QSvgPlugin)
 endif()
-target_compile_definitions(RiipL PRIVATE RIIPL_BUILD_VERSION="${RIIPL_BUILD_VERSION}")
+target_compile_definitions(riipl PRIVATE RIIPL_BUILD_VERSION="${RIIPL_BUILD_VERSION}")
 
 # Compiles the .ts catalogs into .qm files and embeds them at :/i18n, and
 # exposes the standard update_translations target for refreshing the sources.
 # SOURCE_TARGETS is explicit so the test target is not scanned for strings.
-qt_add_translations(RiipL
+qt_add_translations(riipl
     TS_FILES ${TS_FILES}
-    SOURCE_TARGETS riipl_core riipl_utils RiipL
+    SOURCE_TARGETS riipl_core riipl_utils riipl
     LUPDATE_OPTIONS -no-obsolete
 )
 

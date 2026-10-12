@@ -85,7 +85,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --clean-first -j$(nproc)
 ```
 
-After a successful build the executable lives at `./build/RiipL`.
+After a successful build the executable lives at `./build/riipl`.
 
 ## Architecture
 

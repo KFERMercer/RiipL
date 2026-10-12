@@ -7,7 +7,7 @@ tmp/
 temp
 temp/
 compile_commands.json
-RiipL
+riipl
 *.AppImage
 *.deb
 *.rpm
