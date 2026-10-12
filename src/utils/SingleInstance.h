@@ -13,7 +13,7 @@ class SingleInstance : public QObject
 public:
     // Startup arbitration outcome. Primary owns both the lock file and the
     // activation listener, Secondary defers to the already running instance,
-    // and Error means the lock was won but the listener could not be created.
+    // and Error means the instance files could not be set up.
     enum class Role {
         Primary,
         Secondary,
@@ -33,6 +33,7 @@ signals:
 private:
     static QString instanceKey();
     static QString lockFilePath();
+    static QString serverName();
 
     QLockFile m_lock;
     QLocalServer* m_server = nullptr;

@@ -1,5 +1,9 @@
 #include <QtTest>
 
+#include <QDir>
+#include <QStandardPaths>
+#include <QTemporaryDir>
+
 #include "utils/SingleInstance.h"
 
 class TestSingleInstance : public QObject
@@ -9,6 +13,9 @@ class TestSingleInstance : public QObject
 private slots:
     void arbitratesPrimaryAndSecondary();
     void reportsAnUnreachableInstance();
+#ifdef Q_OS_UNIX
+    void keepsItsFilesInTheRuntimeDirectory();
+#endif
 };
 
 void TestSingleInstance::arbitratesPrimaryAndSecondary()
@@ -43,6 +50,24 @@ void TestSingleInstance::reportsAnUnreachableInstance()
     SingleInstance instance;
     QVERIFY(!instance.notifyExistingInstance());
 }
+
+#ifdef Q_OS_UNIX
+void TestSingleInstance::keepsItsFilesInTheRuntimeDirectory()
+{
+    QTemporaryDir runtime;
+    QVERIFY(runtime.isValid());
+    const QByteArray previous = qgetenv("XDG_RUNTIME_DIR");
+    qputenv("XDG_RUNTIME_DIR", QFile::encodeName(runtime.path()));
+
+    SingleInstance instance;
+    const SingleInstance::Role role = instance.tryLock();
+    const QStringList entries = QDir(runtime.path()).entryList(QDir::Files | QDir::System);
+    qputenv("XDG_RUNTIME_DIR", previous);
+
+    QCOMPARE(role, SingleInstance::Role::Primary);
+    QCOMPARE(entries.size(), 2);
+}
+#endif
 
 QTEST_MAIN(TestSingleInstance)
 #include "tst_singleinstance.moc"

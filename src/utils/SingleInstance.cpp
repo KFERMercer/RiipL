@@ -7,6 +7,11 @@
 
 namespace {
 constexpr int kConnectTimeoutMs = 300;
+
+QString runtimeDirectory()
+{
+    return QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation);
+}
 }
 
 QString SingleInstance::instanceKey()
@@ -18,8 +23,16 @@ QString SingleInstance::instanceKey()
 
 QString SingleInstance::lockFilePath()
 {
-    return QStandardPaths::writableLocation(QStandardPaths::TempLocation)
-        + QStringLiteral("/%1.lock").arg(instanceKey());
+    return runtimeDirectory() + QStringLiteral("/%1.lock").arg(instanceKey());
+}
+
+QString SingleInstance::serverName()
+{
+#ifdef Q_OS_UNIX
+    return runtimeDirectory() + QLatin1Char('/') + instanceKey();
+#else
+    return instanceKey();
+#endif
 }
 
 SingleInstance::SingleInstance(QObject* parent)
@@ -30,6 +43,9 @@ SingleInstance::SingleInstance(QObject* parent)
 
 SingleInstance::Role SingleInstance::tryLock()
 {
+    if (runtimeDirectory().isEmpty())
+        return Role::Error;
+
     // The file lock arbitrates ownership atomically, so concurrent cold starts
     // cannot both reach the listener setup below.
     if (!m_lock.tryLock(0))
@@ -37,10 +53,10 @@ SingleInstance::Role SingleInstance::tryLock()
 
     // Only the lock owner touches the server name, so removing a socket file
     // left behind by a crashed instance never disturbs a live listener.
-    QLocalServer::removeServer(instanceKey());
+    QLocalServer::removeServer(serverName());
 
     m_server = new QLocalServer(this);
-    if (!m_server->listen(instanceKey())) {
+    if (!m_server->listen(serverName())) {
         delete m_server;
         m_server = nullptr;
         m_lock.unlock();
@@ -60,7 +76,7 @@ SingleInstance::Role SingleInstance::tryLock()
 bool SingleInstance::notifyExistingInstance()
 {
     QLocalSocket socket;
-    socket.connectToServer(instanceKey());
+    socket.connectToServer(serverName());
     if (!socket.waitForConnected(kConnectTimeoutMs))
         return false;
     socket.disconnectFromServer();
