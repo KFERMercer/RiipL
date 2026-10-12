@@ -98,7 +98,6 @@ MainWindow::MainWindow(QWidget* parent)
     , m_engine(this)
     , m_history(ConfigManager::instance()->historyFilePath(), this)
 {
-    setWindowIcon(QIcon(QStringLiteral(":/icons/app.svg")));
     setUnifiedTitleAndToolBarOnMac(true);
     m_resultHistory.setUndoLimit(kMaxResultSteps);
 
