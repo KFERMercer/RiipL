@@ -78,7 +78,7 @@ std::optional<ApiClient::Error> replyFailure(QNetworkReply* reply,
     // The client's own aborts never reach their handlers, so this is the timeout.
     if (replyError == QNetworkReply::OperationCanceledError)
         return ApiClient::Error{ApiClient::ErrorCode::TimedOut, QString()};
-    if (replyError != QNetworkReply::NoError && statusCode == 0)
+    if (replyError != QNetworkReply::NoError && statusCode < 400)
         return ApiClient::Error{ApiClient::ErrorCode::NetworkFailure, reply->errorString()};
     if (replyError == QNetworkReply::NoError && statusCode < 400)
         return std::nullopt;

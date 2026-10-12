@@ -90,6 +90,15 @@ QByteArray streamFrame(const char* content)
         + QByteArrayLiteral("\"}}]}");
 }
 
+// A stream whose transfer breaks: one whole chunk, then the connection closes
+// before the terminating chunk.
+QByteArray brokenStreamReply(const QByteArray& frames)
+{
+    return QByteArrayLiteral("HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\n"
+                             "Transfer-Encoding: chunked\r\n\r\n")
+        + QByteArray::number(frames.size(), 16) + QByteArrayLiteral("\r\n") + frames;
+}
+
 // Frame the endpoint sends when it fails after the status line has gone out.
 QByteArray streamErrorFrame(const char* code, const char* message)
 {
@@ -123,6 +132,7 @@ private slots:
     void rejectsStreamWithoutContent();
     void reportsStreamErrorFrame();
     void reportsStreamErrorCodeWithoutMessage();
+    void reportsBrokenStreamAsNetworkFailure();
     void dropsOversizedResponse();
     void parsesModelIds();
     void listsModels();
@@ -454,6 +464,34 @@ void TestApiClient::reportsStreamErrorCodeWithoutMessage()
     QVERIFY(error.has_value());
     QCOMPARE(error->code, ApiClient::ErrorCode::HttpStatus);
     QCOMPARE(error->detail, QStringLiteral("503"));
+}
+
+// A transfer the endpoint breaks under a success status is the failure, not the
+// status it already sent.
+void TestApiClient::reportsBrokenStreamAsNetworkFailure()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    ConfigManager::createInstance(TestSupport::tempDir());
+
+    OneShotServer server;
+    QVERIFY(server.listen());
+    server.serve(brokenStreamReply(streamFrame("Hel") + "\n\n"));
+    ConfigManager::instance()->setValue(
+        Keys::apiBaseUrl, QStringLiteral("http://127.0.0.1:%1/v1").arg(server.port()));
+
+    ApiClient client;
+    QSignalSpy finishedSpy(&client, &ApiClient::requestFinished);
+    QString result;
+    std::optional<ApiClient::Error> error;
+    QJsonObject body = chatBody();
+    body.insert(QStringLiteral("stream"), true);
+    client.sendChatRequest(body, [&result](const QString& text) { result = text; }, nullptr,
+                           [&error](const ApiClient::Error& failure) { error = failure; });
+
+    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 5000);
+    QVERIFY(error.has_value());
+    QCOMPARE(error->code, ApiClient::ErrorCode::NetworkFailure);
+    QVERIFY2(result.isEmpty(), "a stream cut off before its terminator is not an answer");
 }
 
 // A body past the cap is dropped instead of being buffered to the end.
