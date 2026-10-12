@@ -6,6 +6,7 @@
 
 #include <QApplication>
 #include <QCommandLineParser>
+#include <QCoreApplication>
 #include <QDebug>
 #include <QFont>
 #include <QMessageBox>
@@ -13,16 +14,35 @@
 
 int main(int argc, char* argv[])
 {
-    QApplication app(argc, argv);
-    QApplication::setApplicationName(QStringLiteral("RiipL"));
-    QApplication::setApplicationVersion(RIIPL_BUILD_VERSION);
-    QApplication::setDesktopFileName(QStringLiteral("riipl.desktop"));
-    QApplication::setWindowIcon(QIcon(QStringLiteral(":/icons/app.svg")));
+    QCoreApplication::setApplicationName(QStringLiteral("RiipL"));
+    QCoreApplication::setApplicationVersion(RIIPL_BUILD_VERSION);
 
     QCommandLineParser parser;
     parser.setApplicationDescription(QStringLiteral("Local DeepL rip-off powered by any OpenAI-compatible API."));
-    parser.addHelpOption();
-    parser.addVersionOption();
+    const QCommandLineOption helpOption = parser.addHelpOption();
+    const QCommandLineOption versionOption = parser.addVersionOption();
+
+    // Answered before QApplication, which cannot start without a display. The list
+    // is rebuilt because QCoreApplication::arguments() needs an application object,
+    // and Qt's own options are still in it, so a parse failure is not an error.
+    QStringList arguments;
+    arguments.reserve(argc);
+    for (int index = 0; index < argc; ++index)
+        arguments.append(QString::fromLocal8Bit(argv[index]));
+
+    parser.parse(arguments);
+    if (parser.isSet(helpOption) || parser.isSet(versionOption)) {
+        // Gives the usage line its executable name.
+        QCoreApplication reporter(argc, argv);
+        if (parser.isSet(versionOption))
+            parser.showVersion();
+        parser.showHelp();
+    }
+
+    QApplication app(argc, argv);
+    QApplication::setDesktopFileName(QStringLiteral("riipl.desktop"));
+    QApplication::setWindowIcon(QIcon(QStringLiteral(":/icons/app.svg")));
+    // Judged against argv as QApplication left it, without the options Qt owns.
     parser.process(app);
 
     ConfigManager::createInstance();
