@@ -103,6 +103,7 @@ RiipL/
 │   │   └── history/      # HistoryManager
 │   ├── ui/               # MainWindow、配置绑定控件、各对话框
 │   └── utils/            # TextUtils、SingleInstance
+├── packaging/            # 打包脚本与包定义
 └── tests/
     └── core/             # 核心层 QTest 套件，每个单元一个，接入 CTest
 ```

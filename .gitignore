@@ -11,6 +11,7 @@ riipl
 *.AppImage
 *.deb
 *.rpm
+*.pkg.tar.zst
 *.app
 *.dmg
 *.exe
