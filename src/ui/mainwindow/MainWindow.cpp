@@ -483,7 +483,7 @@ void MainWindow::buildMenus()
                               "Built with Qt %2.<br/>"
                               "Project homepage: <a href=\"%3\">%3</a>")
                                .arg(QCoreApplication::applicationVersion(),
-                                    QString::fromLatin1(qVersion()),
+                                    QString::fromLatin1(QT_VERSION_STR),
                                     QString::fromLatin1(kProjectUrl)));
     });
 }
