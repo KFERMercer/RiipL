@@ -110,7 +110,6 @@ MainWindow::MainWindow(QWidget* parent)
     m_splitter->addWidget(createRightPane());
     m_splitter->setStretchFactor(0, 1);
     m_splitter->setStretchFactor(1, 1);
-    m_splitter->setSizes({600, 600});
     centralLayout->addWidget(m_splitter);
     setCentralWidget(centralArea);
 
@@ -258,7 +257,6 @@ QWidget* MainWindow::createLeftPane()
 {
     auto* pane = new QWidget(this);
     auto* layout = new QVBoxLayout(pane);
-    layout->setContentsMargins(6, 6, 6, 6);
 
     auto* topRow = new QHBoxLayout();
     m_sourceLang = new QComboBox(pane);
@@ -300,7 +298,6 @@ QWidget* MainWindow::createRightPane()
 {
     auto* pane = new QWidget(this);
     auto* layout = new QVBoxLayout(pane);
-    layout->setContentsMargins(6, 6, 6, 6);
 
     auto* topRow = new QHBoxLayout();
     m_targetLang = new QComboBox(pane);

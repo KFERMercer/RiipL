@@ -11,8 +11,6 @@ CandidatePopup::CandidatePopup(TranslationEngine* engine, QWidget* parent)
     , m_engine(engine)
 {
     auto* layout = new QVBoxLayout(this);
-    layout->setContentsMargins(8, 6, 8, 8);
-    layout->setSpacing(4);
     m_header = new QLabel(this);
     QFont headerFont = m_header->font();
     headerFont.setBold(true);
