@@ -4,57 +4,57 @@
 <context>
     <name>ApiClient</name>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="501"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="504"/>
         <source>API base URL is not configured</source>
         <translation>未配置 API 基础地址</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="503"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="506"/>
         <source>API base URL must be an absolute http or https URL</source>
         <translation>API 基础地址必须是绝对的 http 或 https URL</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="505"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="508"/>
         <source>Request timed out</source>
         <translation>请求超时</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="507"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="510"/>
         <source>Network request failed</source>
         <translation>网络请求失败</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="508"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="511"/>
         <source>Network request failed: %1</source>
         <translation>网络请求失败：%1</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="510"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="513"/>
         <source>Request failed with status %1</source>
         <translation>请求失败，状态码 %1</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="515"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="518"/>
         <source>Failed to parse API response</source>
         <translation>解析 API 响应失败</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="517"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="520"/>
         <source>API response contains no choices</source>
         <translation>API 响应中没有选项内容</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="519"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="522"/>
         <source>API response is too large to accept</source>
         <translation>API 响应过大，无法接收</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="521"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="524"/>
         <source>Nothing to translate</source>
         <translation>没有需要翻译的内容</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="523"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="526"/>
         <source>Nothing to look up</source>
         <translation>没有可查询的内容</translation>
     </message>

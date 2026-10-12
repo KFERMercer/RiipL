@@ -379,6 +379,9 @@ void ApiClient::onReadyRead()
 
 void ApiClient::consumeStreamBuffer(bool flush)
 {
+    if (m_streamError.has_value())
+        return;
+
     int start = 0;
     while (start < m_streamBuffer.size()) {
         int end = m_streamBuffer.indexOf('\n', start);

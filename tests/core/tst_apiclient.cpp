@@ -131,6 +131,7 @@ private slots:
     void keepsStreamHeldOpenAfterTerminator();
     void rejectsStreamWithoutContent();
     void reportsStreamErrorFrame();
+    void deliversStreamedDeltasOnceBeforeStreamError();
     void reportsStreamErrorCodeWithoutMessage();
     void reportsBrokenStreamAsNetworkFailure();
     void dropsOversizedResponse();
@@ -437,6 +438,36 @@ void TestApiClient::reportsStreamErrorFrame()
     QCOMPARE(error->code, ApiClient::ErrorCode::ServerMessage);
     QCOMPARE(error->detail, QStringLiteral("Context size has been exceeded."));
     QVERIFY2(result.isEmpty(), "the part sent before the failure is not an answer");
+}
+
+// The answer the endpoint sent before it failed is delivered once, however many
+// frames shared the read the failure arrived in.
+void TestApiClient::deliversStreamedDeltasOnceBeforeStreamError()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    ConfigManager::createInstance(TestSupport::tempDir());
+
+    OneShotServer server;
+    QVERIFY(server.listen());
+    server.serve(streamReply(streamFrame("Hel") + "\n\n"
+                             + streamErrorFrame("500", "Context size has been exceeded.")
+                             + "\n\n"));
+    ConfigManager::instance()->setValue(
+        Keys::apiBaseUrl, QStringLiteral("http://127.0.0.1:%1/v1").arg(server.port()));
+
+    ApiClient client;
+    QSignalSpy finishedSpy(&client, &ApiClient::requestFinished);
+    QStringList deltas;
+    std::optional<ApiClient::Error> error;
+    QJsonObject body = chatBody();
+    body.insert(QStringLiteral("stream"), true);
+    client.sendChatRequest(body, nullptr,
+                           [&deltas](const QString& piece) { deltas << piece; },
+                           [&error](const ApiClient::Error& failure) { error = failure; });
+
+    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 5000);
+    QVERIFY(error.has_value());
+    QCOMPARE(deltas.join(QString()), QStringLiteral("Hel"));
 }
 
 // An error frame without a message is reported by the status it carries.
