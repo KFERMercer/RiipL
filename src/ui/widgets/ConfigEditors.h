@@ -88,7 +88,6 @@ public:
     explicit ConfigComboBox(const QString& key, QWidget* parent = nullptr);
 
     QJsonValue value() const override;
-    QComboBox* box() const { return m_box; }
     void setItems(const QList<std::pair<QString, QString>>& items);
 
 protected:
@@ -195,7 +194,6 @@ public:
     explicit ConfigCheckBox(const QString& key, QWidget* parent = nullptr);
 
     QJsonValue value() const override;
-    QCheckBox* box() const { return m_box; }
 
 protected:
     void setControlValue(const QJsonValue& v) override;
