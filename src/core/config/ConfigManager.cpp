@@ -2,6 +2,7 @@
 #include "Defaults.h"
 #include "core/json/JsonUtils.h"
 
+#include <QDateTime>
 #include <QDir>
 #include <QFile>
 #include <QJsonDocument>
@@ -59,14 +60,30 @@ void ConfigManager::load()
     }
     if (!file.open(QIODevice::ReadOnly))
         return;
+    const QByteArray data = file.readAll();
+    file.close();
+
     QJsonParseError error;
-    const QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &error);
+    const QJsonDocument doc = QJsonDocument::fromJson(data, &error);
     if (error.error != QJsonParseError::NoError || !doc.isObject()) {
-        qWarning("RiipL: config.json is corrupted, falling back to defaults");
+        quarantineCorruptFile();
         return;
     }
     m_user = doc.object();
     repairUiLanguage();
+}
+
+void ConfigManager::quarantineCorruptFile()
+{
+    const QString path = configFilePath();
+    const QString stamp =
+        QDateTime::currentDateTimeUtc().toString(QStringLiteral("yyyyMMdd-HHmmss-zzz"));
+    const QString backup = path + QStringLiteral(".corrupt-") + stamp + QStringLiteral(".bak");
+    if (!QFile::rename(path, backup)) {
+        qWarning() << "RiipL: cannot set aside the corrupted config file" << path;
+        return;
+    }
+    qWarning() << "RiipL: config.json is corrupted, falling back to defaults; kept as" << backup;
 }
 
 // An unoffered language would make the picker fall back to its first entry and

@@ -1,5 +1,6 @@
 #include <QtTest>
 
+#include <QDir>
 #include <QFile>
 #include <QLocale>
 
@@ -21,6 +22,7 @@ private slots:
     void rejectsUnofferedUiLanguage();
     void ignoresUnchangedSetValue();
     void keepsTheConfigFileToItsOwner();
+    void keepsTheCorruptConfigFile();
 };
 
 void TestConfigManager::fallsBackToDefaults()
@@ -218,6 +220,38 @@ void TestConfigManager::keepsTheConfigFileToItsOwner()
     QVERIFY(!(permissions & QFile::ReadOther));
     QVERIFY(!(permissions & QFile::WriteGroup));
     QVERIFY(!(permissions & QFile::WriteOther));
+}
+
+// A file the parser cannot read is kept aside, not overwritten by the next save.
+void TestConfigManager::keepsTheCorruptConfigFile()
+{
+    const QString dir = TestSupport::tempDir() + QStringLiteral("/corrupt");
+    QDir().mkpath(dir);
+    const QString path = dir + QStringLiteral("/config.json");
+    const QByteArray corrupted = QByteArrayLiteral("{\"api\":{\"api_key\":\"secret\"}");
+    {
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        QCOMPARE(file.write(corrupted), corrupted.size());
+    }
+
+    ConfigManager::createInstance(dir);
+    QVERIFY(!QFile::exists(path));
+    QVERIFY(ConfigManager::instance()->isDefault(Keys::apiModel));
+
+    const QStringList backups =
+        QDir(dir).entryList({QStringLiteral("config.json.corrupt-*.bak")}, QDir::Files);
+    QCOMPARE(backups.size(), 1);
+    QFile backup(dir + QLatin1Char('/') + backups.first());
+    QVERIFY(backup.open(QIODevice::ReadOnly));
+    QCOMPARE(backup.readAll(), corrupted);
+
+    // The new file starts from defaults, and the quarantined copy stays put.
+    ConfigManager::instance()->setValue(Keys::apiModel, QStringLiteral("gpt-4o"));
+    ConfigManager::instance()->flush();
+    QVERIFY(QFile::exists(path));
+    QCOMPARE(ConfigManager::instance()->stringValue(Keys::apiModel), QStringLiteral("gpt-4o"));
+    QCOMPARE(QDir(dir).entryList({QStringLiteral("config.json.corrupt-*.bak")}, QDir::Files).size(), 1);
 }
 
 QTEST_MAIN(TestConfigManager)

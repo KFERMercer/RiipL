@@ -40,6 +40,7 @@ signals:
 private:
     explicit ConfigManager(const QString& configDir);
     void load();
+    void quarantineCorruptFile();
     void repairUiLanguage();
     void scheduleSave();
     void save();
