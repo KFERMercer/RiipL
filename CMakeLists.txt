@@ -125,6 +125,8 @@ qt_add_executable(riipl
 )
 target_link_libraries(riipl PRIVATE riipl_core riipl_utils Qt6::Widgets Qt6::Svg)
 
+target_compile_options(riipl PRIVATE "$<$<PLATFORM_ID:Linux>:-fPIC>")
+
 if(TARGET Qt6::QSvgPlugin)
     qt_import_plugins(riipl INCLUDE Qt6::QSvgPlugin)
 endif()
