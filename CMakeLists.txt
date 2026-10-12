@@ -59,6 +59,7 @@ set(CORE_SOURCES
 set(CORE_HEADERS
     src/core/config/Defaults.h
     src/core/config/ConfigManager.h
+    src/core/config/ApiPreset.h
     src/core/document/DocumentCache.h
     src/core/document/DocumentSegmenter.h
     src/core/network/ApiClient.h
