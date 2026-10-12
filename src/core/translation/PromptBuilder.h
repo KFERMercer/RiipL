@@ -3,6 +3,7 @@
 #include <QHash>
 #include <QString>
 #include <QStringList>
+#include <QVector>
 
 #include "core/models/Glossary.h"
 

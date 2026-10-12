@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <iterator>
+#include <QLatin1String>
+#include <QList>
 #include <QLocale>
 #include <QString>
 #include <QVector>

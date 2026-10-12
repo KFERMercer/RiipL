@@ -1,7 +1,9 @@
 #pragma once
 
+#include <QJsonObject>
 #include <QObject>
 #include <QString>
+#include <QVector>
 #include <functional>
 
 #include "core/network/ApiClient.h"

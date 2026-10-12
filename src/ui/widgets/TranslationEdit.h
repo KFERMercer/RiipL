@@ -1,5 +1,8 @@
 #pragma once
 
+#include <QPoint>
+#include <QString>
+#include <QTextCursor>
 #include <QTextEdit>
 
 class TranslationEdit : public QTextEdit

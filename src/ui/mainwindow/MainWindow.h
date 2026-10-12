@@ -1,11 +1,14 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QString>
 #include <QUndoStack>
 
 #include <memory>
 
 #include "core/history/HistoryManager.h"
+#include "core/network/ApiClient.h"
+#include "core/translation/PromptBuilder.h"
 #include "core/translation/TranslationEngine.h"
 #include "ui/widgets/TranslationEdit.h"
 

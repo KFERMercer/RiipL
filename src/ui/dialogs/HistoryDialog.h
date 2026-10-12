@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QDialog>
+#include <QVector>
 
 #include "core/history/HistoryManager.h"
 

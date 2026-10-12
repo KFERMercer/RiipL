@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QJsonObject>
+#include <QJsonValue>
 #include <QLocale>
 #include <QObject>
 #include <QString>

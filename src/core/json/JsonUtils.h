@@ -2,6 +2,7 @@
 
 #include <QJsonObject>
 #include <QJsonValue>
+#include <QLatin1Char>
 #include <QString>
 #include <QStringList>
 

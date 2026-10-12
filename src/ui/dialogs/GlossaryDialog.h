@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QDialog>
+#include <QVector>
 #include <QWidget>
 
 #include "core/models/Glossary.h"

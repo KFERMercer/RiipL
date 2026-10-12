@@ -4,6 +4,8 @@
 #pragma once
 
 #include <QLayout>
+#include <QList>
+#include <QSize>
 #include <QStyle>
 #include <QWidget>
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QDialog>
+#include <QString>
 #include <QVector>
 
 #include "core/config/ApiPreset.h"
