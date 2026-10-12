@@ -19,7 +19,8 @@ public:
     void setResult(const QString& text);
     void updateResult(const QString& text);
     QString result() const;
-    // Grows the result by \p piece without rebuilding the document.
+    // Grows the result by \p piece without rebuilding the document. The view
+    // follows the end only while the reader is already there.
     void appendResult(const QString& piece);
     // Replaces the \p length characters at \p start, so a replacement is
     // rejected outright once the translation has moved on.

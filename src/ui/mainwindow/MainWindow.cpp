@@ -884,8 +884,9 @@ void MainWindow::setResultText(const QString& text)
     if (m_streamOpen) {
         m_streamOpen = false;
         const QString origin = std::exchange(m_streamOrigin, QString());
+        // Finalizing only trims the streamed text, so the pane is edited in place.
         if (m_resultEdit->result() != text)
-            m_resultEdit->setResult(text);
+            m_resultEdit->updateResult(text);
         m_resultHistory.push(new ResultTextCommand(m_resultEdit, origin, text));
         return;
     }
