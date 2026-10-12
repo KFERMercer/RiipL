@@ -59,22 +59,24 @@ ApiClient::Error streamError(const QByteArray& frame)
 }
 
 // Failure a finished reply reports, or nothing when it carried a body the caller
-// can read. \p abortedIsFailure is false for a request whose payload arrived
-// before the abort.
+// can read. \p streamTerminated is set for a stream whose terminator arrived.
 std::optional<ApiClient::Error> replyFailure(QNetworkReply* reply,
                                             const QByteArray& body,
                                             bool tooLarge,
-                                            bool abortedIsFailure)
+                                            bool streamTerminated)
 {
     if (tooLarge)
         return ApiClient::Error{ApiClient::ErrorCode::ResponseTooLarge, QString()};
+
+    if (streamTerminated)
+        return std::nullopt;
 
     const QVariant statusAttribute = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute);
     const int statusCode = statusAttribute.isValid() ? statusAttribute.toInt() : 0;
     const QNetworkReply::NetworkError replyError = reply->error();
 
     // The client's own aborts never reach their handlers, so this is the timeout.
-    if (replyError == QNetworkReply::OperationCanceledError && abortedIsFailure)
+    if (replyError == QNetworkReply::OperationCanceledError)
         return ApiClient::Error{ApiClient::ErrorCode::TimedOut, QString()};
     if (replyError != QNetworkReply::NoError && statusCode == 0)
         return ApiClient::Error{ApiClient::ErrorCode::NetworkFailure, reply->errorString()};
@@ -342,7 +344,7 @@ void ApiClient::onModelsFinished()
     m_modelsOnError = nullptr;
     reply->deleteLater();
 
-    if (const std::optional<Error> failure = replyFailure(reply, body, tooLarge, true)) {
+    if (const std::optional<Error> failure = replyFailure(reply, body, tooLarge, false)) {
         if (errorCb)
             errorCb(*failure);
         return;
@@ -454,7 +456,7 @@ void ApiClient::onFinished()
     QString result;
     std::optional<Error> failure = std::exchange(m_streamError, std::nullopt);
     if (!failure.has_value())
-        failure = replyFailure(reply, m_rawBuffer, tooLarge, !m_doneSent);
+        failure = replyFailure(reply, m_rawBuffer, tooLarge, m_doneSent);
     if (!failure.has_value()) {
         if (m_streaming) {
             // A stream without content failed like an unusable body, not as an

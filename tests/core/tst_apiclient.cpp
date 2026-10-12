@@ -24,9 +24,11 @@ public:
             QTcpSocket* socket = m_server.nextPendingConnection();
             QObject::connect(socket, &QTcpSocket::readyRead, socket, [this, socket]() {
                 m_requests.append(socket->readAll());
-                socket->write(m_replies.isEmpty() ? QByteArray() : m_replies.takeFirst());
+                const Reply reply = m_replies.isEmpty() ? Reply{} : m_replies.takeFirst();
+                socket->write(reply.body);
                 socket->flush();
-                socket->disconnectFromHost();
+                if (!reply.heldOpen)
+                    socket->disconnectFromHost();
             });
         });
     }
@@ -34,14 +36,24 @@ public:
     bool listen() { return m_server.listen(QHostAddress::LocalHost); }
     quint16 port() const { return m_server.serverPort(); }
 
-    void serve(const QByteArray& response) { m_replies.append(response); }
+    // A held open connection is how an endpoint that never closes a stream behaves.
+    void serve(const QByteArray& response, bool heldOpen = false)
+    {
+        m_replies.append({response, heldOpen});
+    }
 
     // Raw bytes of every request that reached the server.
     const QList<QByteArray>& requests() const { return m_requests; }
 
 private:
+    struct Reply
+    {
+        QByteArray body;
+        bool heldOpen = false;
+    };
+
     QTcpServer m_server;
-    QList<QByteArray> m_replies;
+    QList<Reply> m_replies;
     QList<QByteArray> m_requests;
 };
 
@@ -107,6 +119,7 @@ private slots:
     void keepsResultWhenHandlerStartsNextRequest();
     void reportsIdleTimeout();
     void readsTrailingStreamFrame();
+    void keepsStreamHeldOpenAfterTerminator();
     void rejectsStreamWithoutContent();
     void reportsStreamErrorFrame();
     void reportsStreamErrorCodeWithoutMessage();
@@ -329,6 +342,36 @@ void TestApiClient::readsTrailingStreamFrame()
 
     QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 5000);
     QVERIFY2(!error.has_value(), "the trailing frame must be read");
+    QCOMPARE(result, QStringLiteral("Hello"));
+}
+
+// An endpoint that holds the connection open after the terminator is ended by the
+// transfer timeout, which must not turn a complete answer into a failure.
+void TestApiClient::keepsStreamHeldOpenAfterTerminator()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    ConfigManager::createInstance(TestSupport::tempDir());
+
+    OneShotServer server;
+    QVERIFY(server.listen());
+    server.serve(streamReply(streamFrame("Hel") + "\n\n" + streamFrame("lo")
+                             + "\n\ndata: [DONE]\n\n"),
+                 true);
+    ConfigManager::instance()->setValue(
+        Keys::apiBaseUrl, QStringLiteral("http://127.0.0.1:%1/v1").arg(server.port()));
+    ConfigManager::instance()->setValue(Keys::apiTimeoutMs, ApiTimeout::minimumMs);
+
+    ApiClient client;
+    QSignalSpy finishedSpy(&client, &ApiClient::requestFinished);
+    QString result;
+    std::optional<ApiClient::Error> error;
+    QJsonObject body = chatBody();
+    body.insert(QStringLiteral("stream"), true);
+    client.sendChatRequest(body, [&result](const QString& text) { result = text; }, nullptr,
+                           [&error](const ApiClient::Error& failure) { error = failure; });
+
+    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 10000);
+    QVERIFY2(!error.has_value(), "the terminator settles the request");
     QCOMPARE(result, QStringLiteral("Hello"));
 }
 
