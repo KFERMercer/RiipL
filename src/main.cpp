@@ -16,6 +16,7 @@ int main(int argc, char* argv[])
     QApplication app(argc, argv);
     QApplication::setApplicationName(QStringLiteral("RiipL"));
     QApplication::setApplicationVersion(RIIPL_BUILD_VERSION);
+    QApplication::setDesktopFileName(QStringLiteral("riipl.desktop"));
     QApplication::setWindowIcon(QIcon(QStringLiteral(":/icons/app.svg")));
 
     QCommandLineParser parser;

@@ -1613,7 +1613,7 @@
 <context>
     <name>main</name>
     <message>
-        <location filename="../../src/main.cpp" line="59"/>
+        <location filename="../../src/main.cpp" line="60"/>
         <source>RiipL is already running and did not answer the activation request.</source>
         <translation>RiipL 已在运行，但未响应激活请求。</translation>
     </message>
