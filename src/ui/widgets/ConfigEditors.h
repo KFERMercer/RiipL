@@ -4,7 +4,6 @@
 #include <QJsonValue>
 #include <QList>
 #include <QString>
-#include <QStringList>
 #include <QWidget>
 
 #include <utility>
@@ -107,8 +106,8 @@ public:
     explicit ConfigEditableComboBox(const QString& key, QWidget* parent = nullptr);
 
     QJsonValue value() const override;
-    // Replaces the candidates, keeping the entry the field holds.
-    void setItems(const QStringList& items);
+    // Replaces the candidates.
+    void setItems(const QList<std::pair<QString, QString>>& items);
     // Replaces the candidates with one entry carrying \p message, which cannot
     // be picked.
     void setMessage(const QString& message);
@@ -124,6 +123,8 @@ protected:
 private:
     // Reports the popup to the editor that owns it.
     class Box;
+    // Draws a candidate together with its label.
+    class LabelDelegate;
     // Puts \p text in the field with the candidate it names highlighted.
     void selectText(const QString& text);
 

@@ -11,14 +11,20 @@
 #include <QLocale>
 
 #include <QAbstractItemView>
+#include <QApplication>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDoubleSpinBox>
+#include <QFontMetrics>
 #include <QHBoxLayout>
 #include <QLineEdit>
+#include <QPainter>
 #include <QPlainTextEdit>
 #include <QSpinBox>
 #include <QStandardItemModel>
+#include <QStyle>
+#include <QStyledItemDelegate>
+#include <QStyleOptionViewItem>
 #include <QToolButton>
 
 namespace {
@@ -27,6 +33,9 @@ struct ConfigEditorsTr
 {
     Q_DECLARE_TR_FUNCTIONS(ConfigEditors)
 };
+
+// Label of a candidate.
+constexpr int kLabelRole = Qt::UserRole + 1;
 
 QToolButton* createResetButton(QWidget* parent)
 {
@@ -186,6 +195,61 @@ void ConfigComboBox::setItems(const QList<std::pair<QString, QString>>& items)
         handleControlChange();
 }
 
+// Draws a candidate with its label after the entry.
+class ConfigEditableComboBox::LabelDelegate : public QStyledItemDelegate
+{
+public:
+    using QStyledItemDelegate::QStyledItemDelegate;
+
+    void paint(QPainter* painter, const QStyleOptionViewItem& option,
+               const QModelIndex& index) const override
+    {
+        const QString label = index.data(kLabelRole).toString();
+        if (label.isEmpty()) {
+            QStyledItemDelegate::paint(painter, option, index);
+            return;
+        }
+
+        QStyleOptionViewItem opt(option);
+        initStyleOption(&opt, index);
+        QStyleOptionViewItem row(opt);
+        row.text.clear();
+        QStyle* style = opt.widget ? opt.widget->style() : QApplication::style();
+        style->drawControl(QStyle::CE_ItemViewItem, &row, painter, opt.widget);
+
+        const QFontMetrics metrics(opt.fontMetrics);
+        const int space = metrics.horizontalAdvance(QChar::Space);
+        const int gap = 2 * space;
+        const QRect textRect = opt.rect.adjusted(space, 0, -space, 0);
+        const bool enabled = opt.state & QStyle::State_Enabled;
+
+        const QString entry = metrics.elidedText(
+            opt.text, Qt::ElideRight,
+            qMax(0, textRect.width() - metrics.horizontalAdvance(label) - gap));
+        style->drawItemText(painter, textRect, Qt::AlignLeft | Qt::AlignVCenter, opt.palette,
+                            enabled, entry, QPalette::Text);
+
+        QPalette labelPalette = opt.palette;
+        labelPalette.setColor(QPalette::Text, labelPalette.color(QPalette::PlaceholderText));
+        QRect labelRect = textRect;
+        labelRect.setLeft(textRect.left() + metrics.horizontalAdvance(entry) + gap);
+        style->drawItemText(painter, labelRect, Qt::AlignLeft | Qt::AlignVCenter, labelPalette,
+                            enabled, label, QPalette::Text);
+    }
+
+    QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override
+    {
+        QSize size = QStyledItemDelegate::sizeHint(option, index);
+        const QString label = index.data(kLabelRole).toString();
+        if (label.isEmpty())
+            return size;
+        // The popup sizes to its widest row, so the label and the space it takes
+        // add to the width the entry asks for.
+        const QFontMetrics metrics(option.font);
+        return size + QSize(metrics.horizontalAdvance(label) + 4 * metrics.horizontalAdvance(QChar::Space), 0);
+    }
+};
+
 class ConfigEditableComboBox::Box : public QComboBox
 {
 public:
@@ -193,6 +257,7 @@ public:
         : QComboBox(editor)
         , m_editor(editor)
     {
+        setItemDelegate(new LabelDelegate(this));
     }
 
     // Re-opens an open popup: it takes its height when shown, so candidates that
@@ -202,6 +267,7 @@ public:
         if (!view()->window()->isVisible())
             return;
         hidePopup();
+        fitWidth();
         QComboBox::showPopup();
     }
 
@@ -209,10 +275,16 @@ protected:
     void showPopup() override
     {
         emit m_editor->popupAboutToShow();
+        fitWidth();
         QComboBox::showPopup();
     }
 
 private:
+    void fitWidth()
+    {
+        view()->setMinimumWidth(view()->sizeHintForColumn(0) + 2 * view()->frameWidth());
+    }
+
     ConfigEditableComboBox* m_editor;
 };
 
@@ -245,13 +317,16 @@ void ConfigEditableComboBox::setControlValue(const QJsonValue& v)
     selectText(v.toString());
 }
 
-void ConfigEditableComboBox::setItems(const QStringList& items)
+void ConfigEditableComboBox::setItems(const QList<std::pair<QString, QString>>& items)
 {
     const QString current = m_box->currentText();
     {
         const QSignalBlocker blocker(m_box);
         m_box->clear();
-        m_box->addItems(items);
+        for (const std::pair<QString, QString>& item : items) {
+            m_box->addItem(item.first);
+            m_box->setItemData(m_box->count() - 1, item.second, kLabelRole);
+        }
         selectText(current);
     }
     m_box->refitPopup();
@@ -259,7 +334,7 @@ void ConfigEditableComboBox::setItems(const QStringList& items)
 
 void ConfigEditableComboBox::setMessage(const QString& message)
 {
-    setItems({message});
+    setItems({{message, QString()}});
     // The popup greys out what it reports rather than offering it as a choice.
     if (QStandardItemModel* model = qobject_cast<QStandardItemModel*>(m_box->model())) {
         if (QStandardItem* entry = model->item(0)) {

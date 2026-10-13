@@ -32,12 +32,12 @@
 #include <QJsonDocument>
 #include <QLabel>
 #include <QLineEdit>
+#include <QList>
 #include <QListWidget>
 #include <QMessageBox>
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QStackedWidget>
-#include <QStringList>
 #include <QTabWidget>
 #include <QToolButton>
 #include <QToolTip>
@@ -401,16 +401,20 @@ void SettingsDialog::reloadPresets()
 }
 
 // Lists the models the API fields describe, including edits that are not applied
-// yet; the popup reports the request while it runs.
+// yet.
 void SettingsDialog::reloadModels()
 {
     m_modelCombo->setMessage(tr("Loading the model list..."));
     m_apiClient.listModels(ApiClient::Connection::fromValues(editedApiValues()),
-                           [this](const QStringList& models) {
-                               if (models.isEmpty())
+                           [this](const QList<ApiClient::Model>& models) {
+                               QList<std::pair<QString, QString>> items;
+                               items.reserve(models.size());
+                               for (const ApiClient::Model& model : models)
+                                   items.append({model.id, model.name});
+                               if (items.isEmpty())
                                    m_modelCombo->setMessage(tr("The endpoint reported no models"));
                                else
-                                   m_modelCombo->setItems(models);
+                                   m_modelCombo->setItems(items);
                            },
                            [this](const ApiClient::Error& failure) {
                                m_modelCombo->setMessage(

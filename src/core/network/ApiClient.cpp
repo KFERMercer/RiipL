@@ -10,6 +10,7 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QNetworkRequestFactory>
+#include <QStringList>
 #include <QUrl>
 
 #include <algorithm>
@@ -295,7 +296,7 @@ void ApiClient::cancelModels()
     m_modelsOnError = nullptr;
 }
 
-std::optional<QStringList> ApiClient::parseModelIds(const QByteArray& body)
+std::optional<QList<ApiClient::Model>> ApiClient::parseModels(const QByteArray& body)
 {
     const QJsonDocument doc = QJsonDocument::fromJson(body);
     if (!doc.isObject())
@@ -304,13 +305,15 @@ std::optional<QStringList> ApiClient::parseModelIds(const QByteArray& body)
     if (!data.isArray())
         return std::nullopt;
 
-    QStringList ids;
+    QList<Model> models;
     for (const QJsonValue& entry : data.toArray()) {
-        const QString id = entry.toObject().value(QStringLiteral("id")).toString();
-        if (!id.isEmpty())
-            ids.append(id);
+        const QJsonObject object = entry.toObject();
+        const QString id = object.value(QStringLiteral("id")).toString();
+        if (id.isEmpty())
+            continue;
+        models.append({id, object.value(QStringLiteral("name")).toString()});
     }
-    return ids;
+    return models;
 }
 
 void ApiClient::onModelsReadyRead()
@@ -350,7 +353,7 @@ void ApiClient::onModelsFinished()
         return;
     }
 
-    const std::optional<QStringList> models = parseModelIds(body);
+    const std::optional<QList<Model>> models = parseModels(body);
     if (models.has_value()) {
         if (done)
             done(*models);

@@ -3,10 +3,10 @@
 #include <QByteArray>
 #include <QHttpHeaders>
 #include <QJsonObject>
+#include <QList>
 #include <QMetaType>
 #include <QObject>
 #include <QString>
-#include <QStringList>
 #include <QUrl>
 #include <functional>
 #include <optional>
@@ -69,10 +69,16 @@ public:
         static Connection fromValues(const QJsonObject& values);
     };
 
+    struct Model
+    {
+        QString id;
+        QString name;
+    };
+
     using DoneCallback = std::function<void(const QString&)>;
     using DeltaCallback = std::function<void(const QString&)>;
     using ErrorCallback = std::function<void(const Error&)>;
-    using ModelsCallback = std::function<void(const QStringList&)>;
+    using ModelsCallback = std::function<void(const QList<Model>&)>;
 
     explicit ApiClient(QObject* parent = nullptr);
 
@@ -83,23 +89,14 @@ public:
     void cancel();
     bool isBusy() const { return m_reply != nullptr; }
 
-    // Reads the ids the endpoint's model list reports; a body without a model
-    // array fails as ErrorCode::InvalidResponse.
     void listModels(const Connection& connection, ModelsCallback onDone, ErrorCallback onError);
 
-    // Model ids of a /models response body, in the order it lists them; nothing
-    // when the body holds no model array.
-    static std::optional<QStringList> parseModelIds(const QByteArray& body);
+    static std::optional<QList<Model>> parseModels(const QByteArray& body);
 
-    // Parses user-configured header lines of the form "Name: value";
-    // malformed lines are ignored.
     static QHttpHeaders parseCustomHeaders(const QString& raw);
 
-    // Body as the endpoint is given it: every key of the configured extra body
-    // takes the place of the one the request carries.
     static QJsonObject withExtraBody(const QJsonObject& body);
 
-    // Base URL with redundant trailing path slashes removed.
     static QUrl normalizedBaseUrl(const QString& baseUrl);
 
 signals:

@@ -113,6 +113,16 @@ QJsonObject chatBody()
     return body;
 }
 
+// Ids of a parsed model list, in the order the endpoint reported them.
+QStringList modelIds(const QList<ApiClient::Model>& models)
+{
+    QStringList ids;
+    ids.reserve(models.size());
+    for (const ApiClient::Model& model : models)
+        ids.append(model.id);
+    return ids;
+}
+
 }
 
 class TestApiClient : public QObject
@@ -135,7 +145,7 @@ private slots:
     void reportsStreamErrorCodeWithoutMessage();
     void reportsBrokenStreamAsNetworkFailure();
     void dropsOversizedResponse();
-    void parsesModelIds();
+    void parsesModels();
     void listsModels();
     void listsModelsFromGivenValues();
     void reportsModelListFailure();
@@ -552,19 +562,21 @@ void TestApiClient::dropsOversizedResponse()
 
 // A body without a model array names nothing, which is not the same as an
 // endpoint that reports no model.
-void TestApiClient::parsesModelIds()
+void TestApiClient::parsesModels()
 {
-    QVERIFY(!ApiClient::parseModelIds(QByteArrayLiteral("not json")).has_value());
-    QVERIFY(!ApiClient::parseModelIds(QByteArrayLiteral(R"({"object":"list"})")).has_value());
-    QVERIFY(!ApiClient::parseModelIds(QByteArrayLiteral(R"({"data":"none"})")).has_value());
+    QVERIFY(!ApiClient::parseModels(QByteArrayLiteral("not json")).has_value());
+    QVERIFY(!ApiClient::parseModels(QByteArrayLiteral(R"({"object":"list"})")).has_value());
+    QVERIFY(!ApiClient::parseModels(QByteArrayLiteral(R"({"data":"none"})")).has_value());
 
     // Entries without an id are skipped; the order the endpoint reports is kept.
-    const std::optional<QStringList> ids = ApiClient::parseModelIds(
-        QByteArrayLiteral(R"({"data":[{"id":"gpt-4o-mini"},{"id":""},{},"o3-mini",{"id":"gpt-4.1-mini"}]})"));
-    QVERIFY(ids.has_value());
-    QCOMPARE(*ids, QStringList({QStringLiteral("gpt-4o-mini"), QStringLiteral("gpt-4.1-mini")}));
+    const std::optional<QList<ApiClient::Model>> models = ApiClient::parseModels(
+        QByteArrayLiteral(R"({"data":[{"id":"gpt-4o-mini","name":"GPT-4o mini"},{"id":""},{},"o3-mini",{"id":"gpt-4.1-mini"}]})"));
+    QVERIFY(models.has_value());
+    QCOMPARE(modelIds(*models), QStringList({QStringLiteral("gpt-4o-mini"), QStringLiteral("gpt-4.1-mini")}));
+    QCOMPARE(models->at(0).name, QStringLiteral("GPT-4o mini"));
+    QVERIFY(models->at(1).name.isEmpty());
 
-    const std::optional<QStringList> empty = ApiClient::parseModelIds(QByteArrayLiteral(R"({"data":[]})"));
+    const std::optional<QList<ApiClient::Model>> empty = ApiClient::parseModels(QByteArrayLiteral(R"({"data":[]})"));
     QVERIFY(empty.has_value());
     QVERIFY(empty->isEmpty());
 }
@@ -586,15 +598,15 @@ void TestApiClient::listsModels()
     ApiClient client;
     // The listing is not a translation, so it leaves the busy state alone.
     QSignalSpy finishedSpy(&client, &ApiClient::requestFinished);
-    QStringList ids;
+    QList<ApiClient::Model> models;
     std::optional<ApiClient::Error> error;
     client.listModels(ApiClient::Connection::configured(),
-                      [&ids](const QStringList& models) { ids = models; },
+                      [&models](const QList<ApiClient::Model>& listed) { models = listed; },
                       [&error](const ApiClient::Error& failure) { error = failure; });
 
-    QTRY_COMPARE_WITH_TIMEOUT(ids.size(), 2, 5000);
+    QTRY_COMPARE_WITH_TIMEOUT(models.size(), 2, 5000);
     QVERIFY2(!error.has_value(), "the listing must not report a failure");
-    QCOMPARE(ids, QStringList({QStringLiteral("gpt-4o-mini"), QStringLiteral("o3-mini")}));
+    QCOMPARE(modelIds(models), QStringList({QStringLiteral("gpt-4o-mini"), QStringLiteral("o3-mini")}));
     QCOMPARE(finishedSpy.count(), 0);
 
     QCOMPARE(server.requests().size(), 1);
@@ -622,15 +634,15 @@ void TestApiClient::listsModelsFromGivenValues()
     values.insert(Keys::apiTimeoutMs, 5000);
 
     ApiClient client;
-    QStringList ids;
+    QList<ApiClient::Model> models;
     std::optional<ApiClient::Error> error;
     client.listModels(ApiClient::Connection::fromValues(values),
-                      [&ids](const QStringList& models) { ids = models; },
+                      [&models](const QList<ApiClient::Model>& listed) { models = listed; },
                       [&error](const ApiClient::Error& failure) { error = failure; });
 
-    QTRY_COMPARE_WITH_TIMEOUT(ids.size(), 1, 5000);
+    QTRY_COMPARE_WITH_TIMEOUT(models.size(), 1, 5000);
     QVERIFY2(!error.has_value(), "the given settings must carry the request");
-    QCOMPARE(ids, QStringList({QStringLiteral("local-model")}));
+    QCOMPARE(modelIds(models), QStringList({QStringLiteral("local-model")}));
 
     QCOMPARE(server.requests().size(), 1);
     const QByteArray request = server.requests().first();
@@ -654,16 +666,16 @@ void TestApiClient::reportsModelListFailure()
         Keys::apiBaseUrl, QStringLiteral("http://127.0.0.1:%1/v1").arg(server.port()));
 
     ApiClient client;
-    QStringList ids;
+    QList<ApiClient::Model> models;
     std::optional<ApiClient::Error> error;
     client.listModels(ApiClient::Connection::configured(),
-                      [&ids](const QStringList& models) { ids = models; },
+                      [&models](const QList<ApiClient::Model>& listed) { models = listed; },
                       [&error](const ApiClient::Error& failure) { error = failure; });
 
     QTRY_VERIFY_WITH_TIMEOUT(error.has_value(), 5000);
     QCOMPARE(error->code, ApiClient::ErrorCode::ServerMessage);
     QCOMPARE(error->detail, QStringLiteral("invalid key"));
-    QVERIFY(ids.isEmpty());
+    QVERIFY(models.isEmpty());
 }
 
 // A body past the cap is dropped instead of being buffered to the end.
@@ -681,15 +693,15 @@ void TestApiClient::dropsOversizedModelList()
         Keys::apiBaseUrl, QStringLiteral("http://127.0.0.1:%1/v1").arg(server.port()));
 
     ApiClient client;
-    QStringList ids;
+    QList<ApiClient::Model> models;
     std::optional<ApiClient::Error> error;
     client.listModels(ApiClient::Connection::configured(),
-                      [&ids](const QStringList& models) { ids = models; },
+                      [&models](const QList<ApiClient::Model>& listed) { models = listed; },
                       [&error](const ApiClient::Error& failure) { error = failure; });
 
     QTRY_VERIFY_WITH_TIMEOUT(error.has_value(), 15000);
     QCOMPARE(error->code, ApiClient::ErrorCode::ResponseTooLarge);
-    QVERIFY(ids.isEmpty());
+    QVERIFY(models.isEmpty());
 }
 
 // An endpoint that cannot carry the request is named before the listing starts.
