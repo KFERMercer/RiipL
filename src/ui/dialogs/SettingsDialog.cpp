@@ -300,13 +300,29 @@ QWidget* SettingsDialog::createApiPage()
                   new ConfigLineEdit(Keys::apiBaseUrl, false, page));
 
     auto* apiKeyEdit = new ConfigLineEdit(Keys::apiKey, true, page);
+    auto* copyKeyButton = new QPushButton(page);
     auto* apiKeyHint = new QLabel(page);
     auto applyApiKeyHint = [apiKeyHint]() {
         apiKeyHint->setText(tr("Stored in the configuration file as plain text"));
         ThemeColors::setTextColor(apiKeyHint, ThemeColors::neutralText(apiKeyHint));
     };
+    auto* apiKeyField = new QWidget(page);
+    auto* apiKeyFieldLayout = new QHBoxLayout(apiKeyField);
+    apiKeyFieldLayout->setContentsMargins(0, 0, 0, 0);
+    apiKeyFieldLayout->addWidget(apiKeyEdit, 1);
+    apiKeyFieldLayout->addWidget(copyKeyButton);
+    connect(copyKeyButton, &QPushButton::clicked, apiKeyField, [apiKeyEdit, copyKeyButton]() {
+        QApplication::clipboard()->setText(apiKeyEdit->value().toString());
+        QToolTip::showText(QCursor::pos(), tr("Copied"), copyKeyButton);
+    });
+    const auto syncCopyKeyButton = [apiKeyEdit, copyKeyButton]() {
+        copyKeyButton->setEnabled(!apiKeyEdit->value().toString().isEmpty());
+    };
+    connect(apiKeyEdit->edit(), &QLineEdit::textChanged, apiKeyField,
+            [syncCopyKeyButton](const QString&) { syncCopyKeyButton(); });
+    syncCopyKeyButton();
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "API key"),
-                  fieldWithHint(apiKeyEdit, apiKeyHint));
+                  fieldWithHint(apiKeyField, apiKeyHint));
     applyApiKeyHint();
     bindText(applyApiKeyHint);
 
@@ -359,7 +375,7 @@ QWidget* SettingsDialog::createApiPage()
     updateValidation();
     bindText(updateValidation);
 
-    bindText([presetGroup, newPresetButton, saveAsPresetButton, managePresetButton, temperatureSpin, headersEdit, this]() {
+    bindText([presetGroup, newPresetButton, saveAsPresetButton, managePresetButton, temperatureSpin, headersEdit, copyKeyButton, this]() {
         presetGroup->setTitle(tr("API preset"));
         m_presetCombo->setPlaceholderText(tr("Empty preset"));
         newPresetButton->setText(tr("New"));
@@ -370,6 +386,9 @@ QWidget* SettingsDialog::createApiPage()
         managePresetButton->setText(tr("Manage..."));
         saveAsPresetButton->setToolTip(tr("Save the current API settings under a new name"));
         managePresetButton->setToolTip(tr("Rename, copy, reorder, delete or load API presets"));
+        copyKeyButton->setText(tr("Copy"));
+        copyKeyButton->setToolTip(tr("Copy the API key to the clipboard"));
+        copyKeyButton->setAccessibleName(tr("Copy API key"));
         temperatureSpin->edit()->setSpecialValueText(tr("API default"));
         temperatureSpin->edit()->updateGeometry();
         headersEdit->edit()->setPlaceholderText(tr("One per line: Header-Name: value"));
