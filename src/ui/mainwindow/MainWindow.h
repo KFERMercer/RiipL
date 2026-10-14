@@ -98,6 +98,8 @@ private:
     TranslationContext currentContext() const;
     void setBusy(bool busy);
     void translateClipboard();
+    void translatePendingClipboard();
+    void applyClipboardText(const QString& text);
 
     // The pane grows while a translation streams; closing the run turns it into
     // one undo entry.
@@ -165,6 +167,7 @@ private:
     QString m_statusArgument;
     ApiClient::Error m_statusFailure;
     QString m_lastClipboard;
+    bool m_clipboardReadPending = false;
     // Translation the popup's replacement spans were resolved against.
     QString m_candidateOrigin;
     QUndoStack m_resultHistory;

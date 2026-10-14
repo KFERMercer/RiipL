@@ -197,7 +197,7 @@ MainWindow::MainWindow(QWidget* parent)
     m_clipboardTimer = new QTimer(this);
     m_clipboardTimer->setSingleShot(true);
     m_clipboardTimer->setInterval(ConfigManager::instance()->intValue(Keys::clipboardDelayMs));
-    connect(m_clipboardTimer, &QTimer::timeout, this, &MainWindow::translateClipboard);
+    connect(m_clipboardTimer, &QTimer::timeout, this, &MainWindow::translatePendingClipboard);
 
     connect(ConfigManager::instance(), &ConfigManager::changed, this, &MainWindow::onConfigChanged);
 
@@ -511,12 +511,7 @@ void MainWindow::buildTray()
             toggleVisible();
     });
     connect(m_trayShowHideAction, &QAction::triggered, this, &MainWindow::toggleVisible);
-    connect(m_trayTranslateClipAction, &QAction::triggered, this, [this]() {
-        show();
-        raise();
-        activateWindow();
-        translateClipboard();
-    });
+    connect(m_trayTranslateClipAction, &QAction::triggered, this, &MainWindow::translateClipboard);
     m_tray->show();
     m_trayMenu = menu;
 }
@@ -807,8 +802,16 @@ void MainWindow::updateCountLabel()
 void MainWindow::changeEvent(QEvent* event)
 {
     QMainWindow::changeEvent(event);
-    if (event->type() == QEvent::LanguageChange)
+    if (event->type() == QEvent::LanguageChange) {
         retranslateUi();
+        return;
+    }
+    if (event->type() != QEvent::ActivationChange || !m_clipboardReadPending || !isActiveWindow())
+        return;
+    m_clipboardReadPending = false;
+    const QString text = QApplication::clipboard()->text().trimmed();
+    if (!text.isEmpty())
+        applyClipboardText(text);
 }
 
 void MainWindow::swapLanguages()
@@ -846,11 +849,30 @@ void MainWindow::pasteSource()
     m_sourceEdit->setFocus();
 }
 
-void MainWindow::translateClipboard()
+void MainWindow::translatePendingClipboard()
 {
     const QString text = QApplication::clipboard()->text().trimmed();
     if (text.isEmpty() || text == m_lastClipboard)
         return;
+    applyClipboardText(text);
+}
+
+void MainWindow::translateClipboard()
+{
+    if (isMinimized())
+        setWindowState(windowState() & ~Qt::WindowMinimized);
+    show();
+    raise();
+    activateWindow();
+    const QString text = QApplication::clipboard()->text().trimmed();
+    if (text.isEmpty())
+        m_clipboardReadPending = true;
+    else
+        applyClipboardText(text);
+}
+
+void MainWindow::applyClipboardText(const QString& text)
+{
     m_lastClipboard = text;
     m_sourceEdit->setPlainText(text);
     translateNow();
