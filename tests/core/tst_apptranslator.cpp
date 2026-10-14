@@ -5,6 +5,7 @@
 #include <QLocale>
 #include <QTranslator>
 
+#include "TestSupport.h"
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
 #include "utils/AppTranslator.h"
@@ -55,6 +56,7 @@ QString catalogRoot()
 
 void TestAppTranslator::init()
 {
+    ConfigManager::createInstance(TestSupport::tempDir());
     qApp->installEventFilter(this);
     // The catalog must be readable for the assertions to mean anything.
     if (!m_catalogAvailable) {
