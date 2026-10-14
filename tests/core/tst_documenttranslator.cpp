@@ -235,10 +235,13 @@ private slots:
     void capsConcurrencyAfterTheLastWindow();
     void runsSerialWhenConcurrencyIsOff();
     void runsSerialAtOneRequest();
+    void runsSerialOverCachedWindows();
+    void retriesInSerialMode();
     void reassemblesDocumentsFromOverlappingAnswers();
     void showsAnswersWhereTheyBelongWhateverTheirOrder();
     void retriesOneWindowWhileOthersAreInFlight();
     void stopsEveryRequestInFlight();
+    void stopsOnTheLastWindow();
     void leavesOutAWindowThatCannotBeTranslated();
     void reusesTheSamePoolForASecondRun();
     void cachesAcceptedAnswers();
@@ -246,6 +249,9 @@ private slots:
     void reusesCachedAnswersOnTheNextRun();
     void reusesARequestOfAnotherDocument();
     void requestsOnlyTheWindowsTheCacheMisses();
+    void handsTheFirstWindowOverBeforeTheRest();
+    void reportsTheCachedWindowsBeforeTheModel();
+    void restartsFromTheReportOfACachedWindow();
     void separatesTheCacheByRequest();
     void separatesTheCacheByRequestBody();
     void separatesTheCacheByConnection();
@@ -253,7 +259,7 @@ private slots:
     void ignoresSettingsThatDoNotShapeTheAnswer();
     void ignoresCachedAnswersOfTheWrongShape();
     void retiresTheFailureOfAnAnsweredRequest();
-    void stopsOnTheProgressOfAPartlyCachedRun();
+    void stopsOnTheReportOfACachedWindow();
     void keepsUnusableAnswersAsFailures();
     void namesEveryFailedSample();
     void dropsTheFailureBeforeSending();
@@ -648,6 +654,71 @@ void TestDocumentTranslator::runsSerialAtOneRequest()
     QCOMPARE(m_api.peakPending, 1);
 }
 
+// A run translating one window at a time carries on over the windows the cache
+// answers instead of stopping on them.
+void TestDocumentTranslator::runsSerialOverCachedWindows()
+{
+    m_api.answerDelayMs = 20;
+    ConfigManager::instance()->setValue(Keys::documentConcurrent, false);
+
+    const QVector<DocumentWindow> windows = document(3, 3);
+    const DocumentCache cache(TestSupport::tempDir() + QStringLiteral("/cache"));
+
+    DocumentTranslator translator;
+    QString finished;
+    connect(&translator, &DocumentTranslator::finished, this,
+            [&finished](const QString& text) { finished = text; });
+
+    translator.start(windows, TranslationContext(), cache);
+    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+    QCOMPARE(m_api.requests, 3);
+
+    // One window stays cached, and it is not the one the run takes first.
+    const QStringList files = cacheFiles(cache, kAnswerSuffix);
+    QCOMPARE(files.size(), 3);
+    const QString kept = cacheFileHolding(cache, QStringLiteral("window 1 line 0"));
+    QVERIFY(!kept.isEmpty());
+    for (const QString& file : files) {
+        if (file != kept)
+            QVERIFY(QFile::remove(cachePath(cache, file)));
+    }
+
+    m_api.requests = 0;
+    m_api.peakPending = 0;
+    finished.clear();
+    translator.start(windows, TranslationContext(), cache);
+    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+
+    // The cached window is answered without a request, and the run stays serial.
+    QCOMPARE(m_api.requests, 2);
+    QCOMPARE(m_api.peakPending, 1);
+    QVERIFY(finished.contains(QStringLiteral("译文 window 1 line 0")));
+}
+
+// A run translating one window at a time retries the window in hand before it
+// starts the one behind it.
+void TestDocumentTranslator::retriesInSerialMode()
+{
+    m_api.answerDelayMs = 20;
+    m_api.failuresLeft = 1;
+    ConfigManager::instance()->setValue(Keys::documentConcurrent, false);
+
+    const QVector<DocumentWindow> windows = document(2, 3);
+    DocumentTranslator translator;
+    QString finished;
+    connect(&translator, &DocumentTranslator::finished, this,
+            [&finished](const QString& text) { finished = text; });
+
+    translator.start(windows, TranslationContext());
+    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 15000);
+
+    // The retry repeats the first window's request, before the window behind it.
+    QCOMPARE(m_api.requests, 3);
+    QCOMPARE(m_api.peakPending, 1);
+    QCOMPARE(m_api.prompts.at(1), m_api.prompts.at(0));
+    QVERIFY(finished.contains(QStringLiteral("译文 window 1 line 0")));
+}
+
 // Answers that arrive out of order still rebuild the document in order.
 void TestDocumentTranslator::reassemblesDocumentsFromOverlappingAnswers()
 {
@@ -731,8 +802,7 @@ void TestDocumentTranslator::retriesOneWindowWhileOthersAreInFlight()
     DocumentTranslator translator;
     QString finished;
     int failures = 0;
-    // Requests sent when the third window was accepted, and the highest request
-    // count seen before the run finished.
+    // Requests sent when the third window was accepted.
     int requestsAtThird = -1;
     int completed = 0;
     connect(&translator, &DocumentTranslator::failed, this,
@@ -759,6 +829,29 @@ void TestDocumentTranslator::retriesOneWindowWhileOthersAreInFlight()
     QVERIFY(finished.startsWith(QStringLiteral("译文 window 0 line 0")));
     // The window that failed once is in the document like the others.
     QVERIFY(finished.contains(QStringLiteral("译文 window 3 line 2")));
+}
+
+// A stop that lands on the last window ends the run without reporting its end.
+void TestDocumentTranslator::stopsOnTheLastWindow()
+{
+    const QVector<DocumentWindow> windows = document(1, 3);
+    DocumentTranslator translator;
+    bool stopped = false;
+    QString finished;
+    connect(&translator, &DocumentTranslator::progressChanged, this,
+            [&translator](int completed, int) {
+                if (completed == 1)
+                    translator.stop();
+            });
+    connect(&translator, &DocumentTranslator::stopped, this, [&stopped]() { stopped = true; });
+    connect(&translator, &DocumentTranslator::finished, this,
+            [&finished](const QString& text) { finished = text; });
+
+    translator.start(windows, TranslationContext());
+    QTRY_VERIFY_WITH_TIMEOUT(stopped, 10000);
+
+    QTest::qWait(200);
+    QVERIFY(finished.isEmpty());
 }
 
 // Stopping ends every request the run had in flight.
@@ -831,7 +924,7 @@ void TestDocumentTranslator::leavesOutAWindowThatCannotBeTranslated()
     QVERIFY(!document.contains(QStringLiteral("译文 window 0 line 0")));
 }
 
-// A second run reuses the requests the first one left behind.
+// A second run reuses the pool the first one left behind.
 void TestDocumentTranslator::reusesTheSamePoolForASecondRun()
 {
     ConfigManager::instance()->setValue(Keys::apiMaxConcurrency, 2);
@@ -946,10 +1039,13 @@ void TestDocumentTranslator::reusesCachedAnswersOnTheNextRun()
     DocumentTranslator translator;
     QStringList finished;
     QVector<std::pair<int, int>> progress;
+    int reports = 0;
     connect(&translator, &DocumentTranslator::finished, this,
             [&finished](const QString& text) { finished.append(text); });
     connect(&translator, &DocumentTranslator::progressChanged, this,
             [&progress](int completed, int total) { progress.append({completed, total}); });
+    connect(&translator, &DocumentTranslator::windowTranslated, this,
+            [&reports](const QString&) { ++reports; });
 
     translator.start(windows, TranslationContext(), cache);
     QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 1, 10000);
@@ -957,14 +1053,19 @@ void TestDocumentTranslator::reusesCachedAnswersOnTheNextRun()
 
     m_api.requests = 0;
     progress.clear();
+    reports = 0;
     translator.start(windows, TranslationContext(), cache);
     QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 2, 10000);
 
-    // The run answers itself from the cache and reports the document whole.
+    // The run answers itself from the cache, a window at a time, and reports the
+    // document whole: the document goes out with the end of the run, not once per
+    // window.
     QCOMPARE(m_api.requests, 0);
     QCOMPARE(finished.at(1), finished.at(0));
-    QCOMPARE(progress.size(), 1);
-    QCOMPARE(progress.first(), qMakePair(3, 3));
+    QCOMPARE(progress.size(), 4);
+    QCOMPARE(progress.first(), qMakePair(0, 3));
+    QCOMPARE(progress.last(), qMakePair(3, 3));
+    QCOMPARE(reports, 0);
 }
 
 // The entry is named by the request, so a window of another document is answered
@@ -995,7 +1096,8 @@ void TestDocumentTranslator::reusesARequestOfAnotherDocument()
     QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 2, 10000);
 
     QCOMPARE(m_api.requests, 1);
-    QCOMPARE(progress.first(), qMakePair(1, 2));
+    QCOMPARE(progress.first(), qMakePair(0, 2));
+    QCOMPARE(progress.last(), qMakePair(2, 2));
 }
 
 // A partly cached document sends only the windows the cache does not hold.
@@ -1026,6 +1128,136 @@ void TestDocumentTranslator::requestsOnlyTheWindowsTheCacheMisses()
     QCOMPARE(m_api.requests, 1);
     QCOMPARE(finished.at(1), finished.at(0));
     QCOMPARE(cacheFiles(cache, kAnswerSuffix).size(), 3);
+}
+
+// The run hands a window over as it is taken, so the windows behind the first one
+// are not processed before its request reaches the pool.
+void TestDocumentTranslator::handsTheFirstWindowOverBeforeTheRest()
+{
+    const QVector<DocumentWindow> windows = document(3, 3);
+    const DocumentCache cache(TestSupport::tempDir() + QStringLiteral("/cache"));
+
+    DocumentTranslator translator;
+    QString finished;
+    QVector<std::pair<int, int>> progress;
+    connect(&translator, &DocumentTranslator::finished, this,
+            [&finished](const QString& text) { finished = text; });
+    connect(&translator, &DocumentTranslator::progressChanged, this,
+            [&progress](int completed, int total) { progress.append({completed, total}); });
+
+    translator.start(windows, TranslationContext(), cache);
+    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+
+    // The cache holds the two windows behind the first one.
+    const QStringList files = cacheFiles(cache, kAnswerSuffix);
+    QCOMPARE(files.size(), 3);
+    const QString dropped = cacheFileHolding(cache, QStringLiteral("window 0 line 0"));
+    QVERIFY(!dropped.isEmpty());
+    QVERIFY(QFile::remove(cachePath(cache, dropped)));
+
+    m_api.requests = 0;
+    progress.clear();
+    finished.clear();
+    translator.start(windows, TranslationContext(), cache);
+
+    // Only the first window has been taken when the run returns: the windows the
+    // cache answers behind it wait for their own turn.
+    QCOMPARE(progress.size(), 1);
+    QCOMPARE(progress.first(), qMakePair(0, 3));
+    QVERIFY(finished.isEmpty());
+
+    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+    QCOMPARE(m_api.requests, 1);
+    QCOMPARE(progress.last(), qMakePair(3, 3));
+}
+
+// The windows the cache answers are reported in one go, before the run waits on the
+// model.
+void TestDocumentTranslator::reportsTheCachedWindowsBeforeTheModel()
+{
+    m_api.answerDelayMs = 50;
+    const QVector<DocumentWindow> windows = document(3, 3);
+    const DocumentCache cache(TestSupport::tempDir() + QStringLiteral("/cache"));
+
+    DocumentTranslator translator;
+    QStringList reports;
+    QString finished;
+    // Requests the endpoint had read when the first report went out.
+    int requestsWhenReported = -1;
+    connect(&translator, &DocumentTranslator::windowTranslated, this,
+            [this, &reports, &requestsWhenReported](const QString& text) {
+                reports.append(text);
+                if (requestsWhenReported < 0)
+                    requestsWhenReported = m_api.requests;
+            });
+    connect(&translator, &DocumentTranslator::finished, this,
+            [&finished](const QString& text) { finished = text; });
+
+    translator.start(windows, TranslationContext(), cache);
+    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+
+    // The cache holds the first two windows.
+    const QStringList files = cacheFiles(cache, kAnswerSuffix);
+    QCOMPARE(files.size(), 3);
+    const QString dropped = cacheFileHolding(cache, QStringLiteral("window 2 line 0"));
+    QVERIFY(!dropped.isEmpty());
+    QVERIFY(QFile::remove(cachePath(cache, dropped)));
+
+    reports.clear();
+    requestsWhenReported = -1;
+    finished.clear();
+    m_api.requests = 0;
+    translator.start(windows, TranslationContext(), cache);
+    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+
+    // The two cached windows went out as one report, before the request of the
+    // third one reached the endpoint; its own answer is the second report.
+    QCOMPARE(reports.size(), 2);
+    QCOMPARE(requestsWhenReported, 0);
+    QVERIFY(reports.first().contains(QStringLiteral("译文 window 0 line 0")));
+    QVERIFY(reports.first().contains(QStringLiteral("译文 window 1 line 0")));
+    QVERIFY(!reports.first().contains(QStringLiteral("译文 window 2 line 0")));
+    QCOMPARE(m_api.requests, 1);
+}
+
+// A run started over one that is under way takes over: every window of the new run
+// is reached.
+void TestDocumentTranslator::restartsFromTheReportOfACachedWindow()
+{
+    const QVector<DocumentWindow> windows = document(3, 3);
+    const DocumentCache cache(TestSupport::tempDir() + QStringLiteral("/cache"));
+
+    DocumentTranslator translator;
+    QString finished;
+    int runs = 0;
+    connect(&translator, &DocumentTranslator::finished, this,
+            [&finished, &runs](const QString& text) {
+                finished = text;
+                ++runs;
+            });
+
+    // The first run fills the cache, so the next one starts on a cached window.
+    translator.start(windows, TranslationContext(), cache);
+    QTRY_COMPARE_WITH_TIMEOUT(runs, 1, 10000);
+
+    bool restarted = false;
+    connect(&translator, &DocumentTranslator::progressChanged, this,
+            [&translator, &windows, &cache, &restarted](int completed, int) {
+                if (completed == 1 && !restarted) {
+                    restarted = true;
+                    translator.start(windows, TranslationContext(), cache);
+                }
+            });
+
+    m_api.requests = 0;
+    finished.clear();
+    translator.start(windows, TranslationContext(), cache);
+    QTRY_COMPARE_WITH_TIMEOUT(runs, 2, 10000);
+
+    // The run that took over reached every window, all of them from the cache.
+    QCOMPARE(m_api.requests, 0);
+    QCOMPARE(finished.split(QLatin1Char('\n')).size(),
+             DocumentSegmenter::assemble(windows, {}).split(QLatin1Char('\n')).size());
 }
 
 // The answer follows the request, so another target language asks again instead
@@ -1224,9 +1456,9 @@ void TestDocumentTranslator::retiresTheFailureOfAnAnsweredRequest()
                                                QStringLiteral("译文 window 0 line 2")}));
 }
 
-// A stop that lands on the report of the cached windows keeps the run from
-// reaching the model.
-void TestDocumentTranslator::stopsOnTheProgressOfAPartlyCachedRun()
+// A stop that lands on the window the cache answers keeps the run from reaching
+// the model.
+void TestDocumentTranslator::stopsOnTheReportOfACachedWindow()
 {
     const QVector<DocumentWindow> windows = document(3, 3);
     const DocumentCache cache(TestSupport::tempDir() + QStringLiteral("/cache"));
@@ -1239,11 +1471,10 @@ void TestDocumentTranslator::stopsOnTheProgressOfAPartlyCachedRun()
     translator.start(windows, TranslationContext(), cache);
     QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 1, 10000);
 
-    // One window stays cached, so the run reports progress before it sends
-    // anything.
+    // One window stays cached, and it is the one the run takes first.
     const QStringList files = cacheFiles(cache, kAnswerSuffix);
     QCOMPARE(files.size(), 3);
-    const QString kept = cacheFileHolding(cache, QStringLiteral("window 2 line 0"));
+    const QString kept = cacheFileHolding(cache, QStringLiteral("window 0 line 0"));
     QVERIFY(!kept.isEmpty());
     for (const QString& file : files) {
         if (file != kept)

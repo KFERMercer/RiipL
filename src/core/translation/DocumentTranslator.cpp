@@ -9,6 +9,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QMetaObject>
 #include <QMultiMap>
 #include <QTimer>
 
@@ -64,45 +65,19 @@ void DocumentTranslator::start(const QVector<DocumentWindow>& windows,
     m_context = context;
     m_cache = std::move(cache);
     m_failedSamples.clear();
+    m_documentPending = false;
     m_nextWindow = 0;
     m_completed = 0;
     m_serial = !ConfigManager::instance()->boolValue(Keys::documentConcurrent);
-
-    // The windows the cache answers are accepted up front, the rest reaches the
-    // model.
-    if (m_cache) {
-        for (int index = 0; index < m_windows.size(); ++index) {
-            const QString sample = sampleDigest(index);
-            const std::optional<QStringList> lines = cachedTranslation(index, sample);
-            if (!lines)
-                continue;
-            // The answer stands in place of the attempts that failed.
-            m_cache->removeFailure(sample);
-            m_translations[index] = *lines;
-            m_settled[index] = true;
-            ++m_completed;
-        }
-    }
 
     if (m_windows.isEmpty()) {
         emit finished(QString());
         return;
     }
 
-    // A document the cache holds in full is answered without a run.
-    if (allWindowsSettled()) {
-        emit progressChanged(m_completed, m_windows.size());
-        emit finished(DocumentSegmenter::assemble(m_windows, m_translations));
-        return;
-    }
-
     m_active = true;
-    // Reported once the run is under way, so a slot that stops here stops it for
-    // good.
+    // Reported with the run under way, so a slot that stops here stops it.
     emit progressChanged(m_completed, m_windows.size());
-    // The windows the cache answered are part of the document already.
-    if (m_completed > 0)
-        emit windowTranslated(DocumentSegmenter::assemble(m_windows, m_translations));
     dispatchPending();
 }
 
@@ -189,34 +164,59 @@ void DocumentTranslator::dispatchPending()
     if (!m_active)
         return;
 
-    if (m_serial) {
-        // The window in hand has to settle, retries included, before the next one
-        // starts.
-        while (m_nextWindow < m_windows.size() && m_settled.at(m_nextWindow))
-            ++m_nextWindow;
-        if (m_nextWindow >= m_windows.size() || m_attempts.at(m_nextWindow) > 0)
-            return;
-        submitWindow(m_nextWindow);
+    while (m_nextWindow < m_windows.size()
+           && (m_settled.at(m_nextWindow)
+               || (!m_serial && m_attempts.at(m_nextWindow) > 0)))
+        ++m_nextWindow;
+    if (m_nextWindow >= m_windows.size())
         return;
-    }
+    if (m_serial && m_attempts.at(m_nextWindow) > 0)
+        return;
 
-    for (int index = 0; index < m_windows.size(); ++index) {
-        if (!m_settled.at(index) && m_attempts.at(index) == 0)
-            submitWindow(index);
-    }
+    // The walk takes one window per turn of the event loop, so the request of a
+    // window leaves as soon as the window is built.
+    const quint64 generation = m_generation;
+    const int index = m_nextWindow;
+    processWindow(index);
+    // A slot reached from the window may have replaced this run.
+    if (generation != m_generation)
+        return;
+    if (m_serial && !m_settled.at(index))
+        return;
+    ++m_nextWindow;
+    QMetaObject::invokeMethod(this, &DocumentTranslator::dispatchPending, Qt::QueuedConnection);
 }
 
-void DocumentTranslator::submitWindow(int index)
+void DocumentTranslator::processWindow(int index)
+{
+    const quint64 generation = m_generation;
+    const QString sample = sampleDigest(index);
+    if (m_cache) {
+        if (const std::optional<QStringList> lines = cachedTranslation(index, sample)) {
+            // The answer stands in place of the attempts that failed.
+            m_cache->removeFailure(sample);
+            acceptWindow(index, *lines, false);
+            return;
+        }
+    }
+
+    // The windows the cache answered are reported before the run waits on the model.
+    reportDocument();
+    if (generation != m_generation)
+        return;
+    sendWindow(index, sample);
+}
+
+// The digest goes with the attempt, so the answer is kept under the request that
+// produced it.
+void DocumentTranslator::sendWindow(int index, const QString& sample)
 {
     const int priority = m_attempts.at(index) > 0 ? DocumentPriority::windowRetry
                                                   : DocumentPriority::window;
     ++m_attempts[index];
-
-    // Taken with the attempt, so the answer is kept under the request that
-    // produced it; the record of an earlier attempt no longer describes it.
-    m_samples[index] = sampleDigest(index);
+    m_samples[index] = sample;
     if (m_cache)
-        m_cache->removeFailure(m_samples.at(index));
+        m_cache->removeFailure(sample);
 
     TranslationContext context = m_context;
     context.sourceText = m_sources.at(index);
@@ -229,6 +229,34 @@ void DocumentTranslator::submitWindow(int index)
         [this, index](const QString& response) { handleWindowFinished(index, response); },
         {},
         [this, index](const ApiClient::Error&) { handleWindowError(index); });
+}
+
+// An answer the run waited for is reported as it lands; a window the cache answered
+// is reported with the next one.
+void DocumentTranslator::acceptWindow(int index, const QStringList& lines, bool report)
+{
+    const quint64 generation = m_generation;
+    m_translations[index] = lines;
+    m_settled[index] = true;
+    ++m_completed;
+    m_documentPending = true;
+    emit progressChanged(m_completed, m_windows.size());
+    if (report)
+        reportDocument();
+    // A slot reached from the report may have replaced this run, whose end this is
+    // not.
+    if (generation == m_generation && allWindowsSettled())
+        finishRun();
+}
+
+// A window the cache answers costs no wait, so the document is not rebuilt for each
+// of them.
+void DocumentTranslator::reportDocument()
+{
+    if (!m_documentPending)
+        return;
+    m_documentPending = false;
+    emit windowTranslated(DocumentSegmenter::assemble(m_windows, m_translations));
 }
 
 void DocumentTranslator::handleWindowFinished(int index, const QString& response)
@@ -247,27 +275,15 @@ void DocumentTranslator::handleWindowFinished(int index, const QString& response
         return;
     }
 
-    m_translations[index] = *lines;
     // The answer is kept for the next run; the failures of the attempts before it
     // go.
     if (m_cache) {
         m_cache->storeAnswer(m_samples.at(index), PromptBuilder::documentWindowData(*lines));
         m_cache->removeFailure(m_samples.at(index));
     }
-    m_settled[index] = true;
-    ++m_completed;
-    emit progressChanged(m_completed, m_windows.size());
-
-    // The document is reported whole on every accepted window, so an answer lands
-    // at its own place whatever order the answers arrive in; a window the run has
-    // not accepted yet keeps its source text.
-    emit windowTranslated(DocumentSegmenter::assemble(m_windows, m_translations));
-
-    if (allWindowsSettled()) {
-        finishRun();
-        return;
-    }
-    dispatchPending();
+    acceptWindow(index, *lines, true);
+    if (m_active)
+        dispatchPending();
 }
 
 void DocumentTranslator::handleWindowError(int index)
@@ -292,7 +308,7 @@ void DocumentTranslator::retryOrFail(int index)
             if (!m_active || generation != m_generation || m_settled.at(index)
                 || m_jobs.at(index) != 0)
                 return;
-            submitWindow(index);
+            sendWindow(index, sampleDigest(index));
         });
         return;
     }
@@ -316,6 +332,8 @@ void DocumentTranslator::finishRun()
 {
     m_active = false;
     if (!m_failedSamples.isEmpty()) {
+        // The document the run built goes out before the windows it left out.
+        reportDocument();
         emit failed(m_failedSamples);
         return;
     }

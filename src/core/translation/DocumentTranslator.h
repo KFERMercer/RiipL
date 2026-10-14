@@ -20,11 +20,11 @@ inline constexpr int windowRetry = 89;
 }
 
 // Sends a document to the API window by window and rebuilds the translation from
-// the answers, each window carrying its neighbours as context. Every window goes
-// into the shared translation pool, so an interactive request passes the windows
-// still queued. The document is reported again on every accepted window; a window
-// that has used its attempts is left out while the run carries on, and a cache
-// answers the windows whose request it already holds.
+// the answers, each window carrying its neighbours as context. A window goes into
+// the shared translation pool as the run takes it, so an interactive request passes
+// the windows still queued. A window that has used its attempts is left out while
+// the run carries on, and a cache answers the windows whose request it already
+// holds.
 class DocumentTranslator : public QObject
 {
     Q_OBJECT
@@ -38,10 +38,9 @@ public:
     void stop();
 
 signals:
-    // Whole document as it stands, sent whenever a window is accepted: the
-    // windows answered so far carry their translation, the windows still in
-    // flight or queued carry their source text. The document order is the
-    // document, not the order the answers arrive in.
+    // Whole document as it stands, sent as the answers arrive: every window carries
+    // its own answer whatever order the answers come in, and a window without one
+    // carries its source text.
     void windowTranslated(const QString& text);
     void progressChanged(int completed, int total);
     // The run ends with windows it could not translate, named by the short digest
@@ -57,10 +56,17 @@ private:
     // Answer the cache holds for a window, when it still fits the window.
     std::optional<QStringList> cachedTranslation(int index, const QString& sample) const;
 
-    // Hands the windows that may start to the pool. A run translating one window
-    // at a time waits for the window in hand to settle first.
+    // Hands the next window to the pool. A run translating one window at a time
+    // waits for the window in hand to settle first.
     void dispatchPending();
-    void submitWindow(int index);
+    void processWindow(int index);
+    // Hands one attempt of a window to the pool under \p sample.
+    void sendWindow(int index, const QString& sample);
+    // Marks a window accepted and reports the document when \p report.
+    void acceptWindow(int index, const QStringList& lines, bool report);
+    // Reports the document as it stands, when an answer it has not reported yet
+    // landed.
+    void reportDocument();
     void handleWindowFinished(int index, const QString& response);
     // A request the endpoint failed, retried while the window has attempts left.
     void handleWindowError(int index);
@@ -88,7 +94,9 @@ private:
     QStringList m_failedSamples;
     TranslationContext m_context;
     std::optional<DocumentCache> m_cache = std::nullopt;
-    // Next window a run translating one at a time starts.
+    // Whether the document holds an answer that has not been reported yet.
+    bool m_documentPending = false;
+    // Next window the run has not taken.
     int m_nextWindow = 0;
     int m_completed = 0;
     // Holds while a run is under way, including the pauses between retries.
