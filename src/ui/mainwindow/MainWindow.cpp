@@ -374,9 +374,6 @@ void MainWindow::buildMenus()
     m_apiPresetAction = m_editMenu->addAction(QString());
 
     m_viewMenu = menuBar()->addMenu(QString());
-    m_autoTranslateAction = m_viewMenu->addAction(QString());
-    m_autoTranslateAction->setCheckable(true);
-    m_autoTranslateAction->setChecked(ConfigManager::instance()->boolValue(Keys::uiAutoTranslate));
     m_onTopAction = m_viewMenu->addAction(QString());
     m_onTopAction->setCheckable(true);
     m_onTopAction->setChecked(ConfigManager::instance()->boolValue(Keys::uiAlwaysOnTop));
@@ -396,6 +393,9 @@ void MainWindow::buildMenus()
     }
 
     m_toolsMenu = menuBar()->addMenu(QString());
+    m_autoTranslateAction = m_toolsMenu->addAction(QString());
+    m_autoTranslateAction->setCheckable(true);
+    m_autoTranslateAction->setChecked(ConfigManager::instance()->boolValue(Keys::uiAutoTranslate));
     m_clipboardAction = m_toolsMenu->addAction(QString());
     m_clipboardAction->setCheckable(true);
     m_clipboardAction->setChecked(ConfigManager::instance()->boolValue(Keys::clipboardMonitor));
@@ -439,7 +439,6 @@ void MainWindow::buildMenus()
     });
 
     toolBar->addSeparator();
-    toolBar->addAction(m_autoTranslateAction);
     toolBar->addAction(m_documentAction);
     toolBar->addAction(m_historyAction);
     toolBar->addSeparator();
@@ -1004,7 +1003,6 @@ void MainWindow::retranslateUi()
     m_apiPresetAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+P")));
 
     m_viewMenu->setTitle(tr("&View"));
-    m_autoTranslateAction->setText(tr("Auto translate"));
     m_onTopAction->setText(tr("Always on top"));
     m_languageMenu->setTitle(tr("Interface language"));
     for (QAction* action : m_languageMenu->actions()) {
@@ -1014,6 +1012,7 @@ void MainWindow::retranslateUi()
     syncLanguageMenu();
 
     m_toolsMenu->setTitle(tr("&Tools"));
+    m_autoTranslateAction->setText(tr("Auto translate"));
     m_clipboardAction->setText(tr("Monitor clipboard"));
     m_apiPresetMenu->setTitle(tr("API preset"));
     m_settingsAction->setText(tr("Settings..."));
