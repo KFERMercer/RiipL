@@ -14,6 +14,7 @@ set(RIIPL_TEST_SUITES
     tst_singleinstance
     tst_textutils
     tst_translationengine
+    tst_translationpool
 )
 
 foreach(suite IN LISTS RIIPL_TEST_SUITES)

@@ -229,6 +229,8 @@ private slots:
     void sendsNeighboursWithoutTheirWhitespace();
     void sendsQuotedLinesAsEscapedValues();
     void sendsWindowsUpToTheConfiguredConcurrency();
+    void interactiveRequestTakesTheNextSlot();
+    void retryOutranksAQueuedWindow();
     void lowersConcurrencyWhenTheEndpointRunsOutOfContext();
     void capsConcurrencyAfterTheLastWindow();
     void runsSerialWhenConcurrencyIsOff();
@@ -273,6 +275,7 @@ private:
 
 void TestDocumentTranslator::init()
 {
+    TranslationPool::instance()->reset();
     m_api.failuresLeft = 0;
     m_api.malformedLeft = 0;
     m_api.refusesConcurrent = false;
@@ -489,8 +492,66 @@ void TestDocumentTranslator::sendsWindowsUpToTheConfiguredConcurrency()
     QVERIFY(finished.startsWith(QStringLiteral("译文 window 0 line 0")));
 }
 
-// A run that meets an endpoint out of context keeps fewer requests in flight, so
-// the windows it refused are still translated.
+// A request the user is waiting for takes the connection ahead of the document
+// windows queued behind it.
+void TestDocumentTranslator::interactiveRequestTakesTheNextSlot()
+{
+    m_api.answerDelayMs = 100;
+    ConfigManager::instance()->setValue(Keys::apiMaxConcurrency, 1);
+
+    const QVector<DocumentWindow> windows = document(3, 3);
+    DocumentTranslator translator;
+    translator.start(windows, TranslationContext());
+    QTRY_COMPARE_WITH_TIMEOUT(m_api.requests, 1, 10000);
+
+    TranslationEngine engine;
+    QString translated;
+    connect(&engine, &TranslationEngine::finished, this,
+            [&translated](const QString& text) { translated = text; });
+    TranslationContext context;
+    context.sourceText = QStringLiteral("Hello");
+    context.targetLang = QStringLiteral("zh");
+    engine.translateText(context);
+
+    QTRY_VERIFY_WITH_TIMEOUT(!translated.isEmpty(), 10000);
+
+    // The translation the user asked for went out before the document windows
+    // that were already waiting for the one connection.
+    QTRY_VERIFY_WITH_TIMEOUT(m_api.prompts.size() >= 2, 10000);
+    QVERIFY(m_api.prompts.at(1).contains(QStringLiteral("Hello")));
+}
+
+// A window's retry goes out before the windows still waiting for their first
+// attempt.
+void TestDocumentTranslator::retryOutranksAQueuedWindow()
+{
+    ConfigManager::instance()->setValue(Keys::apiMaxConcurrency, 1);
+    // The window in flight answers well after the failed window's retry pause is
+    // over, so the retry is certainly queued while it is still on the wire.
+    m_api.answerDelayMs = 1200;
+    m_api.failingPrompt = QStringLiteral("\"1\": \"window 0 line 0\"");
+    m_api.answerDelays.append({m_api.failingPrompt, 10});
+    m_api.answerDelays.append({QStringLiteral("\"1\": \"window 1 line 0\""), 2500});
+
+    const QVector<DocumentWindow> windows = document(3, 3);
+    DocumentTranslator translator;
+    QString finished;
+    connect(&translator, &DocumentTranslator::finished, this,
+            [&finished](const QString& text) { finished = text; });
+
+    translator.start(windows, TranslationContext());
+    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 20000);
+
+    // The retry of the first window is the third request, ahead of the window
+    // that was still queued when it went out.
+    QCOMPARE(m_api.requests, 4);
+    QCOMPARE(m_api.prompts.at(2), m_api.prompts.at(0));
+}
+
+// A run that meets an endpoint out of context finishes anyway: the pool halves the
+// requests it keeps in flight on a failure and restores the configured count once
+// the reduced width has been filled again, so the windows the endpoint refused are
+// still translated.
 void TestDocumentTranslator::lowersConcurrencyWhenTheEndpointRunsOutOfContext()
 {
     m_api.answerDelayMs = 20;
@@ -509,11 +570,12 @@ void TestDocumentTranslator::lowersConcurrencyWhenTheEndpointRunsOutOfContext()
     translator.start(windows, TranslationContext());
     QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty() || !failed.isEmpty(), 20000);
 
-    // Four requests went out together, the endpoint refused the three beside the
-    // first, and the run finished the document one request at a time.
+    // Four requests went out together and the endpoint refused the three beside
+    // the first; the two bursts of retries collide once more before the pool
+    // settles, and the whole document is translated.
     QCOMPARE(m_api.peakPending, 4);
-    QCOMPARE(m_api.refusals, 3);
-    QCOMPARE(m_api.requests, windows.size() + 3);
+    QCOMPARE(m_api.refusals, 5);
+    QCOMPARE(m_api.requests, windows.size() + 5);
     QVERIFY(failed.isEmpty());
     QVERIFY(!finished.isEmpty());
     for (const DocumentWindow& window : windows) {
@@ -1371,8 +1433,9 @@ void TestDocumentTranslator::resendsTheSamePromptOnRetry()
     // One window per request plus the one the failure made necessary.
     QCOMPARE(m_api.requests, 3);
 
-    // A retry repeats the request as it was, neighbouring segments included.
-    QCOMPARE(m_api.prompts.at(1), m_api.prompts.at(0));
+    // A retry repeats the request as it was, neighbouring segments included. The
+    // window beside the failed one goes out first, so the repeat is the last one.
+    QCOMPARE(m_api.prompts.at(2), m_api.prompts.at(0));
     QVERIFY(m_api.prompts.at(0).contains(QStringLiteral("window 1 line 0")));
 }
 
@@ -1541,7 +1604,9 @@ void TestDocumentTranslator::stopsWhileARetryIsPending()
 {
     m_api.failuresLeft = 10;
 
-    const QVector<DocumentWindow> windows = document(3, 3);
+    // One window, so the run is left waiting out the retry pause after its first
+    // attempt fails.
+    const QVector<DocumentWindow> windows = document(1, 3);
     TranslationContext context;
     DocumentTranslator translator;
     bool stopped = false;
@@ -1551,7 +1616,6 @@ void TestDocumentTranslator::stopsWhileARetryIsPending()
         finished = text;
     });
 
-    // The first attempt fails, which leaves the run waiting out the retry pause.
     translator.start(windows, context);
     QTRY_COMPARE_WITH_TIMEOUT(m_api.requests, 1, 10000);
     translator.stop();

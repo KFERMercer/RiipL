@@ -3,7 +3,6 @@
 #include <QObject>
 #include <QString>
 #include <QStringList>
-#include <QTimer>
 #include <QVector>
 
 #include <optional>
@@ -11,20 +10,28 @@
 #include "core/document/DocumentCache.h"
 #include "core/document/DocumentSegmenter.h"
 #include "core/translation/PromptBuilder.h"
-#include "core/translation/TranslationEngine.h"
+#include "core/translation/TranslationPool.h"
+
+namespace DocumentPriority {
+
+inline constexpr int window = 90;
+inline constexpr int windowRetry = 89;
+
+}
 
 // Sends a document to the API window by window and rebuilds the translation from
-// the answers, each window carrying its neighbours as context. The run keeps a
-// configured number of windows in flight and asks for fewer of them when the
-// endpoint fails a request. The document is reported again on every accepted
-// window; a window that has used its attempts is left out while the run carries
-// on, and a cache answers the windows whose request it already holds.
+// the answers, each window carrying its neighbours as context. Every window goes
+// into the shared translation pool, so an interactive request passes the windows
+// still queued. The document is reported again on every accepted window; a window
+// that has used its attempts is left out while the run carries on, and a cache
+// answers the windows whose request it already holds.
 class DocumentTranslator : public QObject
 {
     Q_OBJECT
 
 public:
     explicit DocumentTranslator(QObject* parent = nullptr);
+    ~DocumentTranslator() override;
 
     void start(const QVector<DocumentWindow>& windows, const TranslationContext& context,
                std::optional<DocumentCache> cache = std::nullopt);
@@ -44,65 +51,50 @@ signals:
     void stopped();
 
 private:
-    // One request in flight: the engine carrying a window, the digest of the request
-    // it carries, the pause before its next attempt and the sends it has used.
-    struct Worker
-    {
-        TranslationEngine* engine = nullptr;
-        QTimer* retryTimer = nullptr;
-        int window = -1;
-        int attempts = 0;
-        QString sample;
-    };
-
-    // The request one window produces.
     DocumentWindowPrompt windowPrompt(int index) const;
-    // Name a window is cached and reported under: the digest of its request, taken
-    // where the request is sent.
+    // Name a window is cached and reported under: the digest of its request.
     QString sampleDigest(int index) const;
     // Answer the cache holds for a window, when it still fits the window.
     std::optional<QStringList> cachedTranslation(int index, const QString& sample) const;
 
-    // Requests a run may have in flight.
-    int requestedWorkers() const;
-    void ensureWorkers(int count);
-    // Hands pending windows to the free workers.
+    // Hands the windows that may start to the pool. A run translating one window
+    // at a time waits for the window in hand to settle first.
     void dispatchPending();
-    void sendWindow(int workerIndex, int window);
-    void resendWindow(int workerIndex);
-    void handleWindowFinished(int workerIndex, const QString& response);
-    // A request the endpoint failed, which lowers what the run keeps in flight.
-    void handleWindowError(int workerIndex);
-    // Retries a window while it has attempts left, then leaves it out.
-    void retryOrFail(int workerIndex);
-    // Whether every window is accepted or left out, so nothing is in flight.
+    void submitWindow(int index);
+    void handleWindowFinished(int index, const QString& response);
+    // A request the endpoint failed, retried while the window has attempts left.
+    void handleWindowError(int index);
+    void retryOrFail(int index);
     bool allWindowsSettled() const;
     // Reports the end of the run, as failed samples or as the document built.
     void finishRun();
     // Drops what the run is doing without reporting it.
     void cancelRun();
+    void cancelJobs();
 
-    QVector<Worker> m_workers;
     QVector<DocumentWindow> m_windows;
     // Joined source text of every window, built once per run.
     QVector<QString> m_sources;
-    // Answer of every window, in document order; an empty entry is a window the
-    // run has not accepted yet.
+    // Answer of every window, in document order.
     QVector<QStringList> m_translations;
+    // Request the pool carries for a window, 0 while none is in flight.
+    QVector<TranslationPool::JobId> m_jobs;
+    // Digest of the request a window last went out with, and the sends it has used.
+    QVector<QString> m_samples;
+    QVector<int> m_attempts;
+    // Whether a window is accepted or left out, so it is never sent again.
+    QVector<bool> m_settled;
     // Windows the run left out, as the short digest of their request.
     QStringList m_failedSamples;
     TranslationContext m_context;
     std::optional<DocumentCache> m_cache = std::nullopt;
-    // Next window to hand to a free worker.
+    // Next window a run translating one at a time starts.
     int m_nextWindow = 0;
-    // Requests the run may keep in flight, and the ones on the wire.
-    int m_inFlightLimit = 1;
-    int m_inFlight = 0;
-    // Workers holding a window that waits for a free request slot.
-    QVector<int> m_waiting;
     int m_completed = 0;
     // Holds while a run is under way, including the pauses between retries.
     bool m_active = false;
-    // Keeps a send that reports back on its own stack from dispatching twice.
-    bool m_dispatching = false;
+    // Whether the run keeps one window in hand at a time.
+    bool m_serial = false;
+    // Bumped whenever a run ends, so the retry a window was waiting out is dropped.
+    quint64 m_generation = 0;
 };

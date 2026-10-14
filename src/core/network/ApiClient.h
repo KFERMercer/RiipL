@@ -87,7 +87,6 @@ public:
                          DeltaCallback onStream,
                          ErrorCallback onError);
     void cancel();
-    bool isBusy() const { return m_reply != nullptr; }
 
     void listModels(const Connection& connection, ModelsCallback onDone, ErrorCallback onError);
 

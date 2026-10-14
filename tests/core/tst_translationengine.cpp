@@ -14,6 +14,7 @@ class TestTranslationEngine : public QObject
     Q_OBJECT
 
 private slots:
+    void init();
     void parsesCandidateReplies();
     void resolvesReplacementSpans();
     void replacesCompleteWord();
@@ -26,6 +27,11 @@ private slots:
     void failedDispatchReturnsToIdle();
     void stopWhenIdleIsNoOp();
 };
+
+void TestTranslationEngine::init()
+{
+    TranslationPool::instance()->reset();
+}
 
 void TestTranslationEngine::parsesCandidateReplies()
 {
@@ -474,7 +480,7 @@ void TestTranslationEngine::failedDispatchReturnsToIdle()
     context.targetLang = QStringLiteral("zh");
     engine.translateText(context);
 
-    QCOMPARE(errorSpy.count(), 1);
+    QTRY_COMPARE(errorSpy.count(), 1);
     // The failure is named rather than rendered, so a handler can translate it
     // when it is shown.
     QCOMPARE(errorSpy.first().first().value<ApiClient::Error>().code,

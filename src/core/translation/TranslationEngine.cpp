@@ -5,6 +5,7 @@
 #include "utils/TextUtils.h"
 
 #include <algorithm>
+#include <utility>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -21,13 +22,15 @@ constexpr TextUtils::WordWindow kCandidateContextWords{10, 30};
 TranslationEngine::TranslationEngine(QObject* parent)
     : QObject(parent)
 {
-    connect(&m_translateApi, &ApiClient::requestFinished, this, [this]() {
-        setBusy(false);
-    });
-    connect(&m_candidateApi, &ApiClient::requestFinished, this, [this]() {
-        if (!m_translateApi.isBusy())
-            setBusy(false);
-    });
+}
+
+TranslationEngine::~TranslationEngine()
+{
+    if (m_translateJob || m_candidateJob) {
+        TranslationPool* pool = TranslationPool::instance();
+        pool->cancel(m_translateJob);
+        pool->cancel(m_candidateJob);
+    }
 }
 
 void TranslationEngine::setBusy(bool busy)
@@ -36,6 +39,11 @@ void TranslationEngine::setBusy(bool busy)
         return;
     m_busy = busy;
     emit stateChanged(m_busy);
+}
+
+void TranslationEngine::updateBusy()
+{
+    setBusy(m_translateJob != 0 || m_candidateJob != 0);
 }
 
 bool TranslationEngine::isBusy() const
@@ -72,21 +80,15 @@ QJsonObject TranslationEngine::buildRequestBody(const PromptBuilder::Result& pro
 
 void TranslationEngine::translateText(const TranslationContext& context)
 {
-    dispatch(PromptBuilder::build(context));
+    dispatch(PromptBuilder::build(context), TranslationPriority::interactive);
 }
 
-void TranslationEngine::translateDocument(const TranslationContext& context,
-                                          const DocumentWindowPrompt& window)
+void TranslationEngine::dispatch(const PromptBuilder::Result& prompt, int priority)
 {
-    dispatch(PromptBuilder::buildDocument(context, window));
-}
-
-void TranslationEngine::dispatch(const PromptBuilder::Result& prompt)
-{
-    if (m_translateApi.isBusy())
-        m_translateApi.cancel();
+    cancelTranslateJob();
 
     if (prompt.user.isEmpty()) {
+        updateBusy();
         emit errorOccurred({ApiClient::ErrorCode::NothingToTranslate, QString()});
         return;
     }
@@ -94,10 +96,11 @@ void TranslationEngine::dispatch(const PromptBuilder::Result& prompt)
     QJsonObject body = buildRequestBody(prompt, ConfigManager::instance()->boolValue(Keys::apiStream));
 
     m_accumulated.clear();
-    setBusy(true);
 
-    m_translateApi.sendChatRequest(body,
+    m_translateJob = TranslationPool::instance()->enqueue(body, priority,
         [this](const QString& result) {
+            m_translateJob = 0;
+            updateBusy();
             const QString text = result.isEmpty() ? m_accumulated : result;
             emit finished(text.trimmed());
         },
@@ -106,8 +109,19 @@ void TranslationEngine::dispatch(const PromptBuilder::Result& prompt)
             emit partialDelta(delta);
         },
         [this](const ApiClient::Error& failure) {
+            m_translateJob = 0;
+            updateBusy();
             emit errorOccurred(failure);
         });
+    updateBusy();
+}
+
+void TranslationEngine::cancelTranslateJob()
+{
+    if (m_translateJob == 0)
+        return;
+    const TranslationPool::JobId job = std::exchange(m_translateJob, 0);
+    TranslationPool::instance()->cancel(job);
 }
 
 void TranslationEngine::requestCandidates(const TranslationContext& context,
@@ -116,14 +130,14 @@ void TranslationEngine::requestCandidates(const TranslationContext& context,
                                           const std::function<void(const QVector<CandidateGroup>&)>& onDone,
                                           const std::function<void(const ApiClient::Error&)>& onError)
 {
-    if (m_candidateApi.isBusy())
-        m_candidateApi.cancel();
+    cancelCandidateJob();
 
     // The request carries only the words around the selection, so the prompt
     // stays small no matter how long the document is.
     const TextUtils::Fragment fragment = TextUtils::candidateFragment(
         context.translatedText, selectionStart, selectionEnd, kCandidateContextWords);
     if (!fragment.isValid()) {
+        updateBusy();
         if (onError)
             onError({ApiClient::ErrorCode::NothingToLookUp, QString()});
         return;
@@ -158,23 +172,37 @@ void TranslationEngine::requestCandidates(const TranslationContext& context,
     // One retry is allowed per request; the flag is cleared as soon as it is
     // spent, so a model that keeps answering unusably cannot loop.
     m_candidateRetryPending = true;
-    dispatchCandidateRequest();
+    dispatchCandidateRequest(TranslationPriority::interactive);
 }
 
 void TranslationEngine::cancelCandidates()
 {
     resetCandidateState();
-    m_candidateApi.cancel();
+    cancelCandidateJob();
+    updateBusy();
 }
 
-void TranslationEngine::dispatchCandidateRequest()
+void TranslationEngine::cancelCandidateJob()
 {
-    m_candidateApi.sendChatRequest(m_candidateBody,
+    if (m_candidateJob == 0)
+        return;
+    const TranslationPool::JobId job = std::exchange(m_candidateJob, 0);
+    TranslationPool::instance()->cancel(job);
+}
+
+void TranslationEngine::dispatchCandidateRequest(int priority)
+{
+    m_candidateJob = TranslationPool::instance()->enqueue(m_candidateBody,
+        priority,
         [this](const QString& result) {
+            m_candidateJob = 0;
+            updateBusy();
             deliverCandidates(result);
         },
         {},
         [this](const ApiClient::Error& failure) {
+            m_candidateJob = 0;
+            updateBusy();
             // A transport failure is not worth repeating: the retry targets a
             // reply the model answered without a usable group.
             m_candidateRetryPending = false;
@@ -184,6 +212,7 @@ void TranslationEngine::dispatchCandidateRequest()
             if (onError)
                 onError(failure);
         });
+    updateBusy();
 }
 
 void TranslationEngine::deliverCandidates(const QString& raw)
@@ -194,7 +223,7 @@ void TranslationEngine::deliverCandidates(const QString& raw)
 
     if (groups.isEmpty() && m_candidateRetryPending) {
         m_candidateRetryPending = false;
-        dispatchCandidateRequest();
+        dispatchCandidateRequest(TranslationPriority::interactiveRetry);
         return;
     }
 
@@ -298,10 +327,11 @@ QVector<TranslationEngine::CandidateGroup> TranslationEngine::parseCandidateResp
 
 void TranslationEngine::stop()
 {
-    if (!m_translateApi.isBusy()) {
-        setBusy(false);
+    if (m_translateJob == 0) {
+        updateBusy();
         return;
     }
-    m_translateApi.cancel();
+    cancelTranslateJob();
+    updateBusy();
     emit stopped();
 }

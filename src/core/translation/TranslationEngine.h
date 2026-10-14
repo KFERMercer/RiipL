@@ -8,10 +8,18 @@
 
 #include "core/network/ApiClient.h"
 #include "core/translation/PromptBuilder.h"
+#include "core/translation/TranslationPool.h"
 
 namespace ApiTemperature {
 
 inline const double providerDefaultSentinel = -0.1;
+
+}
+
+namespace TranslationPriority {
+
+inline constexpr int interactive = 10;
+inline constexpr int interactiveRetry = 9;
 
 }
 
@@ -32,8 +40,6 @@ public:
         bool isValid() const { return start >= 0 && length > 0; }
     };
 
-    // One replacement target plus the alternatives proposed for it. \p start and
-    // \p length locate the target in the translation that was searched.
     struct CandidateGroup
     {
         QString target;
@@ -45,11 +51,9 @@ public:
     };
 
     explicit TranslationEngine(QObject* parent = nullptr);
+    ~TranslationEngine() override;
 
     void translateText(const TranslationContext& context);
-    // Translates one window of a document under the document prompt.
-    void translateDocument(const TranslationContext& context,
-                           const DocumentWindowPrompt& window);
     void requestCandidates(const TranslationContext& context,
                            int selectionStart,
                            int selectionEnd,
@@ -88,8 +92,8 @@ signals:
     void stateChanged(bool busy);
 
 private:
-    ApiClient m_translateApi;
-    ApiClient m_candidateApi;
+    TranslationPool::JobId m_translateJob = 0;
+    TranslationPool::JobId m_candidateJob = 0;
     QString m_accumulated;
     bool m_busy = false;
 
@@ -104,11 +108,13 @@ private:
     bool m_candidateRetryPending = false;
 
     void setBusy(bool busy);
-    // Sends one assembled prompt and reports the reply through the signals.
-    void dispatch(const PromptBuilder::Result& prompt);
+    void updateBusy();
+    void dispatch(const PromptBuilder::Result& prompt, int priority);
+    void cancelTranslateJob();
+    void cancelCandidateJob();
     // Delivers the parsed groups, retrying once when the model answered with
     // nothing usable.
     void deliverCandidates(const QString& raw);
-    void dispatchCandidateRequest();
+    void dispatchCandidateRequest(int priority);
     void resetCandidateState();
 };

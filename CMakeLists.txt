@@ -51,6 +51,7 @@ set(CORE_SOURCES
     src/core/document/DocumentSegmenter.cpp
     src/core/network/ApiClient.cpp
     src/core/translation/PromptBuilder.cpp
+    src/core/translation/TranslationPool.cpp
     src/core/translation/TranslationEngine.cpp
     src/core/translation/DocumentTranslator.cpp
     src/core/models/Glossary.cpp
@@ -66,6 +67,7 @@ set(CORE_HEADERS
     src/core/translation/Language.h
     src/core/translation/Tone.h
     src/core/translation/PromptBuilder.h
+    src/core/translation/TranslationPool.h
     src/core/translation/TranslationEngine.h
     src/core/translation/DocumentTranslator.h
     src/core/models/Glossary.h

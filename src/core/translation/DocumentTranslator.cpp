@@ -2,6 +2,7 @@
 
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
+#include "core/translation/TranslationEngine.h"
 
 #include <QByteArray>
 #include <QCryptographicHash>
@@ -38,35 +39,9 @@ DocumentTranslator::DocumentTranslator(QObject* parent)
 {
 }
 
-int DocumentTranslator::requestedWorkers() const
+DocumentTranslator::~DocumentTranslator()
 {
-    ConfigManager* config = ConfigManager::instance();
-    // The switch turns concurrent translation off; the limit is what a run may
-    // have in flight when it is on.
-    if (!config->boolValue(Keys::documentConcurrent))
-        return 1;
-    return (std::max)(1, config->intValue(Keys::apiMaxConcurrency));
-}
-
-// The pool grows to the largest count a run has needed and is kept, so a second
-// run reuses the requests instead of building new ones.
-void DocumentTranslator::ensureWorkers(int count)
-{
-    while (m_workers.size() < count) {
-        const int index = m_workers.size();
-        Worker worker;
-        worker.engine = new TranslationEngine(this);
-        worker.retryTimer = new QTimer(this);
-        worker.retryTimer->setSingleShot(true);
-
-        connect(worker.engine, &TranslationEngine::finished, this,
-                [this, index](const QString& response) { handleWindowFinished(index, response); });
-        connect(worker.engine, &TranslationEngine::errorOccurred, this,
-                [this, index](const ApiClient::Error&) { handleWindowError(index); });
-        connect(worker.retryTimer, &QTimer::timeout, this,
-                [this, index]() { resendWindow(index); });
-        m_workers.append(worker);
-    }
+    cancelRun();
 }
 
 void DocumentTranslator::start(const QVector<DocumentWindow>& windows,
@@ -80,14 +55,18 @@ void DocumentTranslator::start(const QVector<DocumentWindow>& windows,
         m_sources.append(window.source());
 
     m_translations.clear();
-    // A window without an answer yet renders as its own source text, which is
-    // what the document shows for the windows a run has not reached.
+    // A window without an answer yet renders as its own source text.
     m_translations.resize(m_windows.size());
+    m_jobs.assign(m_windows.size(), 0);
+    m_samples.assign(m_windows.size(), QString());
+    m_attempts.assign(m_windows.size(), 0);
+    m_settled.assign(m_windows.size(), false);
     m_context = context;
     m_cache = std::move(cache);
     m_failedSamples.clear();
     m_nextWindow = 0;
     m_completed = 0;
+    m_serial = !ConfigManager::instance()->boolValue(Keys::documentConcurrent);
 
     // The windows the cache answers are accepted up front, the rest reaches the
     // model.
@@ -100,6 +79,7 @@ void DocumentTranslator::start(const QVector<DocumentWindow>& windows,
             // The answer stands in place of the attempts that failed.
             m_cache->removeFailure(sample);
             m_translations[index] = *lines;
+            m_settled[index] = true;
             ++m_completed;
         }
     }
@@ -110,17 +90,12 @@ void DocumentTranslator::start(const QVector<DocumentWindow>& windows,
     }
 
     // A document the cache holds in full is answered without a run.
-    if (m_completed == m_windows.size()) {
+    if (allWindowsSettled()) {
         emit progressChanged(m_completed, m_windows.size());
         emit finished(DocumentSegmenter::assemble(m_windows, m_translations));
         return;
     }
 
-    const int workers = (std::min)(requestedWorkers(), static_cast<int>(m_windows.size()));
-    ensureWorkers(workers);
-    m_inFlightLimit = workers;
-    m_inFlight = 0;
-    m_waiting.clear();
     m_active = true;
     // Reported once the run is under way, so a slot that stops here stops it for
     // good.
@@ -131,7 +106,6 @@ void DocumentTranslator::start(const QVector<DocumentWindow>& windows,
     dispatchPending();
 }
 
-// The request of one window: its collapsed lines, its neighbours as context.
 DocumentWindowPrompt DocumentTranslator::windowPrompt(int index) const
 {
     DocumentWindowPrompt prompt;
@@ -192,104 +166,84 @@ void DocumentTranslator::stop()
 
 void DocumentTranslator::cancelRun()
 {
+    // Any retry a window is waiting out belongs to the run that just ended.
+    ++m_generation;
     m_active = false;
-    for (Worker& worker : m_workers) {
-        worker.retryTimer->stop();
-        if (worker.engine->isBusy())
-            worker.engine->stop();
-        worker.window = -1;
-        worker.sample.clear();
-    }
+    cancelJobs();
     m_nextWindow = 0;
-    m_inFlight = 0;
-    m_waiting.clear();
+}
+
+void DocumentTranslator::cancelJobs()
+{
+    if (m_jobs.isEmpty())
+        return;
+    TranslationPool* pool = TranslationPool::instance();
+    for (TranslationPool::JobId& job : m_jobs) {
+        pool->cancel(job);
+        job = 0;
+    }
 }
 
 void DocumentTranslator::dispatchPending()
 {
-    if (!m_active || m_dispatching)
-        return;
-    m_dispatching = true;
-    // A window that waited for a free slot comes first: it has spent an attempt already.
-    while (m_active && m_inFlight < m_inFlightLimit && !m_waiting.isEmpty())
-        resendWindow(m_waiting.takeFirst());
-    // A send can fail on this stack and free its worker again, so windows are
-    // handed out until no worker can take one.
-    for (bool dispatched = true; dispatched && m_active && m_inFlight < m_inFlightLimit;) {
-        dispatched = false;
-        for (int index = 0; index < m_workers.size() && m_inFlight < m_inFlightLimit; ++index) {
-            Worker& worker = m_workers[index];
-            if (worker.window >= 0)
-                continue;
-            // The windows the cache answered are done already and are passed over.
-            while (m_nextWindow < m_windows.size() && !m_translations.at(m_nextWindow).isEmpty())
-                ++m_nextWindow;
-            if (m_nextWindow >= m_windows.size())
-                break;
-            // Taken before the send, so a send that reports back on this stack
-            // does not see this window again.
-            const int window = m_nextWindow++;
-            sendWindow(index, window);
-            dispatched = true;
-        }
-    }
-    m_dispatching = false;
-}
-
-void DocumentTranslator::sendWindow(int workerIndex, int window)
-{
-    Worker& worker = m_workers[workerIndex];
-    worker.window = window;
-    worker.attempts = 0;
-    resendWindow(workerIndex);
-}
-
-void DocumentTranslator::resendWindow(int workerIndex)
-{
     if (!m_active)
         return;
-    Worker& worker = m_workers[workerIndex];
-    const int index = worker.window;
-    if (index < 0)
-        return;
-    // The endpoint is never given more requests than it has taken: a send that is
-    // due waits for a free slot.
-    if (m_inFlight >= m_inFlightLimit) {
-        if (!m_waiting.contains(workerIndex))
-            m_waiting.append(workerIndex);
+
+    if (m_serial) {
+        // The window in hand has to settle, retries included, before the next one
+        // starts.
+        while (m_nextWindow < m_windows.size() && m_settled.at(m_nextWindow))
+            ++m_nextWindow;
+        if (m_nextWindow >= m_windows.size() || m_attempts.at(m_nextWindow) > 0)
+            return;
+        submitWindow(m_nextWindow);
         return;
     }
-    ++worker.attempts;
-    ++m_inFlight;
 
-    // Taken here, where the request goes out, so the answer is kept under the request
-    // that produced it; the record of an earlier attempt no longer describes it.
-    worker.sample = sampleDigest(index);
+    for (int index = 0; index < m_windows.size(); ++index) {
+        if (!m_settled.at(index) && m_attempts.at(index) == 0)
+            submitWindow(index);
+    }
+}
+
+void DocumentTranslator::submitWindow(int index)
+{
+    const int priority = m_attempts.at(index) > 0 ? DocumentPriority::windowRetry
+                                                  : DocumentPriority::window;
+    ++m_attempts[index];
+
+    // Taken with the attempt, so the answer is kept under the request that
+    // produced it; the record of an earlier attempt no longer describes it.
+    m_samples[index] = sampleDigest(index);
     if (m_cache)
-        m_cache->removeFailure(worker.sample);
+        m_cache->removeFailure(m_samples.at(index));
 
     TranslationContext context = m_context;
     context.sourceText = m_sources.at(index);
-    worker.engine->translateDocument(context, windowPrompt(index));
+    const PromptBuilder::Result prompt =
+        PromptBuilder::buildDocument(context, windowPrompt(index));
+    const QJsonObject body = TranslationEngine::buildRequestBody(
+        prompt, ConfigManager::instance()->boolValue(Keys::apiStream));
+
+    m_jobs[index] = TranslationPool::instance()->enqueue(body, priority,
+        [this, index](const QString& response) { handleWindowFinished(index, response); },
+        {},
+        [this, index](const ApiClient::Error&) { handleWindowError(index); });
 }
 
-void DocumentTranslator::handleWindowFinished(int workerIndex, const QString& response)
+void DocumentTranslator::handleWindowFinished(int index, const QString& response)
 {
-    if (!m_active)
+    if (!m_active || m_settled.at(index))
         return;
-    Worker& worker = m_workers[workerIndex];
-    const int index = worker.window;
-    if (index < 0)
-        return;
-    --m_inFlight;
+    m_jobs[index] = 0;
 
     const DocumentWindow& window = m_windows.at(index);
     const std::optional<QStringList> lines = DocumentSegmenter::splitTranslation(window, response);
     if (!lines) {
         // Kept as it came back, so a window that keeps failing can be inspected.
         if (m_cache)
-            m_cache->storeFailure(worker.sample, response);
-        retryOrFail(workerIndex);
+            m_cache->storeFailure(m_samples.at(index), response);
+        retryOrFail(index);
         return;
     }
 
@@ -297,19 +251,17 @@ void DocumentTranslator::handleWindowFinished(int workerIndex, const QString& re
     // The answer is kept for the next run; the failures of the attempts before it
     // go.
     if (m_cache) {
-        m_cache->storeAnswer(worker.sample, PromptBuilder::documentWindowData(*lines));
-        m_cache->removeFailure(worker.sample);
+        m_cache->storeAnswer(m_samples.at(index), PromptBuilder::documentWindowData(*lines));
+        m_cache->removeFailure(m_samples.at(index));
     }
-    worker.window = -1;
-    worker.sample.clear();
+    m_settled[index] = true;
     ++m_completed;
     emit progressChanged(m_completed, m_windows.size());
 
     // The document is reported whole on every accepted window, so an answer lands
     // at its own place whatever order the answers arrive in; a window the run has
     // not accepted yet keeps its source text.
-    const QString document = DocumentSegmenter::assemble(m_windows, m_translations);
-    emit windowTranslated(document);
+    emit windowTranslated(DocumentSegmenter::assemble(m_windows, m_translations));
 
     if (allWindowsSettled()) {
         finishRun();
@@ -318,39 +270,35 @@ void DocumentTranslator::handleWindowFinished(int workerIndex, const QString& re
     dispatchPending();
 }
 
-// A failed request is the endpoint saying it cannot take as many: the run keeps
-// fewer in flight, so the retry does not compete for the same context again.
-void DocumentTranslator::handleWindowError(int workerIndex)
+void DocumentTranslator::handleWindowError(int index)
 {
-    if (!m_active)
+    if (!m_active || m_settled.at(index))
         return;
-    if (m_workers.at(workerIndex).window < 0)
-        return;
-    --m_inFlight;
-    m_inFlightLimit = (std::max)(1, m_inFlightLimit / 2);
-    retryOrFail(workerIndex);
+    m_jobs[index] = 0;
+    retryOrFail(index);
 }
 
 // A window that has used its attempts is left out while the run carries on, so one
 // bad reply does not cost the rest of the document.
-void DocumentTranslator::retryOrFail(int workerIndex)
+void DocumentTranslator::retryOrFail(int index)
 {
     if (!m_active)
         return;
-    Worker& worker = m_workers[workerIndex];
+
     const int retries = (std::max)(0, ConfigManager::instance()->intValue(Keys::documentRetryCount));
-    if (worker.attempts <= retries) {
-        // The retry is settled before the pause starts, so a slot that stops the
-        // run here stops it for good.
-        worker.retryTimer->start(kRetryDelayMs * worker.attempts);
+    if (m_attempts.at(index) <= retries) {
+        const quint64 generation = m_generation;
+        QTimer::singleShot(kRetryDelayMs * m_attempts.at(index), this, [this, index, generation]() {
+            if (!m_active || generation != m_generation || m_settled.at(index)
+                || m_jobs.at(index) != 0)
+                return;
+            submitWindow(index);
+        });
         return;
     }
 
-    const int window = worker.window;
-    worker.window = -1;
-    if (window >= 0)
-        m_failedSamples.append(worker.sample.left(kReportedSampleCharacters));
-    worker.sample.clear();
+    m_settled[index] = true;
+    m_failedSamples.append(m_samples.at(index).left(kReportedSampleCharacters));
 
     if (allWindowsSettled()) {
         finishRun();
