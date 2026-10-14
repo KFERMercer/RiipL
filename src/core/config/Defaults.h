@@ -119,7 +119,7 @@ inline const int documentRetryCount = 3;
 inline const bool documentConcurrent = true;
 inline const bool documentCacheEnabled = true;
 
-inline const bool glossaryEnabled = false;
+inline const bool glossaryEnabled = true;
 
 inline const bool clipboardMonitor = false;
 inline const int clipboardDelayMs = 500;
