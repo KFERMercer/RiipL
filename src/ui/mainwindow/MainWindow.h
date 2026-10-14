@@ -84,6 +84,7 @@ private:
     void buildTray();
     void updateSwapButtonGeometry();
     void closeDocumentWindow();
+    void quitApplication();
 
     void populateLanguageCombos();
     void populateToneCombo();
@@ -137,6 +138,7 @@ private:
     QAction* m_copyAction = nullptr;
     QAction* m_exitAction = nullptr;
     QAction* m_aboutAction = nullptr;
+    QAction* m_trayExitAction = nullptr;
     QAction* m_trayShowHideAction = nullptr;
     QAction* m_trayTranslateClipAction = nullptr;
 

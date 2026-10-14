@@ -232,6 +232,14 @@ void MainWindow::closeDocumentWindow()
         m_documentWindow->close();
 }
 
+void MainWindow::quitApplication()
+{
+    hide();
+    closeDocumentWindow();
+    ConfigManager::instance()->flush();
+    QCoreApplication::exit(0);
+}
+
 void MainWindow::closeEvent(QCloseEvent* event)
 {
     if (m_tray && ConfigManager::instance()->boolValue(Keys::uiMinimizeToTray)) {
@@ -455,12 +463,7 @@ void MainWindow::buildMenus()
     });
     connect(m_documentAction, &QAction::triggered, this, &MainWindow::showDocumentWindow);
     connect(m_exportAction, &QAction::triggered, this, &MainWindow::exportTranslation);
-    connect(m_exitAction, &QAction::triggered, this, [this]() {
-        hide();
-        closeDocumentWindow();
-        ConfigManager::instance()->flush();
-        QCoreApplication::exit(0);
-    });
+    connect(m_exitAction, &QAction::triggered, this, &MainWindow::quitApplication);
     connect(m_glossaryAction, &QAction::triggered, this, [this]() {
         GlossaryDialog dialog(this);
         dialog.exec();
@@ -499,7 +502,8 @@ void MainWindow::buildTray()
     menu->addAction(m_clipboardAction);
     m_trayTranslateClipAction = menu->addAction(QString());
     menu->addSeparator();
-    menu->addAction(m_exitAction);
+    m_trayExitAction = menu->addAction(QString());
+    connect(m_trayExitAction, &QAction::triggered, this, &MainWindow::quitApplication);
     m_tray->setContextMenu(menu);
     m_tray->setToolTip(QStringLiteral("RiipL"));
     connect(m_tray, &QSystemTrayIcon::activated, this, [this](QSystemTrayIcon::ActivationReason reason) {
@@ -1047,5 +1051,6 @@ void MainWindow::retranslateUi()
     if (m_trayMenu) {
         m_trayShowHideAction->setText(tr("Show/Hide window"));
         m_trayTranslateClipAction->setText(tr("Translate clipboard"));
+        m_trayExitAction->setText(tr("Exit"));
     }
 }
