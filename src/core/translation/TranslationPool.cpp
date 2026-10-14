@@ -87,14 +87,7 @@ void TranslationPool::cancel(JobId id)
         return;
     }
 
-    ApiClient* running = nullptr;
-    for (auto it = m_clientJobs.constBegin(); it != m_clientJobs.constEnd(); ++it) {
-        if (it.value() == id) {
-            running = it.key();
-            break;
-        }
-    }
-    if (running)
+    if (ApiClient* running = m_jobClients.value(id, nullptr))
         running->cancel();
 }
 
@@ -123,6 +116,7 @@ void TranslationPool::dispatch()
 
         ApiClient* client = acquireClient();
         m_clientJobs.insert(client, job.id);
+        m_jobClients.insert(job.id, client);
         if (m_clientJobs.size() >= limit())
             m_filledSinceFailure = true;
         // Observed here so the back-off follows every request the pool carries.
@@ -158,6 +152,6 @@ ApiClient* TranslationPool::acquireClient()
 
 void TranslationPool::onClientFinished(ApiClient* client)
 {
-    m_clientJobs.remove(client);
+    m_jobClients.remove(m_clientJobs.take(client));
     scheduleDispatch();
 }

@@ -67,6 +67,7 @@ private:
 
     QVector<ApiClient*> m_clients;
     QHash<ApiClient*, JobId> m_clientJobs;
+    QHash<JobId, ApiClient*> m_jobClients;
     QMap<QueueKey, Job> m_pending;
     QHash<JobId, QueueKey> m_pendingKeys;
     JobId m_nextId = 1;

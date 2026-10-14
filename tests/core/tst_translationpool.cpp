@@ -150,6 +150,8 @@ private slots:
     void halvesTheConcurrencyOnFailureAndRestoresItOnSuccess();
     void restoresOnlyAfterTheWidthIsFilledAgain();
     void cancelReportsNothing();
+    void cancellingARunningRequestFreesItsConnection();
+    void cancellingASettledJobLeavesTheRunningOneAlone();
 
 private:
     StubApi m_api;
@@ -329,6 +331,53 @@ void TestTranslationPool::cancelReportsNothing()
     QTest::qWait(100);
     QVERIFY(!reported);
     QCOMPARE(m_api.requests, 1);
+}
+
+// A cancelled running request gives its connection back to the queue.
+void TestTranslationPool::cancellingARunningRequestFreesItsConnection()
+{
+    ConfigManager::instance()->setValue(Keys::apiMaxConcurrency, 1);
+    TranslationPool pool;
+
+    const TranslationPool::JobId running = pool.enqueue(chatBody(QStringLiteral("doc1")),
+                                                        DocumentPriority::window, {}, {}, {});
+    QTRY_COMPARE(m_api.requests, 1);
+
+    QStringList answered;
+    pool.enqueue(chatBody(QStringLiteral("doc2")), DocumentPriority::window,
+                 [&answered](const QString&) { answered.append(QStringLiteral("doc2")); }, {}, {});
+
+    pool.cancel(running);
+    QTRY_COMPARE(m_api.requests, 2);
+
+    m_api.releaseAll();
+    QTRY_COMPARE(answered.size(), 1);
+    QCOMPARE(m_api.prompts, QStringList({QStringLiteral("doc1"), QStringLiteral("doc2")}));
+}
+
+// A job id that has already been answered no longer names the request now running
+// on the connection it used.
+void TestTranslationPool::cancellingASettledJobLeavesTheRunningOneAlone()
+{
+    ConfigManager::instance()->setValue(Keys::apiMaxConcurrency, 1);
+    TranslationPool pool;
+
+    QStringList answered;
+    const TranslationPool::JobId settled = pool.enqueue(
+        chatBody(QStringLiteral("doc1")), DocumentPriority::window,
+        [&answered](const QString&) { answered.append(QStringLiteral("doc1")); }, {}, {});
+    QTRY_COMPARE(m_api.requests, 1);
+    m_api.releaseNext(false);
+    QTRY_COMPARE(answered.size(), 1);
+
+    pool.enqueue(chatBody(QStringLiteral("doc2")), DocumentPriority::window,
+                 [&answered](const QString&) { answered.append(QStringLiteral("doc2")); }, {}, {});
+    QTRY_COMPARE(m_api.requests, 2);
+
+    pool.cancel(settled);
+    m_api.releaseAll();
+    QTRY_COMPARE(answered.size(), 2);
+    QCOMPARE(answered, QStringList({QStringLiteral("doc1"), QStringLiteral("doc2")}));
 }
 
 QTEST_MAIN(TestTranslationPool)
