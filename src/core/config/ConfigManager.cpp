@@ -21,23 +21,32 @@ ConfigManager* ConfigManager::instance()
 
 void ConfigManager::createInstance(const QString& configDir)
 {
-    if (s_instance)
-        s_instance->flush();
-    delete s_instance;
     QString dir = configDir;
     if (dir.isEmpty())
         dir = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    if (s_instance) {
+        s_instance->reopen(dir);
+        return;
+    }
     s_instance = new ConfigManager(dir);
 }
 
 ConfigManager::ConfigManager(const QString& configDir)
-    : m_dir(configDir)
 {
-    if (!QDir().mkpath(m_dir))
-        qWarning() << "RiipL: cannot create config directory" << m_dir;
     m_saveTimer.setSingleShot(true);
     m_saveTimer.setInterval(400);
     connect(&m_saveTimer, &QTimer::timeout, this, &ConfigManager::save);
+    reopen(configDir);
+}
+
+void ConfigManager::reopen(const QString& configDir)
+{
+    flush();
+    m_dir = configDir;
+    // load() leaves the values in place when it cannot read the file.
+    m_user = QJsonObject();
+    if (!QDir().mkpath(m_dir))
+        qWarning() << "RiipL: cannot create config directory" << m_dir;
     load();
 }
 

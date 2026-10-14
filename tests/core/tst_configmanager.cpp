@@ -17,6 +17,7 @@ private slots:
     void storesOnlyNonDefaults();
     void persistsAcrossInstances();
     void flushesPendingSaveOnRecreate();
+    void keepsConnectionsAcrossRecreate();
     void valueEqualityMatchesDefaults();
     void resolvesUiLocaleScript();
     void rejectsUnofferedUiLanguage();
@@ -100,6 +101,19 @@ void TestConfigManager::flushesPendingSaveOnRecreate()
     ConfigManager::createInstance(TestSupport::tempDir());
     QCOMPARE(ConfigManager::instance()->stringValue(Keys::translationTargetLang),
              QStringLiteral("ja"));
+}
+
+void TestConfigManager::keepsConnectionsAcrossRecreate()
+{
+    ConfigManager::createInstance(TestSupport::tempDir() + QStringLiteral("/first"));
+    ConfigManager* config = ConfigManager::instance();
+    QSignalSpy spy(config, &ConfigManager::changed);
+
+    ConfigManager::createInstance(TestSupport::tempDir() + QStringLiteral("/second"));
+    QVERIFY(ConfigManager::instance() == config);
+
+    config->setValue(Keys::apiModel, QStringLiteral("gpt-4o"));
+    QCOMPARE(spy.count(), 1);
 }
 
 void TestConfigManager::valueEqualityMatchesDefaults()

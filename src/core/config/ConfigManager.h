@@ -12,6 +12,7 @@ class ConfigManager : public QObject
     Q_OBJECT
 
 public:
+    // The instance is kept, so receivers and pointers taken from it stay valid.
     static void createInstance(const QString& configDir = QString());
     static ConfigManager* instance();
 
@@ -39,6 +40,7 @@ signals:
 
 private:
     explicit ConfigManager(const QString& configDir);
+    void reopen(const QString& configDir);
     void load();
     void quarantineCorruptFile();
     void repairUiLanguage();
