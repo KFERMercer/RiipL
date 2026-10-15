@@ -705,16 +705,14 @@ void MainWindow::applyClipboardWatching()
 
 void MainWindow::applyYoloMode(bool enabled)
 {
-    if (enabled)
+    if (enabled) {
         m_activity.markReady();
-    else
+        m_clipboardWritten.clear();
+    } else {
         m_yolo.stop();
+    }
     applyClipboardWatching();
     updateTrayIcon();
-    if (!enabled)
-        return;
-    // A switch turned on translates the text the clipboard already carries.
-    m_clipboardTimer->start();
 }
 
 bool MainWindow::clipboardTextIsNewWork(const QString& text) const
