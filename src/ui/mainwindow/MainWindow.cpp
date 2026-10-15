@@ -542,12 +542,13 @@ void MainWindow::buildTray()
     m_trayDocumentAction = menu->addAction(QString());
     menu->addAction(m_yoloAction);
     menu->addSeparator();
-    m_trayStopAction = menu->addAction(QString());
+    menu->addMenu(m_apiPresetMenu);
     menu->addSeparator();
+    m_trayStopAction = menu->addAction(QString());
     m_trayExitAction = menu->addAction(QString());
     connect(m_trayExitAction, &QAction::triggered, this, &MainWindow::quitApplication);
     m_tray->setContextMenu(menu);
-    m_tray->setToolTip(QStringLiteral("RiipL"));
+    m_tray->setToolTip(QCoreApplication::applicationName());
     connect(m_tray, &QSystemTrayIcon::activated, this, [this](QSystemTrayIcon::ActivationReason reason) {
         if (reason == QSystemTrayIcon::DoubleClick || reason == QSystemTrayIcon::Trigger)
             toggleVisible();
@@ -557,7 +558,6 @@ void MainWindow::buildTray()
     connect(m_trayDocumentAction, &QAction::triggered, this, &MainWindow::showDocumentWindow);
     connect(m_trayStopAction, &QAction::triggered, this, &MainWindow::stopAllTranslations);
     m_tray->show();
-    m_trayMenu = menu;
     updateTrayIcon();
 }
 
@@ -1115,7 +1115,7 @@ void MainWindow::retranslateUi()
     m_documentAction->setShortcut(QKeySequence::Open);
     m_exportAction->setText(tr("Export translation..."));
     m_exportAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+S")));
-    m_exitAction->setText(tr("Exit"));
+    m_exitAction->setText(tr("Exit %1").arg(QCoreApplication::applicationName()));
     m_exitAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+Q")));
 
     m_editMenu->setTitle(tr("&Edit"));
@@ -1175,11 +1175,11 @@ void MainWindow::retranslateUi()
     m_statusLabel->setText(statusText());
     updateCountLabel();
 
-    if (m_trayMenu) {
+    if (m_tray) {
         m_trayShowHideAction->setText(tr("Show/Hide window"));
         m_trayTranslateClipAction->setText(tr("Translate clipboard"));
         m_trayDocumentAction->setText(tr("Document translation"));
         m_trayStopAction->setText(tr("Stop all"));
-        m_trayExitAction->setText(tr("Exit"));
+        m_trayExitAction->setText(tr("Exit %1").arg(QCoreApplication::applicationName()));
     }
 }

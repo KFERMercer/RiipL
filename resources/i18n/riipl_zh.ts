@@ -813,12 +813,6 @@
         <translation>导出译文...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1118"/>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1183"/>
-        <source>Exit</source>
-        <translation>退出</translation>
-    </message>
-    <message>
         <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1121"/>
         <source>&amp;Edit</source>
         <translation>编辑(&amp;E)</translation>
@@ -862,6 +856,12 @@
         <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1182"/>
         <source>Stop all</source>
         <translation>停止所有</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1118"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1183"/>
+        <source>Exit %1</source>
+        <translation>退出 %1</translation>
     </message>
     <message>
         <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1132"/>

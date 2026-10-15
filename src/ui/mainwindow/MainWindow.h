@@ -169,7 +169,6 @@ private:
     QMenu* m_languageMenu = nullptr;
     QMenu* m_apiPresetMenu = nullptr;
     QActionGroup* m_apiPresetGroup = nullptr;
-    QMenu* m_trayMenu = nullptr;
     QAction* m_apiPresetPlaceholder = nullptr;
 
     QTimer* m_debounce = nullptr;
