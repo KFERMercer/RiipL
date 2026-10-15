@@ -185,7 +185,7 @@ void DocumentTranslationWindow::retranslateUi()
     m_previewGroup->setTitle(tr("Preview"));
     m_browseButton->setText(tr("Browse..."));
     m_translateAction->setText(tr("Translate"));
-    m_translateAction->setToolTip(tr("Translate the loaded document (Ctrl+Return)"));
+    m_translateAction->setToolTip(tr("Translate the loaded document (Ctrl+Enter)"));
     m_stopAction->setText(tr("Stop"));
     m_stopAction->setToolTip(tr("Stop translation"));
     m_exportButton->setText(tr("Export translation..."));
@@ -296,7 +296,7 @@ QString DocumentTranslationWindow::statusText() const
 
 void DocumentTranslationWindow::browse()
 {
-    QFileDialog dialog(this, tr("Open document"));
+    QFileDialog dialog(this, tr("Document translation"));
     dialog.setFileMode(QFileDialog::ExistingFile);
     dialog.setMimeTypeFilters(
         {QStringLiteral("text/plain"), QStringLiteral("application/octet-stream")});

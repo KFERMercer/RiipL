@@ -172,6 +172,7 @@
     <name>DocumentTranslationWindow</name>
     <message>
         <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="181"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="299"/>
         <source>Document translation</source>
         <translation>文档翻译</translation>
     </message>
@@ -214,11 +215,6 @@
         <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="187"/>
         <source>Translate</source>
         <translation>翻译</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="188"/>
-        <source>Translate the loaded document (Ctrl+Return)</source>
-        <translation>翻译已加载的文档（Ctrl+Return）</translation>
     </message>
     <message>
         <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="189"/>
@@ -271,11 +267,6 @@
         <translation>已停止</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="299"/>
-        <source>Open document</source>
-        <translation>打开文档</translation>
-    </message>
-    <message>
         <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="280"/>
         <source>Translating...</source>
         <translation>翻译中...</translation>
@@ -297,6 +288,11 @@
         <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="274"/>
         <source>Choose file</source>
         <translation>选择文件</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="188"/>
+        <source>Translate the loaded document (Ctrl+Enter)</source>
+        <translation>翻译已加载的文档（Ctrl+Enter）</translation>
     </message>
     <message>
         <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="276"/>
@@ -433,7 +429,7 @@
     <message>
         <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="85"/>
         <source>Translation history</source>
-        <translation>翻译历史</translation>
+        <translation>历史翻译</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="89"/>
@@ -709,7 +705,7 @@
     <message>
         <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="298"/>
         <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="837"/>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1172"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1173"/>
         <source>Enter text to translate</source>
         <translation>输入要翻译的文本</translation>
     </message>
@@ -735,7 +731,12 @@
         <translation>翻译已取消</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1175"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1161"/>
+        <source>Translate now (Ctrl+Enter)</source>
+        <translation>立即翻译（Ctrl+Enter）</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1176"/>
         <source>No presets</source>
         <translation>无预设</translation>
     </message>
@@ -803,7 +804,7 @@
     </message>
     <message>
         <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1120"/>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1184"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1185"/>
         <source>Exit</source>
         <translation>退出</translation>
     </message>
@@ -841,6 +842,16 @@
         <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1144"/>
         <source>Auto translate</source>
         <translation>自动翻译</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1163"/>
+        <source>Translation history</source>
+        <translation type="unfinished">历史翻译</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1184"/>
+        <source>Stop all</source>
+        <translation>停止所有</translation>
     </message>
     <message>
         <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1134"/>
@@ -919,64 +930,58 @@
         <translation>YOLO</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1161"/>
-        <source>Translate now (Ctrl+Return)</source>
-        <translation>立即翻译（Ctrl+Return）</translation>
-    </message>
-    <message>
         <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1162"/>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1183"/>
         <source>Stop translation</source>
         <translation>停止翻译</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1163"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1164"/>
         <source>Translate the clipboard as it changes and write the result back to it</source>
         <translation>实时翻译剪贴板内容并回写到剪贴板</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1164"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1165"/>
         <source>Restore previous translation</source>
         <translation>恢复上一版译文</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1165"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1166"/>
         <source>Redo translation</source>
         <translation>重做译文</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1166"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1167"/>
         <source>Swap languages</source>
         <translation>交换语言</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1167"/>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1170"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1168"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1171"/>
         <source>Clear</source>
         <translation>清空</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1168"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1169"/>
         <source>Paste</source>
         <translation>粘贴</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1169"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1170"/>
         <source>Copy</source>
         <translation>复制</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1180"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1181"/>
         <source>Show/Hide window</source>
         <translation>显示/隐藏窗口</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1181"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1182"/>
         <source>Translate clipboard</source>
         <translation>翻译剪贴板</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1182"/>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1183"/>
         <source>Document translation</source>
         <translation>文档翻译</translation>
     </message>

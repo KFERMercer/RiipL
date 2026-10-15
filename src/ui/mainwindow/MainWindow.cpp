@@ -1158,8 +1158,9 @@ void MainWindow::retranslateUi()
     m_historyAction->setIconText(tr("History"));
     m_settingsAction->setIconText(tr("Settings"));
     m_yoloAction->setIconText(tr("YOLO"));
-    m_translateAction->setToolTip(tr("Translate now (Ctrl+Return)"));
+    m_translateAction->setToolTip(tr("Translate now (Ctrl+Enter)"));
     m_stopAction->setToolTip(tr("Stop translation"));
+    m_historyAction->setToolTip(tr("Translation history"));
     m_yoloAction->setToolTip(tr("Translate the clipboard as it changes and write the result back to it"));
     m_undoAction->setToolTip(tr("Restore previous translation"));
     m_redoAction->setToolTip(tr("Redo translation"));
@@ -1180,7 +1181,7 @@ void MainWindow::retranslateUi()
         m_trayShowHideAction->setText(tr("Show/Hide window"));
         m_trayTranslateClipAction->setText(tr("Translate clipboard"));
         m_trayDocumentAction->setText(tr("Document translation"));
-        m_trayStopAction->setText(tr("Stop translation"));
+        m_trayStopAction->setText(tr("Stop all"));
         m_trayExitAction->setText(tr("Exit"));
     }
 }
