@@ -12,6 +12,7 @@
 #include <QAction>
 #include <QByteArray>
 #include <QComboBox>
+#include <QCoreApplication>
 #include <QDialog>
 #include <QEvent>
 #include <QFile>
@@ -338,7 +339,8 @@ bool DocumentTranslationWindow::loadFile()
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         setStatus(Status::CannotOpen, path);
-        QMessageBox::warning(this, tr("RiipL"), tr("Cannot open file: %1").arg(path));
+        QMessageBox::warning(this, QCoreApplication::applicationName(),
+                             tr("Cannot open file: %1").arg(path));
         return false;
     }
 
@@ -350,7 +352,8 @@ bool DocumentTranslationWindow::loadFile()
                                              config->intValue(Keys::documentWindowLines));
     if (m_windows.isEmpty()) {
         setStatus(Status::NoContent);
-        QMessageBox::information(this, tr("RiipL"), tr("No content to translate"));
+        QMessageBox::information(this, QCoreApplication::applicationName(),
+                                 tr("No content to translate"));
         return false;
     }
     return true;
@@ -403,7 +406,8 @@ void DocumentTranslationWindow::exportResult()
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text) || file.write(data) != data.size()
         || !file.commit()) {
         setStatus(Status::CannotWrite, path);
-        QMessageBox::warning(this, tr("RiipL"), tr("Cannot write file: %1").arg(path));
+        QMessageBox::warning(this, QCoreApplication::applicationName(),
+                             tr("Cannot write file: %1").arg(path));
         return;
     }
     setStatus(Status::Exported, path);

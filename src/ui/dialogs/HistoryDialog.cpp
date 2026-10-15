@@ -146,7 +146,7 @@ HistoryDialog::HistoryDialog(HistoryManager* history, QWidget* parent)
     });
     connect(clearButton, &QPushButton::clicked, this, [this]() {
         const QMessageBox::StandardButton answer = QMessageBox::question(
-            this, tr("RiipL"), tr("Delete all history records?"),
+            this, QCoreApplication::applicationName(), tr("Delete all history records?"),
             QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
         if (answer == QMessageBox::Yes)
             m_history->clear();

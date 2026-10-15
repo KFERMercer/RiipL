@@ -1,6 +1,7 @@
 #include "HistoryManager.h"
 
-#include <QDebug>
+#include "utils/AppLog.h"
+
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -63,18 +64,18 @@ void HistoryManager::save()
 {
     QSaveFile file(m_filePath);
     if (!file.open(QIODevice::WriteOnly)) {
-        qWarning() << "RiipL: cannot write history file" << file.fileName() << file.errorString();
+        AppLog::warning() << "cannot write history file" << file.fileName() << file.errorString();
         return;
     }
     QByteArray data;
     for (auto it = m_records.crbegin(); it != m_records.crend(); ++it)
         data += QJsonDocument(toJson(*it)).toJson(QJsonDocument::Compact) + '\n';
     if (file.write(data) != data.size()) {
-        qWarning() << "RiipL: cannot write history file" << file.fileName() << file.errorString();
+        AppLog::warning() << "cannot write history file" << file.fileName() << file.errorString();
         return;
     }
     if (!file.commit()) {
-        qWarning() << "RiipL: cannot commit history file" << file.fileName() << file.errorString();
+        AppLog::warning() << "cannot commit history file" << file.fileName() << file.errorString();
         return;
     }
     m_fileRecords = m_records.size();
@@ -84,14 +85,14 @@ void HistoryManager::append(const TranslationRecord& record)
 {
     QFile file(m_filePath);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Append)) {
-        qWarning() << "RiipL: cannot append to history file" << file.fileName()
-                   << file.errorString();
+        AppLog::warning() << "cannot append to history file" << file.fileName()
+                          << file.errorString();
         return;
     }
     const QByteArray line = QJsonDocument(toJson(record)).toJson(QJsonDocument::Compact) + '\n';
     if (file.write(line) != line.size()) {
-        qWarning() << "RiipL: cannot append to history file" << file.fileName()
-                   << file.errorString();
+        AppLog::warning() << "cannot append to history file" << file.fileName()
+                          << file.errorString();
         return;
     }
     ++m_fileRecords;

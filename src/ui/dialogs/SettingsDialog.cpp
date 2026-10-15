@@ -20,6 +20,7 @@
 
 #include <QAbstractButton>
 #include <QApplication>
+#include <QCoreApplication>
 #include <QClipboard>
 #include <QComboBox>
 #include <QCursor>
@@ -631,7 +632,7 @@ QWidget* SettingsDialog::createDocumentPage()
 
     auto* clearButton = new QPushButton(page);
     connect(clearButton, &QPushButton::clicked, this, [this]() {
-        if (QMessageBox::question(this, tr("RiipL"),
+        if (QMessageBox::question(this, QCoreApplication::applicationName(),
                                   tr("Delete all document translation caches?"))
             == QMessageBox::Yes) {
             DocumentCache::clearAll();
@@ -677,7 +678,8 @@ QWidget* SettingsDialog::createHistoryPage()
 
     auto* clearButton = new QPushButton(page);
     connect(clearButton, &QPushButton::clicked, this, [this]() {
-        if (QMessageBox::question(this, tr("RiipL"), tr("Delete all history records?"))
+        if (QMessageBox::question(this, QCoreApplication::applicationName(),
+                                  tr("Delete all history records?"))
             == QMessageBox::Yes)
             m_history->clear();
     });

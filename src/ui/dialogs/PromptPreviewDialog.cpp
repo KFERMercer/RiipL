@@ -9,6 +9,7 @@
 #include "ui/widgets/WindowState.h"
 
 #include <QComboBox>
+#include <QCoreApplication>
 #include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QLineEdit>
@@ -29,7 +30,8 @@ PromptPreviewDialog::PromptPreviewDialog(QWidget* parent)
 
     auto* form = new QFormLayout();
     m_source = new QLineEdit(this);
-    m_source->setText(QStringLiteral("Hello, world! RiipL is a translation tool."));
+    m_source->setText(QStringLiteral("Hello, world! %1 is a translation tool.")
+                          .arg(QCoreApplication::applicationName()));
     m_sourceLang = new QComboBox(this);
     for (const std::pair<QString, QString>& item : languageItems(true))
         m_sourceLang->addItem(item.first, item.second);

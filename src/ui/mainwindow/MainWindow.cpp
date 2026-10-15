@@ -513,12 +513,13 @@ void MainWindow::buildMenus()
             [this]() { ApiPresetDialog::manage(this); });
     connect(m_settingsAction, &QAction::triggered, this, &MainWindow::showSettingsDialog);
     connect(m_aboutAction, &QAction::triggered, this, [this]() {
-        QMessageBox::about(this, tr("About RiipL"),
-                           tr("<b>RiipL %1</b><br/>"
+        QMessageBox::about(this, tr("About %1").arg(QCoreApplication::applicationName()),
+                           tr("<b>%1 %2</b><br/>"
                               "An AI-powered desktop translator.<br/>"
-                              "Built with Qt %2.<br/>"
-                              "Project homepage: <a href=\"%3\">%3</a>")
-                               .arg(QCoreApplication::applicationVersion(),
+                              "Built with Qt %3.<br/>"
+                              "Project homepage: <a href=\"%4\">%4</a>")
+                               .arg(QCoreApplication::applicationName(),
+                                    QCoreApplication::applicationVersion(),
                                     QString::fromLatin1(QT_VERSION_STR),
                                     QString::fromLatin1(kProjectUrl)));
     });
@@ -1108,7 +1109,7 @@ void MainWindow::showHistoryDialog()
 
 void MainWindow::retranslateUi()
 {
-    setWindowTitle(tr("RiipL Translator"));
+    setWindowTitle(tr("%1 Translator").arg(QCoreApplication::applicationName()));
 
     m_fileMenu->setTitle(tr("&File"));
     m_documentAction->setText(tr("Open document..."));
@@ -1146,7 +1147,7 @@ void MainWindow::retranslateUi()
     m_settingsAction->setText(tr("Settings..."));
 
     m_helpMenu->setTitle(tr("&Help"));
-    m_aboutAction->setText(tr("About RiipL"));
+    m_aboutAction->setText(tr("About %1").arg(QCoreApplication::applicationName()));
 
     m_translateAction->setText(tr("Translate"));
     m_stopAction->setText(tr("Stop"));

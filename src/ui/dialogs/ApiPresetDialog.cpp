@@ -5,6 +5,7 @@
 #include "ui/widgets/AppIcons.h"
 #include "ui/widgets/WindowState.h"
 
+#include <QCoreApplication>
 #include <QDialogButtonBox>
 #include <QHBoxLayout>
 #include <QInputDialog>
@@ -165,7 +166,8 @@ void ApiPresetDialog::renameSelected()
     // Names must stay unique, since a preset is identified by its name.
     const QList<QListWidgetItem*> clashes = m_list->findItems(name, Qt::MatchExactly);
     if (!clashes.isEmpty() && clashes.first() != item) {
-        QMessageBox::warning(this, tr("RiipL"), tr("A preset named \"%1\" already exists.").arg(name));
+        QMessageBox::warning(this, QCoreApplication::applicationName(),
+                             tr("A preset named \"%1\" already exists.").arg(name));
         return;
     }
 

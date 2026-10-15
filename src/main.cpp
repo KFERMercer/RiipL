@@ -1,5 +1,6 @@
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
+#include "utils/AppLog.h"
 #include "utils/AppTranslator.h"
 #include "ui/mainwindow/MainWindow.h"
 #include "utils/SingleInstance.h"
@@ -7,7 +8,6 @@
 #include <QApplication>
 #include <QCommandLineParser>
 #include <QCoreApplication>
-#include <QDebug>
 #include <QFont>
 #include <QMessageBox>
 #include <QObject>
@@ -76,14 +76,15 @@ int main(int argc, char* argv[])
     case SingleInstance::Role::Secondary:
         if (!singleInstance.notifyExistingInstance()) {
             QMessageBox::warning(
-                nullptr, QStringLiteral("RiipL"),
+                nullptr, QCoreApplication::applicationName(),
                 QCoreApplication::translate(
-                    "main", "RiipL is already running and did not answer the activation request."));
+                    "main", "%1 is already running and did not answer the activation request.")
+                    .arg(QCoreApplication::applicationName()));
             return 1;
         }
         return 0;
     case SingleInstance::Role::Error:
-        qWarning() << "Failed to establish the single-instance IPC channel";
+        AppLog::warning() << "Failed to establish the single-instance IPC channel";
         return 1;
     case SingleInstance::Role::Primary:
         break;

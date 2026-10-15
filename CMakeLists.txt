@@ -41,6 +41,8 @@ add_library(riipl_utils STATIC
     src/utils/TextUtils.h
     src/utils/AppTranslator.cpp
     src/utils/AppTranslator.h
+    src/utils/AppLog.cpp
+    src/utils/AppLog.h
 )
 target_include_directories(riipl_utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(riipl_utils PUBLIC Qt6::Core Qt6::Network)

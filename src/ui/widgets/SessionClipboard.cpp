@@ -1,5 +1,7 @@
 #include "SessionClipboard.h"
 
+#include "utils/AppLog.h"
+
 #include <QClipboard>
 #include <QDBusConnection>
 #include <QDBusConnectionInterface>
@@ -8,7 +10,6 @@
 #include <QDBusPendingCallWatcher>
 #include <QDBusReply>
 #include <QDBusServiceWatcher>
-#include <QDebug>
 #include <QGuiApplication>
 #include <QRegularExpression>
 
@@ -117,7 +118,7 @@ QString SessionClipboard::text() const
     const QDBusMessage answer = QDBusConnection::sessionBus().call(
         methodCall(QStringLiteral("getClipboardContents")), QDBus::Block, kCallTimeoutMs);
     if (answer.type() != QDBusMessage::ReplyMessage) {
-        qWarning() << "RiipL: cannot read the clipboard through Klipper" << answer.errorMessage();
+        AppLog::warning() << "cannot read the clipboard through Klipper" << answer.errorMessage();
         return QString();
     }
     if (answer.arguments().isEmpty())
@@ -141,8 +142,8 @@ void SessionClipboard::setText(const QString& text)
     connect(watcher, &QDBusPendingCallWatcher::finished, this,
             [](QDBusPendingCallWatcher* watcher) {
                 if (watcher->isError())
-                    qWarning() << "RiipL: cannot write the clipboard through Klipper"
-                               << watcher->error().message();
+                    AppLog::warning() << "cannot write the clipboard through Klipper"
+                                      << watcher->error().message();
                 watcher->deleteLater();
             });
 }

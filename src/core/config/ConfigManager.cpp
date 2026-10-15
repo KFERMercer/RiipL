@@ -1,6 +1,7 @@
 #include "ConfigManager.h"
 #include "Defaults.h"
 #include "core/json/JsonUtils.h"
+#include "utils/AppLog.h"
 
 #include <QDateTime>
 #include <QDir>
@@ -46,7 +47,7 @@ void ConfigManager::reopen(const QString& configDir)
     // load() leaves the values in place when it cannot read the file.
     m_user = QJsonObject();
     if (!QDir().mkpath(m_dir))
-        qWarning() << "RiipL: cannot create config directory" << m_dir;
+        AppLog::warning() << "cannot create config directory" << m_dir;
     load();
 }
 
@@ -89,10 +90,10 @@ void ConfigManager::quarantineCorruptFile()
         QDateTime::currentDateTimeUtc().toString(QStringLiteral("yyyyMMdd-HHmmss-zzz"));
     const QString backup = path + QStringLiteral(".corrupt-") + stamp + QStringLiteral(".bak");
     if (!QFile::rename(path, backup)) {
-        qWarning() << "RiipL: cannot set aside the corrupted config file" << path;
+        AppLog::warning() << "cannot set aside the corrupted config file" << path;
         return;
     }
-    qWarning() << "RiipL: config.json is corrupted, falling back to defaults; kept as" << backup;
+    AppLog::warning() << "config.json is corrupted, falling back to defaults; kept as" << backup;
 }
 
 // An unoffered language would make the picker fall back to its first entry and
@@ -109,20 +110,20 @@ void ConfigManager::save()
 {
     QSaveFile file(configFilePath());
     if (!file.open(QIODevice::WriteOnly)) {
-        qWarning() << "RiipL: cannot write config file" << file.fileName() << file.errorString();
+        AppLog::warning() << "cannot write config file" << file.fileName() << file.errorString();
         return;
     }
     const QByteArray data = QJsonDocument(m_user).toJson(QJsonDocument::Indented);
     if (file.write(data) != data.size()) {
-        qWarning() << "RiipL: cannot write config file" << file.fileName() << file.errorString();
+        AppLog::warning() << "cannot write config file" << file.fileName() << file.errorString();
         return;
     }
     if (!file.commit()) {
-        qWarning() << "RiipL: cannot commit config file" << file.fileName() << file.errorString();
+        AppLog::warning() << "cannot commit config file" << file.fileName() << file.errorString();
         return;
     }
     if (!QFile::setPermissions(configFilePath(), QFile::ReadOwner | QFile::WriteOwner))
-        qWarning() << "RiipL: cannot restrict config file permissions" << configFilePath();
+        AppLog::warning() << "cannot restrict config file permissions" << configFilePath();
 }
 
 void ConfigManager::scheduleSave()
@@ -186,7 +187,7 @@ void ConfigManager::setValue(const QString& key, const QJsonValue& value)
     // Refused here as on load, so the stored value never disagrees with the
     // selection the picker shows.
     if (key == Keys::uiLanguage && !Keys::isOfferedUiLanguage(value.toString())) {
-        qWarning() << "RiipL: ignoring unsupported ui.language" << value.toString();
+        AppLog::warning() << "ignoring unsupported ui.language" << value.toString();
         return;
     }
     if (value == Defaults::value(key)) {

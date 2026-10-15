@@ -1,6 +1,7 @@
 # One executable per core unit, so a failing suite names the unit it covers.
 set(RIIPL_TEST_SUITES
     tst_apiclient
+    tst_applog
     tst_apptranslator
     tst_apipresets
     tst_configmanager

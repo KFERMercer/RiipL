@@ -4,6 +4,7 @@
 #include "ui/widgets/AppIcons.h"
 #include "ui/widgets/WindowState.h"
 
+#include <QCoreApplication>
 #include <QDialogButtonBox>
 #include <QFile>
 #include <QFileDialog>
@@ -179,13 +180,15 @@ void GlossaryTable::importJson()
         return;
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
-        QMessageBox::warning(this, tr("RiipL"), tr("Cannot open file: %1").arg(path));
+        QMessageBox::warning(this, QCoreApplication::applicationName(),
+                             tr("Cannot open file: %1").arg(path));
         return;
     }
     QJsonParseError error;
     const QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &error);
     if (error.error != QJsonParseError::NoError || !doc.isArray()) {
-        QMessageBox::warning(this, tr("RiipL"), tr("Invalid glossary JSON format"));
+        QMessageBox::warning(this, QCoreApplication::applicationName(),
+                             tr("Invalid glossary JSON format"));
         return;
     }
     setEntries(Glossary::fromJson(doc.array()));
@@ -200,13 +203,15 @@ void GlossaryTable::exportJson()
         return;
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly)) {
-        QMessageBox::warning(this, tr("RiipL"), tr("Cannot write file: %1").arg(path));
+        QMessageBox::warning(this, QCoreApplication::applicationName(),
+                             tr("Cannot write file: %1").arg(path));
         return;
     }
     const QJsonDocument doc(Glossary::toJson(entries()));
     const QByteArray json = doc.toJson(QJsonDocument::Indented);
     if (file.write(json) != json.size() || !file.commit())
-        QMessageBox::warning(this, tr("RiipL"), tr("Cannot write file: %1").arg(path));
+        QMessageBox::warning(this, QCoreApplication::applicationName(),
+                             tr("Cannot write file: %1").arg(path));
 }
 
 GlossaryDialog::GlossaryDialog(QWidget* parent)

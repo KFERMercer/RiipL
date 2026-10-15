@@ -103,8 +103,8 @@ void TestAppTranslator::appliesTheFirstRequestRegardlessOfTheSession()
 
     AppTranslator translator(catalogRoot());
     QVERIFY(translator.apply(session));
-    QCOMPARE(QCoreApplication::translate("MainWindow", "RiipL Translator"),
-             QStringLiteral("RiipL 翻译"));
+    QCOMPARE(QCoreApplication::translate("MainWindow", "%1 Translator"),
+             QStringLiteral("%1 翻译"));
 }
 
 void TestAppTranslator::toleratesAHandlerThatWritesTheLanguage()
