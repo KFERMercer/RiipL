@@ -12,6 +12,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QList>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QSortFilterProxyModel>
 #include <QStandardItemModel>
@@ -143,7 +144,13 @@ HistoryDialog::HistoryDialog(HistoryManager* history, QWidget* parent)
         if (index.isValid())
             m_history->removeRecord(m_proxy->mapToSource(index).row());
     });
-    connect(clearButton, &QPushButton::clicked, this, [this]() { m_history->clear(); });
+    connect(clearButton, &QPushButton::clicked, this, [this]() {
+        const QMessageBox::StandardButton answer = QMessageBox::question(
+            this, tr("RiipL"), tr("Delete all history records?"),
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+        if (answer == QMessageBox::Yes)
+            m_history->clear();
+    });
     connect(closeButton, &QPushButton::clicked, this, &QDialog::close);
 
     reload();
