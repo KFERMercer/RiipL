@@ -46,7 +46,8 @@ DocumentTranslator::~DocumentTranslator()
 }
 
 void DocumentTranslator::start(const QVector<DocumentWindow>& windows,
-                               const TranslationContext& context, std::optional<DocumentCache> cache)
+                               const TranslationContext& context, std::optional<DocumentCache> cache,
+                               const DocumentRunOptions& options)
 {
     cancelRun();
     m_windows = windows;
@@ -63,6 +64,10 @@ void DocumentTranslator::start(const QVector<DocumentWindow>& windows,
     m_attempts.assign(m_windows.size(), 0);
     m_settled.assign(m_windows.size(), false);
     m_context = context;
+    m_options = options;
+    m_retries = options.retryCount
+        ? (std::max)(0, *options.retryCount)
+        : (std::max)(0, ConfigManager::instance()->intValue(Keys::documentRetryCount));
     m_cache = std::move(cache);
     m_failedSamples.clear();
     m_documentPending = false;
@@ -211,8 +216,8 @@ void DocumentTranslator::processWindow(int index)
 // produced it.
 void DocumentTranslator::sendWindow(int index, const QString& sample)
 {
-    const int priority = m_attempts.at(index) > 0 ? DocumentPriority::windowRetry
-                                                  : DocumentPriority::window;
+    const int priority = m_attempts.at(index) > 0 ? m_options.priorityRetry
+                                                  : m_options.priority;
     ++m_attempts[index];
     m_samples[index] = sample;
     if (m_cache)
@@ -301,7 +306,7 @@ void DocumentTranslator::retryOrFail(int index)
     if (!m_active)
         return;
 
-    const int retries = (std::max)(0, ConfigManager::instance()->intValue(Keys::documentRetryCount));
+    const int retries = m_retries;
     if (m_attempts.at(index) <= retries) {
         const quint64 generation = m_generation;
         QTimer::singleShot(kRetryDelayMs * m_attempts.at(index), this, [this, index, generation]() {

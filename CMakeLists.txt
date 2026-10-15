@@ -21,7 +21,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Widgets Network Svg LinguistTools)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Widgets Network Svg DBus LinguistTools)
 qt_standard_project_setup(REQUIRES 6.8)
 
 # qt_standard_project_setup enables MOC and UIC but not RCC.
@@ -54,6 +54,8 @@ set(CORE_SOURCES
     src/core/translation/TranslationPool.cpp
     src/core/translation/TranslationEngine.cpp
     src/core/translation/DocumentTranslator.cpp
+    src/core/translation/YoloTranslator.cpp
+    src/core/translation/TranslationActivity.cpp
     src/core/models/Glossary.cpp
     src/core/history/HistoryManager.cpp
 )
@@ -70,6 +72,8 @@ set(CORE_HEADERS
     src/core/translation/TranslationPool.h
     src/core/translation/TranslationEngine.h
     src/core/translation/DocumentTranslator.h
+    src/core/translation/YoloTranslator.h
+    src/core/translation/TranslationActivity.h
     src/core/models/Glossary.h
     src/core/history/HistoryManager.h
     src/core/json/JsonUtils.h
@@ -86,6 +90,7 @@ set(UI_SOURCES
     src/ui/widgets/TranslationEdit.cpp
     src/ui/widgets/CandidatePopup.cpp
     src/ui/widgets/AppIcons.cpp
+    src/ui/widgets/SessionClipboard.cpp
     src/ui/widgets/AppFonts.cpp
     src/ui/widgets/FlowLayout.cpp
     src/ui/widgets/ThemeColors.cpp
@@ -104,6 +109,7 @@ set(UI_HEADERS
     src/ui/widgets/TranslationEdit.h
     src/ui/widgets/CandidatePopup.h
     src/ui/widgets/AppIcons.h
+    src/ui/widgets/SessionClipboard.h
     src/ui/widgets/AppFonts.h
     src/ui/widgets/FlowLayout.h
     src/ui/widgets/ThemeColors.h
@@ -126,7 +132,7 @@ qt_add_executable(riipl
     ${UI_HEADERS}
     resources/riipl.qrc
 )
-target_link_libraries(riipl PRIVATE riipl_core riipl_utils Qt6::Widgets Qt6::Svg)
+target_link_libraries(riipl PRIVATE riipl_core riipl_utils Qt6::Widgets Qt6::Svg Qt6::DBus)
 
 target_compile_options(riipl PRIVATE "$<$<PLATFORM_ID:Linux>:-fPIC>")
 target_link_options(riipl PRIVATE "$<$<AND:$<CONFIG:Release>,$<PLATFORM_ID:Linux>>:-s>")

@@ -1,10 +1,12 @@
 #include "AppIcons.h"
 
 #include <QApplication>
+#include <QHash>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPalette>
 #include <QPen>
+#include <QString>
 #include <QStyle>
 #include <functional>
 
@@ -13,6 +15,40 @@ namespace {
 QIcon standardIcon(QStyle::StandardPixmap id)
 {
     return QApplication::style()->standardIcon(id);
+}
+
+QString trayPath(TrayIcons::Family family, TranslationActivity::State state)
+{
+    const QString familyName = family == TrayIcons::Family::Dude
+        ? QStringLiteral("dude")
+        : QStringLiteral("app");
+    switch (state) {
+    case TranslationActivity::State::Ready:
+        return QStringLiteral(":/icons/tray/%1/ready.svg").arg(familyName);
+    case TranslationActivity::State::Busy:
+        return QStringLiteral(":/icons/tray/%1/busy.svg").arg(familyName);
+    case TranslationActivity::State::Done:
+        return QStringLiteral(":/icons/tray/%1/done.svg").arg(familyName);
+    case TranslationActivity::State::Failure:
+        return QStringLiteral(":/icons/tray/%1/failure.svg").arg(familyName);
+    }
+    Q_UNREACHABLE_RETURN(QString());
+}
+
+QString familyMarkPath(TrayIcons::Family family)
+{
+    return QStringLiteral(":/icons/%1.svg").arg(
+        family == TrayIcons::Family::Dude ? QStringLiteral("dude") : QStringLiteral("app"));
+}
+
+// A QIcon keeps the pixmaps it rendered, so one instance per path is kept.
+QIcon cachedTrayIcon(const QString& path)
+{
+    static QHash<QString, QIcon> icons;
+    const auto cached = icons.constFind(path);
+    if (cached != icons.constEnd())
+        return *cached;
+    return *icons.insert(path, QIcon(path));
 }
 
 QIcon build(const std::function<void(QPainter&, const QRectF&)>& render)
@@ -87,4 +123,14 @@ QIcon AppIcons::undo()
 QIcon AppIcons::redo()
 {
     return standardIcon(QStyle::SP_ArrowForward);
+}
+
+QIcon AppIcons::tray(TrayIcons::Family family, TranslationActivity::State state)
+{
+    return cachedTrayIcon(trayPath(family, state));
+}
+
+QIcon AppIcons::trayIdle(TrayIcons::Family family)
+{
+    return cachedTrayIcon(familyMarkPath(family));
 }

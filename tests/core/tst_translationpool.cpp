@@ -6,6 +6,7 @@
 #include "core/translation/DocumentTranslator.h"
 #include "core/translation/TranslationEngine.h"
 #include "core/translation/TranslationPool.h"
+#include "core/translation/YoloTranslator.h"
 
 #include <QDir>
 #include <QHostAddress>
@@ -146,6 +147,8 @@ private slots:
     void init();
     void interactiveRequestPassesQueuedDocuments();
     void ordersTheCallersPriorities();
+    void reportsWhenItCarriesRequests();
+    void reportsEveryFailedRequest();
     void keepsRequestsWithinTheConfiguredConcurrency();
     void halvesTheConcurrencyOnFailureAndRestoresItOnSuccess();
     void restoresOnlyAfterTheWidthIsFilledAgain();
@@ -197,7 +200,8 @@ void TestTranslationPool::interactiveRequestPassesQueuedDocuments()
 }
 
 // The callers' numbers hold the ladder the app relies on: a retry waits ahead of
-// a first attempt, and an interactive request ahead of every document request.
+// a first attempt, a clipboard request ahead of every document request, and an
+// interactive request ahead of every clipboard request.
 void TestTranslationPool::ordersTheCallersPriorities()
 {
     ConfigManager::instance()->setValue(Keys::apiMaxConcurrency, 1);
@@ -213,14 +217,65 @@ void TestTranslationPool::ordersTheCallersPriorities()
     QTRY_COMPARE(m_api.requests, 1);
     enqueue(QStringLiteral("window"), DocumentPriority::window);
     enqueue(QStringLiteral("windowRetry"), DocumentPriority::windowRetry);
+    enqueue(QStringLiteral("clipboard"), YoloPriority::clipboard);
+    enqueue(QStringLiteral("clipboardRetry"), YoloPriority::clipboardRetry);
     enqueue(QStringLiteral("interactive"), TranslationPriority::interactive);
     enqueue(QStringLiteral("interactiveRetry"), TranslationPriority::interactiveRetry);
 
     m_api.releaseAll();
-    QTRY_COMPARE(m_api.prompts.size(), 5);
+    QTRY_COMPARE(m_api.prompts.size(), 7);
     QCOMPARE(m_api.prompts, QStringList({QStringLiteral("running"), QStringLiteral("interactiveRetry"),
-                                         QStringLiteral("interactive"), QStringLiteral("windowRetry"),
+                                         QStringLiteral("interactive"), QStringLiteral("clipboardRetry"),
+                                         QStringLiteral("clipboard"), QStringLiteral("windowRetry"),
                                          QStringLiteral("window")}));
+}
+
+// The pool announces the first request it takes and the last one it answers, and
+// stays quiet while it keeps carrying requests.
+void TestTranslationPool::reportsWhenItCarriesRequests()
+{
+    ConfigManager::instance()->setValue(Keys::apiMaxConcurrency, 1);
+    TranslationPool pool;
+    QSignalSpy busy(&pool, &TranslationPool::busyChanged);
+    QVERIFY(!pool.isBusy());
+
+    pool.enqueue(chatBody(QStringLiteral("doc1")), DocumentPriority::window, {}, {}, {});
+    QVERIFY(pool.isBusy());
+    QCOMPARE(busy.count(), 1);
+    QCOMPARE(busy.at(0).at(0).toBool(), true);
+
+    QTRY_COMPARE(m_api.requests, 1);
+    QTest::qWait(50);
+    QCOMPARE(busy.count(), 1);
+
+    m_api.releaseAll();
+    QTRY_VERIFY(!pool.isBusy());
+    QCOMPARE(busy.count(), 2);
+    QCOMPARE(busy.at(1).at(0).toBool(), false);
+
+    QTest::qWait(50);
+    QCOMPARE(busy.count(), 2);
+}
+
+// Every failed request is announced once, and a success announces nothing.
+void TestTranslationPool::reportsEveryFailedRequest()
+{
+    TranslationPool pool;
+    QSignalSpy failed(&pool, &TranslationPool::requestFailed);
+
+    pool.enqueue(chatBody(QStringLiteral("ok")), DocumentPriority::window, {}, {}, {});
+    QTRY_COMPARE(m_api.requests, 1);
+    m_api.releaseNext(false);
+    QTest::qWait(50);
+    QCOMPARE(failed.count(), 0);
+
+    pool.enqueue(chatBody(QStringLiteral("bad")), DocumentPriority::window, {}, {}, {});
+    QTRY_COMPARE(m_api.requests, 2);
+    m_api.releaseNext(true);
+    QTRY_COMPARE(failed.count(), 1);
+
+    QTest::qWait(50);
+    QCOMPARE(failed.count(), 1);
 }
 
 // The configured count is how many requests the pool carries at once.

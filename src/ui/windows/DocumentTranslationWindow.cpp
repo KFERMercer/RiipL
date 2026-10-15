@@ -114,7 +114,8 @@ DocumentTranslationWindow::DocumentTranslationWindow(ContextProvider context)
 
     connect(m_browseButton, &QPushButton::clicked, this, &DocumentTranslationWindow::browse);
     connect(m_translateAction, &QAction::triggered, this, &DocumentTranslationWindow::start);
-    connect(m_stopAction, &QAction::triggered, this, &DocumentTranslationWindow::stop);
+    connect(m_stopAction, &QAction::triggered, this,
+            &DocumentTranslationWindow::stopTranslation);
     connect(m_exportButton, &QPushButton::clicked, this,
             &DocumentTranslationWindow::exportResult);
     connect(m_closeButton, &QPushButton::clicked, this, &QWidget::close);
@@ -380,7 +381,7 @@ void DocumentTranslationWindow::start()
     m_translator.start(m_windows, context, std::move(cache));
 }
 
-void DocumentTranslationWindow::stop()
+void DocumentTranslationWindow::stopTranslation()
 {
     m_translator.stop();
 }

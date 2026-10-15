@@ -23,7 +23,6 @@
 #include <QActionGroup>
 #include <QApplication>
 #include <QByteArray>
-#include <QClipboard>
 #include <QCloseEvent>
 #include <QComboBox>
 #include <QCoreApplication>
@@ -37,10 +36,9 @@
 #include <QMessageBox>
 #include <QPalette>
 #include <QPlainTextEdit>
+#include <QRandomGenerator>
 #include <QResizeEvent>
 #include <QSaveFile>
-#include <QScreen>
-#include <QScrollBar>
 #include <QSplitter>
 #include <QStatusBar>
 #include <QSystemTrayIcon>
@@ -56,6 +54,10 @@
 namespace {
 
 constexpr int kMaxResultSteps = 30;
+
+constexpr int kClipboardDelayMs = 500;
+
+constexpr int kNoticeCharacters = 300;
 
 constexpr char kProjectUrl[] = "https://github.com/KFERMercer/RiipL";
 
@@ -96,6 +98,8 @@ private:
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , m_engine(this)
+    , m_yolo(this)
+    , m_activity(this)
     , m_history(ConfigManager::instance()->historyFilePath(), this)
 {
     setUnifiedTitleAndToolBarOnMac(true);
@@ -189,6 +193,26 @@ MainWindow::MainWindow(QWidget* parent)
     });
     connect(&m_engine, &TranslationEngine::stopped, this, &MainWindow::endResultStream);
 
+    connect(&m_yolo, &YoloTranslator::translated, this, [this](const QString& text) {
+        writeClipboard(text);
+        if (m_tray && m_notificationsAction->isChecked()) {
+            // The icon overload, so the notice carries the application mark rather
+            // than the desktop's stock information icon.
+            const QString notice = text.size() > kNoticeCharacters
+                ? text.left(kNoticeCharacters) + QChar(0x2026)
+                : text;
+            m_tray->showMessage(tr("YOLO"), notice, QApplication::windowIcon());
+        }
+    });
+    // A run that ends without a translation frees its text to be asked for again.
+    connect(&m_yolo, &YoloTranslator::failed, this, [this]() { m_clipboardSeen.clear(); });
+    connect(&m_yolo, &YoloTranslator::stopped, this, [this]() { m_clipboardSeen.clear(); });
+    connect(&m_engine, &TranslationEngine::stateChanged, this, &MainWindow::updateStopAction);
+    connect(&m_yolo, &YoloTranslator::translated, this, &MainWindow::updateStopAction);
+    connect(&m_yolo, &YoloTranslator::failed, this, &MainWindow::updateStopAction);
+    connect(&m_yolo, &YoloTranslator::stopped, this, &MainWindow::updateStopAction);
+    connect(&m_activity, &TranslationActivity::stateChanged, this, &MainWindow::updateTrayIcon);
+
     m_debounce = new QTimer(this);
     m_debounce->setSingleShot(true);
     m_debounce->setInterval(ConfigManager::instance()->intValue(Keys::uiAutoTranslateDelay));
@@ -196,8 +220,8 @@ MainWindow::MainWindow(QWidget* parent)
 
     m_clipboardTimer = new QTimer(this);
     m_clipboardTimer->setSingleShot(true);
-    m_clipboardTimer->setInterval(ConfigManager::instance()->intValue(Keys::clipboardDelayMs));
-    connect(m_clipboardTimer, &QTimer::timeout, this, &MainWindow::translatePendingClipboard);
+    m_clipboardTimer->setInterval(kClipboardDelayMs);
+    connect(m_clipboardTimer, &QTimer::timeout, this, &MainWindow::onClipboardTimeout);
 
     connect(ConfigManager::instance(), &ConfigManager::changed, this, &MainWindow::onConfigChanged);
 
@@ -214,7 +238,7 @@ MainWindow::MainWindow(QWidget* parent)
         ConfigManager::instance()->setValue(Keys::translationTone, m_tone->itemData(index).toString());
     });
 
-    applyClipboardMonitoring(ConfigManager::instance()->boolValue(Keys::clipboardMonitor));
+    applyClipboardWatching();
     m_history.setMaxRecords(ConfigManager::instance()->intValue(Keys::historyMaxRecords));
 
     applyAlwaysOnTop(ConfigManager::instance()->boolValue(Keys::uiAlwaysOnTop));
@@ -385,6 +409,9 @@ void MainWindow::buildMenus()
     m_onTopAction = m_viewMenu->addAction(QString());
     m_onTopAction->setCheckable(true);
     m_onTopAction->setChecked(ConfigManager::instance()->boolValue(Keys::uiAlwaysOnTop));
+    m_notificationsAction = m_viewMenu->addAction(QString());
+    m_notificationsAction->setCheckable(true);
+    m_notificationsAction->setChecked(ConfigManager::instance()->boolValue(Keys::uiNotifications));
     m_viewMenu->addSeparator();
     m_languageMenu = m_viewMenu->addMenu(QString());
     auto* languageGroup = new QActionGroup(m_languageMenu);
@@ -407,6 +434,8 @@ void MainWindow::buildMenus()
     m_clipboardAction = m_toolsMenu->addAction(QString());
     m_clipboardAction->setCheckable(true);
     m_clipboardAction->setChecked(ConfigManager::instance()->boolValue(Keys::clipboardMonitor));
+    m_yoloAction = m_toolsMenu->addAction(QString());
+    m_yoloAction->setCheckable(true);
     m_toolsMenu->addSeparator();
     m_apiPresetMenu = m_toolsMenu->addMenu(QString());
     m_apiPresetGroup = new QActionGroup(m_apiPresetMenu);
@@ -441,14 +470,12 @@ void MainWindow::buildMenus()
 
     m_stopAction = toolBar->addAction(QString());
     m_stopAction->setEnabled(false);
-    connect(m_stopAction, &QAction::triggered, this, [this]() {
-        m_engine.stop();
-        setStatus(Status::Cancelled);
-    });
+    connect(m_stopAction, &QAction::triggered, this, &MainWindow::stopTranslations);
 
     toolBar->addSeparator();
     toolBar->addAction(m_documentAction);
     toolBar->addAction(m_historyAction);
+    toolBar->addAction(m_yoloAction);
     toolBar->addSeparator();
     toolBar->addAction(m_settingsAction);
 
@@ -458,9 +485,13 @@ void MainWindow::buildMenus()
     connect(m_onTopAction, &QAction::toggled, this, [this](bool checked) {
         ConfigManager::instance()->setValue(Keys::uiAlwaysOnTop, checked);
     });
+    connect(m_notificationsAction, &QAction::toggled, this, [this](bool checked) {
+        ConfigManager::instance()->setValue(Keys::uiNotifications, checked);
+    });
     connect(m_clipboardAction, &QAction::toggled, this, [this](bool checked) {
         ConfigManager::instance()->setValue(Keys::clipboardMonitor, checked);
     });
+    connect(m_yoloAction, &QAction::toggled, this, &MainWindow::applyYoloMode);
     connect(m_documentAction, &QAction::triggered, this, &MainWindow::showDocumentWindow);
     connect(m_exportAction, &QAction::triggered, this, &MainWindow::exportTranslation);
     connect(m_exitAction, &QAction::triggered, this, &MainWindow::quitApplication);
@@ -494,13 +525,21 @@ void MainWindow::buildTray()
 {
     if (!QSystemTrayIcon::isSystemTrayAvailable())
         return;
-    m_tray = new QSystemTrayIcon(QIcon(QStringLiteral(":/icons/app.svg")), this);
+    m_trayFamily = QRandomGenerator::global()->bounded(100) == 0
+        ? TrayIcons::Family::Dude
+        : TrayIcons::Family::App;
+    m_tray = new QSystemTrayIcon(AppIcons::trayIdle(m_trayFamily), this);
     // The tray icon does not take ownership of its context menu, so the window
     // owns it.
     QMenu* menu = new QMenu(this);
     m_trayShowHideAction = menu->addAction(QString());
-    menu->addAction(m_clipboardAction);
+    menu->addAction(m_notificationsAction);
+    menu->addSeparator();
     m_trayTranslateClipAction = menu->addAction(QString());
+    m_trayDocumentAction = menu->addAction(QString());
+    menu->addAction(m_yoloAction);
+    menu->addSeparator();
+    m_trayStopAction = menu->addAction(QString());
     menu->addSeparator();
     m_trayExitAction = menu->addAction(QString());
     connect(m_trayExitAction, &QAction::triggered, this, &MainWindow::quitApplication);
@@ -512,8 +551,11 @@ void MainWindow::buildTray()
     });
     connect(m_trayShowHideAction, &QAction::triggered, this, &MainWindow::toggleVisible);
     connect(m_trayTranslateClipAction, &QAction::triggered, this, &MainWindow::translateClipboard);
+    connect(m_trayDocumentAction, &QAction::triggered, this, &MainWindow::showDocumentWindow);
+    connect(m_trayStopAction, &QAction::triggered, this, &MainWindow::stopAllTranslations);
     m_tray->show();
     m_trayMenu = menu;
+    updateTrayIcon();
 }
 
 void MainWindow::updateSwapButtonGeometry()
@@ -648,20 +690,34 @@ void MainWindow::applyEditorFonts()
     m_resultEdit->setFont(editorFont);
 }
 
-void MainWindow::applyClipboardMonitoring(bool enabled)
+void MainWindow::applyClipboardWatching()
 {
-    disconnect(QApplication::clipboard(), &QClipboard::dataChanged, this, nullptr);
+    disconnect(&m_clipboard, &SessionClipboard::changed, this, nullptr);
     m_clipboardTimer->stop();
-    if (enabled) {
-        connect(QApplication::clipboard(), &QClipboard::dataChanged, this, [this]() {
-            if (QApplication::clipboard()->ownsClipboard())
-                return;
-            if (QApplication::clipboard()->text().trimmed() == m_lastClipboard)
-                return;
-            m_clipboardTimer->start();
-        });
-        m_lastClipboard = QApplication::clipboard()->text().trimmed();
-    }
+    if (!m_clipboardAction->isChecked() && !m_yoloAction->isChecked())
+        return;
+    connect(&m_clipboard, &SessionClipboard::changed, this,
+            [this]() { m_clipboardTimer->start(); });
+}
+
+void MainWindow::applyYoloMode(bool enabled)
+{
+    if (enabled)
+        m_activity.markReady();
+    else
+        m_yolo.stop();
+    applyClipboardWatching();
+    updateTrayIcon();
+    if (!enabled)
+        return;
+    // A switch turned on translates the text the clipboard already carries.
+    m_clipboardSeen.clear();
+    m_clipboardTimer->start();
+}
+
+bool MainWindow::clipboardTextIsNew(const QString& text) const
+{
+    return !text.isEmpty() && text != m_clipboardSeen && text != m_clipboardWritten;
 }
 
 void MainWindow::onConfigChanged(const QString& key)
@@ -684,12 +740,13 @@ void MainWindow::onConfigChanged(const QString& key)
         applyAlwaysOnTop(ConfigManager::instance()->boolValue(key));
     } else if (key == Keys::uiFontSize) {
         applyEditorFonts();
+    } else if (key == Keys::uiNotifications) {
+        QSignalBlocker blocker(m_notificationsAction);
+        m_notificationsAction->setChecked(ConfigManager::instance()->boolValue(key));
     } else if (key == Keys::clipboardMonitor) {
         QSignalBlocker blocker(m_clipboardAction);
         m_clipboardAction->setChecked(ConfigManager::instance()->boolValue(key));
-        applyClipboardMonitoring(ConfigManager::instance()->boolValue(key));
-    } else if (key == Keys::clipboardDelayMs) {
-        m_clipboardTimer->setInterval(ConfigManager::instance()->intValue(key));
+        applyClipboardWatching();
     } else if (key == Keys::historyMaxRecords) {
         m_history.setMaxRecords(ConfigManager::instance()->intValue(key));
     } else if (key == Keys::translationSourceLang || key == Keys::translationTargetLang) {
@@ -747,7 +804,6 @@ void MainWindow::translateNow()
 void MainWindow::setBusy(bool busy)
 {
     m_translateAction->setEnabled(!busy);
-    m_stopAction->setEnabled(busy);
 }
 
 void MainWindow::setStatus(Status status, const QString& argument)
@@ -809,9 +865,7 @@ void MainWindow::changeEvent(QEvent* event)
     if (event->type() != QEvent::ActivationChange || !m_clipboardReadPending || !isActiveWindow())
         return;
     m_clipboardReadPending = false;
-    const QString text = QApplication::clipboard()->text().trimmed();
-    if (!text.isEmpty())
-        applyClipboardText(text);
+    takeClipboardText();
 }
 
 void MainWindow::swapLanguages()
@@ -842,19 +896,24 @@ void MainWindow::swapLanguages()
 
 void MainWindow::pasteSource()
 {
-    const QClipboard* clipboard = QApplication::clipboard();
-    const QString text = clipboard->text();
+    const QString text = m_clipboard.text();
     if (!text.isEmpty())
         m_sourceEdit->setPlainText(text);
     m_sourceEdit->setFocus();
 }
 
-void MainWindow::translatePendingClipboard()
+void MainWindow::onClipboardTimeout()
 {
-    const QString text = QApplication::clipboard()->text().trimmed();
-    if (text.isEmpty() || text == m_lastClipboard)
+    const QString text = m_clipboard.text();
+    if (!clipboardTextIsNew(text))
         return;
-    applyClipboardText(text);
+    m_clipboardSeen = text;
+    if (m_clipboardAction->isChecked())
+        m_sourceEdit->setPlainText(text);
+    if (m_yoloAction->isChecked()) {
+        m_yolo.translate(text, currentContext());
+        updateStopAction();
+    }
 }
 
 void MainWindow::translateClipboard()
@@ -864,18 +923,62 @@ void MainWindow::translateClipboard()
     show();
     raise();
     activateWindow();
-    const QString text = QApplication::clipboard()->text().trimmed();
-    if (text.isEmpty())
-        m_clipboardReadPending = true;
-    else
-        applyClipboardText(text);
+    takeClipboardText();
 }
 
-void MainWindow::applyClipboardText(const QString& text)
+// An empty clipboard waits for the window to become active, which is when a copy made
+// elsewhere reaches the application.
+void MainWindow::takeClipboardText()
 {
-    m_lastClipboard = text;
+    const QString text = m_clipboard.text();
+    if (text.isEmpty()) {
+        m_clipboardReadPending = true;
+        return;
+    }
+    m_clipboardSeen = text;
     m_sourceEdit->setPlainText(text);
     translateNow();
+}
+
+void MainWindow::writeClipboard(const QString& text)
+{
+    m_clipboardWritten = text.trimmed();
+    m_clipboard.setText(text);
+}
+
+void MainWindow::updateStopAction()
+{
+    m_stopAction->setEnabled(m_engine.isBusy() || m_yolo.isRunning());
+}
+
+void MainWindow::stopTranslations()
+{
+    // A request the pane has not sent yet is dropped with the ones in flight.
+    m_debounce->stop();
+    m_clipboardTimer->stop();
+    if (m_engine.isBusy()) {
+        m_engine.stop();
+        setStatus(Status::Cancelled);
+    }
+    m_engine.cancelCandidates();
+    m_yolo.stop();
+    m_activity.markReady();
+}
+
+void MainWindow::stopAllTranslations()
+{
+    stopTranslations();
+    if (m_documentWindow)
+        m_documentWindow->stopTranslation();
+}
+
+void MainWindow::updateTrayIcon()
+{
+    if (!m_tray)
+        return;
+    m_tray->setIcon(m_yoloAction->isChecked()
+                        ? AppIcons::tray(m_trayFamily, m_activity.state())
+                        : AppIcons::trayIdle(m_trayFamily));
 }
 
 void MainWindow::toggleVisible()
@@ -941,8 +1044,7 @@ void MainWindow::copyResult()
     const QString text = m_resultEdit->result();
     if (text.isEmpty())
         return;
-    m_lastClipboard = text.trimmed();
-    QApplication::clipboard()->setText(text);
+    writeClipboard(text);
     setStatus(Status::Copied);
 }
 
@@ -1030,6 +1132,7 @@ void MainWindow::retranslateUi()
 
     m_viewMenu->setTitle(tr("&View"));
     m_onTopAction->setText(tr("Always on top"));
+    m_notificationsAction->setText(tr("Enable notifications"));
     m_languageMenu->setTitle(tr("Interface language"));
     for (QAction* action : m_languageMenu->actions()) {
         if (action->data().toString() == Keys::uiLanguageAuto)
@@ -1040,6 +1143,7 @@ void MainWindow::retranslateUi()
     m_toolsMenu->setTitle(tr("&Tools"));
     m_autoTranslateAction->setText(tr("Auto translate"));
     m_clipboardAction->setText(tr("Monitor clipboard"));
+    m_yoloAction->setText(tr("YOLO mode"));
     m_apiPresetMenu->setTitle(tr("API preset"));
     m_settingsAction->setText(tr("Settings..."));
 
@@ -1053,8 +1157,10 @@ void MainWindow::retranslateUi()
     m_documentAction->setIconText(tr("Document"));
     m_historyAction->setIconText(tr("History"));
     m_settingsAction->setIconText(tr("Settings"));
+    m_yoloAction->setIconText(tr("YOLO"));
     m_translateAction->setToolTip(tr("Translate now (Ctrl+Return)"));
     m_stopAction->setToolTip(tr("Stop translation"));
+    m_yoloAction->setToolTip(tr("Translate the clipboard as it changes and write the result back to it"));
     m_undoAction->setToolTip(tr("Restore previous translation"));
     m_redoAction->setToolTip(tr("Redo translation"));
     m_swapAction->setToolTip(tr("Swap languages"));
@@ -1073,6 +1179,8 @@ void MainWindow::retranslateUi()
     if (m_trayMenu) {
         m_trayShowHideAction->setText(tr("Show/Hide window"));
         m_trayTranslateClipAction->setText(tr("Translate clipboard"));
+        m_trayDocumentAction->setText(tr("Document translation"));
+        m_trayStopAction->setText(tr("Stop translation"));
         m_trayExitAction->setText(tr("Exit"));
     }
 }

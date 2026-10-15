@@ -2,5 +2,14 @@
 <RCC version="1.0">
     <qresource prefix="/icons">
         <file alias="app.svg">icons/app.svg</file>
+        <file alias="dude.svg">icons/dude.svg</file>
+        <file alias="tray/app/ready.svg">icons/tray/app/ready.svg</file>
+        <file alias="tray/app/busy.svg">icons/tray/app/busy.svg</file>
+        <file alias="tray/app/done.svg">icons/tray/app/done.svg</file>
+        <file alias="tray/app/failure.svg">icons/tray/app/failure.svg</file>
+        <file alias="tray/dude/ready.svg">icons/tray/dude/ready.svg</file>
+        <file alias="tray/dude/busy.svg">icons/tray/dude/busy.svg</file>
+        <file alias="tray/dude/done.svg">icons/tray/dude/done.svg</file>
+        <file alias="tray/dude/failure.svg">icons/tray/dude/failure.svg</file>
     </qresource>
 </RCC>

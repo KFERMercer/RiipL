@@ -32,13 +32,15 @@ public:
 
     explicit DocumentTranslationWindow(ContextProvider context);
 
+    // Ends a run under way, for a stop that comes from outside this window.
+    void stopTranslation();
+
 protected:
     void changeEvent(QEvent* event) override;
 
 private slots:
     void browse();
     void start();
-    void stop();
     void exportResult();
     void onConfigChanged(const QString& key);
 

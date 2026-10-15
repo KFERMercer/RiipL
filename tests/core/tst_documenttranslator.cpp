@@ -189,6 +189,17 @@ QVector<DocumentWindow> document(int windows, int linesPerWindow)
                                         words * linesPerWindow, linesPerWindow);
 }
 
+// Request body carrying \p prompt as the user message, for a request the pool
+// takes without a document run.
+QJsonObject chatBody(const QString& prompt)
+{
+    return QJsonObject{
+        {QStringLiteral("messages"),
+         QJsonArray{QJsonObject{{QStringLiteral("role"), QStringLiteral("user")},
+                                {QStringLiteral("content"), prompt}}}}
+    };
+}
+
 // Suffixes the two kinds of document cache file carry.
 const QString kAnswerSuffix = QStringLiteral(".document.cache.json");
 const QString kFailureSuffix = QStringLiteral(".document.failure.json");
@@ -270,6 +281,8 @@ private slots:
     void retriesAgainOnTheNextRun();
     void retriesAsOftenAsConfigured();
     void usesTheDefaultRetryCount();
+    void honorsTheRunRetryCount();
+    void honorsTheRunPriority();
     void stopsDuringResultDelivery();
     void stopsWhileARetryIsPending();
     void finishesEmptyInputWithoutRequest();
@@ -1797,6 +1810,66 @@ void TestDocumentTranslator::usesTheDefaultRetryCount()
     translator.start(document(1, 3), TranslationContext());
     QTRY_VERIFY_WITH_TIMEOUT(failures == 1, 15000);
     QCOMPARE(m_api.requests, 4);
+}
+
+// A run option fixes the attempts a window gets, overriding the configured count
+// in both directions.
+void TestDocumentTranslator::honorsTheRunRetryCount()
+{
+    m_api.failuresLeft = 10;
+    ConfigManager::instance()->setValue(Keys::documentRetryCount, 3);
+
+    DocumentTranslator translator;
+    QStringList failed;
+    connect(&translator, &DocumentTranslator::failed, this,
+            [&failed](const QStringList& samples) { failed = samples; });
+
+    DocumentRunOptions none;
+    none.retryCount = 0;
+    translator.start(document(1, 3), TranslationContext(), std::nullopt, none);
+    QTRY_COMPARE_WITH_TIMEOUT(failed.size(), 1, 10000);
+    QCOMPARE(m_api.requests, 1);
+
+    // Two retries are three attempts in all, one short of the configured count.
+    m_api.requests = 0;
+    failed.clear();
+    DocumentRunOptions twice;
+    twice.retryCount = 2;
+    translator.start(document(1, 3), TranslationContext(), std::nullopt, twice);
+    QTRY_COMPARE_WITH_TIMEOUT(failed.size(), 1, 15000);
+    QCOMPARE(m_api.requests, 3);
+}
+
+// A run option sets the priority its windows enter the pool with.
+void TestDocumentTranslator::honorsTheRunPriority()
+{
+    ConfigManager::instance()->setValue(Keys::apiMaxConcurrency, 1);
+    // Keeps the running request on the wire while the run's window queues.
+    m_api.answerDelayMs = 200;
+    TranslationPool* pool = TranslationPool::instance();
+
+    pool->enqueue(chatBody(QStringLiteral("running")), DocumentPriority::window, {}, {}, {});
+    QTRY_COMPARE(m_api.requests, 1);
+    pool->enqueue(chatBody(QStringLiteral("ahead")), 40, {}, {}, {});
+    pool->enqueue(chatBody(QStringLiteral("behind")), 60, {}, {}, {});
+
+    DocumentRunOptions options;
+    options.priority = 50;
+    options.priorityRetry = 49;
+    DocumentTranslator translator;
+    QString finished;
+    connect(&translator, &DocumentTranslator::finished, this,
+            [&finished](const QString& text) { finished = text; });
+    translator.start(document(1, 3), TranslationContext(), std::nullopt, options);
+
+    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+
+    // The run's window went out between the two requests beside it.
+    QCOMPARE(m_api.prompts.size(), 4);
+    QCOMPARE(m_api.prompts.at(0), QStringLiteral("running"));
+    QCOMPARE(m_api.prompts.at(1), QStringLiteral("ahead"));
+    QVERIFY(m_api.prompts.at(2).contains(QStringLiteral("window 0 line 0")));
+    QCOMPARE(m_api.prompts.at(3), QStringLiteral("behind"));
 }
 
 void TestDocumentTranslator::stopsDuringResultDelivery()

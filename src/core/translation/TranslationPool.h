@@ -42,6 +42,13 @@ public:
     void cancel(JobId id);
     // Forgets the back-off learned from failed requests.
     void reset();
+    // Whether the pool holds a request, queued or running.
+    bool isBusy() const;
+
+signals:
+    // Whether the pool carries requests, when that changes.
+    void busyChanged(bool busy);
+    void requestFailed();
 
 private:
     struct Job
@@ -64,6 +71,7 @@ private:
     int limit() const;
     void noteSuccess();
     void noteFailure();
+    void updateBusy();
 
     QVector<ApiClient*> m_clients;
     QHash<ApiClient*, JobId> m_clientJobs;
@@ -78,4 +86,5 @@ private:
     // restores the configured number only then.
     bool m_filledSinceFailure = false;
     bool m_dispatchScheduled = false;
+    bool m_busy = false;
 };

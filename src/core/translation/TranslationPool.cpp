@@ -39,6 +39,20 @@ int TranslationPool::limit() const
     return (std::max)(1, configured >> m_halvings);
 }
 
+bool TranslationPool::isBusy() const
+{
+    return !m_pending.isEmpty() || !m_clientJobs.isEmpty();
+}
+
+void TranslationPool::updateBusy()
+{
+    const bool busy = isBusy();
+    if (busy == m_busy)
+        return;
+    m_busy = busy;
+    emit busyChanged(busy);
+}
+
 void TranslationPool::noteSuccess()
 {
     if (m_halvings == 0 || !m_filledSinceFailure)
@@ -72,6 +86,7 @@ TranslationPool::JobId TranslationPool::enqueue(const QJsonObject& body,
 
     m_pending.insert(key, std::move(job));
     m_pendingKeys.insert(id, key);
+    updateBusy();
     scheduleDispatch();
     return id;
 }
@@ -84,9 +99,12 @@ void TranslationPool::cancel(JobId id)
     if (const auto queued = m_pendingKeys.constFind(id); queued != m_pendingKeys.constEnd()) {
         m_pending.remove(queued.value());
         m_pendingKeys.erase(queued);
+        updateBusy();
         return;
     }
 
+    // A running request gives its connection back when the client reports the
+    // cancel, which is where the pool learns it is no longer busy.
     if (ApiClient* running = m_jobClients.value(id, nullptr))
         running->cancel();
 }
@@ -129,10 +147,12 @@ void TranslationPool::dispatch()
             std::move(job.onDelta),
             [this, error = std::move(job.onError)](const ApiClient::Error& failure) {
                 noteFailure();
+                emit requestFailed();
                 if (error)
                     error(failure);
             });
     }
+    updateBusy();
 }
 
 ApiClient* TranslationPool::acquireClient()
@@ -153,5 +173,6 @@ ApiClient* TranslationPool::acquireClient()
 void TranslationPool::onClientFinished(ApiClient* client)
 {
     m_jobClients.remove(m_clientJobs.take(client));
+    updateBusy();
     scheduleDispatch();
 }

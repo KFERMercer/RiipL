@@ -1,12 +1,16 @@
 #include "SingleInstance.h"
 
 #include <QCryptographicHash>
+#include <QElapsedTimer>
 #include <QLocalServer>
 #include <QLocalSocket>
 #include <QStandardPaths>
+#include <QThread>
 
 namespace {
 constexpr int kConnectTimeoutMs = 300;
+// Timeout and pause of one connect attempt.
+constexpr int kRetryDelayMs = 30;
 
 QString runtimeDirectory()
 {
@@ -75,10 +79,20 @@ SingleInstance::Role SingleInstance::tryLock()
 
 bool SingleInstance::notifyExistingInstance()
 {
+    // Two starts can race: the listener of the first is not up yet, and a refused
+    // connect returns at once, so the attempt is repeated until the wait is spent.
+    QElapsedTimer elapsed;
+    elapsed.start();
     QLocalSocket socket;
-    socket.connectToServer(serverName());
-    if (!socket.waitForConnected(kConnectTimeoutMs))
-        return false;
+    while (true) {
+        socket.abort();
+        socket.connectToServer(serverName());
+        if (socket.waitForConnected(kRetryDelayMs))
+            break;
+        if (elapsed.elapsed() >= kConnectTimeoutMs)
+            return false;
+        QThread::msleep(kRetryDelayMs);
+    }
     socket.disconnectFromServer();
     return true;
 }

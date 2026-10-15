@@ -62,6 +62,7 @@ inline const QString uiAutoTranslateDelay = QStringLiteral("ui.auto_translate_de
 inline const QString uiAlwaysOnTop = QStringLiteral("ui.always_on_top");
 inline const QString uiMinimizeToTray = QStringLiteral("ui.minimize_to_tray");
 inline const QString uiFontSize = QStringLiteral("ui.font_size");
+inline const QString uiNotifications = QStringLiteral("ui.notifications");
 
 inline const QString translationSourceLang = QStringLiteral("translation.source_lang");
 inline const QString translationTargetLang = QStringLiteral("translation.target_lang");
@@ -80,7 +81,6 @@ inline const QString glossaryEnabled = QStringLiteral("glossary.enabled");
 inline const QString glossaryEntries = QStringLiteral("glossary.entries");
 
 inline const QString clipboardMonitor = QStringLiteral("clipboard.monitor");
-inline const QString clipboardDelayMs = QStringLiteral("clipboard.delay_ms");
 
 inline const QString historyEnabled = QStringLiteral("history.enabled");
 inline const QString historyMaxRecords = QStringLiteral("history.max_records");
@@ -106,6 +106,7 @@ inline const int uiAutoTranslateDelay = 800;
 inline const bool uiAlwaysOnTop = false;
 inline const bool uiMinimizeToTray = true;
 inline const int uiFontSize = 10;
+inline const bool uiNotifications = true;
 
 inline const QString translationSourceLang = QStringLiteral("auto");
 inline const QString translationTargetLang = QStringLiteral("zh");
@@ -122,7 +123,6 @@ inline const bool documentCacheEnabled = true;
 inline const bool glossaryEnabled = true;
 
 inline const bool clipboardMonitor = false;
-inline const int clipboardDelayMs = 500;
 
 inline const bool historyEnabled = true;
 inline const int historyMaxRecords = 500;
@@ -265,6 +265,7 @@ inline QJsonValue value(const QString& key)
         {Keys::uiAlwaysOnTop, uiAlwaysOnTop},
         {Keys::uiMinimizeToTray, uiMinimizeToTray},
         {Keys::uiFontSize, uiFontSize},
+        {Keys::uiNotifications, uiNotifications},
         {Keys::translationSourceLang, translationSourceLang},
         {Keys::translationTargetLang, translationTargetLang},
         {Keys::translationTone, translationTone},
@@ -289,7 +290,6 @@ inline QJsonValue value(const QString& key)
         {Keys::promptCandidate, promptCandidate},
         {Keys::promptCandidateShort, promptCandidateShort},
         {Keys::clipboardMonitor, clipboardMonitor},
-        {Keys::clipboardDelayMs, clipboardDelayMs},
         {Keys::historyEnabled, historyEnabled},
         {Keys::historyMaxRecords, historyMaxRecords},
     };

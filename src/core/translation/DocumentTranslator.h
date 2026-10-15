@@ -19,6 +19,14 @@ inline constexpr int windowRetry = 89;
 
 }
 
+struct DocumentRunOptions
+{
+    int priority = DocumentPriority::window;
+    int priorityRetry = DocumentPriority::windowRetry;
+    // Attempts after the first; unset takes the configured document count.
+    std::optional<int> retryCount = std::nullopt;
+};
+
 // Sends a document to the API window by window and rebuilds the translation from
 // the answers, each window carrying its neighbours as context. A window goes into
 // the shared translation pool as the run takes it, so an interactive request passes
@@ -34,8 +42,10 @@ public:
     ~DocumentTranslator() override;
 
     void start(const QVector<DocumentWindow>& windows, const TranslationContext& context,
-               std::optional<DocumentCache> cache = std::nullopt);
+               std::optional<DocumentCache> cache = std::nullopt,
+               const DocumentRunOptions& options = DocumentRunOptions{});
     void stop();
+    bool isRunning() const { return m_active; }
 
 signals:
     // Whole document as it stands, sent as the answers arrive: every window carries
@@ -93,6 +103,9 @@ private:
     // Windows the run left out, as the short digest of their request.
     QStringList m_failedSamples;
     TranslationContext m_context;
+    DocumentRunOptions m_options;
+    // Resolved from the run options when the run starts.
+    int m_retries = 0;
     std::optional<DocumentCache> m_cache = std::nullopt;
     // Whether the document holds an answer that has not been reported yet.
     bool m_documentPending = false;

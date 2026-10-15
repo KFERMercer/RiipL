@@ -9,7 +9,11 @@
 #include "core/history/HistoryManager.h"
 #include "core/network/ApiClient.h"
 #include "core/translation/PromptBuilder.h"
+#include "core/translation/TranslationActivity.h"
 #include "core/translation/TranslationEngine.h"
+#include "core/translation/YoloTranslator.h"
+#include "ui/widgets/AppIcons.h"
+#include "ui/widgets/SessionClipboard.h"
 #include "ui/widgets/TranslationEdit.h"
 
 class QActionGroup;
@@ -93,13 +97,22 @@ private:
     void syncApiPresetMenu();
     void applyAlwaysOnTop(bool onTop);
     void applyEditorFonts();
-    void applyClipboardMonitoring(bool enabled);
+    void applyClipboardWatching();
+    // Switches YOLO mode for this run of the application; it is not a stored
+    // setting.
+    void applyYoloMode(bool enabled);
 
     TranslationContext currentContext() const;
     void setBusy(bool busy);
     void translateClipboard();
-    void translatePendingClipboard();
-    void applyClipboardText(const QString& text);
+    void takeClipboardText();
+    void onClipboardTimeout();
+    void writeClipboard(const QString& text);
+    bool clipboardTextIsNew(const QString& text) const;
+    void stopTranslations();
+    void stopAllTranslations();
+    void updateStopAction();
+    void updateTrayIcon();
 
     // The pane grows while a translation streams; closing the run turns it into
     // one undo entry.
@@ -123,7 +136,9 @@ private:
     QAction* m_stopAction = nullptr;
     QAction* m_autoTranslateAction = nullptr;
     QAction* m_onTopAction = nullptr;
+    QAction* m_notificationsAction = nullptr;
     QAction* m_clipboardAction = nullptr;
+    QAction* m_yoloAction = nullptr;
     QAction* m_documentAction = nullptr;
     QAction* m_exportAction = nullptr;
     QAction* m_historyAction = nullptr;
@@ -143,6 +158,8 @@ private:
     QAction* m_trayExitAction = nullptr;
     QAction* m_trayShowHideAction = nullptr;
     QAction* m_trayTranslateClipAction = nullptr;
+    QAction* m_trayDocumentAction = nullptr;
+    QAction* m_trayStopAction = nullptr;
 
     QMenu* m_fileMenu = nullptr;
     QMenu* m_editMenu = nullptr;
@@ -160,13 +177,23 @@ private:
     // Parentless, so it is a peer of this window rather than a transient on top.
     std::unique_ptr<DocumentTranslationWindow> m_documentWindow;
     TranslationEngine m_engine;
+    YoloTranslator m_yolo;
+    // Declared in teardown order: the watcher goes before the translators whose
+    // cancellation still moves the shared pool.
+    TranslationActivity m_activity;
     HistoryManager m_history;
     QSystemTrayIcon* m_tray = nullptr;
+    // Fixed for the session, so every tray icon comes from the same family.
+    TrayIcons::Family m_trayFamily = TrayIcons::Family::App;
     CandidatePopup* m_popup = nullptr;
     Status m_status = Status::Ready;
     QString m_statusArgument;
     ApiClient::Error m_statusFailure;
-    QString m_lastClipboard;
+    // Text the clipboard last carried in and the text this application last wrote; a
+    // change matching either is not new work.
+    QString m_clipboardSeen;
+    QString m_clipboardWritten;
+    SessionClipboard m_clipboard;
     bool m_clipboardReadPending = false;
     // Translation the popup's replacement spans were resolved against.
     QString m_candidateOrigin;

@@ -13,8 +13,10 @@ set(RIIPL_TEST_SUITES
     tst_promptbuilder
     tst_singleinstance
     tst_textutils
+    tst_translationactivity
     tst_translationengine
     tst_translationpool
+    tst_yolotranslator
 )
 
 foreach(suite IN LISTS RIIPL_TEST_SUITES)

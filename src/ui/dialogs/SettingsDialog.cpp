@@ -65,7 +65,7 @@ const QVector<TemplateInfo>& templateInfos()
         {Keys::promptBackground, QT_TRANSLATE_NOOP("SettingsDialog", "Background")},
         {Keys::promptGlossary, QT_TRANSLATE_NOOP("SettingsDialog", "Glossary")},
         {Keys::promptDefault, QT_TRANSLATE_NOOP("SettingsDialog", "Default instruction")},
-        {Keys::promptDocument, QT_TRANSLATE_NOOP("SettingsDialog", "Document translation")},
+        {Keys::promptDocument, QT_TRANSLATE_NOOP("SettingsDialog", "Document/YOLO")},
         {Keys::promptCandidate, QT_TRANSLATE_NOOP("SettingsDialog", "Candidate wording")},
         {Keys::promptCandidateShort,
          QT_TRANSLATE_NOOP("SettingsDialog", "Candidate wording (short text)")}
@@ -651,17 +651,19 @@ QWidget* SettingsDialog::createInterfacePage()
     bindText([languageCombo]() { languageCombo->setItems(uiLanguageItems()); });
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Interface language"), languageCombo);
 
-    auto* onTopCheck = new ConfigCheckBox(Keys::uiAlwaysOnTop, page);
-    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Keep window on top"), onTopCheck);
+    auto* monitorCheck = new ConfigCheckBox(Keys::clipboardMonitor, page);
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Monitor clipboard"), monitorCheck);
+
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Enable notifications"),
+                  new ConfigCheckBox(Keys::uiNotifications, page));
 
     auto* trayCheck = new ConfigCheckBox(Keys::uiMinimizeToTray, page);
-    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Minimize to tray on close"), trayCheck);
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Minimize to tray"), trayCheck);
+
+    auto* onTopCheck = new ConfigCheckBox(Keys::uiAlwaysOnTop, page);
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Always on top"), onTopCheck);
 
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Font size"), new ConfigSpinBox(Keys::uiFontSize, 8, 24, 1, page));
-
-    auto* monitorCheck = new ConfigCheckBox(Keys::clipboardMonitor, page);
-    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Monitor clipboard and translate automatically"), monitorCheck);
-    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Monitor delay (ms)"), new ConfigSpinBox(Keys::clipboardDelayMs, 100, 5000, 50, page));
     return page;
 }
 
