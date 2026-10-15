@@ -108,7 +108,7 @@ private:
     void takeClipboardText();
     void onClipboardTimeout();
     void writeClipboard(const QString& text);
-    bool clipboardTextIsNew(const QString& text) const;
+    bool clipboardTextIsNewWork(const QString& text) const;
     void stopTranslations();
     void stopAllTranslations();
     void updateStopAction();
@@ -189,9 +189,8 @@ private:
     Status m_status = Status::Ready;
     QString m_statusArgument;
     ApiClient::Error m_statusFailure;
-    // Text the clipboard last carried in and the text this application last wrote; a
-    // change matching either is not new work.
-    QString m_clipboardSeen;
+    // Text this application last wrote, without the blanks around it; a clipboard
+    // change carrying it is not new work.
     QString m_clipboardWritten;
     SessionClipboard m_clipboard;
     bool m_clipboardReadPending = false;

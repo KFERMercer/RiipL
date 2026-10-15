@@ -112,7 +112,7 @@ bool SessionClipboard::serviceCarriesClipboard() const
 QString SessionClipboard::text() const
 {
     if (!serviceCarriesClipboard())
-        return QGuiApplication::clipboard()->text().trimmed();
+        return QGuiApplication::clipboard()->text();
 
     const QDBusMessage answer = QDBusConnection::sessionBus().call(
         methodCall(QStringLiteral("getClipboardContents")), QDBus::Block, kCallTimeoutMs);
@@ -123,7 +123,7 @@ QString SessionClipboard::text() const
     if (answer.arguments().isEmpty())
         return QString();
     const QString text = answer.arguments().constFirst().toString();
-    return isImagePlaceholder(text) ? QString() : text.trimmed();
+    return isImagePlaceholder(text) ? QString() : text;
 }
 
 void SessionClipboard::setText(const QString& text)

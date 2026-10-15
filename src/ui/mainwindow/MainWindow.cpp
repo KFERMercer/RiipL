@@ -41,6 +41,7 @@
 #include <QSaveFile>
 #include <QSplitter>
 #include <QStatusBar>
+#include <QStringView>
 #include <QSystemTrayIcon>
 #include <QTimer>
 #include <QToolBar>
@@ -92,6 +93,11 @@ private:
     QString m_after;
     bool m_applied = true;
 };
+
+bool carriesText(const QString& text)
+{
+    return !QStringView(text).trimmed().isEmpty();
+}
 
 }
 
@@ -204,9 +210,6 @@ MainWindow::MainWindow(QWidget* parent)
             m_tray->showMessage(tr("YOLO"), notice, QApplication::windowIcon());
         }
     });
-    // A run that ends without a translation frees its text to be asked for again.
-    connect(&m_yolo, &YoloTranslator::failed, this, [this]() { m_clipboardSeen.clear(); });
-    connect(&m_yolo, &YoloTranslator::stopped, this, [this]() { m_clipboardSeen.clear(); });
     connect(&m_engine, &TranslationEngine::stateChanged, this, &MainWindow::updateStopAction);
     connect(&m_yolo, &YoloTranslator::translated, this, &MainWindow::updateStopAction);
     connect(&m_yolo, &YoloTranslator::failed, this, &MainWindow::updateStopAction);
@@ -711,13 +714,13 @@ void MainWindow::applyYoloMode(bool enabled)
     if (!enabled)
         return;
     // A switch turned on translates the text the clipboard already carries.
-    m_clipboardSeen.clear();
     m_clipboardTimer->start();
 }
 
-bool MainWindow::clipboardTextIsNew(const QString& text) const
+bool MainWindow::clipboardTextIsNewWork(const QString& text) const
 {
-    return !text.isEmpty() && text != m_clipboardSeen && text != m_clipboardWritten;
+    const QStringView candidate = QStringView(text).trimmed();
+    return !candidate.isEmpty() && candidate != m_clipboardWritten;
 }
 
 void MainWindow::onConfigChanged(const QString& key)
@@ -792,8 +795,7 @@ void MainWindow::onSourceChanged()
 void MainWindow::translateNow()
 {
     m_debounce->stop();
-    const QString text = m_sourceEdit->toPlainText().trimmed();
-    if (text.isEmpty()) {
+    if (!carriesText(m_sourceEdit->toPlainText())) {
         setStatus(Status::EmptySource);
         return;
     }
@@ -897,7 +899,7 @@ void MainWindow::swapLanguages()
 void MainWindow::pasteSource()
 {
     const QString text = m_clipboard.text();
-    if (!text.isEmpty())
+    if (carriesText(text))
         m_sourceEdit->setPlainText(text);
     m_sourceEdit->setFocus();
 }
@@ -905,9 +907,8 @@ void MainWindow::pasteSource()
 void MainWindow::onClipboardTimeout()
 {
     const QString text = m_clipboard.text();
-    if (!clipboardTextIsNew(text))
+    if (!clipboardTextIsNewWork(text))
         return;
-    m_clipboardSeen = text;
     if (m_clipboardAction->isChecked())
         m_sourceEdit->setPlainText(text);
     if (m_yoloAction->isChecked()) {
@@ -931,11 +932,10 @@ void MainWindow::translateClipboard()
 void MainWindow::takeClipboardText()
 {
     const QString text = m_clipboard.text();
-    if (text.isEmpty()) {
+    if (!carriesText(text)) {
         m_clipboardReadPending = true;
         return;
     }
-    m_clipboardSeen = text;
     m_sourceEdit->setPlainText(text);
     translateNow();
 }

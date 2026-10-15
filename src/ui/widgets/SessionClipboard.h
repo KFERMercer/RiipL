@@ -18,7 +18,7 @@ class SessionClipboard : public QObject
 public:
     explicit SessionClipboard(QObject* parent = nullptr);
 
-    // Trimmed; empty when the clipboard holds no text.
+    // Untrimmed; empty when the route carries no text.
     QString text() const;
     void setText(const QString& text);
 
