@@ -3,6 +3,7 @@
 #include "core/config/Preset.h"
 #include "core/config/ConfigManager.h"
 #include "core/document/DocumentCache.h"
+#include "ui/dialogs/ContextPresetDialog.h"
 #include "ui/widgets/AppFonts.h"
 #include "ui/widgets/ConfigEditors.h"
 #include "ui/widgets/StatusPresenter.h"
@@ -18,6 +19,7 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QFrame>
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QKeySequence>
@@ -60,9 +62,18 @@ DocumentTranslationWindow::DocumentTranslationWindow(ContextProvider context)
     layout->addLayout(fileRow);
 
     auto* optionsRow = new QHBoxLayout();
+    m_contextAction = new QAction(this);
+    auto* contextButton = new QToolButton(this);
+    contextButton->setDefaultAction(m_contextAction);
+    contextButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    auto* optionsSeparator = new QFrame(this);
+    optionsSeparator->setFrameShape(QFrame::VLine);
+    optionsSeparator->setFrameShadow(QFrame::Sunken);
     m_apiPreset = new QComboBox(this);
     m_tone = new QComboBox(this);
     m_targetLang = new QComboBox(this);
+    optionsRow->addWidget(contextButton);
+    optionsRow->addWidget(optionsSeparator);
     optionsRow->addWidget(m_apiPreset, 1);
     optionsRow->addWidget(m_tone, 1);
     optionsRow->addWidget(m_targetLang, 1);
@@ -118,6 +129,8 @@ DocumentTranslationWindow::DocumentTranslationWindow(ContextProvider context)
     connect(m_exportButton, &QPushButton::clicked, this,
             &DocumentTranslationWindow::exportResult);
     connect(m_closeButton, &QPushButton::clicked, this, &QWidget::close);
+    connect(m_contextAction, &QAction::triggered, this,
+            [this]() { ContextPresetDialog::manage(this); });
 
     connect(m_apiPreset, &QComboBox::currentIndexChanged, this, [this](int index) {
         const QVector<Preset> presets = storedApiPresets();
@@ -190,6 +203,8 @@ void DocumentTranslationWindow::retranslateUi()
     m_stopAction->setToolTip(tr("Stop translation"));
     m_exportButton->setText(tr("Export translation..."));
     m_closeButton->setText(tr("Close"));
+    m_contextAction->setText(tr("Context"));
+    m_contextAction->setToolTip(tr("Manage context presets"));
     m_apiPreset->setAccessibleName(tr("API preset"));
     m_tone->setAccessibleName(tr("Tone"));
     m_targetLang->setAccessibleName(tr("Target language"));
@@ -247,6 +262,7 @@ void DocumentTranslationWindow::populateTargetLanguages()
 void DocumentTranslationWindow::updateOptionsEnabled()
 {
     const bool editable = !m_running;
+    m_contextAction->setEnabled(editable);
     m_apiPreset->setEnabled(editable && m_apiPreset->count() > 0);
     m_tone->setEnabled(editable);
     m_targetLang->setEnabled(editable);

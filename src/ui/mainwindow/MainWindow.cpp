@@ -460,8 +460,8 @@ void MainWindow::buildMenus()
     m_glossaryAction = m_editMenu->addAction(QString());
     m_toneAction = m_editMenu->addAction(QString());
     m_historyAction = m_editMenu->addAction(QString());
-    m_apiPresetAction = m_editMenu->addAction(QString());
     m_contextPresetAction = m_editMenu->addAction(QString());
+    m_apiPresetAction = m_editMenu->addAction(QString());
 
     m_viewMenu = menuBar()->addMenu(QString());
     m_onTopAction = m_viewMenu->addAction(QString());
@@ -523,7 +523,7 @@ void MainWindow::buildMenus()
     m_toolBar->addSeparator();
     // The buttons between the separators are the ones the toolbar popup toggles.
     m_optionalToolBarButtons = {m_documentAction, m_glossaryAction, m_yoloAction,
-                                m_apiPresetAction, m_contextPresetAction, m_historyAction};
+                                m_contextPresetAction, m_apiPresetAction, m_historyAction};
     for (QAction* button : m_optionalToolBarButtons)
         m_toolBar->addAction(button);
     m_settingsSeparator = m_toolBar->addSeparator();
@@ -531,7 +531,6 @@ void MainWindow::buildMenus()
 
     setToolBarButtonVisible(m_glossaryAction, false);
     setToolBarButtonVisible(m_apiPresetAction, false);
-    setToolBarButtonVisible(m_contextPresetAction, false);
 
     connect(m_autoTranslateAction, &QAction::toggled, this, [this](bool checked) {
         ConfigManager::instance()->setValue(Keys::uiAutoTranslate, checked);
@@ -1196,10 +1195,10 @@ void MainWindow::retranslateUi()
     m_toneAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+T")));
     m_historyAction->setText(tr("History..."));
     m_historyAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+H")));
-    m_apiPresetAction->setText(tr("Manage API presets..."));
-    m_apiPresetAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+P")));
     m_contextPresetAction->setText(tr("Manage context presets..."));
-    m_contextPresetAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+P")));
+    m_contextPresetAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+P")));
+    m_apiPresetAction->setText(tr("Manage API presets..."));
+    m_apiPresetAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+P")));
 
     m_viewMenu->setTitle(tr("&View"));
     m_onTopAction->setText(tr("Always on top"));
@@ -1231,8 +1230,8 @@ void MainWindow::retranslateUi()
     m_settingsAction->setIconText(tr("Settings"));
     m_yoloAction->setIconText(tr("YOLO"));
     m_glossaryAction->setIconText(tr("Glossary"));
+    m_contextPresetAction->setIconText(tr("Context"));
     m_apiPresetAction->setIconText(tr("API preset"));
-    m_contextPresetAction->setIconText(tr("Context preset"));
     m_stopAction->setToolTip(tr("Stop translation"));
     m_documentAction->setToolTip(tr("Document translation"));
     m_historyAction->setToolTip(tr("Translation history"));

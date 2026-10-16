@@ -91,6 +91,7 @@ private:
     QString m_resultLang;
     QLineEdit* m_pathEdit = nullptr;
     QPushButton* m_browseButton = nullptr;
+    QAction* m_contextAction = nullptr;
     QComboBox* m_apiPreset = nullptr;
     QComboBox* m_tone = nullptr;
     QComboBox* m_targetLang = nullptr;
