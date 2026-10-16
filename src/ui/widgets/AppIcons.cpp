@@ -2,13 +2,13 @@
 
 #include <QApplication>
 #include <QHash>
+#include <QIconEngine>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPalette>
 #include <QPen>
 #include <QString>
 #include <QStyle>
-#include <functional>
 
 namespace {
 
@@ -51,53 +51,75 @@ QIcon cachedTrayIcon(const QString& path)
     return *icons.insert(path, QIcon(path));
 }
 
-QIcon build(const std::function<void(QPainter&, const QRectF&)>& render)
+void paintSwapGlyph(QPainter& painter, const QRectF& rect, const QColor& ink)
 {
-    // Rendered once at high resolution; QIcon scales the result down for every
-    // requested logical size and device pixel ratio.
-    constexpr int kSourceSize = 96;
-    QPixmap pixmap(kSourceSize, kSourceSize);
-    pixmap.fill(Qt::transparent);
-    QPainter painter(&pixmap);
-    painter.setRenderHint(QPainter::Antialiasing);
-    painter.setBrush(QApplication::palette().color(QPalette::ButtonText));
-    render(painter, QRectF(0, 0, kSourceSize, kSourceSize));
-    painter.end();
-    return QIcon(pixmap);
+    constexpr qreal kStagger = 2.0;
+    const qreal u = rect.width() / 24;
+    const auto point = [&](qreal gx, qreal gy) {
+        return QPointF(rect.left() + gx * u, rect.top() + gy * u);
+    };
+
+    QPen pen(ink, rect.width() * 0.085);
+    pen.setCapStyle(Qt::RoundCap);
+    pen.setJoinStyle(Qt::RoundJoin);
+
+    QPainterPath path;
+    path.moveTo(point(4 + kStagger, 7));
+    path.lineTo(point(20 + kStagger, 7));
+    path.moveTo(point(16 + kStagger, 11));
+    path.lineTo(point(20 + kStagger, 7));
+    path.lineTo(point(16 + kStagger, 3));
+
+    path.moveTo(point(20 - kStagger, 17));
+    path.lineTo(point(4 - kStagger, 17));
+    path.moveTo(point(8 - kStagger, 13));
+    path.lineTo(point(4 - kStagger, 17));
+    path.lineTo(point(8 - kStagger, 21));
+
+    painter.setPen(pen);
+    painter.setBrush(Qt::NoBrush);
+    painter.drawPath(path);
 }
+
+class SwapIconEngine : public QIconEngine
+{
+public:
+    void paint(QPainter* painter, const QRect& rect, QIcon::Mode mode, QIcon::State) override
+    {
+        painter->save();
+        painter->setRenderHint(QPainter::Antialiasing);
+        paintSwapGlyph(*painter, QRectF(rect), ink(mode));
+        painter->restore();
+    }
+
+    QPixmap pixmap(const QSize& size, QIcon::Mode mode, QIcon::State state) override
+    {
+        // The inherited implementation leaves the pixmap uninitialised.
+        QPixmap result(size);
+        result.fill(Qt::transparent);
+        QPainter painter(&result);
+        paint(&painter, QRect(QPoint(0, 0), size), mode, state);
+        return result;
+    }
+
+    QIconEngine* clone() const override { return new SwapIconEngine(*this); }
+
+    QString key() const override { return QStringLiteral("RiipLSwapIconEngine"); }
+
+private:
+    static QColor ink(QIcon::Mode mode)
+    {
+        const QPalette::ColorGroup group =
+            mode == QIcon::Disabled ? QPalette::Disabled : QPalette::Normal;
+        return QApplication::palette().color(group, QPalette::ButtonText);
+    }
+};
 
 }
 
 QIcon AppIcons::swapHorizontal()
 {
-    constexpr qreal kStagger = 2.0;
-    return build([kStagger](QPainter& p, const QRectF& r) {
-        const qreal u = r.width() / 24;
-        const auto point = [&](qreal gx, qreal gy) {
-            return QPointF(r.left() + gx * u, r.top() + gy * u);
-        };
-
-        QPen pen(p.brush(), r.width() * 0.085);
-        pen.setCapStyle(Qt::RoundCap);
-        pen.setJoinStyle(Qt::RoundJoin);
-
-        QPainterPath path;
-        path.moveTo(point(4 + kStagger, 7));
-        path.lineTo(point(20 + kStagger, 7));
-        path.moveTo(point(16 + kStagger, 11));
-        path.lineTo(point(20 + kStagger, 7));
-        path.lineTo(point(16 + kStagger, 3));
-
-        path.moveTo(point(20 - kStagger, 17));
-        path.lineTo(point(4 - kStagger, 17));
-        path.moveTo(point(8 - kStagger, 13));
-        path.lineTo(point(4 - kStagger, 17));
-        path.lineTo(point(8 - kStagger, 21));
-
-        p.setPen(pen);
-        p.setBrush(Qt::NoBrush);
-        p.drawPath(path);
-    });
+    return QIcon(new SwapIconEngine);
 }
 
 QIcon AppIcons::moveUp()
