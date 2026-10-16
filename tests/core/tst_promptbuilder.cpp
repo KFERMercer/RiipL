@@ -13,6 +13,7 @@ class TestPromptBuilder : public QObject
 private slots:
     void substitutesContextValues();
     void omitsUnsetReferenceEntries();
+    void namesExplicitSourceLanguage();
     void writesToneEntries();
     void formatsGlossaryAsJson();
     void indentsMultiLineEntries();
@@ -72,6 +73,7 @@ void TestPromptBuilder::omitsUnsetReferenceEntries()
     // cannot pollute the prompt.
     QString prompt = PromptBuilder::build(context).user;
     QVERIFY(!prompt.contains(Defaults::promptReference.trimmed()));
+    QVERIFY(!prompt.contains(QStringLiteral("- Original language:")));
     QVERIFY(!prompt.contains(QStringLiteral("- Translation tone:")));
     QVERIFY(!prompt.contains(QStringLiteral("- Language style:")));
     QVERIFY(!prompt.contains(QStringLiteral("- Background Information:")));
@@ -115,6 +117,44 @@ void TestPromptBuilder::omitsUnsetReferenceEntries()
     QVERIFY(!PromptBuilder::build(glossaryContext).user.contains(QStringLiteral("- Glossary:")));
     glossaryContext.glossaryEnabled = true;
     QVERIFY(PromptBuilder::build(glossaryContext).user.contains(QStringLiteral("- Glossary:")));
+}
+
+// An auto-detected language must never be fed back to the model.
+
+void TestPromptBuilder::namesExplicitSourceLanguage()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    ConfigManager::createInstance(TestSupport::tempDir());
+
+    TranslationContext context;
+    context.sourceText = QStringLiteral("Hello");
+    context.targetLang = QStringLiteral("zh");
+
+    QVERIFY(!PromptBuilder::build(context).user.contains(QStringLiteral("- Original language:")));
+    QVERIFY(!PromptBuilder::build(context).user.contains(QStringLiteral("the detected language")));
+
+    context.sourceLang = QStringLiteral("ja");
+    context.tone = QStringLiteral("formal");
+    QString prompt = PromptBuilder::build(context).user;
+    QVERIFY(prompt.startsWith(Defaults::promptReference.trimmed()));
+    QVERIFY(prompt.contains(QStringLiteral("- Original language: Japanese")));
+    QVERIFY(prompt.indexOf(QStringLiteral("- Original language:"))
+            < prompt.indexOf(QStringLiteral("- Translation tone:")));
+
+    context.sourceLang.clear();
+    prompt = PromptBuilder::build(context).user;
+    QVERIFY(!prompt.contains(QStringLiteral("- Original language:")));
+    QVERIFY(prompt.contains(QStringLiteral("- Translation tone:")));
+
+    context.sourceLang = QStringLiteral("fr");
+    DocumentWindowPrompt window;
+    window.lines = {QStringLiteral("Bonjour")};
+    QVERIFY(PromptBuilder::buildDocument(context, window).user
+                .contains(QStringLiteral("- Original language: French")));
+
+    ConfigManager::instance()->setValue(Keys::promptSourceLang,
+                                        QStringLiteral("- From: {source_lang}\n"));
+    QVERIFY(PromptBuilder::build(context).user.contains(QStringLiteral("- From: French")));
 }
 
 // The default tone is the absence of a tone: it stays out of the prompt like an
@@ -460,10 +500,10 @@ void TestPromptBuilder::offersEveryPlaceholderToEveryTemplate()
         tokens << QStringLiteral("{%1}").arg(placeholder);
     const QString probe = QStringLiteral("[%1]").arg(tokens.join(QStringLiteral("][")));
     const QStringList templates = {
-        Keys::promptSystem, Keys::promptReference, Keys::promptTone,
-        Keys::promptStyle, Keys::promptBackground, Keys::promptGlossary,
-        Keys::promptDefault, Keys::promptDocument, Keys::promptCandidate,
-        Keys::promptCandidateShort
+        Keys::promptSystem, Keys::promptReference, Keys::promptSourceLang,
+        Keys::promptTone, Keys::promptStyle, Keys::promptBackground,
+        Keys::promptGlossary, Keys::promptDefault, Keys::promptDocument,
+        Keys::promptCandidate, Keys::promptCandidateShort
     };
     for (const QString& key : templates) {
         ConfigManager::instance()->setValue(key, probe);

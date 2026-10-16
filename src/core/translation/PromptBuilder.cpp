@@ -179,7 +179,8 @@ QStringList PromptBuilder::referenceEntries(const TranslationContext& context,
                                             const QHash<QString, QString>& variables)
 {
     QStringList entries;
-    // The default tone is the absence of a tone, so it is skipped like an empty one.
+    if (!context.sourceLang.isEmpty() && context.sourceLang != QLatin1String("auto"))
+        entries << render(Keys::promptSourceLang, variables);
     if (!context.tone.isEmpty() && context.tone != QLatin1String("default"))
         entries << render(Keys::promptTone, variables);
     if (!context.style.isEmpty())

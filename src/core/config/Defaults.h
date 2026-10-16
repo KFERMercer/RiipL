@@ -10,6 +10,7 @@ namespace Keys {
 
 inline const QString promptSystem = QStringLiteral("prompts.system");
 inline const QString promptReference = QStringLiteral("prompts.reference");
+inline const QString promptSourceLang = QStringLiteral("prompts.source_lang");
 inline const QString promptTone = QStringLiteral("prompts.tone");
 inline const QString promptStyle = QStringLiteral("prompts.style");
 inline const QString promptBackground = QStringLiteral("prompts.background");
@@ -132,6 +133,9 @@ inline const QString promptSystem = QStringLiteral("You are a professional trans
 // A reference template renders its own label, fence and placeholder, and is
 // emitted only while its variable holds a value.
 inline const QString promptReference = R"TXT(Read the following reference information carefully and follow it strictly:
+)TXT";
+
+inline const QString promptSourceLang = R"TXT(- Original language: {source_lang}
 )TXT";
 
 inline const QString promptTone = R"TXT(- Translation tone: {tone}
@@ -281,6 +285,7 @@ inline QJsonValue value(const QString& key)
         {Keys::glossaryEntries, QJsonArray()},
         {Keys::promptSystem, promptSystem},
         {Keys::promptReference, promptReference},
+        {Keys::promptSourceLang, promptSourceLang},
         {Keys::promptTone, promptTone},
         {Keys::promptStyle, promptStyle},
         {Keys::promptBackground, promptBackground},

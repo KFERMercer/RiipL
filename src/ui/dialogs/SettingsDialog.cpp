@@ -61,6 +61,7 @@ const QVector<TemplateInfo>& templateInfos()
     static const QVector<TemplateInfo> list = {
         {Keys::promptSystem, QT_TRANSLATE_NOOP("SettingsDialog", "System prompt")},
         {Keys::promptReference, QT_TRANSLATE_NOOP("SettingsDialog", "Reference header")},
+        {Keys::promptSourceLang, QT_TRANSLATE_NOOP("SettingsDialog", "Source language")},
         {Keys::promptTone, QT_TRANSLATE_NOOP("SettingsDialog", "Tone")},
         {Keys::promptStyle, QT_TRANSLATE_NOOP("SettingsDialog", "Style")},
         {Keys::promptBackground, QT_TRANSLATE_NOOP("SettingsDialog", "Background")},
