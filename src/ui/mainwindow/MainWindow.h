@@ -155,6 +155,7 @@ private:
     QAction* m_glossaryAction = nullptr;
     QAction* m_toneAction = nullptr;
     QAction* m_apiPresetAction = nullptr;
+    QAction* m_contextPresetAction = nullptr;
     QAction* m_swapAction = nullptr;
     QAction* m_clearAction = nullptr;
     QAction* m_pasteAction = nullptr;

@@ -64,7 +64,7 @@ set(CORE_SOURCES
 set(CORE_HEADERS
     src/core/config/Defaults.h
     src/core/config/ConfigManager.h
-    src/core/config/ApiPreset.h
+    src/core/config/Preset.h
     src/core/document/DocumentCache.h
     src/core/document/DocumentSegmenter.h
     src/core/network/ApiClient.h
@@ -89,6 +89,8 @@ set(UI_SOURCES
     src/main.cpp
     src/ui/mainwindow/MainWindow.cpp
     src/ui/widgets/ConfigEditors.cpp
+    src/ui/widgets/PresetBar.cpp
+    src/ui/widgets/PresetListEditor.cpp
     src/ui/widgets/TranslationEdit.cpp
     src/ui/widgets/CandidatePopup.cpp
     src/ui/widgets/AppIcons.cpp
@@ -100,6 +102,7 @@ set(UI_SOURCES
     src/ui/widgets/WindowState.cpp
     src/ui/dialogs/SettingsDialog.cpp
     src/ui/dialogs/ApiPresetDialog.cpp
+    src/ui/dialogs/ContextPresetDialog.cpp
     src/ui/dialogs/GlossaryDialog.cpp
     src/ui/dialogs/ToneDialog.cpp
     src/ui/dialogs/PromptPreviewDialog.cpp
@@ -109,6 +112,8 @@ set(UI_SOURCES
 set(UI_HEADERS
     src/ui/mainwindow/MainWindow.h
     src/ui/widgets/ConfigEditors.h
+    src/ui/widgets/PresetBar.h
+    src/ui/widgets/PresetListEditor.h
     src/ui/widgets/TranslationEdit.h
     src/ui/widgets/CandidatePopup.h
     src/ui/widgets/AppIcons.h
@@ -120,6 +125,7 @@ set(UI_HEADERS
     src/ui/widgets/WindowState.h
     src/ui/dialogs/SettingsDialog.h
     src/ui/dialogs/ApiPresetDialog.h
+    src/ui/dialogs/ContextPresetDialog.h
     src/ui/dialogs/GlossaryDialog.h
     src/ui/dialogs/ToneDialog.h
     src/ui/dialogs/PromptPreviewDialog.h

@@ -1,6 +1,6 @@
 #include "DocumentTranslationWindow.h"
 
-#include "core/config/ApiPreset.h"
+#include "core/config/Preset.h"
 #include "core/config/ConfigManager.h"
 #include "core/document/DocumentCache.h"
 #include "ui/widgets/AppFonts.h"
@@ -35,9 +35,9 @@
 
 namespace {
 
-QVector<ApiPreset> storedApiPresets()
+QVector<Preset> storedApiPresets()
 {
-    return ApiPresets::fromJson(ConfigManager::instance()->value(Keys::apiPresets).toArray());
+    return Presets::fromJson(ConfigManager::instance()->value(Keys::apiPresets).toArray());
 }
 
 }
@@ -120,9 +120,9 @@ DocumentTranslationWindow::DocumentTranslationWindow(ContextProvider context)
     connect(m_closeButton, &QPushButton::clicked, this, &QWidget::close);
 
     connect(m_apiPreset, &QComboBox::currentIndexChanged, this, [this](int index) {
-        const QVector<ApiPreset> presets = storedApiPresets();
+        const QVector<Preset> presets = storedApiPresets();
         if (index >= 0 && index < presets.size())
-            ApiPresets::apply(presets.at(index));
+            Presets::apply(presets.at(index), Keys::apiPresetFields());
     });
     connect(m_tone, &QComboBox::currentIndexChanged, this, [this](int index) {
         ConfigManager::instance()->setValue(Keys::translationTone,
@@ -202,11 +202,11 @@ void DocumentTranslationWindow::retranslateUi()
 
 void DocumentTranslationWindow::populateApiPresets()
 {
-    const QVector<ApiPreset> presets = storedApiPresets();
+    const QVector<Preset> presets = storedApiPresets();
     {
         QSignalBlocker blocker(m_apiPreset);
         m_apiPreset->clear();
-        for (const ApiPreset& preset : presets)
+        for (const Preset& preset : presets)
             m_apiPreset->addItem(preset.name, preset.name);
         m_apiPreset->setPlaceholderText(presets.isEmpty() ? tr("No presets") : tr("Custom"));
     }
@@ -217,8 +217,9 @@ void DocumentTranslationWindow::populateApiPresets()
 void DocumentTranslationWindow::syncApiPreset()
 {
     QSignalBlocker blocker(m_apiPreset);
+    const QStringList fields = Keys::apiPresetFields();
     m_apiPreset->setCurrentIndex(
-        ApiPresets::matchValues(storedApiPresets(), ApiPresets::capture()));
+        Presets::matchValues(storedApiPresets(), Presets::capture(fields), fields));
 }
 
 void DocumentTranslationWindow::populateTones()

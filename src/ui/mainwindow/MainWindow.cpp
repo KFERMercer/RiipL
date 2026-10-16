@@ -3,6 +3,7 @@
 #include "ui/widgets/CandidatePopup.h"
 #include "ui/windows/DocumentTranslationWindow.h"
 #include "ui/dialogs/ApiPresetDialog.h"
+#include "ui/dialogs/ContextPresetDialog.h"
 #include "ui/dialogs/GlossaryDialog.h"
 #include "ui/dialogs/HistoryDialog.h"
 #include "ui/dialogs/SettingsDialog.h"
@@ -14,7 +15,7 @@
 #include "ui/widgets/TranslationEdit.h"
 #include "ui/widgets/ConfigEditors.h"
 #include "ui/widgets/WindowState.h"
-#include "core/config/ApiPreset.h"
+#include "core/config/Preset.h"
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
 #include "core/models/Glossary.h"
@@ -460,6 +461,7 @@ void MainWindow::buildMenus()
     m_toneAction = m_editMenu->addAction(QString());
     m_historyAction = m_editMenu->addAction(QString());
     m_apiPresetAction = m_editMenu->addAction(QString());
+    m_contextPresetAction = m_editMenu->addAction(QString());
 
     m_viewMenu = menuBar()->addMenu(QString());
     m_onTopAction = m_viewMenu->addAction(QString());
@@ -521,7 +523,7 @@ void MainWindow::buildMenus()
     m_toolBar->addSeparator();
     // The buttons between the separators are the ones the toolbar popup toggles.
     m_optionalToolBarButtons = {m_documentAction, m_glossaryAction, m_yoloAction,
-                                m_apiPresetAction, m_historyAction};
+                                m_apiPresetAction, m_contextPresetAction, m_historyAction};
     for (QAction* button : m_optionalToolBarButtons)
         m_toolBar->addAction(button);
     m_settingsSeparator = m_toolBar->addSeparator();
@@ -529,6 +531,7 @@ void MainWindow::buildMenus()
 
     setToolBarButtonVisible(m_glossaryAction, false);
     setToolBarButtonVisible(m_apiPresetAction, false);
+    setToolBarButtonVisible(m_contextPresetAction, false);
 
     connect(m_autoTranslateAction, &QAction::toggled, this, [this](bool checked) {
         ConfigManager::instance()->setValue(Keys::uiAutoTranslate, checked);
@@ -559,6 +562,8 @@ void MainWindow::buildMenus()
     connect(m_historyAction, &QAction::triggered, this, &MainWindow::showHistoryDialog);
     connect(m_apiPresetAction, &QAction::triggered, this,
             [this]() { ApiPresetDialog::manage(this); });
+    connect(m_contextPresetAction, &QAction::triggered, this,
+            [this]() { ContextPresetDialog::manage(this); });
     connect(m_settingsAction, &QAction::triggered, this, &MainWindow::showSettingsDialog);
     connect(m_aboutAction, &QAction::triggered, this, [this]() {
         QMessageBox::about(this, tr("About %1").arg(QCoreApplication::applicationName()),
@@ -697,14 +702,15 @@ void MainWindow::rebuildApiPresetMenu()
     if (!m_apiPresetMenu)
         return;
     m_apiPresetMenu->clear();
-    const QVector<ApiPreset> presets =
-        ApiPresets::fromJson(ConfigManager::instance()->value(Keys::apiPresets).toArray());
-    for (const ApiPreset& preset : presets) {
+    const QVector<Preset> presets =
+        Presets::fromJson(ConfigManager::instance()->value(Keys::apiPresets).toArray());
+    for (const Preset& preset : presets) {
         QAction* action = m_apiPresetMenu->addAction(preset.name);
         action->setData(preset.name);
         action->setCheckable(true);
         m_apiPresetGroup->addAction(action);
-        connect(action, &QAction::triggered, this, [preset]() { ApiPresets::apply(preset); });
+        connect(action, &QAction::triggered, this,
+                 [preset]() { Presets::apply(preset, Keys::apiPresetFields()); });
     }
     // An empty submenu opens as a blank popup and reads as a broken control, so
     // a disabled entry explains the state instead.
@@ -723,9 +729,10 @@ void MainWindow::syncApiPresetMenu()
 {
     if (!m_apiPresetMenu)
         return;
-    const QVector<ApiPreset> presets =
-        ApiPresets::fromJson(ConfigManager::instance()->value(Keys::apiPresets).toArray());
-    const int matched = ApiPresets::matchValues(presets, ApiPresets::capture());
+    const QVector<Preset> presets =
+        Presets::fromJson(ConfigManager::instance()->value(Keys::apiPresets).toArray());
+    const int matched = Presets::matchValues(presets, Presets::capture(Keys::apiPresetFields()),
+                                            Keys::apiPresetFields());
     const QString current = matched >= 0 ? presets.at(matched).name : QString();
     const auto actions = m_apiPresetMenu->actions();
     for (QAction* action : actions) {
@@ -821,7 +828,7 @@ void MainWindow::onConfigChanged(const QString& key)
     } else if (key == Keys::apiPresets) {
         rebuildApiPresetMenu();
     } else if (Keys::apiPresetFields().contains(key)) {
-        // ApiPresets::apply() writes one changed() per field, so the selection is
+        // Presets::apply() writes one changed() per field, so the selection is
         // re-derived on each; the last one settles it.
         syncApiPresetMenu();
     }
@@ -1191,6 +1198,8 @@ void MainWindow::retranslateUi()
     m_historyAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+H")));
     m_apiPresetAction->setText(tr("Manage API presets..."));
     m_apiPresetAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+P")));
+    m_contextPresetAction->setText(tr("Manage context presets..."));
+    m_contextPresetAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+P")));
 
     m_viewMenu->setTitle(tr("&View"));
     m_onTopAction->setText(tr("Always on top"));
@@ -1223,11 +1232,13 @@ void MainWindow::retranslateUi()
     m_yoloAction->setIconText(tr("YOLO"));
     m_glossaryAction->setIconText(tr("Glossary"));
     m_apiPresetAction->setIconText(tr("API preset"));
+    m_contextPresetAction->setIconText(tr("Context preset"));
     m_stopAction->setToolTip(tr("Stop translation"));
     m_documentAction->setToolTip(tr("Document translation"));
     m_historyAction->setToolTip(tr("Translation history"));
     m_yoloAction->setToolTip(tr("Translate the clipboard as it changes and write the result back to it"));
     m_glossaryAction->setToolTip(tr("Manage glossary"));
+    m_contextPresetAction->setToolTip(tr("Manage context presets"));
     m_settingsAction->setToolTip(tr("Open settings"));
     m_undoAction->setText(tr("Restore previous translation"));
     m_redoAction->setText(tr("Redo translation"));

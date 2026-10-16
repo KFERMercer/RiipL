@@ -3,7 +3,6 @@ set(RIIPL_TEST_SUITES
     tst_apiclient
     tst_applog
     tst_apptranslator
-    tst_apipresets
     tst_configmanager
     tst_documentcache
     tst_documentsegmenter
@@ -12,6 +11,7 @@ set(RIIPL_TEST_SUITES
     tst_historymanager
     tst_languages
     tst_promptbuilder
+    tst_preset
     tst_singleinstance
     tst_textutils
     tst_translationactivity

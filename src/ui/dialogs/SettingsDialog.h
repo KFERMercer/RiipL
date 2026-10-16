@@ -4,16 +4,18 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QString>
+#include <QStringList>
 #include <QTabWidget>
 #include <QVector>
 
 #include <functional>
+#include <optional>
 
-#include "core/config/ApiPreset.h"
+#include "core/config/Preset.h"
 #include "core/network/ApiClient.h"
+#include "ui/widgets/PresetBar.h"
 
 class ConfigEditableComboBox;
-class QComboBox;
 class QFormLayout;
 class QLabel;
 class QLayout;
@@ -42,13 +44,7 @@ protected:
 private slots:
     void updateDirtyState();
     void applyChanges();
-    void reloadPresets();
     void reloadModels();
-    void applySelectedPreset(int index);
-    void newPreset();
-    void overwritePreset();
-    void savePreset();
-    void managePresets();
 
 private:
     QWidget* createApiPage();
@@ -71,22 +67,24 @@ private:
     static QWidget* fieldWithHint(QWidget* field, QLabel* hint);
 
     bool isDirty() const;
-    bool canSavePreset() const;
-    bool hasPendingApiEdits() const;
     bool confirmDiscard(const QString& title, const QString& text,
                         const QString& informativeText = QString());
-    QJsonObject editedApiValues() const;
-    void applyPresetValues(const ApiPreset& preset);
+    // Values the editors of \p fields hold right now, pending edits included.
+    QJsonObject editedValues(const QStringList& fields) const;
+    // Loads \p preset into the editors of \p fields; a field the preset does not
+    // carry falls back to its default.
+    void applyPresetValues(const Preset& preset, const QStringList& fields);
+    // Wires \p bar to the editors of \p fields and to the presets it stores;
+    // \p manage runs the bar's Manage... action.
+    void setupPresetBar(PresetBar* bar, const QStringList& fields,
+                        std::function<std::optional<PresetBar::Managed>(const QVector<Preset>&, int)> manage);
 
-    QComboBox* m_presetCombo = nullptr;
-    QPushButton* m_overwriteButton = nullptr;
+    PresetBar* m_apiPresetBar = nullptr;
+    PresetBar* m_contextPresetBar = nullptr;
     ConfigEditableComboBox* m_modelCombo = nullptr;
     // Its own client, so listing models never disturbs a running translation.
     ApiClient m_apiClient;
-    // Preset the API fields belong to, or -1 for custom settings, held across edits.
-    int m_selectedPreset = -1;
     QJsonArray m_customTones;
-    QVector<ApiPreset> m_apiPresets;
     QPushButton* m_applyButton = nullptr;
     HistoryManager* m_history = nullptr;
     QTabWidget* m_tabs = nullptr;

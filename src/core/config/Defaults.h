@@ -71,6 +71,14 @@ inline const QString translationCustomTones = QStringLiteral("translation.custom
 inline const QString translationStyle = QStringLiteral("translation.style");
 inline const QString translationBackground = QStringLiteral("translation.background");
 
+inline const QString contextPresets = QStringLiteral("context.presets");
+// Fields a context preset captures, in settings-page order.
+inline const QStringList& contextPresetFields()
+{
+    static const QStringList fields = {translationStyle, translationBackground};
+    return fields;
+}
+
 inline const QString documentWindowWords = QStringLiteral("document.window_words");
 inline const QString documentWindowLines = QStringLiteral("document.window_lines");
 inline const QString documentRetryCount = QStringLiteral("document.retry_count");
@@ -273,6 +281,7 @@ inline QJsonValue value(const QString& key)
         {Keys::translationCustomTones, QJsonArray()},
         {Keys::translationStyle, translationStyle},
         {Keys::translationBackground, translationBackground},
+        {Keys::contextPresets, QJsonArray()},
         {Keys::documentWindowWords, documentWindowWords},
         {Keys::documentWindowLines, documentWindowLines},
         {Keys::documentRetryCount, documentRetryCount},

@@ -1,6 +1,7 @@
 #include "SettingsDialog.h"
 
 #include "ApiPresetDialog.h"
+#include "ContextPresetDialog.h"
 #include "GlossaryDialog.h"
 #include "PromptPreviewDialog.h"
 #include "ToneDialog.h"
@@ -22,14 +23,12 @@
 #include <QApplication>
 #include <QCoreApplication>
 #include <QClipboard>
-#include <QComboBox>
 #include <QCursor>
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
-#include <QInputDialog>
 #include <QJsonDocument>
 #include <QLabel>
 #include <QLineEdit>
@@ -43,6 +42,7 @@
 #include <QToolButton>
 #include <QToolTip>
 #include <QVBoxLayout>
+#include <optional>
 #include <utility>
 
 namespace {
@@ -82,7 +82,6 @@ SettingsDialog::SettingsDialog(HistoryManager* history, QWidget* parent)
     , m_history(history)
 {
     m_customTones = ConfigManager::instance()->value(Keys::translationCustomTones).toArray();
-    m_apiPresets = ApiPresets::fromJson(ConfigManager::instance()->value(Keys::apiPresets).toArray());
 
     auto* layout = new QVBoxLayout(this);
     m_tabs = new QTabWidget(this);
@@ -173,6 +172,8 @@ void SettingsDialog::retranslateUi()
         apply();
     for (ConfigEditor* editor : findChildren<ConfigEditor*>())
         editor->retranslateUi();
+    for (PresetBar* bar : findChildren<PresetBar*>())
+        bar->retranslateUi();
     updateDirtyState();
 }
 
@@ -208,12 +209,10 @@ void SettingsDialog::reject()
 void SettingsDialog::updateDirtyState()
 {
     m_applyButton->setEnabled(isDirty());
-    if (!m_overwriteButton)
+    if (!m_apiPresetBar || !m_contextPresetBar)
         return;
-    m_overwriteButton->setEnabled(canSavePreset());
-    m_overwriteButton->setToolTip(m_selectedPreset >= 0 && m_selectedPreset < m_apiPresets.size()
-            ? tr("Overwrite \"%1\" with the current API settings").arg(m_apiPresets.at(m_selectedPreset).name)
-            : tr("Save the current API settings as a new preset"));
+    m_apiPresetBar->refreshActions();
+    m_contextPresetBar->refreshActions();
 }
 
 bool SettingsDialog::isDirty() const
@@ -221,32 +220,12 @@ bool SettingsDialog::isDirty() const
     ConfigManager* config = ConfigManager::instance();
     if (QJsonValue(m_customTones) != config->value(Keys::translationCustomTones))
         return true;
-    if (QJsonValue(ApiPresets::toJson(m_apiPresets)) != config->value(Keys::apiPresets))
+    if ((m_apiPresetBar && m_apiPresetBar->isDirty())
+        || (m_contextPresetBar && m_contextPresetBar->isDirty())) {
         return true;
+    }
     for (const ConfigEditor* editor : findChildren<ConfigEditor*>()) {
         if (editor->isModified())
-            return true;
-    }
-    return false;
-}
-
-// Follows the rule Apply uses: the button is offered only while it would change
-// something.
-bool SettingsDialog::canSavePreset() const
-{
-    const QJsonObject edited = editedApiValues();
-    if (m_selectedPreset >= 0 && m_selectedPreset < m_apiPresets.size()) {
-        return ApiPresets::withDefaults(edited)
-            != ApiPresets::withDefaults(m_apiPresets.at(m_selectedPreset).values);
-    }
-    return hasPendingApiEdits();
-}
-
-// Only the fields a preset captures; preset actions rewrite nothing else.
-bool SettingsDialog::hasPendingApiEdits() const
-{
-    for (const ConfigEditor* editor : findChildren<ConfigEditor*>()) {
-        if (Keys::apiPresetFields().contains(editor->key()) && editor->isModified())
             return true;
     }
     return false;
@@ -259,8 +238,8 @@ void SettingsDialog::applyChanges()
     if (QJsonValue(m_customTones) != config->value(Keys::translationCustomTones))
         config->setValue(Keys::translationCustomTones, m_customTones);
 
-    if (QJsonValue(ApiPresets::toJson(m_apiPresets)) != config->value(Keys::apiPresets))
-        config->setValue(Keys::apiPresets, ApiPresets::toJson(m_apiPresets));
+    m_apiPresetBar->applyPresets();
+    m_contextPresetBar->applyPresets();
 
     for (ConfigEditor* editor : findChildren<ConfigEditor*>()) {
         const QJsonValue editorValue = editor->value();
@@ -268,10 +247,10 @@ void SettingsDialog::applyChanges()
             config->setValue(editor->key(), editorValue);
         editor->refreshBaseline();
     }
-    // The committed fields stand on their own, so the selector stops claiming a
-    // preset they no longer match.
-    m_selectedPreset = ApiPresets::matchValues(m_apiPresets, editedApiValues());
-    reloadPresets();
+    // The committed fields stand on their own, so neither selector keeps
+    // claiming a preset they no longer match.
+    m_apiPresetBar->syncSelection();
+    m_contextPresetBar->syncSelection();
     updateDirtyState();
 }
 
@@ -284,18 +263,8 @@ QWidget* SettingsDialog::createApiPage()
     // editors they replace.
     auto* presetGroup = new QGroupBox(page);
     auto* presetLayout = new QVBoxLayout(presetGroup);
-    auto* presetRow = new QHBoxLayout();
-    m_presetCombo = new QComboBox(presetGroup);
-    auto* newPresetButton = new QPushButton(presetGroup);
-    m_overwriteButton = new QPushButton(presetGroup);
-    auto* saveAsPresetButton = new QPushButton(presetGroup);
-    auto* managePresetButton = new QPushButton(presetGroup);
-    presetRow->addWidget(m_presetCombo, 1);
-    presetRow->addWidget(newPresetButton);
-    presetRow->addWidget(m_overwriteButton);
-    presetRow->addWidget(saveAsPresetButton);
-    presetRow->addWidget(managePresetButton);
-    presetLayout->addLayout(presetRow);
+    m_apiPresetBar = new PresetBar(Keys::apiPresets, Keys::apiPresetFields(), presetGroup);
+    presetLayout->addWidget(m_apiPresetBar);
     form->addRow(presetGroup);
 
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Base URL"),
@@ -377,17 +346,8 @@ QWidget* SettingsDialog::createApiPage()
     updateValidation();
     bindText(updateValidation);
 
-    bindText([presetGroup, newPresetButton, saveAsPresetButton, managePresetButton, temperatureSpin, headersEdit, copyKeyButton, this]() {
+    bindText([presetGroup, temperatureSpin, headersEdit, copyKeyButton, this]() {
         presetGroup->setTitle(tr("API preset"));
-        m_presetCombo->setPlaceholderText(tr("Empty preset"));
-        newPresetButton->setText(tr("New"));
-        newPresetButton->setToolTip(tr("Create an empty preset"));
-        newPresetButton->setAccessibleName(tr("New preset"));
-        m_overwriteButton->setText(tr("Save preset"));
-        saveAsPresetButton->setText(tr("Save as..."));
-        managePresetButton->setText(tr("Manage..."));
-        saveAsPresetButton->setToolTip(tr("Save the current API settings under a new name"));
-        managePresetButton->setToolTip(tr("Rename, copy, reorder, delete or load API presets"));
         copyKeyButton->setText(tr("Copy"));
         copyKeyButton->setToolTip(tr("Copy the API key to the clipboard"));
         copyKeyButton->setAccessibleName(tr("Copy API key"));
@@ -395,30 +355,22 @@ QWidget* SettingsDialog::createApiPage()
         temperatureSpin->edit()->updateGeometry();
         headersEdit->edit()->setPlaceholderText(tr("One per line: Header-Name: value"));
     });
-    connect(m_presetCombo, &QComboBox::activated, this, &SettingsDialog::applySelectedPreset);
-    connect(newPresetButton, &QPushButton::clicked, this, &SettingsDialog::newPreset);
-    connect(m_overwriteButton, &QPushButton::clicked, this, &SettingsDialog::overwritePreset);
-    connect(saveAsPresetButton, &QPushButton::clicked, this, &SettingsDialog::savePreset);
-    connect(managePresetButton, &QPushButton::clicked, this, &SettingsDialog::managePresets);
-    // The applied configuration decides which preset the selector starts on.
-    m_selectedPreset = ApiPresets::matchValues(m_apiPresets, editedApiValues());
-    reloadPresets();
+    // Wired after the editors exist, so the selector starts on the preset the
+    // loaded API fields match.
+    setupPresetBar(m_apiPresetBar, Keys::apiPresetFields(),
+                   [this](const QVector<Preset>& presets, int selected)
+                       -> std::optional<PresetBar::Managed> {
+                       ApiPresetDialog dialog(presets, selected, this);
+                       if (dialog.exec() != QDialog::Accepted)
+                           return std::nullopt;
+                       PresetBar::Managed result;
+                       result.presets = dialog.presets();
+                       const int loaded = dialog.loadedIndex();
+                       if (loaded >= 0 && loaded < result.presets.size())
+                           result.applied = result.presets.at(loaded);
+                       return result;
+                   });
     return page;
-}
-
-// Rebuilds the selector and points it at the preset in effect. The selection is
-// held across edits, which is what makes overwriting the selected preset
-// possible.
-void SettingsDialog::reloadPresets()
-{
-    if (!m_presetCombo)
-        return;
-    QSignalBlocker blocker(m_presetCombo);
-    m_presetCombo->clear();
-    for (const ApiPreset& preset : std::as_const(m_apiPresets))
-        m_presetCombo->addItem(preset.name);
-    const bool held = m_selectedPreset >= 0 && m_selectedPreset < m_apiPresets.size();
-    m_presetCombo->setCurrentIndex(held ? m_selectedPreset : -1);
 }
 
 // Lists the models the API fields describe, including edits that are not applied
@@ -426,7 +378,7 @@ void SettingsDialog::reloadPresets()
 void SettingsDialog::reloadModels()
 {
     m_modelCombo->setMessage(tr("Loading the model list..."));
-    m_apiClient.listModels(ApiClient::Connection::fromValues(editedApiValues()),
+    m_apiClient.listModels(ApiClient::Connection::fromValues(editedValues(Keys::apiPresetFields())),
                            [this](const QList<ApiClient::Model>& models) {
                                QList<std::pair<QString, QString>> items;
                                items.reserve(models.size());
@@ -443,114 +395,37 @@ void SettingsDialog::reloadModels()
                            });
 }
 
-// API fields as currently shown by the editors, so a preset records pending
-// edits rather than what has already been applied.
-QJsonObject SettingsDialog::editedApiValues() const
+// Fields as currently shown by the editors, so a preset records pending edits
+// rather than what has already been applied.
+QJsonObject SettingsDialog::editedValues(const QStringList& fields) const
 {
     QJsonObject values;
     for (ConfigEditor* editor : findChildren<ConfigEditor*>()) {
-        if (Keys::apiPresetFields().contains(editor->key()))
+        if (fields.contains(editor->key()))
             values.insert(editor->key(), editor->value());
     }
     return values;
 }
 
-void SettingsDialog::applyPresetValues(const ApiPreset& preset)
+void SettingsDialog::applyPresetValues(const Preset& preset, const QStringList& fields)
 {
     for (ConfigEditor* editor : findChildren<ConfigEditor*>()) {
-        if (!Keys::apiPresetFields().contains(editor->key()))
+        if (!fields.contains(editor->key()))
             continue;
         const QJsonValue stored = preset.values.value(editor->key());
         editor->setUserValue(stored.isUndefined() ? Defaults::value(editor->key()) : stored);
     }
 }
 
-void SettingsDialog::applySelectedPreset(int index)
+void SettingsDialog::setupPresetBar(
+    PresetBar* bar, const QStringList& fields,
+    std::function<std::optional<PresetBar::Managed>(const QVector<Preset>&, int)> manage)
 {
-    if (index < 0 || index >= m_apiPresets.size())
-        return;
-    m_selectedPreset = index;
-    applyPresetValues(m_apiPresets.at(index));
-    updateDirtyState();
-}
-
-// Starts a preset from the default fields, named later by a save action.
-void SettingsDialog::newPreset()
-{
-    if (hasPendingApiEdits()
-        && !confirmDiscard(tr("New preset"),
-                           tr("The API fields hold changes that have not been applied yet."),
-                           tr("Discard them and start from the defaults?"))) {
-        return;
-    }
-
-    applyPresetValues(ApiPreset{});
-    m_selectedPreset = -1;
-    reloadPresets();
-    updateDirtyState();
-}
-
-// Writes the pending API fields into the selected preset. With nothing selected
-// there is no preset to overwrite yet, so the settings are named instead.
-void SettingsDialog::overwritePreset()
-{
-    const int index = m_selectedPreset;
-    if (index < 0 || index >= m_apiPresets.size()) {
-        savePreset();
-        return;
-    }
-    m_apiPresets[index].values = editedApiValues();
-    reloadPresets();
-    updateDirtyState();
-}
-
-// Adds a preset under a name the user picks, replacing the entry when the name
-// is taken.
-void SettingsDialog::savePreset()
-{
-    bool accepted = false;
-    const QString name = QInputDialog::getText(this, tr("Save API preset"), tr("Preset name"),
-                                              QLineEdit::Normal, m_presetCombo->currentText(),
-                                              &accepted).trimmed();
-    if (!accepted || name.isEmpty())
-        return;
-
-    ApiPreset preset;
-    preset.name = name;
-    preset.values = editedApiValues();
-
-    const int existing = ApiPresets::indexOf(m_apiPresets, name);
-    if (existing >= 0)
-        m_apiPresets[existing] = preset;
-    else
-        m_apiPresets.append(preset);
-    // The written fields match that preset, so it becomes the selected one.
-    m_selectedPreset = ApiPresets::indexOf(m_apiPresets, name);
-    reloadPresets();
-    updateDirtyState();
-}
-
-void SettingsDialog::managePresets()
-{
-    // An explicit selection wins over the match, since pending edits may have
-    // taken the fields off it.
-    int selected = m_selectedPreset;
-    if (selected < 0 || selected >= m_apiPresets.size())
-        selected = ApiPresets::matchValues(m_apiPresets, editedApiValues());
-    ApiPresetDialog dialog(m_apiPresets, selected, this);
-    if (dialog.exec() != QDialog::Accepted)
-        return;
-    m_apiPresets = dialog.presets();
-    // Accepting the manager loads the highlighted preset over the pending edits.
-    const int loaded = dialog.loadedIndex();
-    if (loaded >= 0 && loaded < m_apiPresets.size()) {
-        applyPresetValues(m_apiPresets.at(loaded));
-        m_selectedPreset = loaded;
-    } else {
-        m_selectedPreset = ApiPresets::matchValues(m_apiPresets, editedApiValues());
-    }
-    reloadPresets();
-    updateDirtyState();
+    bar->setValuesProvider([this, fields]() { return editedValues(fields); });
+    bar->setApplier([this, fields](const Preset& preset) { applyPresetValues(preset, fields); });
+    bar->setManageHandler(std::move(manage));
+    connect(bar, &PresetBar::changed, this, &SettingsDialog::updateDirtyState);
+    bar->loadPresets();
 }
 
 QWidget* SettingsDialog::createTranslationPage()
@@ -605,8 +480,44 @@ QWidget* SettingsDialog::createTranslationPage()
     auto* autoTranslateCheck = new ConfigCheckBox(Keys::uiAutoTranslate, page);
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Auto translate after typing"), autoTranslateCheck);
 
-    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Style"), new ConfigTextEdit(Keys::translationStyle, page));
-    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Background"), new ConfigTextEdit(Keys::translationBackground, page));
+    // The preset bar rewrites the style and the background together, so the three
+    // share one frame.
+    auto* contextGroup = new QGroupBox(page);
+    auto* contextLayout = new QVBoxLayout(contextGroup);
+    m_contextPresetBar = new PresetBar(Keys::contextPresets, Keys::contextPresetFields(), contextGroup);
+    contextLayout->addWidget(m_contextPresetBar);
+
+    auto* contextForm = new QFormLayout();
+    addLabeledRow(contextForm, QT_TRANSLATE_NOOP("SettingsDialog", "Style"),
+                  new ConfigTextEdit(Keys::translationStyle, contextGroup));
+    addLabeledRow(contextForm, QT_TRANSLATE_NOOP("SettingsDialog", "Background"),
+                  new ConfigTextEdit(Keys::translationBackground, contextGroup));
+    contextLayout->addLayout(contextForm);
+    form->addRow(contextGroup);
+
+    bindText([contextGroup]() { contextGroup->setTitle(tr("Context preset")); });
+    setupPresetBar(m_contextPresetBar, Keys::contextPresetFields(),
+                   [this](const QVector<Preset>& presets, int selected)
+                       -> std::optional<PresetBar::Managed> {
+                       ContextPresetDialog dialog(presets, editedValues(Keys::contextPresetFields()),
+                                                  selected, this);
+                       // Applying inside the window updates this page's pending
+                       // state, which the settings page's own Apply still commits.
+                       dialog.setApplyHandler([this](const QVector<Preset>& edited,
+                                                     const QJsonObject& values) {
+                           // The editors move first, so the bar ends up claiming
+                           // the preset the applied context belongs to.
+                           applyPresetValues(Preset{QString(), values}, Keys::contextPresetFields());
+                           m_contextPresetBar->setPresets(edited);
+                           updateDirtyState();
+                       });
+                       if (dialog.exec() != QDialog::Accepted)
+                           return std::nullopt;
+                       PresetBar::Managed result;
+                       result.presets = dialog.presets();
+                       result.applied = Preset{QString(), dialog.values()};
+                       return result;
+                   });
     return page;
 }
 
