@@ -92,7 +92,6 @@ SettingsDialog::SettingsDialog(HistoryManager* history, QWidget* parent)
     m_tabs->addTab(createTranslationPage(), QString());
     m_tabs->addTab(createDocumentPage(), QString());
     m_tabs->addTab(createInterfacePage(), QString());
-    m_tabs->addTab(createHistoryPage(), QString());
     m_tabs->addTab(createPromptsPage(), QString());
     layout->addWidget(m_tabs, 1);
 
@@ -102,8 +101,7 @@ SettingsDialog::SettingsDialog(HistoryManager* history, QWidget* parent)
         m_tabs->setTabText(1, tr("Translation"));
         m_tabs->setTabText(2, tr("Document"));
         m_tabs->setTabText(3, tr("Interface"));
-        m_tabs->setTabText(4, tr("History"));
-        m_tabs->setTabText(5, tr("Prompt templates"));
+        m_tabs->setTabText(4, tr("Prompt templates"));
     });
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Apply
@@ -468,6 +466,22 @@ QWidget* SettingsDialog::createTranslationPage()
     auto* autoTranslateCheck = new ConfigCheckBox(Keys::uiAutoTranslate, page);
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Auto translate after typing"), autoTranslateCheck);
 
+    auto* historyRow = new QHBoxLayout();
+    historyRow->addWidget(new ConfigCheckBox(Keys::historyEnabled, page), 1);
+    auto* clearHistoryButton = new QPushButton(page);
+    connect(clearHistoryButton, &QPushButton::clicked, this, [this]() {
+        if (QMessageBox::question(this, QCoreApplication::applicationName(),
+                                  tr("Delete all history records?"))
+            == QMessageBox::Yes)
+            m_history->clear();
+    });
+    bindText([clearHistoryButton]() { clearHistoryButton->setText(tr("Clear translation history")); });
+    historyRow->addWidget(clearHistoryButton);
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Save translation history"),
+                  static_cast<QLayout*>(historyRow));
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Max records"),
+                  new ConfigSpinBox(Keys::historyMaxRecords, 10, 100000, 10, page));
+
     // The preset bar rewrites the style and the background together, so the three
     // share one frame.
     auto* contextGroup = new QGroupBox(page);
@@ -564,26 +578,6 @@ QWidget* SettingsDialog::createInterfacePage()
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Always on top"), onTopCheck);
 
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Font size"), new ConfigSpinBox(Keys::uiFontSize, 8, 24, 1, page));
-    return page;
-}
-
-QWidget* SettingsDialog::createHistoryPage()
-{
-    auto* page = new QWidget(this);
-    auto* form = new QFormLayout(page);
-    auto* enabledCheck = new ConfigCheckBox(Keys::historyEnabled, page);
-    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Save translation history"), enabledCheck);
-    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Max records"), new ConfigSpinBox(Keys::historyMaxRecords, 10, 100000, 10, page));
-
-    auto* clearButton = new QPushButton(page);
-    connect(clearButton, &QPushButton::clicked, this, [this]() {
-        if (QMessageBox::question(this, QCoreApplication::applicationName(),
-                                  tr("Delete all history records?"))
-            == QMessageBox::Yes)
-            m_history->clear();
-    });
-    form->addRow(QString(), clearButton);
-    bindText([clearButton]() { clearButton->setText(tr("Clear translation history")); });
     return page;
 }
 

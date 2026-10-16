@@ -52,7 +52,6 @@ private:
     QWidget* createTranslationPage();
     QWidget* createDocumentPage();
     QWidget* createInterfacePage();
-    QWidget* createHistoryPage();
     QWidget* createPromptsPage();
 
     // Re-applies every registered string. Rebuilding the pages instead would
