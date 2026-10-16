@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QList>
 #include <QMainWindow>
 #include <QString>
 #include <QUndoStack>
@@ -18,6 +19,7 @@
 
 class QActionGroup;
 class QComboBox;
+class QContextMenuEvent;
 class QLabel;
 class QMenu;
 class QPlainTextEdit;
@@ -25,6 +27,7 @@ class QResizeEvent;
 class QSplitter;
 class QSystemTrayIcon;
 class QTimer;
+class QToolBar;
 class QToolButton;
 class CandidatePopup;
 class DocumentTranslationWindow;
@@ -43,6 +46,8 @@ protected:
     void changeEvent(QEvent* event) override;
     void closeEvent(QCloseEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
+    void contextMenuEvent(QContextMenuEvent* event) override;
+    QMenu* createPopupMenu() override;
 
 private slots:
     void onSourceChanged();
@@ -86,6 +91,8 @@ private:
     QWidget* createRightPane();
     void buildMenus();
     void buildTray();
+    QMenu* toolBarPopup();
+    void setToolBarButtonVisible(QAction* button, bool visible);
     void updateSwapButtonGeometry();
     void closeDocumentWindow();
     void quitApplication();
@@ -131,6 +138,7 @@ private:
     QLabel* m_statusLabel = nullptr;
     QToolButton* m_swapButton = nullptr;
     QToolButton* m_translateButton = nullptr;
+    QToolBar* m_toolBar = nullptr;
 
     QAction* m_translateAction = nullptr;
     QAction* m_stopAction = nullptr;
@@ -143,6 +151,9 @@ private:
     QAction* m_exportAction = nullptr;
     QAction* m_historyAction = nullptr;
     QAction* m_settingsAction = nullptr;
+    QAction* m_settingsSeparator = nullptr;
+    // Toolbar buttons between the separators; the settings menu toggles these.
+    QList<QAction*> m_optionalToolBarButtons;
     QAction* m_glossaryAction = nullptr;
     QAction* m_toneAction = nullptr;
     QAction* m_apiPresetAction = nullptr;
@@ -182,6 +193,8 @@ private:
     TranslationActivity m_activity;
     HistoryManager m_history;
     QSystemTrayIcon* m_tray = nullptr;
+    // Row whose context menu is being built.
+    QWidget* m_popupSource = nullptr;
     // Fixed for the session, so every tray icon comes from the same family.
     TrayIcons::Family m_trayFamily = TrayIcons::Family::App;
     CandidatePopup* m_popup = nullptr;

@@ -25,6 +25,7 @@
 #include <QByteArray>
 #include <QCloseEvent>
 #include <QComboBox>
+#include <QContextMenuEvent>
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QFileDialog>
@@ -285,6 +286,55 @@ void MainWindow::resizeEvent(QResizeEvent* event)
     updateSwapButtonGeometry();
 }
 
+void MainWindow::contextMenuEvent(QContextMenuEvent* event)
+{
+    QWidget* row = childAt(event->pos());
+    while (row && row->parentWidget() != this)
+        row = row->parentWidget();
+    m_popupSource = row;
+    QMainWindow::contextMenuEvent(event);
+    m_popupSource = nullptr;
+}
+
+QMenu* MainWindow::createPopupMenu()
+{
+    if (qobject_cast<QToolBar*>(m_popupSource))
+        return toolBarPopup();
+    return QMainWindow::createPopupMenu();
+}
+
+QMenu* MainWindow::toolBarPopup()
+{
+    QMenu* menu = new QMenu(this);
+    menu->addSection(tr("Toolbar Settings"));
+    for (QAction* button : m_optionalToolBarButtons) {
+        QAction* entry = menu->addAction(button->iconText());
+        entry->setCheckable(true);
+        entry->setChecked(m_toolBar->actions().contains(button));
+        connect(entry, &QAction::toggled, this, [this, button](bool visible) {
+            setToolBarButtonVisible(button, visible);
+        });
+    }
+    return menu;
+}
+
+// A button returns ahead of the buttons that follow it in buildMenus() order.
+void MainWindow::setToolBarButtonVisible(QAction* button, bool visible)
+{
+    if (!visible) {
+        m_toolBar->removeAction(button);
+        return;
+    }
+    QAction* before = m_settingsSeparator;
+    for (int i = m_optionalToolBarButtons.indexOf(button) + 1; i < m_optionalToolBarButtons.size(); ++i) {
+        if (m_toolBar->actions().contains(m_optionalToolBarButtons.at(i))) {
+            before = m_optionalToolBarButtons.at(i);
+            break;
+        }
+    }
+    m_toolBar->insertAction(before, button);
+}
+
 QWidget* MainWindow::createLeftPane()
 {
     auto* pane = new QWidget(this);
@@ -450,13 +500,13 @@ void MainWindow::buildMenus()
     m_helpMenu = menuBar()->addMenu(QString());
     m_aboutAction = m_helpMenu->addAction(QString());
 
-    QToolBar* toolBar = addToolBar(QString());
-    toolBar->setMovable(false);
-    toolBar->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    m_toolBar = addToolBar(QString());
+    m_toolBar->setMovable(false);
+    m_toolBar->setToolButtonStyle(Qt::ToolButtonTextOnly);
 
     m_translateAction = new QAction(this);
     m_translateAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+Return")));
-    m_translateButton = new QToolButton(toolBar);
+    m_translateButton = new QToolButton(m_toolBar);
     m_translateButton->setDefaultAction(m_translateAction);
     m_translateButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
     m_translateButton->setStyleSheet(QStringLiteral(
@@ -468,19 +518,37 @@ void MainWindow::buildMenus()
         "QToolButton:pressed { background-color: #005C41; }"
         "QToolButton:disabled { color: rgba(255, 255, 255, 140);"
         "                       background-color: rgba(0, 118, 83, 110); }"));
-    toolBar->addWidget(m_translateButton);
+    m_toolBar->addWidget(m_translateButton);
     connect(m_translateAction, &QAction::triggered, this, &MainWindow::translateNow);
 
-    m_stopAction = toolBar->addAction(QString());
+    m_stopAction = m_toolBar->addAction(QString());
     m_stopAction->setEnabled(false);
     connect(m_stopAction, &QAction::triggered, this, &MainWindow::stopTranslations);
 
-    toolBar->addSeparator();
-    toolBar->addAction(m_documentAction);
-    toolBar->addAction(m_historyAction);
-    toolBar->addAction(m_yoloAction);
-    toolBar->addSeparator();
-    toolBar->addAction(m_settingsAction);
+    m_toolBar->addSeparator();
+    m_toolBar->addAction(m_documentAction);
+    m_toolBar->addAction(m_glossaryAction);
+    m_toolBar->addAction(m_yoloAction);
+    m_toolBar->addAction(m_apiPresetAction);
+    m_toolBar->addAction(m_historyAction);
+    m_settingsSeparator = m_toolBar->addSeparator();
+    m_toolBar->addAction(m_settingsAction);
+
+    // Only the group between the toolbar's separators is optional.
+    bool middleGroup = false;
+    for (QAction* item : m_toolBar->actions()) {
+        if (item->isSeparator()) {
+            if (middleGroup)
+                break;
+            middleGroup = true;
+            continue;
+        }
+        if (middleGroup)
+            m_optionalToolBarButtons.append(item);
+    }
+    // These buttons belong to the group but start hidden.
+    setToolBarButtonVisible(m_glossaryAction, false);
+    setToolBarButtonVisible(m_apiPresetAction, false);
 
     connect(m_autoTranslateAction, &QAction::toggled, this, [this](bool checked) {
         ConfigManager::instance()->setValue(Keys::uiAutoTranslate, checked);
@@ -1151,12 +1219,13 @@ void MainWindow::retranslateUi()
 
     m_translateAction->setText(tr("Translate"));
     m_stopAction->setText(tr("Stop"));
-    // A toolbar button built from an action shows its icon text, so these carry
-    // the short labels the toolbar displays instead of the menu wording.
+    m_toolBar->setWindowTitle(tr("Toolbar"));
     m_documentAction->setIconText(tr("Document"));
     m_historyAction->setIconText(tr("History"));
     m_settingsAction->setIconText(tr("Settings"));
     m_yoloAction->setIconText(tr("YOLO"));
+    m_glossaryAction->setIconText(tr("Glossary"));
+    m_apiPresetAction->setIconText(tr("API preset"));
     m_translateAction->setToolTip(tr("Translate now (Ctrl+Enter)"));
     m_stopAction->setToolTip(tr("Stop translation"));
     m_historyAction->setToolTip(tr("Translation history"));
