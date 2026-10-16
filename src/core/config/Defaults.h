@@ -59,7 +59,6 @@ inline bool isOfferedUiLanguage(const QString& code)
     return code == uiLanguageAuto || uiLanguageCodes().contains(code);
 }
 inline const QString uiAutoTranslate = QStringLiteral("ui.auto_translate");
-inline const QString uiAutoTranslateDelay = QStringLiteral("ui.auto_translate_delay");
 inline const QString uiAlwaysOnTop = QStringLiteral("ui.always_on_top");
 inline const QString uiMinimizeToTray = QStringLiteral("ui.minimize_to_tray");
 inline const QString uiFontSize = QStringLiteral("ui.font_size");
@@ -103,7 +102,6 @@ inline const QString apiCustomHeaders = QString();
 
 inline const QString uiLanguage = QStringLiteral("auto");
 inline const bool uiAutoTranslate = false;
-inline const int uiAutoTranslateDelay = 800;
 inline const bool uiAlwaysOnTop = false;
 inline const bool uiMinimizeToTray = true;
 inline const int uiFontSize = 10;
@@ -265,7 +263,6 @@ inline QJsonValue value(const QString& key)
         {Keys::apiPresets, QJsonArray()},
         {Keys::uiLanguage, uiLanguage},
         {Keys::uiAutoTranslate, uiAutoTranslate},
-        {Keys::uiAutoTranslateDelay, uiAutoTranslateDelay},
         {Keys::uiAlwaysOnTop, uiAlwaysOnTop},
         {Keys::uiMinimizeToTray, uiMinimizeToTray},
         {Keys::uiFontSize, uiFontSize},

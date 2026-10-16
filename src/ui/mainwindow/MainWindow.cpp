@@ -61,6 +61,8 @@ constexpr int kMaxResultSteps = 30;
 
 constexpr int kClipboardDelayMs = 500;
 
+constexpr int kAutoTranslateDelayMs = 1000;
+
 constexpr int kNoticeCharacters = 300;
 
 constexpr char kProjectUrl[] = "https://github.com/KFERMercer/RiipL";
@@ -244,7 +246,7 @@ MainWindow::MainWindow(QWidget* parent)
 
     m_debounce = new QTimer(this);
     m_debounce->setSingleShot(true);
-    m_debounce->setInterval(ConfigManager::instance()->intValue(Keys::uiAutoTranslateDelay));
+    m_debounce->setInterval(kAutoTranslateDelayMs);
     connect(m_debounce, &QTimer::timeout, this, &MainWindow::translateNow);
 
     m_clipboardTimer = new QTimer(this);
@@ -793,8 +795,6 @@ void MainWindow::onConfigChanged(const QString& key)
     if (key == Keys::uiAutoTranslate) {
         QSignalBlocker blocker(m_autoTranslateAction);
         m_autoTranslateAction->setChecked(ConfigManager::instance()->boolValue(key));
-    } else if (key == Keys::uiAutoTranslateDelay) {
-        m_debounce->setInterval(ConfigManager::instance()->intValue(key));
     } else if (key == Keys::uiAlwaysOnTop) {
         QSignalBlocker blocker(m_onTopAction);
         m_onTopAction->setChecked(ConfigManager::instance()->boolValue(key));

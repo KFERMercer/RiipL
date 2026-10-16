@@ -602,12 +602,11 @@ QWidget* SettingsDialog::createTranslationPage()
     glossaryRow->addWidget(manageGlossary);
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Glossary"), static_cast<QLayout*>(glossaryRow));
 
-    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Style"), new ConfigTextEdit(Keys::translationStyle, page));
-    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Background"), new ConfigTextEdit(Keys::translationBackground, page));
-
     auto* autoTranslateCheck = new ConfigCheckBox(Keys::uiAutoTranslate, page);
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Auto translate after typing"), autoTranslateCheck);
-    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Auto translate delay (ms)"), new ConfigSpinBox(Keys::uiAutoTranslateDelay, 100, 10000, 100, page));
+
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Style"), new ConfigTextEdit(Keys::translationStyle, page));
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Background"), new ConfigTextEdit(Keys::translationBackground, page));
     return page;
 }
 

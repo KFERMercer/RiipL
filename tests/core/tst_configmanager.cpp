@@ -90,7 +90,7 @@ void TestConfigManager::persistsAcrossInstances()
     ConfigManager::createInstance(TestSupport::tempDir());
     QCOMPARE(ConfigManager::instance()->stringValue(Keys::uiLanguage), QStringLiteral("zh"));
     QCOMPARE(ConfigManager::instance()->stringValue(Keys::translationTargetLang), QStringLiteral("ja"));
-    QCOMPARE(ConfigManager::instance()->intValue(Keys::uiAutoTranslateDelay), 800);
+    QCOMPARE(ConfigManager::instance()->intValue(Keys::uiFontSize), 10);
 }
 
 void TestConfigManager::flushesPendingSaveOnRecreate()
