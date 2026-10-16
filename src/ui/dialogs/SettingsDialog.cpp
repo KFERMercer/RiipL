@@ -34,11 +34,13 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QList>
-#include <QListWidget>
+#include <QItemSelectionModel>
+#include <QListView>
 #include <QMessageBox>
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QStackedWidget>
+#include <QStandardItemModel>
 #include <QTabWidget>
 #include <QToolButton>
 #include <QToolTip>
@@ -591,16 +593,26 @@ QWidget* SettingsDialog::createPromptsPage()
     auto* layout = new QVBoxLayout(page);
     auto* contentRow = new QHBoxLayout();
 
-    m_templateList = new QListWidget(page);
+    m_templateList = new QListView(page);
+    m_templateList->setAlternatingRowColors(true);
+    m_templateList->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_templateList->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_templateList->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_templateList->setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
     m_templateList->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Expanding);
-    for (int i = 0; i < templateInfos().size(); ++i)
-        m_templateList->addItem(QString());
     contentRow->addWidget(m_templateList);
+
+    m_templateModel = new QStandardItemModel(this);
+    for (int i = 0; i < templateInfos().size(); ++i) {
+        auto* item = new QStandardItem;
+        item->setEditable(false);
+        m_templateModel->appendRow(item);
+    }
+    m_templateList->setModel(m_templateModel);
     bindText([this]() {
         const QVector<TemplateInfo>& infos = templateInfos();
-        for (int i = 0; i < infos.size() && i < m_templateList->count(); ++i)
-            m_templateList->item(i)->setText(tr(infos.at(i).label));
+        for (int i = 0; i < infos.size() && i < m_templateModel->rowCount(); ++i)
+            m_templateModel->item(i)->setText(tr(infos.at(i).label));
     });
 
     auto* stack = new QStackedWidget(page);
@@ -655,8 +667,9 @@ QWidget* SettingsDialog::createPromptsPage()
         pageLayout->addWidget(placeholderGroup);
         stack->addWidget(pageWidget);
     }
-    connect(m_templateList, &QListWidget::currentRowChanged, stack, &QStackedWidget::setCurrentIndex);
-    m_templateList->setCurrentRow(0);
+    connect(m_templateList->selectionModel(), &QItemSelectionModel::currentRowChanged, stack,
+            [stack](const QModelIndex& current) { stack->setCurrentIndex(current.row()); });
+    m_templateList->setCurrentIndex(m_templateModel->index(0, 0));
     contentRow->addWidget(stack, 1);
     layout->addLayout(contentRow, 1);
 

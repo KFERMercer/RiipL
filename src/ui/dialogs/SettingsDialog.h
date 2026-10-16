@@ -19,8 +19,9 @@ class ConfigEditableComboBox;
 class QFormLayout;
 class QLabel;
 class QLayout;
-class QListWidget;
+class QListView;
 class QPushButton;
+class QStandardItemModel;
 class HistoryManager;
 
 // Form-style settings dialog following Qt's canonical pattern: editors are
@@ -86,6 +87,7 @@ private:
     QPushButton* m_applyButton = nullptr;
     HistoryManager* m_history = nullptr;
     QTabWidget* m_tabs = nullptr;
-    QListWidget* m_templateList = nullptr;
+    QListView* m_templateList = nullptr;
+    QStandardItemModel* m_templateModel = nullptr;
     QVector<std::function<void()>> m_boundText;
 };
