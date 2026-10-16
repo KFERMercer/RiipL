@@ -1,6 +1,8 @@
 #pragma once
 
 #include <QDialog>
+#include <QJsonArray>
+#include <QList>
 #include <QVector>
 #include <QWidget>
 
@@ -8,6 +10,7 @@
 
 class QLineEdit;
 class QPushButton;
+class QStandardItem;
 class QSortFilterProxyModel;
 class QStandardItemModel;
 class QTableView;
@@ -32,6 +35,8 @@ private slots:
     void refreshButtons();
 
 private:
+    QList<QStandardItem*> rowFor(const GlossaryEntry& entry) const;
+
     QTableView* m_table = nullptr;
     QStandardItemModel* m_model = nullptr;
     QSortFilterProxyModel* m_proxy = nullptr;
@@ -48,6 +53,12 @@ class GlossaryDialog : public QDialog
 public:
     explicit GlossaryDialog(QWidget* parent = nullptr);
 
+    void reject() override;
+
 private:
+    // True while the terms differ from the ones the window opened with.
+    bool isDirty() const;
+
     GlossaryTable* m_table = nullptr;
+    QJsonArray m_initialEntries;
 };

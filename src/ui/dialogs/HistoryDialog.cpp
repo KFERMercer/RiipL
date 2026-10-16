@@ -9,6 +9,7 @@
 #include <QDateTime>
 #include <QHeaderView>
 #include <QHBoxLayout>
+#include <QItemSelectionModel>
 #include <QLabel>
 #include <QLineEdit>
 #include <QList>
@@ -19,6 +20,7 @@
 #include <QTreeView>
 #include <QVBoxLayout>
 
+#include <algorithm>
 #include <iterator>
 
 namespace {
@@ -61,6 +63,7 @@ const ColumnSpec kColumns[] = {
 };
 
 constexpr int kColumnCount = int(std::size(kColumns));
+constexpr int kFirstColumn = 0;
 
 QList<QStandardItem*> rowFor(const TranslationRecord& record)
 {
@@ -98,6 +101,7 @@ HistoryDialog::HistoryDialog(HistoryManager* history, QWidget* parent)
     m_tree->setAlternatingRowColors(true);
     m_tree->setAllColumnsShowFocus(true);
     m_tree->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_tree->setSelectionBehavior(QAbstractItemView::SelectRows);
     layout->addWidget(m_tree, 1);
 
     m_model = new QStandardItemModel(this);
@@ -118,12 +122,12 @@ HistoryDialog::HistoryDialog(HistoryManager* history, QWidget* parent)
         m_tree->header()->setSectionResizeMode(column, kColumns[column].resizeMode);
 
     auto* buttonRow = new QHBoxLayout();
-    auto reuseButton = new QPushButton(tr("Reuse"), this);
-    auto deleteButton = new QPushButton(tr("Delete"), this);
-    auto clearButton = new QPushButton(tr("Clear all"), this);
-    auto closeButton = new QPushButton(tr("Close"), this);
-    buttonRow->addWidget(reuseButton);
-    buttonRow->addWidget(deleteButton);
+    m_reuseButton = new QPushButton(tr("Reuse"), this);
+    m_deleteButton = new QPushButton(tr("Delete"), this);
+    auto* clearButton = new QPushButton(tr("Clear all"), this);
+    auto* closeButton = new QPushButton(tr("Close"), this);
+    buttonRow->addWidget(m_reuseButton);
+    buttonRow->addWidget(m_deleteButton);
     buttonRow->addWidget(clearButton);
     buttonRow->addStretch(1);
     buttonRow->addWidget(closeButton);
@@ -136,14 +140,13 @@ HistoryDialog::HistoryDialog(HistoryManager* history, QWidget* parent)
     connect(m_tree, &QTreeView::doubleClicked, this, [this](const QModelIndex& index) {
         reuseItem(index);
     });
-    connect(reuseButton, &QPushButton::clicked, this, [this]() {
+    // The buttons act on the current row, so they follow the current index.
+    connect(m_tree->selectionModel(), &QItemSelectionModel::currentChanged, this,
+            &HistoryDialog::refreshButtons);
+    connect(m_reuseButton, &QPushButton::clicked, this, [this]() {
         reuseItem(m_tree->currentIndex());
     });
-    connect(deleteButton, &QPushButton::clicked, this, [this]() {
-        const QModelIndex index = m_tree->currentIndex();
-        if (index.isValid())
-            m_history->removeRecord(m_proxy->mapToSource(index).row());
-    });
+    connect(m_deleteButton, &QPushButton::clicked, this, &HistoryDialog::removeCurrent);
     connect(clearButton, &QPushButton::clicked, this, [this]() {
         const QMessageBox::StandardButton answer = QMessageBox::question(
             this, QCoreApplication::applicationName(), tr("Delete all history records?"),
@@ -181,6 +184,34 @@ void HistoryDialog::reload()
         m_model->insertRow(index, rowFor(records.at(index)));
 
     m_records = records;
+    refreshButtons();
+}
+
+void HistoryDialog::refreshButtons()
+{
+    const bool hasSelection = m_tree->currentIndex().isValid();
+    m_reuseButton->setEnabled(hasSelection);
+    m_deleteButton->setEnabled(hasSelection);
+}
+
+int HistoryDialog::currentRow() const
+{
+    const QModelIndex current = m_tree->currentIndex();
+    return current.isValid() ? m_proxy->mapToSource(current).row() : -1;
+}
+
+void HistoryDialog::removeCurrent()
+{
+    const int row = currentRow();
+    if (row < 0)
+        return;
+
+    m_history->removeRecord(row);
+    // The record that took its place keeps the window usable without the mouse.
+    if (m_model->rowCount() > 0) {
+        m_tree->setCurrentIndex(m_proxy->mapFromSource(
+            m_model->index((std::min)(row, m_model->rowCount() - 1), kFirstColumn)));
+    }
 }
 
 void HistoryDialog::reuseItem(const QModelIndex& index)

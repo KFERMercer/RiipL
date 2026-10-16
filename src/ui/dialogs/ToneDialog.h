@@ -3,13 +3,16 @@
 #include <QDialog>
 
 #include <QJsonArray>
+#include <QList>
 #include <QString>
 #include <QVector>
 
 class QPushButton;
-class QTableWidget;
+class QStandardItem;
+class QStandardItemModel;
+class QTableView;
 class QToolButton;
-class QTreeWidget;
+class QTreeView;
 
 // A user-defined tone: a key the prompts carry and the name the user typed.
 struct CustomTone
@@ -25,6 +28,8 @@ class ToneDialog : public QDialog
 public:
     explicit ToneDialog(const QJsonArray& customTones, QWidget* parent = nullptr);
 
+    void reject() override;
+
     QVector<CustomTone> customTones() const;
     static QJsonArray toJson(const QVector<CustomTone>& tones);
 
@@ -32,15 +37,22 @@ private slots:
     void addTone();
     void removeTone();
     void moveTone(int offset);
-
-private:
-    void loadTones(const QJsonArray& stored);
     void refreshButtons();
 
-    QTreeWidget* m_presets = nullptr;
-    QTableWidget* m_custom = nullptr;
+private:
+    // True while the custom tones differ from the ones the window opened with.
+    bool isDirty() const;
+    void loadTones(const QJsonArray& stored);
+    int currentRow() const;
+    QList<QStandardItem*> rowFor(const CustomTone& tone) const;
+
+    QTreeView* m_presets = nullptr;
+    QStandardItemModel* m_presetModel = nullptr;
+    QTableView* m_custom = nullptr;
+    QStandardItemModel* m_customModel = nullptr;
     QPushButton* m_addButton = nullptr;
     QPushButton* m_removeButton = nullptr;
     QToolButton* m_moveUpButton = nullptr;
     QToolButton* m_moveDownButton = nullptr;
+    QJsonArray m_initialTones;
 };

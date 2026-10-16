@@ -2,6 +2,7 @@
 
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
+#include "ui/widgets/MessageBoxes.h"
 #include "ui/widgets/PresetListEditor.h"
 #include "ui/widgets/WindowState.h"
 
@@ -28,7 +29,22 @@ ApiPresetDialog::ApiPresetDialog(const QVector<Preset>& presets, int selectedInd
     // Fall back to the first preset so the window opens with a usable selection.
     if (!presets.isEmpty())
         m_list->setSelectedIndex(selectedIndex >= 0 && selectedIndex < presets.size() ? selectedIndex : 0);
+
+    m_initialPresets = Presets::toJson(m_list->presets());
     WindowState::track(this, WindowState::Id::apiPresets);
+}
+
+void ApiPresetDialog::reject()
+{
+    if (isDirty() && !MessageBoxes::confirmDiscard(this))
+        return;
+
+    QDialog::reject();
+}
+
+bool ApiPresetDialog::isDirty() const
+{
+    return Presets::toJson(m_list->presets()) != m_initialPresets;
 }
 
 void ApiPresetDialog::manage(QWidget* parent)

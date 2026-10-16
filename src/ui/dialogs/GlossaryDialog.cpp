@@ -2,6 +2,7 @@
 
 #include "core/models/Glossary.h"
 #include "ui/widgets/AppIcons.h"
+#include "ui/widgets/MessageBoxes.h"
 #include "ui/widgets/WindowState.h"
 
 #include <QCoreApplication>
@@ -42,6 +43,7 @@ GlossaryTable::GlossaryTable(QWidget* parent)
     layout->addLayout(topRow);
 
     m_table = new QTableView(this);
+    m_table->setAlternatingRowColors(true);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_table->setSelectionMode(QAbstractItemView::SingleSelection);
     m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
@@ -88,20 +90,26 @@ GlossaryTable::GlossaryTable(QWidget* parent)
     connect(m_filter, &QLineEdit::textChanged, this, [this](const QString& text) {
         m_proxy->setFilterFixedString(text.trimmed());
     });
-    // The buttons act on the current row, so they follow the current index.
+    // The buttons act on the current row, so they follow the current index and the row count.
     connect(m_table->selectionModel(), &QItemSelectionModel::currentChanged, this,
             &GlossaryTable::refreshButtons);
+    connect(m_model, &QAbstractItemModel::rowsInserted, this, &GlossaryTable::refreshButtons);
+    connect(m_model, &QAbstractItemModel::rowsRemoved, this, &GlossaryTable::refreshButtons);
+}
+
+QList<QStandardItem*> GlossaryTable::rowFor(const GlossaryEntry& entry) const
+{
+    auto* source = new QStandardItem(entry.source);
+    auto* target = new QStandardItem(entry.target);
+    target->setToolTip(tr("Leave empty to keep the term untranslated"));
+    return {source, target};
 }
 
 void GlossaryTable::setEntries(const QVector<GlossaryEntry>& entries)
 {
     m_model->removeRows(0, m_model->rowCount());
-    for (const GlossaryEntry& entry : entries) {
-        auto* sourceItem = new QStandardItem(entry.source);
-        auto* targetItem = new QStandardItem(entry.target);
-        targetItem->setToolTip(tr("Leave empty to keep the term untranslated"));
-        m_model->appendRow({sourceItem, targetItem});
-    }
+    for (const GlossaryEntry& entry : entries)
+        m_model->appendRow(rowFor(entry));
     refreshButtons();
 }
 
@@ -137,7 +145,7 @@ void GlossaryTable::addRow()
     if (!m_filter->text().isEmpty())
         m_filter->clear();
     const int row = m_model->rowCount();
-    m_model->appendRow({new QStandardItem, new QStandardItem});
+    m_model->appendRow(rowFor(GlossaryEntry{}));
     const QModelIndex index = m_proxy->mapFromSource(m_model->index(row, kSourceColumn));
     m_table->setCurrentIndex(index);
     m_table->edit(index);
@@ -235,5 +243,19 @@ GlossaryDialog::GlossaryDialog(QWidget* parent)
     });
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
+    m_initialEntries = Glossary::toJson(m_table->entries());
     WindowState::track(this, WindowState::Id::glossary);
+}
+
+void GlossaryDialog::reject()
+{
+    if (isDirty() && !MessageBoxes::confirmDiscard(this))
+        return;
+
+    QDialog::reject();
+}
+
+bool GlossaryDialog::isDirty() const
+{
+    return Glossary::toJson(m_table->entries()) != m_initialEntries;
 }

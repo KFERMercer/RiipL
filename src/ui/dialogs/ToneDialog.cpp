@@ -3,18 +3,24 @@
 #include "core/translation/Tone.h"
 #include "ui/widgets/AppIcons.h"
 #include "ui/widgets/ConfigEditors.h"
+#include "ui/widgets/MessageBoxes.h"
 #include "ui/widgets/WindowState.h"
 
+#include <QAbstractItemView>
 #include <QDialogButtonBox>
 #include <QHBoxLayout>
 #include <QHeaderView>
+#include <QItemSelectionModel>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QLabel>
 #include <QPushButton>
-#include <QTableWidget>
+#include <QSizePolicy>
+#include <QStandardItem>
+#include <QStandardItemModel>
+#include <QTableView>
 #include <QToolButton>
-#include <QTreeWidget>
+#include <QTreeView>
 #include <QVBoxLayout>
 
 namespace {
@@ -30,28 +36,41 @@ ToneDialog::ToneDialog(const QJsonArray& customTones, QWidget* parent)
     auto* layout = new QVBoxLayout(this);
 
     layout->addWidget(new QLabel(tr("Preset tones"), this));
-    m_presets = new QTreeWidget(this);
-    m_presets->setHeaderLabels({tr("Display name"), tr("Key")});
+    m_presets = new QTreeView(this);
     m_presets->setRootIsDecorated(false);
+    m_presets->setAlternatingRowColors(true);
+    m_presets->setAllColumnsShowFocus(true);
+    m_presets->setSelectionMode(QAbstractItemView::NoSelection);
     m_presets->header()->setSectionResizeMode(QHeaderView::Stretch);
-    // Default item flags already keep a preset name readable and out of editing.
-    for (const ToneItem& item : Tones::presets()) {
-        auto* presetItem = new QTreeWidgetItem(m_presets);
-        presetItem->setText(kNameColumn, toneLabel(item.key));
-        presetItem->setText(kKeyColumn, item.key);
-    }
     m_presets->setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
     m_presets->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
     layout->addWidget(m_presets);
 
+    m_presetModel = new QStandardItemModel(this);
+    m_presetModel->setColumnCount(2);
+    m_presetModel->setHorizontalHeaderLabels({tr("Display name"), tr("Key")});
+    for (const ToneItem& item : Tones::presets()) {
+        auto* name = new QStandardItem(toneLabel(item.key));
+        name->setEditable(false);
+        auto* key = new QStandardItem(item.key);
+        key->setEditable(false);
+        m_presetModel->appendRow({name, key});
+    }
+    m_presets->setModel(m_presetModel);
+
     layout->addWidget(new QLabel(tr("Custom tones"), this));
-    m_custom = new QTableWidget(0, 2, this);
-    m_custom->setHorizontalHeaderLabels({tr("Display name"), tr("Key")});
-    m_custom->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    m_custom->verticalHeader()->setVisible(false);
+    m_custom = new QTableView(this);
+    m_custom->setAlternatingRowColors(true);
     m_custom->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_custom->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_custom->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_custom->verticalHeader()->setVisible(false);
     layout->addWidget(m_custom, 1);
+
+    m_customModel = new QStandardItemModel(this);
+    m_customModel->setColumnCount(2);
+    m_customModel->setHorizontalHeaderLabels({tr("Display name"), tr("Key")});
+    m_custom->setModel(m_customModel);
 
     loadTones(customTones);
 
@@ -61,9 +80,11 @@ ToneDialog::ToneDialog(const QJsonArray& customTones, QWidget* parent)
     m_moveUpButton = new QToolButton(this);
     m_moveUpButton->setIcon(AppIcons::moveUp());
     m_moveUpButton->setToolTip(tr("Move up"));
+    m_moveUpButton->setAccessibleName(tr("Move up"));
     m_moveDownButton = new QToolButton(this);
     m_moveDownButton->setIcon(AppIcons::moveDown());
     m_moveDownButton->setToolTip(tr("Move down"));
+    m_moveDownButton->setAccessibleName(tr("Move down"));
     buttonRow->addWidget(m_addButton);
     buttonRow->addWidget(m_removeButton);
     buttonRow->addWidget(m_moveUpButton);
@@ -78,22 +99,47 @@ ToneDialog::ToneDialog(const QJsonArray& customTones, QWidget* parent)
     connect(m_removeButton, &QPushButton::clicked, this, &ToneDialog::removeTone);
     connect(m_moveUpButton, &QToolButton::clicked, this, [this]() { moveTone(-1); });
     connect(m_moveDownButton, &QToolButton::clicked, this, [this]() { moveTone(1); });
-    connect(m_custom, &QTableWidget::itemSelectionChanged, this, &ToneDialog::refreshButtons);
+    // The buttons act on the current row, so they follow the current index and the row count.
+    connect(m_custom->selectionModel(), &QItemSelectionModel::currentChanged, this,
+            &ToneDialog::refreshButtons);
+    connect(m_customModel, &QAbstractItemModel::rowsInserted, this, &ToneDialog::refreshButtons);
+    connect(m_customModel, &QAbstractItemModel::rowsRemoved, this, &ToneDialog::refreshButtons);
     connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
+    m_initialTones = toJson(this->customTones());
     refreshButtons();
     WindowState::track(this, WindowState::Id::tones);
 }
 
+void ToneDialog::reject()
+{
+    if (isDirty() && !MessageBoxes::confirmDiscard(this))
+        return;
+
+    QDialog::reject();
+}
+
+bool ToneDialog::isDirty() const
+{
+    return toJson(customTones()) != m_initialTones;
+}
+
 void ToneDialog::loadTones(const QJsonArray& stored)
 {
-    m_custom->setRowCount(stored.size());
-    for (int i = 0; i < stored.size(); ++i) {
-        const QJsonObject object = stored.at(i).toObject();
-        m_custom->setItem(i, kKeyColumn, new QTableWidgetItem(object.value(QStringLiteral("key")).toString()));
-        m_custom->setItem(i, kNameColumn, new QTableWidgetItem(object.value(QStringLiteral("name")).toString()));
+    m_customModel->removeRows(0, m_customModel->rowCount());
+    for (const QJsonValue& value : stored) {
+        const QJsonObject object = value.toObject();
+        CustomTone tone;
+        tone.key = object.value(QStringLiteral("key")).toString();
+        tone.name = object.value(QStringLiteral("name")).toString();
+        m_customModel->appendRow(rowFor(tone));
     }
+}
+
+QList<QStandardItem*> ToneDialog::rowFor(const CustomTone& tone) const
+{
+    return {new QStandardItem(tone.name), new QStandardItem(tone.key)};
 }
 
 QJsonArray ToneDialog::toJson(const QVector<CustomTone>& tones)
@@ -111,10 +157,14 @@ QJsonArray ToneDialog::toJson(const QVector<CustomTone>& tones)
 QVector<CustomTone> ToneDialog::customTones() const
 {
     QVector<CustomTone> result;
-    for (int i = 0; i < m_custom->rowCount(); ++i) {
+    result.reserve(m_customModel->rowCount());
+    for (int row = 0; row < m_customModel->rowCount(); ++row) {
         CustomTone tone;
-        tone.key = m_custom->item(i, kKeyColumn) ? m_custom->item(i, kKeyColumn)->text().trimmed() : QString();
-        tone.name = m_custom->item(i, kNameColumn) ? m_custom->item(i, kNameColumn)->text().trimmed() : QString();
+        if (const QStandardItem* key = m_customModel->item(row, kKeyColumn))
+            tone.key = key->text().trimmed();
+        if (const QStandardItem* name = m_customModel->item(row, kNameColumn))
+            tone.name = name->text().trimmed();
+        // A tone without a key carries nothing the prompts could name.
         if (tone.key.isEmpty())
             continue;
         if (tone.name.isEmpty())
@@ -124,48 +174,49 @@ QVector<CustomTone> ToneDialog::customTones() const
     return result;
 }
 
+int ToneDialog::currentRow() const
+{
+    const QModelIndex index = m_custom->currentIndex();
+    return index.isValid() ? index.row() : -1;
+}
+
 void ToneDialog::refreshButtons()
 {
-    const int row = m_custom->currentRow();
+    const int row = currentRow();
     const bool hasSelection = row >= 0;
     m_removeButton->setEnabled(hasSelection);
     m_moveUpButton->setEnabled(hasSelection && row > 0);
-    m_moveDownButton->setEnabled(hasSelection && row < m_custom->rowCount() - 1);
+    m_moveDownButton->setEnabled(hasSelection && row < m_customModel->rowCount() - 1);
 }
 
 void ToneDialog::addTone()
 {
-    const int row = m_custom->rowCount();
-    m_custom->insertRow(row);
-    m_custom->setItem(row, kNameColumn, new QTableWidgetItem());
-    m_custom->setItem(row, kKeyColumn, new QTableWidgetItem());
-    m_custom->editItem(m_custom->item(row, kNameColumn));
-    m_custom->setCurrentCell(row, kNameColumn);
-    refreshButtons();
+    const int row = m_customModel->rowCount();
+    m_customModel->appendRow(rowFor(CustomTone{}));
+    const QModelIndex index = m_customModel->index(row, kNameColumn);
+    m_custom->setCurrentIndex(index);
+    m_custom->edit(index);
 }
 
 void ToneDialog::removeTone()
 {
-    const int row = m_custom->currentRow();
+    const int row = currentRow();
     if (row < 0)
         return;
-    m_custom->removeRow(row);
+    m_customModel->removeRow(row);
     refreshButtons();
 }
 
 void ToneDialog::moveTone(int offset)
 {
-    const int row = m_custom->currentRow();
+    const int row = currentRow();
     if (row < 0)
         return;
     const int target = row + offset;
-    if (target < 0 || target >= m_custom->rowCount())
+    if (target < 0 || target >= m_customModel->rowCount())
         return;
-    // moveRows keeps the row data and view state; destinationChild is the index
-    // the row is inserted before, so a downward move lands past the row it swaps
-    // with.
-    m_custom->model()->moveRows(QModelIndex(), row, 1, QModelIndex(), offset < 0 ? target : target + 1);
-    m_custom->selectRow(target);
-    // The current row is unchanged, so the end-of-list states are refreshed here.
+    // QStandardItemModel offers no moveRows, so the row is taken out and put back.
+    m_customModel->insertRow(target, m_customModel->takeRow(row));
+    m_custom->setCurrentIndex(m_customModel->index(target, kNameColumn));
     refreshButtons();
 }

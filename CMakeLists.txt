@@ -90,6 +90,7 @@ set(UI_SOURCES
     src/ui/mainwindow/MainWindow.cpp
     src/ui/widgets/ConfigEditors.cpp
     src/ui/widgets/PresetBar.cpp
+    src/ui/widgets/MessageBoxes.cpp
     src/ui/widgets/PresetListEditor.cpp
     src/ui/widgets/TranslationEdit.cpp
     src/ui/widgets/CandidatePopup.cpp
@@ -113,6 +114,7 @@ set(UI_HEADERS
     src/ui/mainwindow/MainWindow.h
     src/ui/widgets/ConfigEditors.h
     src/ui/widgets/PresetBar.h
+    src/ui/widgets/MessageBoxes.h
     src/ui/widgets/PresetListEditor.h
     src/ui/widgets/TranslationEdit.h
     src/ui/widgets/CandidatePopup.h

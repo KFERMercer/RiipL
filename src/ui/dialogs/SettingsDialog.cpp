@@ -16,6 +16,7 @@
 #include "ui/widgets/AppFonts.h"
 #include "ui/widgets/ConfigEditors.h"
 #include "ui/widgets/FlowLayout.h"
+#include "ui/widgets/MessageBoxes.h"
 #include "ui/widgets/ThemeColors.h"
 #include "ui/widgets/WindowState.h"
 
@@ -184,24 +185,9 @@ void SettingsDialog::changeEvent(QEvent* event)
         retranslateUi();
 }
 
-// Cancel is the default, so a stray Return never drops pending edits.
-bool SettingsDialog::confirmDiscard(const QString& title, const QString& text,
-                                    const QString& informativeText)
-{
-    QMessageBox box(this);
-    box.setIcon(QMessageBox::Warning);
-    box.setWindowTitle(title);
-    box.setText(text);
-    if (!informativeText.isEmpty())
-        box.setInformativeText(informativeText);
-    box.setStandardButtons(QMessageBox::Discard | QMessageBox::Cancel);
-    box.setDefaultButton(QMessageBox::Cancel);
-    return box.exec() == QMessageBox::Discard;
-}
-
 void SettingsDialog::reject()
 {
-    if (isDirty() && !confirmDiscard(tr("Unsaved changes"), tr("Your changes have not been applied yet.")))
+    if (isDirty() && !MessageBoxes::confirmDiscard(this))
         return;
     QDialog::reject();
 }

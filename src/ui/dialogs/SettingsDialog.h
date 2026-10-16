@@ -67,8 +67,6 @@ private:
     static QWidget* fieldWithHint(QWidget* field, QLabel* hint);
 
     bool isDirty() const;
-    bool confirmDiscard(const QString& title, const QString& text,
-                        const QString& informativeText = QString());
     // Values the editors of \p fields hold right now, pending edits included.
     QJsonObject editedValues(const QStringList& fields) const;
     // Loads \p preset into the editors of \p fields; a field the preset does not

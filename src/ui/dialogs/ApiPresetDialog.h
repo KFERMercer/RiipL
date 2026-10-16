@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QDialog>
+#include <QJsonArray>
 #include <QVector>
 
 #include "core/config/Preset.h"
@@ -18,6 +19,8 @@ public:
     explicit ApiPresetDialog(const QVector<Preset>& presets, int selectedIndex = -1,
                              QWidget* parent = nullptr);
 
+    void reject() override;
+
     // Runs the window against the stored presets for callers that hold no pending
     // API edits of their own.
     static void manage(QWidget* parent);
@@ -28,5 +31,9 @@ public:
     int loadedIndex() const;
 
 private:
+    // True while the presets differ from the ones the window opened with.
+    bool isDirty() const;
+
     PresetListEditor* m_list = nullptr;
+    QJsonArray m_initialPresets;
 };

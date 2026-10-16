@@ -3,6 +3,7 @@
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
 #include "ui/widgets/ConfigEditors.h"
+#include "ui/widgets/MessageBoxes.h"
 #include "ui/widgets/PresetListEditor.h"
 #include "ui/widgets/WindowState.h"
 
@@ -103,19 +104,10 @@ ContextPresetDialog::ContextPresetDialog(const QVector<Preset>& presets, const Q
     WindowState::track(this, WindowState::Id::contextPresets);
 }
 
-// Cancel discards pending edits, so it asks first while any are held.
 void ContextPresetDialog::reject()
 {
-    if (isDirty()) {
-        QMessageBox box(this);
-        box.setIcon(QMessageBox::Warning);
-        box.setWindowTitle(tr("Unsaved changes"));
-        box.setText(tr("Your changes have not been applied yet."));
-        box.setStandardButtons(QMessageBox::Discard | QMessageBox::Cancel);
-        box.setDefaultButton(QMessageBox::Cancel);
-        if (box.exec() != QMessageBox::Discard)
-            return;
-    }
+    if (isDirty() && !MessageBoxes::confirmDiscard(this))
+        return;
 
     QDialog::reject();
 }
