@@ -17,16 +17,13 @@ bool isDarkScheme(const QWidget* widget)
     return widget->palette().color(QPalette::Window).lightness() < 128;
 }
 
-} // namespace
+}
 
 QColor ThemeColors::neutralText(const QWidget* widget)
 {
     return widget->palette().color(QPalette::PlaceholderText);
 }
 
-// QPalette has no success/error roles, so semantic hues are defined here and
-// selected by the active colour scheme to stay legible on both light and dark
-// themes.
 QColor ThemeColors::successText(const QWidget* widget)
 {
     return isDarkScheme(widget) ? QColor(0x66, 0xbb, 0x6a) : QColor(0x2e, 0x7d, 0x32);
@@ -42,4 +39,19 @@ void ThemeColors::setTextColor(QWidget* widget, const QColor& color)
     QPalette palette = widget->palette();
     palette.setColor(widget->foregroundRole(), color);
     widget->setPalette(palette);
+}
+
+QString ThemeColors::primaryButtonStyle()
+{
+    return QStringLiteral(
+        "QToolButton { color: white;"
+        "              background-color: #007653;"
+        "              border: 1px solid transparent;"
+        "              border-radius: 0.25em;"
+        "              padding: 0.25em; }"
+        "QToolButton:hover { background-color: #00805a; }"
+        "QToolButton:pressed { background-color: #005c41; }"
+        "QToolButton:focus { border: 1px solid palette(highlight); }"
+        "QToolButton:disabled { color: rgba(255, 255, 255, 190);"
+        "                       background-color: rgba(0, 118, 83, 150); }");
 }

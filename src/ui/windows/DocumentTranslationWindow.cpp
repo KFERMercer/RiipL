@@ -5,7 +5,7 @@
 #include "core/document/DocumentCache.h"
 #include "ui/widgets/AppFonts.h"
 #include "ui/widgets/ConfigEditors.h"
-#include "ui/widgets/ThemeColors.h"
+#include "ui/widgets/StatusPresenter.h"
 #include "ui/widgets/TranslationEdit.h"
 #include "ui/widgets/WindowState.h"
 
@@ -24,7 +24,6 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
-#include <QPalette>
 #include <QProgressBar>
 #include <QPushButton>
 #include <QSaveFile>
@@ -84,8 +83,7 @@ DocumentTranslationWindow::DocumentTranslationWindow(ContextProvider context)
     layout->addWidget(m_previewGroup, 1);
 
     m_statusLabel = new QLabel(this);
-    // Status text can repeat a path the user typed, so it takes no markup.
-    m_statusLabel->setTextFormat(Qt::PlainText);
+    m_statusPresenter = std::make_unique<StatusPresenter>(m_statusLabel);
     layout->addWidget(m_statusLabel);
 
     auto* buttonRow = new QHBoxLayout();
@@ -168,6 +166,8 @@ DocumentTranslationWindow::DocumentTranslationWindow(ContextProvider context)
     retranslateUi();
 }
 
+DocumentTranslationWindow::~DocumentTranslationWindow() = default;
+
 void DocumentTranslationWindow::changeEvent(QEvent* event)
 {
     QWidget::changeEvent(event);
@@ -186,7 +186,6 @@ void DocumentTranslationWindow::retranslateUi()
     m_previewGroup->setTitle(tr("Preview"));
     m_browseButton->setText(tr("Browse..."));
     m_translateAction->setText(tr("Translate"));
-    m_translateAction->setToolTip(tr("Translate the loaded document (Ctrl+Enter)"));
     m_stopAction->setText(tr("Stop"));
     m_stopAction->setToolTip(tr("Stop translation"));
     m_exportButton->setText(tr("Export translation..."));
@@ -194,7 +193,7 @@ void DocumentTranslationWindow::retranslateUi()
     m_apiPreset->setAccessibleName(tr("API preset"));
     m_tone->setAccessibleName(tr("Tone"));
     m_targetLang->setAccessibleName(tr("Target language"));
-    m_statusLabel->setText(statusText());
+    m_statusPresenter->refresh();
 
     populateApiPresets();
     populateTones();
@@ -266,15 +265,15 @@ void DocumentTranslationWindow::onConfigChanged(const QString& key)
     }
 }
 
-QString DocumentTranslationWindow::statusText() const
+QString DocumentTranslationWindow::statusText(Status status, const QString& argument) const
 {
-    switch (m_status) {
+    switch (status) {
     case Status::Ready:
         return tr("Ready");
     case Status::ChooseFile:
         return tr("Choose file");
     case Status::CannotOpen:
-        return tr("Cannot open file: %1").arg(m_statusArgument);
+        return tr("Cannot open file: %1").arg(argument);
     case Status::NoContent:
         return tr("No content to translate");
     case Status::Translating:
@@ -284,15 +283,21 @@ QString DocumentTranslationWindow::statusText() const
     case Status::Finished:
         return tr("Translation finished");
     case Status::Failed:
-        return tr("Failed windows: %1").arg(m_statusArgument);
+        return tr("Failed windows: %1").arg(argument);
     case Status::Stopped:
         return tr("Stopped");
     case Status::Exported:
-        return tr("Exported to %1").arg(m_statusArgument);
+        return tr("Exported to %1").arg(argument);
     case Status::CannotWrite:
-        return tr("Cannot write file: %1").arg(m_statusArgument);
+        return tr("Cannot write file: %1").arg(argument);
     }
     return QString();
+}
+
+bool DocumentTranslationWindow::statusIsError(Status status)
+{
+    return status == Status::CannotOpen || status == Status::Failed
+        || status == Status::CannotWrite;
 }
 
 void DocumentTranslationWindow::browse()
@@ -310,8 +315,6 @@ void DocumentTranslationWindow::browse()
     clearResult();
 }
 
-// Drops what the last run left on screen, so a path the window has not read yet
-// does not sit beside the result of another one.
 void DocumentTranslationWindow::clearResult()
 {
     m_completedText.clear();
@@ -363,8 +366,7 @@ void DocumentTranslationWindow::start()
 {
     if (m_running)
         return;
-    // The document is read here rather than on Browse, so a run always translates
-    // the file the path box holds.
+    // Read here, so a run always translates the file the path box holds.
     if (!loadFile())
         return;
 
@@ -413,9 +415,8 @@ void DocumentTranslationWindow::exportResult()
     setStatus(Status::Exported, path);
 }
 
-// A run leaves the preview on the document accepted so far, which keeps the text
-// of the windows the run did not reach. The pane keeps whatever it shows, so a
-// stop does not wipe the lines already translated.
+// The preview already holds the document accepted so far, so a stop does not wipe
+// the lines translated.
 void DocumentTranslationWindow::endRun()
 {
     setRunning(false);
@@ -436,13 +437,9 @@ void DocumentTranslationWindow::setRunning(bool running)
 
 void DocumentTranslationWindow::setStatus(Status status, const QString& argument)
 {
-    m_status = status;
-    m_statusArgument = argument;
-    m_statusLabel->setText(statusText());
-    const bool error = status == Status::CannotOpen || status == Status::Failed
-        || status == Status::CannotWrite;
-    if (error)
-        ThemeColors::setTextColor(m_statusLabel, ThemeColors::errorText(m_statusLabel));
+    auto text = [this, status, argument]() { return statusText(status, argument); };
+    if (statusIsError(status))
+        m_statusPresenter->showFailure(std::move(text));
     else
-        m_statusLabel->setPalette(QPalette());
+        m_statusPresenter->show(std::move(text));
 }

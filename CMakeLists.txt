@@ -96,6 +96,7 @@ set(UI_SOURCES
     src/ui/widgets/AppFonts.cpp
     src/ui/widgets/FlowLayout.cpp
     src/ui/widgets/ThemeColors.cpp
+    src/ui/widgets/StatusPresenter.cpp
     src/ui/widgets/WindowState.cpp
     src/ui/dialogs/SettingsDialog.cpp
     src/ui/dialogs/ApiPresetDialog.cpp
@@ -115,6 +116,7 @@ set(UI_HEADERS
     src/ui/widgets/AppFonts.h
     src/ui/widgets/FlowLayout.h
     src/ui/widgets/ThemeColors.h
+    src/ui/widgets/StatusPresenter.h
     src/ui/widgets/WindowState.h
     src/ui/dialogs/SettingsDialog.h
     src/ui/dialogs/ApiPresetDialog.h

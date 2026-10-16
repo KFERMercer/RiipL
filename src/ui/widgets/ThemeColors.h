@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QColor>
+#include <QString>
 
 class QWidget;
 
@@ -11,4 +12,6 @@ public:
     static QColor successText(const QWidget* widget);
     static QColor errorText(const QWidget* widget);
     static void setTextColor(QWidget* widget, const QColor& color);
+
+    static QString primaryButtonStyle();
 };

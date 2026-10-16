@@ -12,7 +12,7 @@ TranslationEdit::TranslationEdit(QWidget* parent)
     : QTextEdit(parent)
 {
     setReadOnly(true);
-    setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::LinksAccessibleByMouse);
+    setTextInteractionFlags(Qt::TextSelectableByMouse);
 }
 
 void TranslationEdit::setWordSelectionEnabled(bool enabled)

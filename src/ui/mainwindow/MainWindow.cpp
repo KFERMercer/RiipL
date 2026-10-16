@@ -9,7 +9,9 @@
 #include "ui/dialogs/ToneDialog.h"
 #include "ui/widgets/AppFonts.h"
 #include "ui/widgets/AppIcons.h"
+#include "ui/widgets/StatusPresenter.h"
 #include "ui/widgets/ThemeColors.h"
+#include "ui/widgets/TranslationEdit.h"
 #include "ui/widgets/ConfigEditors.h"
 #include "ui/widgets/WindowState.h"
 #include "core/config/ApiPreset.h"
@@ -25,7 +27,6 @@
 #include <QByteArray>
 #include <QCloseEvent>
 #include <QComboBox>
-#include <QContextMenuEvent>
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QFileDialog>
@@ -35,7 +36,6 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
-#include <QPalette>
 #include <QPlainTextEdit>
 #include <QRandomGenerator>
 #include <QResizeEvent>
@@ -43,6 +43,7 @@
 #include <QSplitter>
 #include <QStatusBar>
 #include <QStringView>
+#include <QStyle>
 #include <QSystemTrayIcon>
 #include <QTimer>
 #include <QToolBar>
@@ -51,6 +52,7 @@
 #include <QWindow>
 #include <QVBoxLayout>
 
+#include <algorithm>
 #include <utility>
 
 namespace {
@@ -63,14 +65,16 @@ constexpr int kNoticeCharacters = 300;
 
 constexpr char kProjectUrl[] = "https://github.com/KFERMercer/RiipL";
 
-// One undoable edit of the translation pane.
 class ResultTextCommand : public QUndoCommand
 {
 public:
-    ResultTextCommand(TranslationEdit* edit, const QString& before, const QString& after)
+    // An applied edit is one the caller has already made, so the redo() that push()
+    // triggers must not write it again.
+    ResultTextCommand(TranslationEdit* edit, const QString& before, const QString& after, bool applied)
         : m_edit(edit)
         , m_before(before)
         , m_after(after)
+        , m_applied(applied)
     {
     }
 
@@ -92,12 +96,29 @@ private:
     TranslationEdit* m_edit;
     QString m_before;
     QString m_after;
-    bool m_applied = true;
+    bool m_applied;
 };
 
 bool carriesText(const QString& text)
 {
     return !QStringView(text).trimmed().isEmpty();
+}
+
+QToolButton* makeToolButton(QWidget* parent, QAction* action, Qt::ToolButtonStyle style)
+{
+    auto* button = new QToolButton(parent);
+    button->setDefaultAction(action);
+    button->setToolButtonStyle(style);
+    return button;
+}
+
+void bringToFront(QWidget* window)
+{
+    if (window->isMinimized())
+        window->setWindowState(window->windowState() & ~Qt::WindowMinimized);
+    window->show();
+    window->raise();
+    window->activateWindow();
 }
 
 }
@@ -128,6 +149,8 @@ MainWindow::MainWindow(QWidget* parent)
         const QRect available = screen()->availableGeometry();
         resize(available.width() * 2 / 5, available.height() / 2);
     }
+    // After the stored state, which carries its own value for this.
+    m_splitter->setChildrenCollapsible(false);
 
     m_swapAction = new QAction(this);
     m_swapAction->setIcon(AppIcons::swapHorizontal());
@@ -136,20 +159,24 @@ MainWindow::MainWindow(QWidget* parent)
     m_swapButton = new QToolButton(centralArea);
     m_swapButton->setDefaultAction(m_swapAction);
     m_swapButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
+    m_swapButton->raise();
+    updateSwapButtonMetrics();
     connect(m_splitter, &QSplitter::splitterMoved, this,
             &MainWindow::updateSwapButtonGeometry);
     QTimer::singleShot(0, this, &MainWindow::updateSwapButtonGeometry);
+    setTabOrder(m_sourceLang, m_swapButton);
+    setTabOrder(m_swapButton, m_sourceEdit);
+    setTabOrder(m_tone, m_targetLang);
 
     buildMenus();
     buildTray();
 
     m_statusLabel = new QLabel(this);
-    // A provider words its own failures, so this label takes no markup.
-    m_statusLabel->setTextFormat(Qt::PlainText);
+    m_statusPresenter = std::make_unique<StatusPresenter>(m_statusLabel);
     statusBar()->addWidget(m_statusLabel, 1);
     setStatus(Status::Ready);
 
-    m_popup = new CandidatePopup(&m_engine, this);
+    m_popup = std::make_unique<CandidatePopup>(&m_engine, this);
     connect(m_resultEdit, &TranslationEdit::wordRequested, this,
             [this](const QString& word, int selectionStart, int selectionEnd,
                    const QPoint& globalPos) {
@@ -158,7 +185,7 @@ MainWindow::MainWindow(QWidget* parent)
                 context.translatedText = m_candidateOrigin;
                 m_popup->openFor(word, selectionStart, selectionEnd, globalPos, context);
             });
-    connect(m_popup, &CandidatePopup::candidateChosen, this,
+    connect(m_popup.get(), &CandidatePopup::candidateChosen, this,
             [this](int start, int length, const QString& replacement) {
                 // The spans belong to the translation the popup was opened for.
                 if (m_resultEdit->result() != m_candidateOrigin) {
@@ -171,34 +198,32 @@ MainWindow::MainWindow(QWidget* parent)
                     return;
                 }
                 m_resultHistory.push(
-                    new ResultTextCommand(m_resultEdit, before, m_resultEdit->result()));
+                    new ResultTextCommand(m_resultEdit, before, m_resultEdit->result(), true));
             });
 
     connect(&m_engine, &TranslationEngine::partialDelta, this, &MainWindow::appendStreamedResult);
     connect(&m_engine, &TranslationEngine::finished, this, [this](const QString& text) {
         setResultText(text);
         setStatus(Status::Finished);
-        if (ConfigManager::instance()->boolValue(Keys::historyEnabled)) {
-            TranslationRecord record;
-            record.timestamp = QDateTime::currentSecsSinceEpoch();
-            record.sourceLang = m_sourceLang->currentData().toString();
-            record.targetLang = m_targetLang->currentData().toString();
-            record.source = m_sourceEdit->toPlainText();
-            record.target = text;
-            record.tone = m_tone->currentData().toString();
-            m_history.addRecord(record);
+        if (m_pendingRecord) {
+            if (ConfigManager::instance()->boolValue(Keys::historyEnabled)) {
+                m_pendingRecord->target = text;
+                m_history.addRecord(*m_pendingRecord);
+            }
+            m_pendingRecord.reset();
         }
     });
     connect(&m_engine, &TranslationEngine::errorOccurred, this, [this](const ApiClient::Error& failure) {
+        m_pendingRecord.reset();
         endResultStream();
         setStatusFailure(failure);
     });
-    connect(&m_engine, &TranslationEngine::stateChanged, this, [this](bool busy) {
-        setBusy(busy);
-        if (busy)
-            setStatus(Status::Translating);
+    // A candidate lookup also counts as busy, which the status line does not report.
+    connect(&m_engine, &TranslationEngine::stateChanged, this, &MainWindow::setBusy);
+    connect(&m_engine, &TranslationEngine::stopped, this, [this]() {
+        m_pendingRecord.reset();
+        endResultStream();
     });
-    connect(&m_engine, &TranslationEngine::stopped, this, &MainWindow::endResultStream);
 
     connect(&m_yolo, &YoloTranslator::translated, this, [this](const QString& text) {
         writeClipboard(text);
@@ -206,7 +231,7 @@ MainWindow::MainWindow(QWidget* parent)
             // The icon overload, so the notice carries the application mark rather
             // than the desktop's stock information icon.
             const QString notice = text.size() > kNoticeCharacters
-                ? text.left(kNoticeCharacters) + QChar(0x2026)
+                ? text.left(kNoticeCharacters) + QStringLiteral("\u2026")
                 : text;
             m_tray->showMessage(tr("YOLO"), notice, QApplication::windowIcon());
         }
@@ -283,56 +308,47 @@ void MainWindow::closeEvent(QCloseEvent* event)
 void MainWindow::resizeEvent(QResizeEvent* event)
 {
     QMainWindow::resizeEvent(event);
-    updateSwapButtonGeometry();
+    // Queued, because the panes take their new geometry after this handler returns.
+    QTimer::singleShot(0, this, &MainWindow::updateSwapButtonGeometry);
 }
 
-void MainWindow::contextMenuEvent(QContextMenuEvent* event)
+void MainWindow::showToolBarPopup(const QPoint& position)
 {
-    QWidget* row = childAt(event->pos());
-    while (row && row->parentWidget() != this)
-        row = row->parentWidget();
-    m_popupSource = row;
-    QMainWindow::contextMenuEvent(event);
-    m_popupSource = nullptr;
-}
-
-QMenu* MainWindow::createPopupMenu()
-{
-    if (qobject_cast<QToolBar*>(m_popupSource))
-        return toolBarPopup();
-    return QMainWindow::createPopupMenu();
-}
-
-QMenu* MainWindow::toolBarPopup()
-{
-    QMenu* menu = new QMenu(this);
-    menu->addSection(tr("Toolbar Settings"));
+    QMenu menu(this);
+    menu.addSection(tr("Toolbar Settings"));
     for (QAction* button : m_optionalToolBarButtons) {
-        QAction* entry = menu->addAction(button->iconText());
+        QAction* entry = menu.addAction(button->iconText());
         entry->setCheckable(true);
         entry->setChecked(m_toolBar->actions().contains(button));
         connect(entry, &QAction::toggled, this, [this, button](bool visible) {
             setToolBarButtonVisible(button, visible);
         });
     }
-    return menu;
+    menu.exec(m_toolBar->mapToGlobal(position));
 }
 
-// A button returns ahead of the buttons that follow it in buildMenus() order.
+// A button returns ahead of the buttons that follow it in buildMenus() order. The
+// action itself cannot be hidden: QAction::setVisible() would take it out of the menus.
 void MainWindow::setToolBarButtonVisible(QAction* button, bool visible)
 {
     if (!visible) {
         m_toolBar->removeAction(button);
-        return;
-    }
-    QAction* before = m_settingsSeparator;
-    for (int i = m_optionalToolBarButtons.indexOf(button) + 1; i < m_optionalToolBarButtons.size(); ++i) {
-        if (m_toolBar->actions().contains(m_optionalToolBarButtons.at(i))) {
-            before = m_optionalToolBarButtons.at(i);
-            break;
+    } else {
+        const QList<QAction*> shown = m_toolBar->actions();
+        QAction* before = m_settingsSeparator;
+        for (int i = m_optionalToolBarButtons.indexOf(button) + 1; i < m_optionalToolBarButtons.size(); ++i) {
+            if (shown.contains(m_optionalToolBarButtons.at(i))) {
+                before = m_optionalToolBarButtons.at(i);
+                break;
+            }
         }
+        m_toolBar->insertAction(before, button);
     }
-    m_toolBar->insertAction(before, button);
+    // Keeps the separator pair from standing empty.
+    const QList<QAction*> shown = m_toolBar->actions();
+    m_settingsSeparator->setVisible(std::any_of(
+        m_optionalToolBarButtons.cbegin(), m_optionalToolBarButtons.cend(),
+        [&shown](QAction* candidate) { return shown.contains(candidate); }));
 }
 
 QWidget* MainWindow::createLeftPane()
@@ -348,20 +364,13 @@ QWidget* MainWindow::createLeftPane()
     layout->addLayout(topRow);
 
     m_sourceEdit = new QPlainTextEdit(pane);
-    m_sourceEdit->setPlaceholderText(tr("Enter text to translate"));
     layout->addWidget(m_sourceEdit, 1);
 
     auto* bottomRow = new QHBoxLayout();
     m_clearAction = new QAction(pane);
     m_pasteAction = new QAction(pane);
-    auto* pasteButton = new QToolButton(pane);
-    pasteButton->setDefaultAction(m_pasteAction);
-    pasteButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
-    auto* clearButton = new QToolButton(pane);
-    clearButton->setDefaultAction(m_clearAction);
-    clearButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
-    bottomRow->addWidget(pasteButton);
-    bottomRow->addWidget(clearButton);
+    bottomRow->addWidget(makeToolButton(pane, m_pasteAction, Qt::ToolButtonTextOnly));
+    bottomRow->addWidget(makeToolButton(pane, m_clearAction, Qt::ToolButtonTextOnly));
     bottomRow->addStretch(1);
     m_countLabel = new QLabel(QStringLiteral("0"), pane);
     bottomRow->addWidget(m_countLabel);
@@ -411,28 +420,16 @@ QWidget* MainWindow::createRightPane()
         m_resultHistory.redo();
         setStatus(Status::Reapplied);
     });
-    // The window retranslates its own labels, so the stack only drives the enabled state.
+    // retranslateUi() owns the labels, so the stack only drives the enabled state.
     connect(&m_resultHistory, &QUndoStack::canUndoChanged, m_undoAction, &QAction::setEnabled);
     connect(&m_resultHistory, &QUndoStack::canRedoChanged, m_redoAction, &QAction::setEnabled);
     m_copyAction = new QAction(pane);
     m_clearResultAction = new QAction(pane);
-    auto* undoButton = new QToolButton(pane);
-    undoButton->setDefaultAction(m_undoAction);
-    undoButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
-    auto* redoButton = new QToolButton(pane);
-    redoButton->setDefaultAction(m_redoAction);
-    redoButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
-    auto* clearResultButton = new QToolButton(pane);
-    clearResultButton->setDefaultAction(m_clearResultAction);
-    clearResultButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
-    auto* copyButton = new QToolButton(pane);
-    copyButton->setDefaultAction(m_copyAction);
-    copyButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
-    bottomRow->addWidget(undoButton);
-    bottomRow->addWidget(redoButton);
+    bottomRow->addWidget(makeToolButton(pane, m_undoAction, Qt::ToolButtonIconOnly));
+    bottomRow->addWidget(makeToolButton(pane, m_redoAction, Qt::ToolButtonIconOnly));
     bottomRow->addStretch(1);
-    bottomRow->addWidget(clearResultButton);
-    bottomRow->addWidget(copyButton);
+    bottomRow->addWidget(makeToolButton(pane, m_clearResultAction, Qt::ToolButtonTextOnly));
+    bottomRow->addWidget(makeToolButton(pane, m_copyAction, Qt::ToolButtonTextOnly));
     layout->addLayout(bottomRow);
 
     connect(m_copyAction, &QAction::triggered, this, &MainWindow::copyResult);
@@ -448,6 +445,10 @@ void MainWindow::buildMenus()
     m_fileMenu = menuBar()->addMenu(QString());
     m_documentAction = m_fileMenu->addAction(QString());
     m_exportAction = m_fileMenu->addAction(QString());
+    m_fileMenu->addSeparator();
+    m_translateAction = new QAction(this);
+    m_translateAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+Return")));
+    m_fileMenu->addAction(m_translateAction);
     m_fileMenu->addSeparator();
     m_exitAction = m_fileMenu->addAction(QString());
     m_exitAction->setShortcutContext(Qt::ApplicationShortcut);
@@ -503,21 +504,11 @@ void MainWindow::buildMenus()
     m_toolBar = addToolBar(QString());
     m_toolBar->setMovable(false);
     m_toolBar->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    m_toolBar->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(m_toolBar, &QWidget::customContextMenuRequested, this, &MainWindow::showToolBarPopup);
 
-    m_translateAction = new QAction(this);
-    m_translateAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+Return")));
-    m_translateButton = new QToolButton(m_toolBar);
-    m_translateButton->setDefaultAction(m_translateAction);
-    m_translateButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
-    m_translateButton->setStyleSheet(QStringLiteral(
-        "QToolButton { color: white;"
-        "              background-color: #007653;"
-        "              border-radius: 0.25em;"
-        "              padding: 0.25em; }"
-        "QToolButton:hover { background-color: #009065; }"
-        "QToolButton:pressed { background-color: #005C41; }"
-        "QToolButton:disabled { color: rgba(255, 255, 255, 140);"
-        "                       background-color: rgba(0, 118, 83, 110); }"));
+    m_translateButton = makeToolButton(m_toolBar, m_translateAction, Qt::ToolButtonTextOnly);
+    m_translateButton->setStyleSheet(ThemeColors::primaryButtonStyle());
     m_toolBar->addWidget(m_translateButton);
     connect(m_translateAction, &QAction::triggered, this, &MainWindow::translateNow);
 
@@ -526,27 +517,14 @@ void MainWindow::buildMenus()
     connect(m_stopAction, &QAction::triggered, this, &MainWindow::stopTranslations);
 
     m_toolBar->addSeparator();
-    m_toolBar->addAction(m_documentAction);
-    m_toolBar->addAction(m_glossaryAction);
-    m_toolBar->addAction(m_yoloAction);
-    m_toolBar->addAction(m_apiPresetAction);
-    m_toolBar->addAction(m_historyAction);
+    // The buttons between the separators are the ones the toolbar popup toggles.
+    m_optionalToolBarButtons = {m_documentAction, m_glossaryAction, m_yoloAction,
+                                m_apiPresetAction, m_historyAction};
+    for (QAction* button : m_optionalToolBarButtons)
+        m_toolBar->addAction(button);
     m_settingsSeparator = m_toolBar->addSeparator();
     m_toolBar->addAction(m_settingsAction);
 
-    // Only the group between the toolbar's separators is optional.
-    bool middleGroup = false;
-    for (QAction* item : m_toolBar->actions()) {
-        if (item->isSeparator()) {
-            if (middleGroup)
-                break;
-            middleGroup = true;
-            continue;
-        }
-        if (middleGroup)
-            m_optionalToolBarButtons.append(item);
-    }
-    // These buttons belong to the group but start hidden.
     setToolBarButtonVisible(m_glossaryAction, false);
     setToolBarButtonVisible(m_apiPresetAction, false);
 
@@ -630,18 +608,29 @@ void MainWindow::buildTray()
     updateTrayIcon();
 }
 
+void MainWindow::updateSwapButtonMetrics()
+{
+    // The combo sets the row height, so the floating button matches it exactly.
+    const int height = m_sourceLang->sizeHint().height();
+    m_swapButton->setFixedSize(height * 2, height);
+}
+
 void MainWindow::updateSwapButtonGeometry()
 {
-    if (!m_splitter || !m_swapButton || !m_sourceLang)
+    if (!m_splitter || !m_swapButton || !m_sourceLang || !m_tone)
         return;
-    const QWidget* handle = m_splitter->handle(1);
+    QWidget* handle = m_splitter->handle(1);
     QWidget* base = m_swapButton->parentWidget();
     if (!handle || !base)
         return;
-    const QPoint comboCenter = m_sourceLang->mapTo(base, m_sourceLang->rect().center());
+    const QPoint comboRow = m_sourceLang->mapTo(
+        base, QPoint(0, (m_sourceLang->height() - m_swapButton->height()) / 2));
     const QPoint handleCenter = m_splitter->mapTo(base, handle->geometry().center());
-    m_swapButton->move(handleCenter.x() - m_swapButton->width() / 2,
-                       comboCenter.y() - m_swapButton->height() / 2);
+    // Centred on the handle, kept a standard gap clear of the right pane's controls.
+    const int gap = std::max(0, style()->pixelMetric(QStyle::PM_LayoutHorizontalSpacing));
+    const int limit = m_tone->mapTo(base, QPoint(0, 0)).x() - gap - m_swapButton->width();
+    m_swapButton->move(std::min(handleCenter.x() - m_swapButton->width() / 2, limit),
+                       comboRow.y());
 }
 
 void MainWindow::populateLanguageCombos()
@@ -726,8 +715,8 @@ void MainWindow::rebuildApiPresetMenu()
     syncApiPresetMenu();
 }
 
-// Mirrors syncLanguageMenu: the entry whose stored values match the applied
-// configuration is checked, and none is when the fields were edited by hand.
+// Checks the entry whose stored values match the applied configuration; none when
+// the fields were edited by hand.
 void MainWindow::syncApiPresetMenu()
 {
     if (!m_apiPresetMenu)
@@ -745,13 +734,15 @@ void MainWindow::syncApiPresetMenu()
 
 void MainWindow::applyAlwaysOnTop(bool onTop)
 {
+    Qt::WindowFlags flags = windowFlags();
+    flags.setFlag(Qt::WindowStaysOnTopHint, onTop);
     if (QWindow* handle = windowHandle()) {
-        Qt::WindowFlags flags = handle->flags();
-        flags.setFlag(Qt::WindowStaysOnTopHint, onTop);
-        if (flags != handle->flags())
-            handle->setFlags(flags);
+        handle->setFlags(flags);
+        // The window does not write the new flags back into the widget's cache.
+        overrideWindowFlags(flags);
         return;
     }
+    // No native window yet, so setWindowFlag() cannot hide or recreate one.
     setWindowFlag(Qt::WindowStaysOnTopHint, onTop);
 }
 
@@ -830,8 +821,8 @@ void MainWindow::onConfigChanged(const QString& key)
     } else if (key == Keys::apiPresets) {
         rebuildApiPresetMenu();
     } else if (Keys::apiPresetFields().contains(key)) {
-        // Applying a preset writes one changed() per field; the selection is
-        // re-derived once they have all landed.
+        // ApiPresets::apply() writes one changed() per field, so the selection is
+        // re-derived on each; the last one settles it.
         syncApiPresetMenu();
     }
 }
@@ -853,6 +844,8 @@ TranslationContext MainWindow::currentContext() const
 
 void MainWindow::onSourceChanged()
 {
+    // Editing the source answers the pending clipboard read with other work.
+    m_clipboardReadPending = false;
     updateCountLabel();
     if (m_autoTranslateAction->isChecked()) {
         m_debounce->start();
@@ -867,7 +860,18 @@ void MainWindow::translateNow()
         return;
     }
     endResultStream();
-    m_engine.translateText(currentContext());
+    const TranslationContext context = currentContext();
+    // The record describes the request, not the controls as they stand when the
+    // answer lands.
+    TranslationRecord record;
+    record.timestamp = QDateTime::currentSecsSinceEpoch();
+    record.sourceLang = context.sourceLang;
+    record.targetLang = context.targetLang;
+    record.source = context.sourceText;
+    record.tone = context.tone;
+    m_pendingRecord = record;
+    setStatus(Status::Translating);
+    m_engine.translateText(context);
 }
 
 void MainWindow::setBusy(bool busy)
@@ -877,24 +881,17 @@ void MainWindow::setBusy(bool busy)
 
 void MainWindow::setStatus(Status status, const QString& argument)
 {
-    m_status = status;
-    m_statusArgument = argument;
-    m_statusLabel->setText(statusText());
-    if (statusIsError())
-        ThemeColors::setTextColor(m_statusLabel, ThemeColors::errorText(m_statusLabel));
-    else
-        m_statusLabel->setPalette(QPalette());
+    m_statusPresenter->show([this, status, argument]() { return statusText(status, argument); });
 }
 
 void MainWindow::setStatusFailure(const ApiClient::Error& failure)
 {
-    m_statusFailure = failure;
-    setStatus(Status::Failure);
+    m_statusPresenter->showFailure([this, failure]() { return failure.text(); });
 }
 
-QString MainWindow::statusText() const
+QString MainWindow::statusText(Status status, const QString& argument) const
 {
-    switch (m_status) {
+    switch (status) {
     case Status::Ready: return tr("Ready");
     case Status::Translating: return tr("Translating...");
     case Status::Finished: return tr("Translation finished");
@@ -905,23 +902,21 @@ QString MainWindow::statusText() const
     case Status::Copied: return tr("Translation copied to clipboard");
     case Status::EmptySource: return tr("Enter text to translate");
     case Status::NothingToExport: return tr("Nothing to export");
-    case Status::Exported: return tr("Exported to %1").arg(m_statusArgument);
-    case Status::CannotWrite: return tr("Cannot write file: %1").arg(m_statusArgument);
-    case Status::Failure: return m_statusFailure.text();
+    case Status::Exported: return tr("Exported to %1").arg(argument);
+    case Status::CannotWrite: return tr("Cannot write file: %1").arg(argument);
     }
     return QString();
 }
 
-bool MainWindow::statusIsError() const
+bool MainWindow::statusIsError(Status status)
 {
-    return m_status == Status::NothingToExport
-        || m_status == Status::CannotWrite
-        || m_status == Status::Failure;
+    return status == Status::NothingToExport || status == Status::CannotWrite;
 }
 
 void MainWindow::updateCountLabel()
 {
-    m_countLabel->setText(tr("%n character(s)", nullptr, m_sourceEdit->toPlainText().size()));
+    m_countLabel->setText(
+        tr("%n character(s)", nullptr, m_sourceEdit->document()->characterCount() - 1));
 }
 
 void MainWindow::changeEvent(QEvent* event)
@@ -929,6 +924,14 @@ void MainWindow::changeEvent(QEvent* event)
     QMainWindow::changeEvent(event);
     if (event->type() == QEvent::LanguageChange) {
         retranslateUi();
+        return;
+    }
+    // A font or style change moves the controls without resizing the window.
+    if (event->type() == QEvent::FontChange || event->type() == QEvent::StyleChange) {
+        QTimer::singleShot(0, this, [this]() {
+            updateSwapButtonMetrics();
+            updateSwapButtonGeometry();
+        });
         return;
     }
     if (event->type() != QEvent::ActivationChange || !m_clipboardReadPending || !isActiveWindow())
@@ -986,11 +989,7 @@ void MainWindow::onClipboardTimeout()
 
 void MainWindow::translateClipboard()
 {
-    if (isMinimized())
-        setWindowState(windowState() & ~Qt::WindowMinimized);
-    show();
-    raise();
-    activateWindow();
+    bringToFront(this);
     takeClipboardText();
 }
 
@@ -1023,7 +1022,8 @@ void MainWindow::stopTranslations()
     // A request the pane has not sent yet is dropped with the ones in flight.
     m_debounce->stop();
     m_clipboardTimer->stop();
-    if (m_engine.isBusy()) {
+    // A candidate lookup leaves the engine busy without a translation to cancel.
+    if (m_pendingRecord) {
         m_engine.stop();
         setStatus(Status::Cancelled);
     }
@@ -1054,9 +1054,7 @@ void MainWindow::toggleVisible()
         hide();
         return;
     }
-    show();
-    raise();
-    activateWindow();
+    bringToFront(this);
 }
 
 void MainWindow::appendStreamedResult(const QString& piece)
@@ -1077,7 +1075,8 @@ void MainWindow::endResultStream()
 
 void MainWindow::discardResultStream()
 {
-    if (!m_engine.isBusy())
+    // A candidate lookup is not a run this abandons.
+    if (!m_pendingRecord)
         return;
     // Left uncommitted, because the caller's own edit is the undo entry.
     m_streamOpen = false;
@@ -1093,17 +1092,17 @@ void MainWindow::setResultText(const QString& text)
     if (m_streamOpen) {
         m_streamOpen = false;
         const QString origin = std::exchange(m_streamOrigin, QString());
-        // Finalizing only trims the streamed text, so the pane is edited in place.
+        // The final text differs only by trimming, so it is applied in place instead
+        // of replacing the document.
         if (m_resultEdit->result() != text)
             m_resultEdit->updateResult(text);
-        m_resultHistory.push(new ResultTextCommand(m_resultEdit, origin, text));
+        m_resultHistory.push(new ResultTextCommand(m_resultEdit, origin, text, true));
         return;
     }
     const QString before = m_resultEdit->result();
     if (before == text)
         return;
-    m_resultEdit->setResult(text);
-    m_resultHistory.push(new ResultTextCommand(m_resultEdit, before, text));
+    m_resultHistory.push(new ResultTextCommand(m_resultEdit, before, text, false));
 }
 
 void MainWindow::copyResult()
@@ -1151,11 +1150,7 @@ void MainWindow::showDocumentWindow()
         m_documentWindow = std::make_unique<DocumentTranslationWindow>(
             [this]() { return currentContext(); });
     }
-    if (m_documentWindow->isMinimized())
-        m_documentWindow->setWindowState(m_documentWindow->windowState() & ~Qt::WindowMinimized);
-    m_documentWindow->show();
-    m_documentWindow->raise();
-    m_documentWindow->activateWindow();
+    bringToFront(m_documentWindow.get());
 }
 
 void MainWindow::showHistoryDialog()
@@ -1217,7 +1212,9 @@ void MainWindow::retranslateUi()
     m_helpMenu->setTitle(tr("&Help"));
     m_aboutAction->setText(tr("About %1").arg(QCoreApplication::applicationName()));
 
-    m_translateAction->setText(tr("Translate"));
+    m_translateAction->setText(tr("Start translation"));
+    m_translateAction->setIconText(tr("Translate"));
+    m_translateAction->setToolTip(tr("Start translation"));
     m_stopAction->setText(tr("Stop"));
     m_toolBar->setWindowTitle(tr("Toolbar"));
     m_documentAction->setIconText(tr("Document"));
@@ -1226,23 +1223,29 @@ void MainWindow::retranslateUi()
     m_yoloAction->setIconText(tr("YOLO"));
     m_glossaryAction->setIconText(tr("Glossary"));
     m_apiPresetAction->setIconText(tr("API preset"));
-    m_translateAction->setToolTip(tr("Translate now (Ctrl+Enter)"));
     m_stopAction->setToolTip(tr("Stop translation"));
+    m_documentAction->setToolTip(tr("Document translation"));
     m_historyAction->setToolTip(tr("Translation history"));
     m_yoloAction->setToolTip(tr("Translate the clipboard as it changes and write the result back to it"));
-    m_undoAction->setToolTip(tr("Restore previous translation"));
-    m_redoAction->setToolTip(tr("Redo translation"));
-    m_swapAction->setToolTip(tr("Swap languages"));
+    m_glossaryAction->setToolTip(tr("Manage glossary"));
+    m_settingsAction->setToolTip(tr("Open settings"));
+    m_undoAction->setText(tr("Restore previous translation"));
+    m_redoAction->setText(tr("Redo translation"));
+    m_swapAction->setText(tr("Swap languages"));
     m_clearAction->setText(tr("Clear"));
     m_pasteAction->setText(tr("Paste"));
     m_copyAction->setText(tr("Copy"));
     m_clearResultAction->setText(tr("Clear"));
 
+    m_sourceLang->setToolTip(tr("Source language"));
+    m_tone->setToolTip(tr("Tone"));
+    m_targetLang->setToolTip(tr("Target language"));
+
     m_sourceEdit->setPlaceholderText(tr("Enter text to translate"));
 
     if (m_apiPresetPlaceholder)
         m_apiPresetPlaceholder->setText(tr("No presets"));
-    m_statusLabel->setText(statusText());
+    m_statusPresenter->refresh();
     updateCountLabel();
 
     if (m_tray) {

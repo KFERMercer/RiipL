@@ -5,6 +5,7 @@
 #include <QWidget>
 
 #include <functional>
+#include <memory>
 
 #include "core/document/DocumentSegmenter.h"
 #include "core/translation/DocumentTranslator.h"
@@ -17,6 +18,7 @@ class QLabel;
 class QLineEdit;
 class QProgressBar;
 class QPushButton;
+class StatusPresenter;
 class TranslationEdit;
 
 // A top-level peer of the main window. Closing hides it with the document, the
@@ -31,8 +33,9 @@ public:
     using ContextProvider = std::function<TranslationContext()>;
 
     explicit DocumentTranslationWindow(ContextProvider context);
+    ~DocumentTranslationWindow() override;
 
-    // Ends a run under way, for a stop that comes from outside this window.
+    // Ends a run under way; called from outside this window.
     void stopTranslation();
 
 protected:
@@ -45,7 +48,7 @@ private slots:
     void onConfigChanged(const QString& key);
 
 private:
-    // Reported status, held as a state so a language change can render it again.
+    // Held as a state, so a language change re-renders it.
     enum class Status {
         Ready,
         ChooseFile,
@@ -68,7 +71,8 @@ private:
     void setRunning(bool running);
     void endRun();
     void setStatus(Status status, const QString& argument = QString());
-    QString statusText() const;
+    QString statusText(Status status, const QString& argument) const;
+    static bool statusIsError(Status status);
     void retranslateUi();
     void populateApiPresets();
     void syncApiPreset();
@@ -85,8 +89,6 @@ private:
     // run has not reached yet carry their source text.
     QString m_completedText;
     QString m_resultLang;
-    Status m_status = Status::Ready;
-    QString m_statusArgument;
     QLineEdit* m_pathEdit = nullptr;
     QPushButton* m_browseButton = nullptr;
     QComboBox* m_apiPreset = nullptr;
@@ -94,6 +96,7 @@ private:
     QComboBox* m_targetLang = nullptr;
     QProgressBar* m_progress = nullptr;
     QLabel* m_statusLabel = nullptr;
+    std::unique_ptr<StatusPresenter> m_statusPresenter;
     TranslationEdit* m_preview = nullptr;
     QGroupBox* m_previewGroup = nullptr;
     QAction* m_translateAction = nullptr;
