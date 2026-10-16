@@ -164,7 +164,7 @@ void TestConfigManager::resolvesUiLocaleScript()
 
     // The result always names an offered language, so a catalog exists for it.
     for (const QString& stored : {QStringLiteral("auto"), QStringLiteral("zh"),
-                                  QStringLiteral("en"), QStringLiteral("ja")}) {
+                                  QStringLiteral("en")}) {
         ConfigManager::instance()->setValue(Keys::uiLanguage, stored);
         const QString resolved =
             QLocale::languageToCode(ConfigManager::instance()->uiLocale().language());
@@ -180,26 +180,24 @@ void TestConfigManager::rejectsUnofferedUiLanguage()
 
     // An unoffered language is refused outright.
     ConfigManager::instance()->setValue(Keys::uiLanguage, QStringLiteral("ja"));
-    QVERIFY(ConfigManager::instance()->hasValidUiLanguage());
     QVERIFY(ConfigManager::instance()->isDefault(Keys::uiLanguage));
     const QLocale::Language resolved = ConfigManager::instance()->uiLocale().language();
     QVERIFY(resolved == QLocale::English || resolved == QLocale::Chinese);
 
-    // "auto" is valid although it names no catalog.
+    // "auto" is accepted although it names no catalog.
     ConfigManager::instance()->setValue(Keys::uiLanguage, QStringLiteral("auto"));
-    QVERIFY(ConfigManager::instance()->hasValidUiLanguage());
-    for (const QString& code : Keys::uiLanguageCodes())
-        QVERIFY(!code.isEmpty());
+    QVERIFY(ConfigManager::instance()->isDefault(Keys::uiLanguage));
 
-    // A value written straight into the file is dropped on load.
+    // A value written straight into the file is not rewritten on load.
     {
         QFile file(ConfigManager::instance()->configFilePath());
         QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
         file.write("{\"ui\":{\"language\":\"ja\"}}");
     }
     ConfigManager::createInstance(dir);
-    QVERIFY(ConfigManager::instance()->hasValidUiLanguage());
-    QVERIFY(ConfigManager::instance()->isDefault(Keys::uiLanguage));
+    QCOMPARE(ConfigManager::instance()->stringValue(Keys::uiLanguage), QStringLiteral("ja"));
+    QVERIFY(Keys::uiLanguageCodes().contains(
+        QLocale::languageToCode(ConfigManager::instance()->uiLocale().language())));
 }
 
 void TestConfigManager::ignoresUnchangedSetValue()

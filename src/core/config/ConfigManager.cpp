@@ -80,7 +80,6 @@ void ConfigManager::load()
         return;
     }
     m_user = doc.object();
-    repairUiLanguage();
 }
 
 void ConfigManager::quarantineCorruptFile()
@@ -94,16 +93,6 @@ void ConfigManager::quarantineCorruptFile()
         return;
     }
     AppLog::warning() << "config.json is corrupted, falling back to defaults; kept as" << backup;
-}
-
-// An unoffered language would make the picker fall back to its first entry and
-// report that as an edit, so the stored value is dropped instead.
-void ConfigManager::repairUiLanguage()
-{
-    if (hasValidUiLanguage())
-        return;
-    JsonUtils::removeByPath(m_user, Keys::uiLanguage);
-    scheduleSave();
 }
 
 void ConfigManager::save()
@@ -144,16 +133,10 @@ QString ConfigManager::stringValue(const QString& key) const
     return value(key).toString();
 }
 
-bool ConfigManager::hasValidUiLanguage() const
-{
-    return Keys::isOfferedUiLanguage(stringValue(Keys::uiLanguage));
-}
-
 QLocale ConfigManager::uiLocale() const
 {
     const QString stored = stringValue(Keys::uiLanguage);
     const QLocale system = QLocale::system();
-    // No offered language stored: follow the session only when it is Chinese.
     if (!Keys::uiLanguageCodes().contains(stored))
         return system.language() == QLocale::Chinese ? system
                                                      : QLocale(QLocale::English, QLocale::AnyCountry);
@@ -184,8 +167,7 @@ bool ConfigManager::isDefault(const QString& key) const
 
 void ConfigManager::setValue(const QString& key, const QJsonValue& value)
 {
-    // Refused here as on load, so the stored value never disagrees with the
-    // selection the picker shows.
+    // The pickers hold no entry for a code outside the offered set.
     if (key == Keys::uiLanguage && !Keys::isOfferedUiLanguage(value.toString())) {
         AppLog::warning() << "ignoring unsupported ui.language" << value.toString();
         return;

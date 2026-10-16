@@ -20,7 +20,6 @@ public:
     QString stringValue(const QString& key) const;
     // The interface locale in effect, carrying its script.
     QLocale uiLocale() const;
-    bool hasValidUiLanguage() const;
     bool boolValue(const QString& key) const;
     int intValue(const QString& key) const;
     double doubleValue(const QString& key) const;
@@ -43,7 +42,6 @@ private:
     void reopen(const QString& configDir);
     void load();
     void quarantineCorruptFile();
-    void repairUiLanguage();
     void scheduleSave();
     void save();
 
