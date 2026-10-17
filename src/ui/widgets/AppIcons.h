@@ -20,6 +20,7 @@ public:
     static QIcon swapHorizontal();
     static QIcon moveUp();
     static QIcon moveDown();
+    static QIcon arrowRight();
     static QIcon reset();
     static QIcon undo();
     static QIcon redo();

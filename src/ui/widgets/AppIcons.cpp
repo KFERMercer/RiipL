@@ -132,6 +132,11 @@ QIcon AppIcons::moveDown()
     return standardIcon(QStyle::SP_ArrowDown);
 }
 
+QIcon AppIcons::arrowRight()
+{
+    return standardIcon(QStyle::SP_ArrowRight);
+}
+
 QIcon AppIcons::reset()
 {
     return standardIcon(QStyle::SP_DialogResetButton);

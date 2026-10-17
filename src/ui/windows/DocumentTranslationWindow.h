@@ -77,7 +77,8 @@ private:
     void populateApiPresets();
     void syncApiPreset();
     void populateTones();
-    void populateTargetLanguages();
+    void populateLanguageCombo(QComboBox* combo, bool includeAuto, const QString& key);
+    void updateArrowIcon();
     void updateOptionsEnabled();
 
     ContextProvider m_contextProvider;
@@ -91,10 +92,12 @@ private:
     QString m_resultLang;
     QLineEdit* m_pathEdit = nullptr;
     QPushButton* m_browseButton = nullptr;
-    QAction* m_contextAction = nullptr;
-    QComboBox* m_apiPreset = nullptr;
-    QComboBox* m_tone = nullptr;
+    QComboBox* m_sourceLang = nullptr;
+    QLabel* m_arrow = nullptr;
     QComboBox* m_targetLang = nullptr;
+    QAction* m_contextAction = nullptr;
+    QComboBox* m_tone = nullptr;
+    QComboBox* m_apiPreset = nullptr;
     QProgressBar* m_progress = nullptr;
     QLabel* m_statusLabel = nullptr;
     std::unique_ptr<StatusPresenter> m_statusPresenter;

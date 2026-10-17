@@ -5,6 +5,7 @@
 #include "core/document/DocumentCache.h"
 #include "ui/dialogs/ContextPresetDialog.h"
 #include "ui/widgets/AppFonts.h"
+#include "ui/widgets/AppIcons.h"
 #include "ui/widgets/ConfigEditors.h"
 #include "ui/widgets/StatusPresenter.h"
 #include "ui/widgets/TranslationEdit.h"
@@ -29,6 +30,7 @@
 #include <QProgressBar>
 #include <QPushButton>
 #include <QSaveFile>
+#include <QStyle>
 #include <QToolButton>
 #include <QVBoxLayout>
 
@@ -40,6 +42,14 @@ namespace {
 QVector<Preset> storedApiPresets()
 {
     return Presets::fromJson(ConfigManager::instance()->value(Keys::apiPresets).toArray());
+}
+
+QFrame* verticalSeparator(QWidget* parent)
+{
+    auto* separator = new QFrame(parent);
+    separator->setFrameShape(QFrame::VLine);
+    separator->setFrameShadow(QFrame::Sunken);
+    return separator;
 }
 
 }
@@ -62,22 +72,30 @@ DocumentTranslationWindow::DocumentTranslationWindow(ContextProvider context)
     layout->addLayout(fileRow);
 
     auto* optionsRow = new QHBoxLayout();
+    m_sourceLang = new QComboBox(this);
+    m_sourceLang->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+    m_arrow = new QLabel(this);
+    m_targetLang = new QComboBox(this);
+    m_targetLang->setSizeAdjustPolicy(QComboBox::AdjustToContents);
     m_contextAction = new QAction(this);
     auto* contextButton = new QToolButton(this);
     contextButton->setDefaultAction(m_contextAction);
     contextButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
-    auto* optionsSeparator = new QFrame(this);
-    optionsSeparator->setFrameShape(QFrame::VLine);
-    optionsSeparator->setFrameShadow(QFrame::Sunken);
-    m_apiPreset = new QComboBox(this);
     m_tone = new QComboBox(this);
-    m_targetLang = new QComboBox(this);
+    m_tone->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+    m_apiPreset = new QComboBox(this);
+    m_apiPreset->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+    optionsRow->addWidget(m_sourceLang);
+    optionsRow->addWidget(m_arrow);
+    optionsRow->addWidget(m_targetLang);
+    optionsRow->addWidget(verticalSeparator(this));
     optionsRow->addWidget(contextButton);
-    optionsRow->addWidget(optionsSeparator);
-    optionsRow->addWidget(m_apiPreset, 1);
-    optionsRow->addWidget(m_tone, 1);
-    optionsRow->addWidget(m_targetLang, 1);
+    optionsRow->addWidget(m_tone);
+    optionsRow->addWidget(verticalSeparator(this));
+    optionsRow->addWidget(m_apiPreset);
+    optionsRow->addStretch(1);
     layout->addLayout(optionsRow);
+    updateArrowIcon();
 
     m_progress = new QProgressBar(this);
     m_progress->setRange(0, 1);
@@ -137,13 +155,17 @@ DocumentTranslationWindow::DocumentTranslationWindow(ContextProvider context)
         if (index >= 0 && index < presets.size())
             Presets::apply(presets.at(index), Keys::apiPresetFields());
     });
-    connect(m_tone, &QComboBox::currentIndexChanged, this, [this](int index) {
-        ConfigManager::instance()->setValue(Keys::translationTone,
-                                            m_tone->itemData(index).toString());
+    connect(m_sourceLang, &QComboBox::currentIndexChanged, this, [this](int index) {
+        ConfigManager::instance()->setValue(Keys::translationSourceLang,
+                                            m_sourceLang->itemData(index).toString());
     });
     connect(m_targetLang, &QComboBox::currentIndexChanged, this, [this](int index) {
         ConfigManager::instance()->setValue(Keys::translationTargetLang,
                                             m_targetLang->itemData(index).toString());
+    });
+    connect(m_tone, &QComboBox::currentIndexChanged, this, [this](int index) {
+        ConfigManager::instance()->setValue(Keys::translationTone,
+                                            m_tone->itemData(index).toString());
     });
     connect(ConfigManager::instance(), &ConfigManager::changed, this,
             &DocumentTranslationWindow::onConfigChanged);
@@ -188,6 +210,10 @@ void DocumentTranslationWindow::changeEvent(QEvent* event)
         retranslateUi();
     else if (event->type() == QEvent::ApplicationFontChange)
         m_preview->setFont(AppFonts::editorFont());
+    else if (event->type() == QEvent::StyleChange || event->type() == QEvent::PaletteChange
+             || event->type() == QEvent::ApplicationPaletteChange
+             || event->type() == QEvent::DevicePixelRatioChange)
+        updateArrowIcon();
 }
 
 void DocumentTranslationWindow::retranslateUi()
@@ -199,20 +225,33 @@ void DocumentTranslationWindow::retranslateUi()
     m_previewGroup->setTitle(tr("Preview"));
     m_browseButton->setText(tr("Browse..."));
     m_translateAction->setText(tr("Translate"));
+    m_translateAction->setToolTip(tr("Start translation"));
     m_stopAction->setText(tr("Stop"));
     m_stopAction->setToolTip(tr("Stop translation"));
     m_exportButton->setText(tr("Export translation..."));
     m_closeButton->setText(tr("Close"));
     m_contextAction->setText(tr("Context"));
     m_contextAction->setToolTip(tr("Manage context presets"));
-    m_apiPreset->setAccessibleName(tr("API preset"));
-    m_tone->setAccessibleName(tr("Tone"));
+    m_sourceLang->setAccessibleName(tr("Source language"));
+    m_sourceLang->setToolTip(tr("Source language"));
     m_targetLang->setAccessibleName(tr("Target language"));
+    m_targetLang->setToolTip(tr("Target language"));
+    m_tone->setAccessibleName(tr("Tone"));
+    m_tone->setToolTip(tr("Tone"));
+    m_apiPreset->setAccessibleName(tr("API preset"));
+    m_apiPreset->setToolTip(tr("API preset"));
     m_statusPresenter->refresh();
 
-    populateApiPresets();
+    populateLanguageCombo(m_sourceLang, true, Keys::translationSourceLang);
+    populateLanguageCombo(m_targetLang, false, Keys::translationTargetLang);
     populateTones();
-    populateTargetLanguages();
+    populateApiPresets();
+}
+
+void DocumentTranslationWindow::updateArrowIcon()
+{
+    const int side = style()->pixelMetric(QStyle::PM_SmallIconSize);
+    m_arrow->setPixmap(AppIcons::arrowRight().pixmap(QSize(side, side), devicePixelRatioF()));
 }
 
 void DocumentTranslationWindow::populateApiPresets()
@@ -249,30 +288,32 @@ void DocumentTranslationWindow::populateTones()
     selectComboItem(m_tone, config->stringValue(Keys::translationTone));
 }
 
-void DocumentTranslationWindow::populateTargetLanguages()
+void DocumentTranslationWindow::populateLanguageCombo(QComboBox* combo, bool includeAuto,
+                                                     const QString& key)
 {
-    ConfigManager* config = ConfigManager::instance();
-    QSignalBlocker blocker(m_targetLang);
-    m_targetLang->clear();
-    for (const std::pair<QString, QString>& item : languageItems(false))
-        m_targetLang->addItem(item.first, item.second);
-    selectComboItem(m_targetLang, config->stringValue(Keys::translationTargetLang));
+    QSignalBlocker blocker(combo);
+    combo->clear();
+    for (const std::pair<QString, QString>& item : languageItems(includeAuto))
+        combo->addItem(item.first, item.second);
+    selectComboItem(combo, ConfigManager::instance()->stringValue(key));
 }
 
 void DocumentTranslationWindow::updateOptionsEnabled()
 {
     const bool editable = !m_running;
-    m_contextAction->setEnabled(editable);
-    m_apiPreset->setEnabled(editable && m_apiPreset->count() > 0);
-    m_tone->setEnabled(editable);
+    m_sourceLang->setEnabled(editable);
     m_targetLang->setEnabled(editable);
+    m_contextAction->setEnabled(editable);
+    m_tone->setEnabled(editable);
+    m_apiPreset->setEnabled(editable && m_apiPreset->count() > 0);
 }
 
 void DocumentTranslationWindow::onConfigChanged(const QString& key)
 {
-    if (key == Keys::translationTargetLang) {
-        QSignalBlocker blocker(m_targetLang);
-        selectComboItem(m_targetLang, ConfigManager::instance()->stringValue(key));
+    if (key == Keys::translationSourceLang || key == Keys::translationTargetLang) {
+        QComboBox* combo = key == Keys::translationSourceLang ? m_sourceLang : m_targetLang;
+        QSignalBlocker blocker(combo);
+        selectComboItem(combo, ConfigManager::instance()->stringValue(key));
     } else if (key == Keys::translationTone || key == Keys::translationCustomTones) {
         populateTones();
     } else if (key == Keys::apiPresets) {
@@ -397,6 +438,7 @@ void DocumentTranslationWindow::start()
     setRunning(true);
     setStatus(Status::Translating);
     TranslationContext context = m_contextProvider();
+    context.sourceLang = m_sourceLang->currentData().toString();
     context.targetLang = m_targetLang->currentData().toString();
     context.tone = m_tone->currentData().toString();
     m_resultLang = context.targetLang;
