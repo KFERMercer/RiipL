@@ -645,22 +645,21 @@ void MainWindow::populateLanguageCombos()
                                         : ConfigManager::instance()->stringValue(Keys::translationSourceLang);
     const QString target = m_targetLang ? m_targetLang->currentData().toString()
                                         : ConfigManager::instance()->stringValue(Keys::translationTargetLang);
+    const QVector<CustomLanguage> custom = Languages::customFromJson(
+        ConfigManager::instance()->value(Keys::translationCustomLanguages).toArray());
     if (m_sourceLang) {
         QSignalBlocker blocker(m_sourceLang);
         m_sourceLang->clear();
-        for (const LangItem& lang : Languages::all())
-            m_sourceLang->addItem(languageLabel(lang.code), lang.code);
+        for (const std::pair<QString, QString>& item : languageItems(true, custom))
+            m_sourceLang->addItem(item.first, item.second);
         const int index = m_sourceLang->findData(source.isEmpty() ? ConfigManager::instance()->stringValue(Keys::translationSourceLang) : source);
         m_sourceLang->setCurrentIndex(index < 0 ? 0 : index);
     }
     if (m_targetLang) {
         QSignalBlocker blocker(m_targetLang);
         m_targetLang->clear();
-        for (const LangItem& lang : Languages::all()) {
-            if (lang.code == QLatin1String("auto"))
-                continue;
-            m_targetLang->addItem(languageLabel(lang.code), lang.code);
-        }
+        for (const std::pair<QString, QString>& item : languageItems(false, custom))
+            m_targetLang->addItem(item.first, item.second);
         const int index = m_targetLang->findData(target.isEmpty() ? ConfigManager::instance()->stringValue(Keys::translationTargetLang) : target);
         m_targetLang->setCurrentIndex(index < 0 ? 1 : index);
     }
@@ -822,6 +821,8 @@ void MainWindow::onConfigChanged(const QString& key)
         const int index = combo->findData(ConfigManager::instance()->stringValue(key));
         if (index >= 0)
             combo->setCurrentIndex(index);
+    } else if (key == Keys::translationCustomLanguages) {
+        populateLanguageCombos();
     } else if (key == Keys::translationTone || key == Keys::translationCustomTones) {
         populateToneCombo();
     } else if (key == Keys::apiPresets) {

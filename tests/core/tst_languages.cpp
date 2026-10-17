@@ -14,6 +14,9 @@ private slots:
     void breaksTiesDeterministically();
     void resolveAutoExcludesTarget();
     void exposesTranslatableNames();
+    void parsesCustomLanguages();
+    void roundTripsCustomLanguages();
+    void resolvesBuiltInAndCustomKeys();
     void exposesBcp47Tags();
 };
 
@@ -114,6 +117,96 @@ void TestLanguages::exposesTranslatableNames()
     QCOMPARE(Languages::englishName(QStringLiteral("zh")), QStringLiteral("Chinese"));
     QCOMPARE(Languages::englishName(QStringLiteral("auto")), QStringLiteral("the detected language"));
     QCOMPARE(Languages::englishName(QStringLiteral("not-a-language")), QStringLiteral("not-a-language"));
+}
+
+void TestLanguages::parsesCustomLanguages()
+{
+    using namespace Languages;
+    const QJsonArray stored = {
+        QJsonObject{{QStringLiteral("key"), QStringLiteral("  Klingon  ")},
+                    {QStringLiteral("name"), QStringLiteral("  Klingon (custom)  ")}},
+        QJsonObject{{QStringLiteral("key"), QStringLiteral("x-nameless")},
+                    {QStringLiteral("name"), QStringLiteral("   ")}},
+        QJsonObject{{QStringLiteral("key"), QStringLiteral("   ")},
+                    {QStringLiteral("name"), QStringLiteral("Dropped")}},
+        QJsonObject{{QStringLiteral("name"), QStringLiteral("No key")}},
+        QJsonValue(QStringLiteral("not-an-object")),
+        QJsonObject{{QStringLiteral("key"), QStringLiteral("x-last")},
+                    {QStringLiteral("name"), QStringLiteral("Last")}}
+    };
+
+    const QVector<CustomLanguage> parsed = customFromJson(stored);
+    QCOMPARE(parsed.size(), 3);
+    QCOMPARE(parsed.at(0).key, QStringLiteral("Klingon"));
+    QCOMPARE(parsed.at(0).name, QStringLiteral("Klingon (custom)"));
+    // An entry without a name is displayed under its key.
+    QCOMPARE(parsed.at(1).key, QStringLiteral("x-nameless"));
+    QCOMPARE(parsed.at(1).name, QStringLiteral("x-nameless"));
+    QCOMPARE(parsed.at(2).key, QStringLiteral("x-last"));
+    QCOMPARE(parsed.at(2).name, QStringLiteral("Last"));
+
+    QVERIFY(customFromJson(QJsonArray()).isEmpty());
+
+    // The shared normaliser, exercised without the JSON reader.
+    const QVector<CustomLanguage> normalized = customNormalized({
+        {QStringLiteral("  Klingon  "), QStringLiteral("  Klingon (custom)  ")},
+        {QStringLiteral("x-nameless"), QString()},
+        {QStringLiteral("  "), QStringLiteral("Dropped")}
+    });
+    QCOMPARE(normalized.size(), 2);
+    QCOMPARE(normalized.at(0).key, QStringLiteral("Klingon"));
+    QCOMPARE(normalized.at(0).name, QStringLiteral("Klingon (custom)"));
+    QCOMPARE(normalized.at(1).key, QStringLiteral("x-nameless"));
+    QCOMPARE(normalized.at(1).name, QStringLiteral("x-nameless"));
+}
+
+void TestLanguages::roundTripsCustomLanguages()
+{
+    using namespace Languages;
+    const QVector<CustomLanguage> custom = {
+        {QStringLiteral("Klingon"), QStringLiteral("Klingon (custom)")},
+        {QStringLiteral("x-kl"), QStringLiteral("Klingon")}
+    };
+
+    const QJsonArray stored = customToJson(custom);
+    QCOMPARE(stored.size(), 2);
+    QCOMPARE(stored.at(0).toObject().keys(),
+             QStringList({QStringLiteral("key"), QStringLiteral("name")}));
+    QCOMPARE(stored.at(0).toObject().value(QStringLiteral("key")).toString(),
+             QStringLiteral("Klingon"));
+    QCOMPARE(stored.at(0).toObject().value(QStringLiteral("name")).toString(),
+             QStringLiteral("Klingon (custom)"));
+
+    const QVector<CustomLanguage> parsed = customFromJson(stored);
+    QCOMPARE(parsed.size(), custom.size());
+    for (qsizetype index = 0; index < custom.size(); ++index) {
+        QCOMPARE(parsed.at(index).key, custom.at(index).key);
+        QCOMPARE(parsed.at(index).name, custom.at(index).name);
+    }
+
+    QVERIFY(customToJson({}).isEmpty());
+    QVERIFY(customFromJson(customToJson({})).isEmpty());
+}
+
+void TestLanguages::resolvesBuiltInAndCustomKeys()
+{
+    using namespace Languages;
+    QCOMPARE(englishName(QStringLiteral("en")), QStringLiteral("English"));
+    QCOMPARE(englishName(QStringLiteral("auto")), QStringLiteral("the detected language"));
+    QCOMPARE(englishName(QStringLiteral("not-a-language")), QStringLiteral("not-a-language"));
+    QCOMPARE(englishName(QString()), QString());
+
+    const QVector<CustomLanguage> custom = customFromJson(
+        QJsonArray{QJsonObject{{QStringLiteral("key"), QStringLiteral("Klingon")},
+                               {QStringLiteral("name"), QStringLiteral("Klingon (custom)")}},
+                   QJsonObject{{QStringLiteral("key"), QStringLiteral("en")},
+                               {QStringLiteral("name"), QStringLiteral("Overridden English")}}});
+    QCOMPARE(custom.size(), 2);
+
+    QCOMPARE(englishName(custom.at(0).key), QStringLiteral("Klingon"));
+    QVERIFY(englishName(custom.at(0).key) != custom.at(0).name);
+    // A stored entry cannot rename a built-in code.
+    QCOMPARE(englishName(custom.at(1).key), QStringLiteral("English"));
 }
 
 void TestLanguages::exposesBcp47Tags()

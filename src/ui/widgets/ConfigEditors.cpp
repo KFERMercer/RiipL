@@ -474,10 +474,15 @@ void ConfigCheckBox::setControlValue(const QJsonValue& v)
 
 // The core tables mark their names with QT_TRANSLATE_NOOP under their own
 // contexts, so the lookup goes through the matching one.
-QString languageLabel(const QString& code)
+QString languageLabel(const QString& value, const QVector<CustomLanguage>& custom)
 {
-    const char* source = Languages::labelFor(code);
-    return source ? QCoreApplication::translate("Languages", source) : code;
+    if (const char* source = Languages::labelFor(value))
+        return QCoreApplication::translate("Languages", source);
+    for (const CustomLanguage& language : custom) {
+        if (language.key == value)
+            return language.name;
+    }
+    return value;
 }
 
 QString toneLabel(const QString& key)
@@ -500,13 +505,19 @@ QList<std::pair<QString, QString>> uiLanguageItems()
     return items;
 }
 
-QList<std::pair<QString, QString>> languageItems(bool includeAuto)
+QList<std::pair<QString, QString>> languageItems(bool includeAuto,
+                                                 const QVector<CustomLanguage>& custom)
 {
     QList<std::pair<QString, QString>> items;
     for (const LangItem& lang : Languages::all()) {
         if (!includeAuto && lang.code == QLatin1String("auto"))
             continue;
         items.append({languageLabel(lang.code), lang.code});
+    }
+    for (const CustomLanguage& language : custom) {
+        // A built-in code already resolves to its catalog name.
+        if (Languages::indexOf(language.key) < 0)
+            items.append({language.name, language.key});
     }
     return items;
 }

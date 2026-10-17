@@ -14,6 +14,7 @@ inline const QString contextPresets = QStringLiteral("context_presets");
 inline const QString document = QStringLiteral("document");
 inline const QString glossary = QStringLiteral("glossary");
 inline const QString history = QStringLiteral("history");
+inline const QString languages = QStringLiteral("languages");
 inline const QString promptPreview = QStringLiteral("prompt_preview");
 inline const QString settings = QStringLiteral("settings");
 inline const QString tones = QStringLiteral("tones");

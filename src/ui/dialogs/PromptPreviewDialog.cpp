@@ -3,6 +3,7 @@
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
 #include "core/models/Glossary.h"
+#include "core/translation/Language.h"
 #include "core/translation/PromptBuilder.h"
 #include "ui/widgets/AppFonts.h"
 #include "ui/widgets/ConfigEditors.h"
@@ -25,6 +26,8 @@ PromptPreviewDialog::PromptPreviewDialog(QWidget* parent)
     ConfigManager* config = ConfigManager::instance();
     m_glossaryEnabled = config->boolValue(Keys::glossaryEnabled);
     m_glossary = Glossary::loadFromConfig().entries;
+    const QVector<CustomLanguage> custom = Languages::customFromJson(
+        config->value(Keys::translationCustomLanguages).toArray());
 
     auto* layout = new QVBoxLayout(this);
 
@@ -33,11 +36,11 @@ PromptPreviewDialog::PromptPreviewDialog(QWidget* parent)
     m_source->setText(QStringLiteral("Hello, world! %1 is a translation tool.")
                           .arg(QCoreApplication::applicationName()));
     m_sourceLang = new QComboBox(this);
-    for (const std::pair<QString, QString>& item : languageItems(true))
+    for (const std::pair<QString, QString>& item : languageItems(true, custom))
         m_sourceLang->addItem(item.first, item.second);
     selectComboItem(m_sourceLang, config->stringValue(Keys::translationSourceLang));
     m_target = new QComboBox(this);
-    for (const std::pair<QString, QString>& item : languageItems(false))
+    for (const std::pair<QString, QString>& item : languageItems(false, custom))
         m_target->addItem(item.first, item.second);
     selectComboItem(m_target, config->stringValue(Keys::translationTargetLang));
     m_tone = new QComboBox(this);

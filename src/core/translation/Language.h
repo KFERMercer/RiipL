@@ -2,6 +2,9 @@
 
 #include <algorithm>
 #include <iterator>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QJsonValue>
 #include <QLatin1String>
 #include <QList>
 #include <QLocale>
@@ -14,6 +17,14 @@ struct LangItem
     // Prompt text handed to the model, and the source string of the name shown
     // in the UI. A literal so the UI can pass it to QCoreApplication::translate.
     const char* en;
+};
+
+// A user-defined language: the key fills the prompt and is what the settings
+// store, the name is the picker label.
+struct CustomLanguage
+{
+    QString key;
+    QString name;
 };
 
 namespace Languages {
@@ -75,12 +86,56 @@ inline int indexOf(const QString& code)
                                 : static_cast<int>(std::distance(list.cbegin(), found));
 }
 
-inline QString englishName(const QString& code)
+// Drops the entries no picker could select and names a nameless entry after its
+// key.
+inline QVector<CustomLanguage> customNormalized(const QVector<CustomLanguage>& custom)
 {
-    if (code == QLatin1String("auto"))
+    QVector<CustomLanguage> result;
+    result.reserve(custom.size());
+    for (const CustomLanguage& stored : custom) {
+        CustomLanguage language;
+        language.key = stored.key.trimmed();
+        if (language.key.isEmpty())
+            continue;
+        language.name = stored.name.trimmed();
+        if (language.name.isEmpty())
+            language.name = language.key;
+        result.append(language);
+    }
+    return result;
+}
+
+inline QVector<CustomLanguage> customFromJson(const QJsonArray& stored)
+{
+    QVector<CustomLanguage> custom;
+    custom.reserve(stored.size());
+    for (const QJsonValue& value : stored) {
+        const QJsonObject object = value.toObject();
+        custom.append({object.value(QStringLiteral("key")).toString(),
+                       object.value(QStringLiteral("name")).toString()});
+    }
+    return customNormalized(custom);
+}
+
+inline QJsonArray customToJson(const QVector<CustomLanguage>& custom)
+{
+    QJsonArray array;
+    for (const CustomLanguage& language : custom) {
+        QJsonObject object;
+        object.insert(QStringLiteral("key"), language.key);
+        object.insert(QStringLiteral("name"), language.name);
+        array.append(object);
+    }
+    return array;
+}
+
+// Prompt text for \p selected; a custom key passes through unchanged.
+inline QString englishName(const QString& selected)
+{
+    if (selected == QLatin1String("auto"))
         return QStringLiteral("the detected language");
-    const int index = indexOf(code);
-    return index >= 0 ? QString::fromUtf8(all().at(index).en) : code;
+    const int index = indexOf(selected);
+    return index >= 0 ? QString::fromUtf8(all().at(index).en) : selected;
 }
 
 // Untranslated name for the UI, or nullptr for an unknown code; the caller

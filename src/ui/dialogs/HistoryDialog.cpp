@@ -1,5 +1,7 @@
 #include "HistoryDialog.h"
 
+#include "core/config/ConfigManager.h"
+#include "core/config/Defaults.h"
 #include "core/translation/Language.h"
 #include "core/translation/Tone.h"
 #include "ui/widgets/ConfigEditors.h"
@@ -25,7 +27,7 @@
 
 namespace {
 
-using ColumnText = QString (*)(const TranslationRecord&);
+using ColumnText = QString (*)(const TranslationRecord&, const QVector<CustomLanguage>&);
 
 struct ColumnSpec
 {
@@ -40,37 +42,40 @@ struct ColumnSpec
 // is a single edit here.
 const ColumnSpec kColumns[] = {
     {QT_TRANSLATE_NOOP("HistoryDialog", "Time"),
-     [](const TranslationRecord& record) {
+     [](const TranslationRecord& record, const QVector<CustomLanguage>&) {
          return QDateTime::fromSecsSinceEpoch(record.timestamp)
              .toString(QStringLiteral("yyyy-MM-dd HH:mm:ss"));
      },
      QHeaderView::ResizeToContents, false},
     {QT_TRANSLATE_NOOP("HistoryDialog", "Source"),
-     [](const TranslationRecord& record) { return record.source; },
+     [](const TranslationRecord& record, const QVector<CustomLanguage>&) { return record.source; },
      QHeaderView::Stretch, true},
     {QT_TRANSLATE_NOOP("HistoryDialog", "Translation"),
-     [](const TranslationRecord& record) { return record.target; },
+     [](const TranslationRecord& record, const QVector<CustomLanguage>&) { return record.target; },
      QHeaderView::Stretch, true},
     {QT_TRANSLATE_NOOP("HistoryDialog", "Direction"),
-     [](const TranslationRecord& record) {
-         return QStringLiteral("%1 → %2").arg(languageLabel(record.sourceLang),
-                                             languageLabel(record.targetLang));
+     [](const TranslationRecord& record, const QVector<CustomLanguage>& custom) {
+         return QStringLiteral("%1 → %2").arg(languageLabel(record.sourceLang, custom),
+                                             languageLabel(record.targetLang, custom));
      },
      QHeaderView::ResizeToContents, false},
     {QT_TRANSLATE_NOOP("HistoryDialog", "Tone"),
-     [](const TranslationRecord& record) { return toneLabel(record.tone); },
+     [](const TranslationRecord& record, const QVector<CustomLanguage>&) {
+         return toneLabel(record.tone);
+     },
      QHeaderView::ResizeToContents, false},
 };
 
 constexpr int kColumnCount = int(std::size(kColumns));
 constexpr int kFirstColumn = 0;
 
-QList<QStandardItem*> rowFor(const TranslationRecord& record)
+QList<QStandardItem*> rowFor(const TranslationRecord& record,
+                             const QVector<CustomLanguage>& custom)
 {
     QList<QStandardItem*> row;
     row.reserve(kColumnCount);
     for (int column = 0; column < kColumnCount; ++column) {
-        const QString text = kColumns[column].text(record);
+        const QString text = kColumns[column].text(record, custom);
         auto* item = new QStandardItem(text);
         item->setEditable(false);
         if (kColumns[column].tooltip)
@@ -87,6 +92,8 @@ HistoryDialog::HistoryDialog(HistoryManager* history, QWidget* parent)
     , m_history(history)
 {
     setWindowTitle(tr("Translation history"));
+    m_customLanguages = Languages::customFromJson(
+        ConfigManager::instance()->value(Keys::translationCustomLanguages).toArray());
 
     auto* layout = new QVBoxLayout(this);
     auto* topRow = new QHBoxLayout();
@@ -181,7 +188,7 @@ void HistoryDialog::reload()
     if (removed > 0)
         m_model->removeRows(prefix, removed);
     for (int index = prefix; index < records.size() - suffix; ++index)
-        m_model->insertRow(index, rowFor(records.at(index)));
+        m_model->insertRow(index, rowFor(records.at(index), m_customLanguages));
 
     m_records = records;
     refreshButtons();

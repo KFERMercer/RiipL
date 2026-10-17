@@ -14,6 +14,7 @@ private slots:
     void substitutesContextValues();
     void omitsUnsetReferenceEntries();
     void namesExplicitSourceLanguage();
+    void namesStoredCustomLanguage();
     void writesToneEntries();
     void formatsGlossaryAsJson();
     void indentsMultiLineEntries();
@@ -155,6 +156,40 @@ void TestPromptBuilder::namesExplicitSourceLanguage()
     ConfigManager::instance()->setValue(Keys::promptSourceLang,
                                         QStringLiteral("- From: {source_lang}\n"));
     QVERIFY(PromptBuilder::build(context).user.contains(QStringLiteral("- From: French")));
+}
+
+void TestPromptBuilder::namesStoredCustomLanguage()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    ConfigManager::createInstance(TestSupport::tempDir());
+
+    ConfigManager::instance()->setValue(
+        Keys::translationCustomLanguages,
+        QJsonArray{QJsonObject{{QStringLiteral("key"), QStringLiteral("Klingon")},
+                               {QStringLiteral("name"), QStringLiteral("Klingon (custom)")}}});
+
+    TranslationContext context;
+    context.sourceText = QStringLiteral("Hello");
+    context.targetLang = QStringLiteral("Klingon");
+
+    const QString prompt = PromptBuilder::build(context).user;
+    QVERIFY(prompt.contains(QStringLiteral("Klingon")));
+    QVERIFY(!prompt.contains(QStringLiteral("Klingon (custom)")));
+    QVERIFY(!prompt.contains(QStringLiteral("{target_lang}")));
+
+    context.sourceLang = QStringLiteral("Klingon");
+    context.tone = QStringLiteral("formal");
+    QVERIFY(PromptBuilder::build(context).user
+                .contains(QStringLiteral("- Original language: Klingon")));
+
+    // A stored entry cannot shadow a built-in code.
+    ConfigManager::instance()->setValue(
+        Keys::translationCustomLanguages,
+        QJsonArray{QJsonObject{{QStringLiteral("key"), QStringLiteral("en")},
+                               {QStringLiteral("name"), QStringLiteral("Overridden English")}}});
+    context.targetLang = QStringLiteral("en");
+    QVERIFY(PromptBuilder::build(context).user.contains(QStringLiteral("English")));
+    QVERIFY(!PromptBuilder::build(context).user.contains(QStringLiteral("Overridden English")));
 }
 
 // The default tone is the absence of a tone: it stays out of the prompt like an

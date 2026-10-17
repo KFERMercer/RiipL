@@ -13,6 +13,7 @@
 
 #include "core/config/Preset.h"
 #include "core/network/ApiClient.h"
+#include "core/translation/Language.h"
 #include "ui/widgets/PresetBar.h"
 
 class ConfigEditableComboBox;
@@ -89,6 +90,7 @@ private:
     // Its own client, so listing models never disturbs a running translation.
     ApiClient m_apiClient;
     QJsonArray m_customTones;
+    QVector<CustomLanguage> m_customLanguages;
     QPushButton* m_applyButton = nullptr;
     HistoryManager* m_history = nullptr;
     QTabWidget* m_tabs = nullptr;

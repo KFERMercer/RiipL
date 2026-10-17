@@ -4,9 +4,12 @@
 #include <QJsonValue>
 #include <QList>
 #include <QString>
+#include <QVector>
 #include <QWidget>
 
 #include <utility>
+
+#include "core/translation/Language.h"
 
 class QCheckBox;
 class QComboBox;
@@ -204,12 +207,15 @@ private:
 };
 
 // Item lists for the language and tone selectors, shared by every editor that
-// offers the same choice so the display names stay in step.
-QList<std::pair<QString, QString>> languageItems(bool includeAuto);
+// offers the same choice so the display names stay in step. A language item
+// carries the stored value: a built-in code or a custom key.
+QList<std::pair<QString, QString>> languageItems(bool includeAuto,
+                                                 const QVector<CustomLanguage>& custom = {});
 QList<std::pair<QString, QString>> uiLanguageItems();
 QList<std::pair<QString, QString>> toneItems(const QJsonArray& customTones);
-// Display name of one language or tone preset, resolved through its catalog.
-QString languageLabel(const QString& code);
+// Display name of one stored language or tone preset, from its catalog entry or
+// from the stored custom name.
+QString languageLabel(const QString& value, const QVector<CustomLanguage>& custom = {});
 QString toneLabel(const QString& key);
 // Keeps the selection on the persisted key; an unknown key falls back to the
 // first entry.

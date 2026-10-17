@@ -105,6 +105,7 @@ set(UI_SOURCES
     src/ui/dialogs/ApiPresetDialog.cpp
     src/ui/dialogs/ContextPresetDialog.cpp
     src/ui/dialogs/GlossaryDialog.cpp
+    src/ui/dialogs/LanguageDialog.cpp
     src/ui/dialogs/ToneDialog.cpp
     src/ui/dialogs/PromptPreviewDialog.cpp
     src/ui/dialogs/HistoryDialog.cpp
@@ -129,6 +130,7 @@ set(UI_HEADERS
     src/ui/dialogs/ApiPresetDialog.h
     src/ui/dialogs/ContextPresetDialog.h
     src/ui/dialogs/GlossaryDialog.h
+    src/ui/dialogs/LanguageDialog.h
     src/ui/dialogs/ToneDialog.h
     src/ui/dialogs/PromptPreviewDialog.h
     src/ui/dialogs/HistoryDialog.h

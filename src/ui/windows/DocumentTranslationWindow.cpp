@@ -3,6 +3,7 @@
 #include "core/config/Preset.h"
 #include "core/config/ConfigManager.h"
 #include "core/document/DocumentCache.h"
+#include "core/translation/Language.h"
 #include "ui/dialogs/ContextPresetDialog.h"
 #include "ui/widgets/AppFonts.h"
 #include "ui/widgets/AppIcons.h"
@@ -293,7 +294,9 @@ void DocumentTranslationWindow::populateLanguageCombo(QComboBox* combo, bool inc
 {
     QSignalBlocker blocker(combo);
     combo->clear();
-    for (const std::pair<QString, QString>& item : languageItems(includeAuto))
+    const QVector<CustomLanguage> custom = Languages::customFromJson(
+        ConfigManager::instance()->value(Keys::translationCustomLanguages).toArray());
+    for (const std::pair<QString, QString>& item : languageItems(includeAuto, custom))
         combo->addItem(item.first, item.second);
     selectComboItem(combo, ConfigManager::instance()->stringValue(key));
 }
@@ -314,6 +317,9 @@ void DocumentTranslationWindow::onConfigChanged(const QString& key)
         QComboBox* combo = key == Keys::translationSourceLang ? m_sourceLang : m_targetLang;
         QSignalBlocker blocker(combo);
         selectComboItem(combo, ConfigManager::instance()->stringValue(key));
+    } else if (key == Keys::translationCustomLanguages) {
+        populateLanguageCombo(m_sourceLang, true, Keys::translationSourceLang);
+        populateLanguageCombo(m_targetLang, false, Keys::translationTargetLang);
     } else if (key == Keys::translationTone || key == Keys::translationCustomTones) {
         populateTones();
     } else if (key == Keys::apiPresets) {
@@ -456,6 +462,7 @@ void DocumentTranslationWindow::exportResult()
         return;
     const QFileInfo info(m_loadedPath);
     const QString suffix = info.suffix().isEmpty() ? QStringLiteral("txt") : info.suffix();
+    // A custom language carries no BCP-47 code, so its key names the export.
     const QString name = QStringLiteral("%1.translated.%2.%3")
                              .arg(info.completeBaseName(), m_resultLang, suffix);
     const QString path

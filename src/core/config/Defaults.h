@@ -68,6 +68,7 @@ inline const QString translationSourceLang = QStringLiteral("translation.source_
 inline const QString translationTargetLang = QStringLiteral("translation.target_lang");
 inline const QString translationTone = QStringLiteral("translation.tone");
 inline const QString translationCustomTones = QStringLiteral("translation.custom_tones");
+inline const QString translationCustomLanguages = QStringLiteral("translation.custom_languages");
 inline const QString translationStyle = QStringLiteral("translation.style");
 inline const QString translationBackground = QStringLiteral("translation.background");
 
@@ -279,6 +280,7 @@ inline QJsonValue value(const QString& key)
         {Keys::translationTargetLang, translationTargetLang},
         {Keys::translationTone, translationTone},
         {Keys::translationCustomTones, QJsonArray()},
+        {Keys::translationCustomLanguages, QJsonArray()},
         {Keys::translationStyle, translationStyle},
         {Keys::translationBackground, translationBackground},
         {Keys::contextPresets, QJsonArray()},

@@ -4,6 +4,7 @@
 #include <QVector>
 
 #include "core/history/HistoryManager.h"
+#include "core/translation/Language.h"
 
 class QLineEdit;
 class QModelIndex;
@@ -38,4 +39,5 @@ private:
     QPushButton* m_reuseButton = nullptr;
     QPushButton* m_deleteButton = nullptr;
     QVector<TranslationRecord> m_records;
+    QVector<CustomLanguage> m_customLanguages;
 };

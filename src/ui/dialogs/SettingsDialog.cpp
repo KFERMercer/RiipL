@@ -4,6 +4,7 @@
 #include "ContextPresetDialog.h"
 #include "GlossaryDialog.h"
 #include "HistoryDialog.h"
+#include "LanguageDialog.h"
 #include "PromptPreviewDialog.h"
 #include "ToneDialog.h"
 #include "core/config/ConfigManager.h"
@@ -86,6 +87,8 @@ SettingsDialog::SettingsDialog(HistoryManager* history, QWidget* parent)
     , m_history(history)
 {
     m_customTones = ConfigManager::instance()->value(Keys::translationCustomTones).toArray();
+    m_customLanguages = Languages::customFromJson(
+        ConfigManager::instance()->value(Keys::translationCustomLanguages).toArray());
 
     auto* layout = new QVBoxLayout(this);
     m_tabs = new QTabWidget(this);
@@ -207,6 +210,10 @@ bool SettingsDialog::isDirty() const
     ConfigManager* config = ConfigManager::instance();
     if (QJsonValue(m_customTones) != config->value(Keys::translationCustomTones))
         return true;
+    if (QJsonValue(Languages::customToJson(m_customLanguages))
+        != config->value(Keys::translationCustomLanguages)) {
+        return true;
+    }
     if ((m_apiPresetBar && m_apiPresetBar->isDirty())
         || (m_contextPresetBar && m_contextPresetBar->isDirty())) {
         return true;
@@ -224,6 +231,12 @@ void SettingsDialog::applyChanges()
 
     if (QJsonValue(m_customTones) != config->value(Keys::translationCustomTones))
         config->setValue(Keys::translationCustomTones, m_customTones);
+
+    if (QJsonValue(Languages::customToJson(m_customLanguages))
+        != config->value(Keys::translationCustomLanguages)) {
+        config->setValue(Keys::translationCustomLanguages,
+                         Languages::customToJson(m_customLanguages));
+    }
 
     m_apiPresetBar->applyPresets();
     m_contextPresetBar->applyPresets();
@@ -422,12 +435,27 @@ QWidget* SettingsDialog::createTranslationPage()
 
     auto* sourceCombo = new ConfigComboBox(Keys::translationSourceLang, page);
     auto* targetCombo = new ConfigComboBox(Keys::translationTargetLang, page);
-    bindText([sourceCombo, targetCombo]() {
-        sourceCombo->setItems(languageItems(true));
-        targetCombo->setItems(languageItems(false));
-    });
+    auto rebuildLanguageItems = [this, sourceCombo, targetCombo]() {
+        sourceCombo->setItems(languageItems(true, m_customLanguages));
+        targetCombo->setItems(languageItems(false, m_customLanguages));
+    };
+    rebuildLanguageItems();
+    bindText(rebuildLanguageItems);
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Source language"), sourceCombo);
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Target language"), targetCombo);
+
+    auto* manageLanguages = new QPushButton(page);
+    bindText([manageLanguages]() { manageLanguages->setText(tr("Custom languages")); });
+    connect(manageLanguages, &QPushButton::clicked, page,
+            [this, rebuildLanguageItems, page]() {
+                LanguageDialog dialog(m_customLanguages, page);
+                if (dialog.exec() != QDialog::Accepted)
+                    return;
+                m_customLanguages = dialog.customLanguages();
+                rebuildLanguageItems();
+                updateDirtyState();
+            });
+    form->addRow(QString(), manageLanguages);
 
     auto* toneRow = new QHBoxLayout();
     auto* toneCombo = new ConfigComboBox(Keys::translationTone, page);
