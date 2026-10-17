@@ -19,8 +19,8 @@ struct LangItem
     const char* en;
 };
 
-// A user-defined language: the key fills the prompt and is what the settings
-// store, the name is the picker label.
+// A user-defined language: the key goes into the prompt and the settings; the
+// name labels the pickers.
 struct CustomLanguage
 {
     QString key;
@@ -86,8 +86,8 @@ inline int indexOf(const QString& code)
                                 : static_cast<int>(std::distance(list.cbegin(), found));
 }
 
-// Drops the entries no picker could select and names a nameless entry after its
-// key.
+// Drops the entries no picker could offer: a language carries both the key it
+// prompts with and the name it shows.
 inline QVector<CustomLanguage> customNormalized(const QVector<CustomLanguage>& custom)
 {
     QVector<CustomLanguage> result;
@@ -95,11 +95,9 @@ inline QVector<CustomLanguage> customNormalized(const QVector<CustomLanguage>& c
     for (const CustomLanguage& stored : custom) {
         CustomLanguage language;
         language.key = stored.key.trimmed();
-        if (language.key.isEmpty())
-            continue;
         language.name = stored.name.trimmed();
-        if (language.name.isEmpty())
-            language.name = language.key;
+        if (language.key.isEmpty() || language.name.isEmpty())
+            continue;
         result.append(language);
     }
     return result;

@@ -125,7 +125,7 @@ bool LanguageDialog::isDirty() const
 void LanguageDialog::loadLanguages(const QVector<CustomLanguage>& stored)
 {
     m_customModel->removeRows(0, m_customModel->rowCount());
-    for (const CustomLanguage& language : stored)
+    for (const CustomLanguage& language : Languages::customNormalized(stored))
         m_customModel->appendRow(rowFor(language));
 }
 

@@ -50,7 +50,8 @@ PromptPreviewDialog::PromptPreviewDialog(QWidget* parent)
          : toneItems(config->value(Keys::translationCustomTones).toArray())) {
         m_tone->addItem(item.first, item.second);
     }
-    selectComboItem(m_tone, config->stringValue(Keys::translationTone));
+    selectComboItem(m_tone, config->stringValue(Keys::translationTone),
+                    Defaults::value(Keys::translationTone).toString());
     m_style = new QLineEdit(config->stringValue(Keys::translationStyle), this);
     m_background = new QLineEdit(config->stringValue(Keys::translationBackground), this);
     form->addRow(tr("Sample text"), m_source);

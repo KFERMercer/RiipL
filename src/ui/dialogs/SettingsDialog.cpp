@@ -13,7 +13,9 @@
 #include "core/document/DocumentSegmenter.h"
 #include "core/history/HistoryManager.h"
 #include "core/network/ApiClient.h"
+#include "core/translation/Language.h"
 #include "core/translation/PromptBuilder.h"
+#include "core/translation/Tone.h"
 #include "core/translation/TranslationEngine.h"
 #include "ui/widgets/AppFonts.h"
 #include "ui/widgets/ConfigEditors.h"
@@ -87,8 +89,7 @@ SettingsDialog::SettingsDialog(HistoryManager* history, QWidget* parent)
     , m_history(history)
 {
     m_customTones = ConfigManager::instance()->value(Keys::translationCustomTones).toArray();
-    m_customLanguages = Languages::customFromJson(
-        ConfigManager::instance()->value(Keys::translationCustomLanguages).toArray());
+    m_customLanguages = ConfigManager::instance()->value(Keys::translationCustomLanguages).toArray();
 
     auto* layout = new QVBoxLayout(this);
     m_tabs = new QTabWidget(this);
@@ -210,10 +211,8 @@ bool SettingsDialog::isDirty() const
     ConfigManager* config = ConfigManager::instance();
     if (QJsonValue(m_customTones) != config->value(Keys::translationCustomTones))
         return true;
-    if (QJsonValue(Languages::customToJson(m_customLanguages))
-        != config->value(Keys::translationCustomLanguages)) {
+    if (QJsonValue(m_customLanguages) != config->value(Keys::translationCustomLanguages))
         return true;
-    }
     if ((m_apiPresetBar && m_apiPresetBar->isDirty())
         || (m_contextPresetBar && m_contextPresetBar->isDirty())) {
         return true;
@@ -232,11 +231,8 @@ void SettingsDialog::applyChanges()
     if (QJsonValue(m_customTones) != config->value(Keys::translationCustomTones))
         config->setValue(Keys::translationCustomTones, m_customTones);
 
-    if (QJsonValue(Languages::customToJson(m_customLanguages))
-        != config->value(Keys::translationCustomLanguages)) {
-        config->setValue(Keys::translationCustomLanguages,
-                         Languages::customToJson(m_customLanguages));
-    }
+    if (QJsonValue(m_customLanguages) != config->value(Keys::translationCustomLanguages))
+        config->setValue(Keys::translationCustomLanguages, m_customLanguages);
 
     m_apiPresetBar->applyPresets();
     m_contextPresetBar->applyPresets();
@@ -436,8 +432,9 @@ QWidget* SettingsDialog::createTranslationPage()
     auto* sourceCombo = new ConfigComboBox(Keys::translationSourceLang, page);
     auto* targetCombo = new ConfigComboBox(Keys::translationTargetLang, page);
     auto rebuildLanguageItems = [this, sourceCombo, targetCombo]() {
-        sourceCombo->setItems(languageItems(true, m_customLanguages));
-        targetCombo->setItems(languageItems(false, m_customLanguages));
+        const QVector<CustomLanguage> custom = Languages::customFromJson(m_customLanguages);
+        sourceCombo->setItems(languageItems(true, custom));
+        targetCombo->setItems(languageItems(false, custom));
     };
     rebuildLanguageItems();
     bindText(rebuildLanguageItems);
@@ -448,10 +445,10 @@ QWidget* SettingsDialog::createTranslationPage()
     bindText([manageLanguages]() { manageLanguages->setText(tr("Custom languages")); });
     connect(manageLanguages, &QPushButton::clicked, page,
             [this, rebuildLanguageItems, page]() {
-                LanguageDialog dialog(m_customLanguages, page);
+                LanguageDialog dialog(Languages::customFromJson(m_customLanguages), page);
                 if (dialog.exec() != QDialog::Accepted)
                     return;
-                m_customLanguages = dialog.customLanguages();
+                m_customLanguages = Languages::customToJson(dialog.customLanguages());
                 rebuildLanguageItems();
                 updateDirtyState();
             });
@@ -469,9 +466,9 @@ QWidget* SettingsDialog::createTranslationPage()
     auto* manageTones = new QPushButton(page);
     bindText([manageTones]() { manageTones->setText(tr("Manage...")); });
     connect(manageTones, &QPushButton::clicked, page, [this, rebuildToneItems, page]() {
-        ToneDialog dialog(m_customTones, page);
+        ToneDialog dialog(Tones::customFromJson(m_customTones), page);
         if (dialog.exec() == QDialog::Accepted) {
-            m_customTones = ToneDialog::toJson(dialog.customTones());
+            m_customTones = Tones::customToJson(dialog.customTones());
             rebuildToneItems();
             updateDirtyState();
         }

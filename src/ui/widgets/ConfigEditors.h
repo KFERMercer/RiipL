@@ -221,4 +221,4 @@ QString languageLabel(const QString& value, const QVector<CustomLanguage>& custo
 QString toneLabel(const QString& key);
 // Keeps the selection on the persisted key, falling back to \p fallback and then
 // to the first entry for a key the list does not offer.
-void selectComboItem(QComboBox* box, const QString& key, const QString& fallback = QString());
+void selectComboItem(QComboBox* box, const QString& key, const QString& fallback);

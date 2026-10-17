@@ -7,7 +7,6 @@
 #include "ui/widgets/AppFonts.h"
 #include "ui/widgets/AppIcons.h"
 
-#include <QJsonObject>
 #include <QLocale>
 
 #include <QAbstractItemView>
@@ -559,8 +558,8 @@ QList<std::pair<QString, QString>> languageItems(bool includeAuto,
 {
     QList<std::pair<QString, QString>> items;
     const QString autoCode = QStringLiteral("auto");
-    // The detection entry leads, then the user-defined languages, so one just
-    // added is not buried under the catalog.
+    // The detection entry and the user-defined languages lead the catalog, so a
+    // language just added is not buried under it.
     if (includeAuto)
         items.append({languageLabel(autoCode), autoCode});
     for (const CustomLanguage& language : custom) {
@@ -579,12 +578,18 @@ QList<std::pair<QString, QString>> languageItems(bool includeAuto,
 QList<std::pair<QString, QString>> toneItems(const QJsonArray& customTones)
 {
     QList<std::pair<QString, QString>> items;
-    for (const ToneItem& tone : Tones::presets())
-        items.append({toneLabel(tone.key), tone.key});
-    for (const QJsonValue& value : customTones) {
-        const QJsonObject object = value.toObject();
-        const QString key = object.value(QStringLiteral("key")).toString();
-        items.append({object.value(QStringLiteral("name")).toString(key), key});
+    // The default tone leads, as the absence of a tone and the fallback for a key
+    // the list no longer offers.
+    const QString defaultKey = Defaults::value(Keys::translationTone).toString();
+    items.append({toneLabel(defaultKey), defaultKey});
+    for (const CustomTone& tone : Tones::customFromJson(customTones)) {
+        // A preset key already resolves to its catalog name.
+        if (Tones::labelFor(tone.key) == nullptr)
+            items.append({tone.name, tone.key});
+    }
+    for (const ToneItem& tone : Tones::presets()) {
+        if (tone.key != defaultKey)
+            items.append({toneLabel(tone.key), tone.key});
     }
     return items;
 }

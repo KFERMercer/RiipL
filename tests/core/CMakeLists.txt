@@ -14,6 +14,7 @@ set(RIIPL_TEST_SUITES
     tst_preset
     tst_singleinstance
     tst_textutils
+    tst_tones
     tst_translationactivity
     tst_translationengine
     tst_translationpool

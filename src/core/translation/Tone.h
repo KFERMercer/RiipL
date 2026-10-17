@@ -1,5 +1,8 @@
 #pragma once
 
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QJsonValue>
 #include <QString>
 #include <QVector>
 
@@ -8,6 +11,14 @@ struct ToneItem
     QString key;
     // A literal so the UI can pass it to QCoreApplication::translate.
     const char* en;
+};
+
+// A user-defined tone: the key goes into the prompt and the settings; the name
+// labels the pickers.
+struct CustomTone
+{
+    QString key;
+    QString name;
 };
 
 namespace Tones {
@@ -42,6 +53,47 @@ inline const char* labelFor(const QString& key)
             return item.en;
     }
     return nullptr;
+}
+
+// Drops the entries no picker could offer: a tone carries both the key the
+// prompts name and the name it shows.
+inline QVector<CustomTone> customNormalized(const QVector<CustomTone>& custom)
+{
+    QVector<CustomTone> result;
+    result.reserve(custom.size());
+    for (const CustomTone& stored : custom) {
+        CustomTone tone;
+        tone.key = stored.key.trimmed();
+        tone.name = stored.name.trimmed();
+        if (tone.key.isEmpty() || tone.name.isEmpty())
+            continue;
+        result.append(tone);
+    }
+    return result;
+}
+
+inline QVector<CustomTone> customFromJson(const QJsonArray& stored)
+{
+    QVector<CustomTone> custom;
+    custom.reserve(stored.size());
+    for (const QJsonValue& value : stored) {
+        const QJsonObject object = value.toObject();
+        custom.append({object.value(QStringLiteral("key")).toString(),
+                       object.value(QStringLiteral("name")).toString()});
+    }
+    return customNormalized(custom);
+}
+
+inline QJsonArray customToJson(const QVector<CustomTone>& custom)
+{
+    QJsonArray array;
+    for (const CustomTone& tone : custom) {
+        QJsonObject object;
+        object.insert(QStringLiteral("key"), tone.key);
+        object.insert(QStringLiteral("name"), tone.name);
+        array.append(object);
+    }
+    return array;
 }
 
 }

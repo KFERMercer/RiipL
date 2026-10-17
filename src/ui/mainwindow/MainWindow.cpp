@@ -554,9 +554,12 @@ void MainWindow::buildMenus()
     });
     connect(m_toneAction, &QAction::triggered, this, [this]() {
         ConfigManager* config = ConfigManager::instance();
-        ToneDialog dialog(config->value(Keys::translationCustomTones).toArray(), this);
-        if (dialog.exec() == QDialog::Accepted)
-            config->setValue(Keys::translationCustomTones, ToneDialog::toJson(dialog.customTones()));
+        ToneDialog dialog(Tones::customFromJson(config->value(Keys::translationCustomTones).toArray()),
+                          this);
+        if (dialog.exec() == QDialog::Accepted) {
+            config->setValue(Keys::translationCustomTones,
+                             Tones::customToJson(dialog.customTones()));
+        }
     });
     connect(m_historyAction, &QAction::triggered, this, &MainWindow::showHistoryDialog);
     connect(m_apiPresetAction, &QAction::triggered, this,
@@ -674,16 +677,11 @@ void MainWindow::populateToneCombo()
         return;
     QSignalBlocker blocker(m_tone);
     m_tone->clear();
-    for (const ToneItem& tone : Tones::presets())
-        m_tone->addItem(toneLabel(tone.key), tone.key);
     const QJsonArray custom = ConfigManager::instance()->value(Keys::translationCustomTones).toArray();
-    for (const QJsonValue& value : custom) {
-        const QJsonObject object = value.toObject();
-        m_tone->addItem(object.value(QStringLiteral("name")).toString(), object.value(QStringLiteral("key")).toString());
-    }
-    const QString wanted = ConfigManager::instance()->stringValue(Keys::translationTone);
-    const int index = m_tone->findData(wanted);
-    m_tone->setCurrentIndex(index < 0 ? 0 : index);
+    for (const std::pair<QString, QString>& item : toneItems(custom))
+        m_tone->addItem(item.first, item.second);
+    selectComboItem(m_tone, ConfigManager::instance()->stringValue(Keys::translationTone),
+                    Defaults::value(Keys::translationTone).toString());
 }
 
 void MainWindow::syncLanguageMenu()

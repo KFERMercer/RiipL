@@ -287,7 +287,8 @@ void DocumentTranslationWindow::populateTones()
          : toneItems(config->value(Keys::translationCustomTones).toArray())) {
         m_tone->addItem(item.first, item.second);
     }
-    selectComboItem(m_tone, config->stringValue(Keys::translationTone));
+    selectComboItem(m_tone, config->stringValue(Keys::translationTone),
+                    Defaults::value(Keys::translationTone).toString());
 }
 
 void DocumentTranslationWindow::populateLanguageCombo(QComboBox* combo, bool includeAuto,

@@ -136,14 +136,11 @@ void TestLanguages::parsesCustomLanguages()
     };
 
     const QVector<CustomLanguage> parsed = customFromJson(stored);
-    QCOMPARE(parsed.size(), 3);
+    QCOMPARE(parsed.size(), 2);
     QCOMPARE(parsed.at(0).key, QStringLiteral("Klingon"));
     QCOMPARE(parsed.at(0).name, QStringLiteral("Klingon (custom)"));
-    // An entry without a name is displayed under its key.
-    QCOMPARE(parsed.at(1).key, QStringLiteral("x-nameless"));
-    QCOMPARE(parsed.at(1).name, QStringLiteral("x-nameless"));
-    QCOMPARE(parsed.at(2).key, QStringLiteral("x-last"));
-    QCOMPARE(parsed.at(2).name, QStringLiteral("Last"));
+    QCOMPARE(parsed.at(1).key, QStringLiteral("x-last"));
+    QCOMPARE(parsed.at(1).name, QStringLiteral("Last"));
 
     QVERIFY(customFromJson(QJsonArray()).isEmpty());
 
@@ -153,11 +150,9 @@ void TestLanguages::parsesCustomLanguages()
         {QStringLiteral("x-nameless"), QString()},
         {QStringLiteral("  "), QStringLiteral("Dropped")}
     });
-    QCOMPARE(normalized.size(), 2);
+    QCOMPARE(normalized.size(), 1);
     QCOMPARE(normalized.at(0).key, QStringLiteral("Klingon"));
     QCOMPARE(normalized.at(0).name, QStringLiteral("Klingon (custom)"));
-    QCOMPARE(normalized.at(1).key, QStringLiteral("x-nameless"));
-    QCOMPARE(normalized.at(1).name, QStringLiteral("x-nameless"));
 }
 
 void TestLanguages::roundTripsCustomLanguages()
