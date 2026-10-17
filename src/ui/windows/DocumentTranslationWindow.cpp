@@ -460,9 +460,14 @@ void DocumentTranslationWindow::stopTranslation()
     m_translator.stop();
 }
 
+bool DocumentTranslationWindow::hasTranslatedWindow() const
+{
+    return m_progress->value() > 0;
+}
+
 void DocumentTranslationWindow::exportResult()
 {
-    if (m_completedText.isEmpty())
+    if (!hasTranslatedWindow())
         return;
     const QFileInfo info(m_loadedPath);
     const QString suffix = info.suffix().isEmpty() ? QStringLiteral("txt") : info.suffix();
@@ -490,7 +495,7 @@ void DocumentTranslationWindow::exportResult()
 void DocumentTranslationWindow::endRun()
 {
     setRunning(false);
-    m_exportButton->setEnabled(!m_completedText.isEmpty());
+    m_exportButton->setEnabled(hasTranslatedWindow());
 }
 
 void DocumentTranslationWindow::setRunning(bool running)

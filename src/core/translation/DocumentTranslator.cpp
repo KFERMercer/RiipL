@@ -83,6 +83,9 @@ void DocumentTranslator::start(const QVector<DocumentWindow>& windows,
     m_active = true;
     // Reported with the run under way, so a slot that stops here stops it.
     emit progressChanged(m_completed, m_windows.size());
+    // Marked changed so the start reports the document as it stands.
+    m_documentPending = true;
+    reportDocument();
     dispatchPending();
 }
 

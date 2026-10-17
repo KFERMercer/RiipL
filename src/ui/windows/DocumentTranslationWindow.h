@@ -69,6 +69,8 @@ private:
     // Drops the result on screen without touching the loaded document.
     void clearResult();
     void setRunning(bool running);
+    // Whether the run accepted a window; the progress bar counts them.
+    bool hasTranslatedWindow() const;
     void endRun();
     void setStatus(Status status, const QString& argument = QString());
     QString statusText(Status status, const QString& argument) const;
@@ -86,8 +88,8 @@ private:
     QVector<DocumentWindow> m_windows;
     // Path the loaded windows came from; the export dialog suggests its name.
     QString m_loadedPath;
-    // Document as it stands, sent once a window has been accepted; the windows the
-    // run has not reached yet carry their source text.
+    // Document as the run reported it last, the windows it has not reached carrying
+    // their source text.
     QString m_completedText;
     QString m_resultLang;
     QLineEdit* m_pathEdit = nullptr;

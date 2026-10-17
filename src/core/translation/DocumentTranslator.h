@@ -48,9 +48,9 @@ public:
     bool isRunning() const { return m_active; }
 
 signals:
-    // Whole document as it stands, sent as the answers arrive: every window carries
-    // its own answer whatever order the answers come in, and a window without one
-    // carries its source text.
+    // Whole document as it stands, sent when the run starts and again as the answers
+    // arrive: every window carries its own answer whatever order the answers come
+    // in, and a window without one carries its source text.
     void windowTranslated(const QString& text);
     void progressChanged(int completed, int total);
     // The run ends with windows it could not translate, named by the short digest
@@ -107,7 +107,7 @@ private:
     // Resolved from the run options when the run starts.
     int m_retries = 0;
     std::optional<DocumentCache> m_cache = std::nullopt;
-    // Whether the document holds an answer that has not been reported yet.
+    // Whether the document changed since it was last reported.
     bool m_documentPending = false;
     // Next window the run has not taken.
     int m_nextWindow = 0;

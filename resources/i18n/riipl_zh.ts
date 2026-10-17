@@ -317,7 +317,7 @@
     </message>
     <message>
         <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="233"/>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="473"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="478"/>
         <source>Export translation</source>
         <translation>导出译文</translation>
     </message>
@@ -328,7 +328,7 @@
     </message>
     <message>
         <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="360"/>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="482"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="487"/>
         <source>Cannot write file: %1</source>
         <translation>无法写入文件：%1</translation>
     </message>
