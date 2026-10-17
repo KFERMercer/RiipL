@@ -2,6 +2,7 @@
 
 #include "core/config/Preset.h"
 #include "core/config/ConfigManager.h"
+#include "core/config/Defaults.h"
 #include "core/document/DocumentCache.h"
 #include "core/translation/Language.h"
 #include "ui/dialogs/ContextPresetDialog.h"
@@ -298,7 +299,8 @@ void DocumentTranslationWindow::populateLanguageCombo(QComboBox* combo, bool inc
         ConfigManager::instance()->value(Keys::translationCustomLanguages).toArray());
     for (const std::pair<QString, QString>& item : languageItems(includeAuto, custom))
         combo->addItem(item.first, item.second);
-    selectComboItem(combo, ConfigManager::instance()->stringValue(key));
+    selectComboItem(combo, ConfigManager::instance()->stringValue(key),
+                    Defaults::value(key).toString());
 }
 
 void DocumentTranslationWindow::updateOptionsEnabled()
@@ -316,7 +318,8 @@ void DocumentTranslationWindow::onConfigChanged(const QString& key)
     if (key == Keys::translationSourceLang || key == Keys::translationTargetLang) {
         QComboBox* combo = key == Keys::translationSourceLang ? m_sourceLang : m_targetLang;
         QSignalBlocker blocker(combo);
-        selectComboItem(combo, ConfigManager::instance()->stringValue(key));
+        selectComboItem(combo, ConfigManager::instance()->stringValue(key),
+                        Defaults::value(key).toString());
     } else if (key == Keys::translationCustomLanguages) {
         populateLanguageCombo(m_sourceLang, true, Keys::translationSourceLang);
         populateLanguageCombo(m_targetLang, false, Keys::translationTargetLang);

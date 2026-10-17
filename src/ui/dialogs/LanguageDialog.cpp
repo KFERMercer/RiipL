@@ -96,7 +96,6 @@ LanguageDialog::LanguageDialog(const QVector<CustomLanguage>& customLanguages, Q
     connect(m_removeButton, &QPushButton::clicked, this, &LanguageDialog::removeLanguage);
     connect(m_moveUpButton, &QToolButton::clicked, this, [this]() { moveLanguage(-1); });
     connect(m_moveDownButton, &QToolButton::clicked, this, [this]() { moveLanguage(1); });
-    // The buttons act on the current row, so they follow the current index and the row count.
     connect(m_custom->selectionModel(), &QItemSelectionModel::currentChanged, this,
             &LanguageDialog::refreshButtons);
     connect(m_customModel, &QAbstractItemModel::rowsInserted, this, &LanguageDialog::refreshButtons);

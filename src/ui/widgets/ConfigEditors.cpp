@@ -185,7 +185,10 @@ void ConfigComboBox::setItems(const QList<std::pair<QString, QString>>& items)
     for (const std::pair<QString, QString>& item : items)
         m_box->addItem(item.first, item.second);
 
+    // A stored value the list no longer offers falls back to the field default.
     int index = m_box->findData(wanted);
+    if (index < 0)
+        index = m_box->findData(Defaults::value(key()).toString());
     if (index < 0)
         index = 0;
     m_box->setCurrentIndex(index);
@@ -555,15 +558,20 @@ QList<std::pair<QString, QString>> languageItems(bool includeAuto,
                                                  const QVector<CustomLanguage>& custom)
 {
     QList<std::pair<QString, QString>> items;
-    for (const LangItem& lang : Languages::all()) {
-        if (!includeAuto && lang.code == QLatin1String("auto"))
-            continue;
-        items.append({languageLabel(lang.code), lang.code});
-    }
+    const QString autoCode = QStringLiteral("auto");
+    // The detection entry leads, then the user-defined languages, so one just
+    // added is not buried under the catalog.
+    if (includeAuto)
+        items.append({languageLabel(autoCode), autoCode});
     for (const CustomLanguage& language : custom) {
         // A built-in code already resolves to its catalog name.
         if (Languages::indexOf(language.key) < 0)
             items.append({language.name, language.key});
+    }
+    for (const LangItem& lang : Languages::all()) {
+        if (lang.code == autoCode)
+            continue;
+        items.append({languageLabel(lang.code), lang.code});
     }
     return items;
 }
@@ -581,8 +589,10 @@ QList<std::pair<QString, QString>> toneItems(const QJsonArray& customTones)
     return items;
 }
 
-void selectComboItem(QComboBox* box, const QString& key)
+void selectComboItem(QComboBox* box, const QString& key, const QString& fallback)
 {
-    const int index = box->findData(key);
+    int index = box->findData(key);
+    if (index < 0)
+        index = box->findData(fallback);
     box->setCurrentIndex(index < 0 ? 0 : index);
 }

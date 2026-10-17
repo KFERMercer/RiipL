@@ -38,11 +38,13 @@ PromptPreviewDialog::PromptPreviewDialog(QWidget* parent)
     m_sourceLang = new QComboBox(this);
     for (const std::pair<QString, QString>& item : languageItems(true, custom))
         m_sourceLang->addItem(item.first, item.second);
-    selectComboItem(m_sourceLang, config->stringValue(Keys::translationSourceLang));
+    selectComboItem(m_sourceLang, config->stringValue(Keys::translationSourceLang),
+                    Defaults::value(Keys::translationSourceLang).toString());
     m_target = new QComboBox(this);
     for (const std::pair<QString, QString>& item : languageItems(false, custom))
         m_target->addItem(item.first, item.second);
-    selectComboItem(m_target, config->stringValue(Keys::translationTargetLang));
+    selectComboItem(m_target, config->stringValue(Keys::translationTargetLang),
+                    Defaults::value(Keys::translationTargetLang).toString());
     m_tone = new QComboBox(this);
     for (const std::pair<QString, QString>& item
          : toneItems(config->value(Keys::translationCustomTones).toArray())) {

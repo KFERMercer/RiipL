@@ -641,27 +641,30 @@ void MainWindow::updateSwapButtonGeometry()
 
 void MainWindow::populateLanguageCombos()
 {
+    ConfigManager* config = ConfigManager::instance();
     const QString source = m_sourceLang ? m_sourceLang->currentData().toString()
-                                        : ConfigManager::instance()->stringValue(Keys::translationSourceLang);
+                                        : config->stringValue(Keys::translationSourceLang);
     const QString target = m_targetLang ? m_targetLang->currentData().toString()
-                                        : ConfigManager::instance()->stringValue(Keys::translationTargetLang);
+                                        : config->stringValue(Keys::translationTargetLang);
     const QVector<CustomLanguage> custom = Languages::customFromJson(
-        ConfigManager::instance()->value(Keys::translationCustomLanguages).toArray());
+        config->value(Keys::translationCustomLanguages).toArray());
     if (m_sourceLang) {
         QSignalBlocker blocker(m_sourceLang);
         m_sourceLang->clear();
         for (const std::pair<QString, QString>& item : languageItems(true, custom))
             m_sourceLang->addItem(item.first, item.second);
-        const int index = m_sourceLang->findData(source.isEmpty() ? ConfigManager::instance()->stringValue(Keys::translationSourceLang) : source);
-        m_sourceLang->setCurrentIndex(index < 0 ? 0 : index);
+        selectComboItem(m_sourceLang,
+                        source.isEmpty() ? config->stringValue(Keys::translationSourceLang) : source,
+                        Defaults::value(Keys::translationSourceLang).toString());
     }
     if (m_targetLang) {
         QSignalBlocker blocker(m_targetLang);
         m_targetLang->clear();
         for (const std::pair<QString, QString>& item : languageItems(false, custom))
             m_targetLang->addItem(item.first, item.second);
-        const int index = m_targetLang->findData(target.isEmpty() ? ConfigManager::instance()->stringValue(Keys::translationTargetLang) : target);
-        m_targetLang->setCurrentIndex(index < 0 ? 1 : index);
+        selectComboItem(m_targetLang,
+                        target.isEmpty() ? config->stringValue(Keys::translationTargetLang) : target,
+                        Defaults::value(Keys::translationTargetLang).toString());
     }
 }
 

@@ -219,6 +219,6 @@ QList<std::pair<QString, QString>> toneItems(const QJsonArray& customTones);
 // from the stored custom name.
 QString languageLabel(const QString& value, const QVector<CustomLanguage>& custom = {});
 QString toneLabel(const QString& key);
-// Keeps the selection on the persisted key; an unknown key falls back to the
-// first entry.
-void selectComboItem(QComboBox* box, const QString& key);
+// Keeps the selection on the persisted key, falling back to \p fallback and then
+// to the first entry for a key the list does not offer.
+void selectComboItem(QComboBox* box, const QString& key, const QString& fallback = QString());

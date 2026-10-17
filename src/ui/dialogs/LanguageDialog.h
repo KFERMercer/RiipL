@@ -31,7 +31,6 @@ private slots:
     void refreshButtons();
 
 private:
-    // True while the custom languages differ from the ones the window opened with.
     bool isDirty() const;
     void loadLanguages(const QVector<CustomLanguage>& stored);
     int currentRow() const;
