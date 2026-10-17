@@ -79,23 +79,23 @@ DocumentTranslationWindow::DocumentTranslationWindow(ContextProvider context)
     m_arrow = new QLabel(this);
     m_targetLang = new QComboBox(this);
     m_targetLang->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+    m_tone = new QComboBox(this);
+    m_tone->setSizeAdjustPolicy(QComboBox::AdjustToContents);
     m_contextAction = new QAction(this);
     auto* contextButton = new QToolButton(this);
     contextButton->setDefaultAction(m_contextAction);
     contextButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
-    m_tone = new QComboBox(this);
-    m_tone->setSizeAdjustPolicy(QComboBox::AdjustToContents);
     m_apiPreset = new QComboBox(this);
     m_apiPreset->setSizeAdjustPolicy(QComboBox::AdjustToContents);
     optionsRow->addWidget(m_sourceLang);
     optionsRow->addWidget(m_arrow);
     optionsRow->addWidget(m_targetLang);
     optionsRow->addWidget(verticalSeparator(this));
-    optionsRow->addWidget(contextButton);
     optionsRow->addWidget(m_tone);
     optionsRow->addWidget(verticalSeparator(this));
-    optionsRow->addWidget(m_apiPreset);
+    optionsRow->addWidget(contextButton);
     optionsRow->addStretch(1);
+    optionsRow->addWidget(m_apiPreset);
     layout->addLayout(optionsRow);
     updateArrowIcon();
 

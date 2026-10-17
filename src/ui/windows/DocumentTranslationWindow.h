@@ -95,8 +95,8 @@ private:
     QComboBox* m_sourceLang = nullptr;
     QLabel* m_arrow = nullptr;
     QComboBox* m_targetLang = nullptr;
-    QAction* m_contextAction = nullptr;
     QComboBox* m_tone = nullptr;
+    QAction* m_contextAction = nullptr;
     QComboBox* m_apiPreset = nullptr;
     QProgressBar* m_progress = nullptr;
     QLabel* m_statusLabel = nullptr;
