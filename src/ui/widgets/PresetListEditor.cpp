@@ -69,6 +69,7 @@ PresetListEditor::PresetListEditor(const QVector<FieldColumn>& fields, const Opt
         headers.append(field.header);
     m_model->setColumnCount(headers.size());
     m_model->setHorizontalHeaderLabels(headers);
+    m_tree->setHeaderHidden(m_fields.isEmpty());
     m_tree->header()->setSectionResizeMode(kNameColumn, QHeaderView::ResizeToContents);
     for (int column = 1; column < headers.size(); ++column)
         m_tree->header()->setSectionResizeMode(column, QHeaderView::Stretch);

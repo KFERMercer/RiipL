@@ -1142,76 +1142,76 @@
     </message>
     <message>
         <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="67"/>
-        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="314"/>
+        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="315"/>
         <source>Preset name</source>
         <translation>预设名称</translation>
     </message>
     <message>
-        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="79"/>
         <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="80"/>
+        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="81"/>
         <source>Move up</source>
         <translation>上移</translation>
     </message>
     <message>
-        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="83"/>
         <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="84"/>
+        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="85"/>
         <source>Move down</source>
         <translation>下移</translation>
     </message>
     <message>
-        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="88"/>
+        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="89"/>
         <source>Load preset</source>
         <translation>读取预设</translation>
     </message>
     <message>
-        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="89"/>
+        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="90"/>
         <source>Fill the fields with the highlighted preset</source>
         <translation>用高亮的预设填充字段</translation>
     </message>
     <message>
-        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="92"/>
+        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="93"/>
         <source>Rename</source>
         <translation>重命名</translation>
     </message>
     <message>
-        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="93"/>
+        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="94"/>
         <source>Copy</source>
         <translation>复制</translation>
     </message>
     <message>
-        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="94"/>
+        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="95"/>
         <source>Remove</source>
         <translation>删除</translation>
     </message>
     <message>
-        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="235"/>
+        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="236"/>
         <source>Remove preset</source>
         <translation>删除预设</translation>
     </message>
     <message>
-        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="235"/>
+        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="236"/>
         <source>Remove the preset &quot;%1&quot;?</source>
         <translation>确定删除预设“%1”？</translation>
     </message>
     <message>
-        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="314"/>
+        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="315"/>
         <source>Rename preset</source>
         <translation>重命名预设</translation>
     </message>
     <message>
-        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="323"/>
+        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="324"/>
         <source>A preset named &quot;%1&quot; already exists.</source>
         <translation>已存在名为“%1”的预设。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="365"/>
-        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="379"/>
+        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="366"/>
+        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="380"/>
         <source>%1 copy</source>
         <translation>%1 副本</translation>
     </message>
     <message>
-        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="366"/>
-        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="384"/>
+        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="367"/>
+        <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="385"/>
         <source>%1 copy %2</source>
         <translation>%1 副本 %2</translation>
     </message>
