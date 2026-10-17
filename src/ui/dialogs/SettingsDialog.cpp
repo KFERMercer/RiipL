@@ -3,6 +3,7 @@
 #include "ApiPresetDialog.h"
 #include "ContextPresetDialog.h"
 #include "GlossaryDialog.h"
+#include "HistoryDialog.h"
 #include "PromptPreviewDialog.h"
 #include "ToneDialog.h"
 #include "core/config/ConfigManager.h"
@@ -468,6 +469,20 @@ QWidget* SettingsDialog::createTranslationPage()
 
     auto* historyRow = new QHBoxLayout();
     historyRow->addWidget(new ConfigCheckBox(Keys::historyEnabled, page), 1);
+    auto* manageHistoryButton = new QPushButton(page);
+    bindText([manageHistoryButton]() { manageHistoryButton->setText(tr("Manage...")); });
+    connect(manageHistoryButton, &QPushButton::clicked, this, [this, page]() {
+        HistoryDialog dialog(m_history, page);
+        connect(&dialog, &HistoryDialog::reuseRequested, this,
+                &SettingsDialog::historyReuseRequested);
+        dialog.exec();
+    });
+    historyRow->addWidget(manageHistoryButton);
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Save translation history"),
+                  static_cast<QLayout*>(historyRow));
+
+    auto* historyLimitRow = new QHBoxLayout();
+    historyLimitRow->addWidget(new ConfigSpinBox(Keys::historyMaxRecords, 10, 100000, 10, page), 1);
     auto* clearHistoryButton = new QPushButton(page);
     connect(clearHistoryButton, &QPushButton::clicked, this, [this]() {
         if (QMessageBox::question(this, QCoreApplication::applicationName(),
@@ -476,11 +491,9 @@ QWidget* SettingsDialog::createTranslationPage()
             m_history->clear();
     });
     bindText([clearHistoryButton]() { clearHistoryButton->setText(tr("Clear translation history")); });
-    historyRow->addWidget(clearHistoryButton);
-    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Save translation history"),
-                  static_cast<QLayout*>(historyRow));
+    historyLimitRow->addWidget(clearHistoryButton);
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Max records"),
-                  new ConfigSpinBox(Keys::historyMaxRecords, 10, 100000, 10, page));
+                  static_cast<QLayout*>(historyLimitRow));
 
     // The preset bar rewrites the style and the background together, so the three
     // share one frame.

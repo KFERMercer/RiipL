@@ -1147,6 +1147,8 @@ void MainWindow::exportTranslation()
 void MainWindow::showSettingsDialog()
 {
     SettingsDialog dialog(&m_history, this);
+    connect(&dialog, &SettingsDialog::historyReuseRequested, this,
+            &MainWindow::reuseHistoryRecord);
     dialog.exec();
 }
 
@@ -1162,18 +1164,21 @@ void MainWindow::showDocumentWindow()
 void MainWindow::showHistoryDialog()
 {
     HistoryDialog dialog(&m_history, this);
-    connect(&dialog, &HistoryDialog::reuseRequested, this, [this](const TranslationRecord& record) {
-        discardResultStream();
-        m_sourceEdit->setPlainText(record.source);
-        const int sourceIndex = m_sourceLang->findData(record.sourceLang);
-        if (sourceIndex >= 0)
-            m_sourceLang->setCurrentIndex(sourceIndex);
-        const int targetIndex = m_targetLang->findData(record.targetLang);
-        if (targetIndex >= 0)
-            m_targetLang->setCurrentIndex(targetIndex);
-        setResultText(record.target);
-    });
+    connect(&dialog, &HistoryDialog::reuseRequested, this, &MainWindow::reuseHistoryRecord);
     dialog.exec();
+}
+
+void MainWindow::reuseHistoryRecord(const TranslationRecord& record)
+{
+    discardResultStream();
+    m_sourceEdit->setPlainText(record.source);
+    const int sourceIndex = m_sourceLang->findData(record.sourceLang);
+    if (sourceIndex >= 0)
+        m_sourceLang->setCurrentIndex(sourceIndex);
+    const int targetIndex = m_targetLang->findData(record.targetLang);
+    if (targetIndex >= 0)
+        m_targetLang->setCurrentIndex(targetIndex);
+    setResultText(record.target);
 }
 
 void MainWindow::retranslateUi()

@@ -116,6 +116,7 @@ private:
     void stopAllTranslations();
     void updateStopAction();
     void updateTrayIcon();
+    void reuseHistoryRecord(const TranslationRecord& record);
     void retranslateUi();
 
     // A streaming run grows the pane and turns into one undo entry when it closes.

@@ -23,6 +23,7 @@ class QListView;
 class QPushButton;
 class QStandardItemModel;
 class HistoryManager;
+struct TranslationRecord;
 
 // Form-style settings dialog following Qt's canonical pattern: editors are
 // populated once on construction and nothing is written back until the user
@@ -38,6 +39,11 @@ public:
     explicit SettingsDialog(HistoryManager* history, QWidget* parent = nullptr);
 
     void reject() override;
+
+signals:
+    // The history window was asked to reuse a record, which belongs to the window
+    // that owns the translation panes.
+    void historyReuseRequested(const TranslationRecord& record);
 
 protected:
     void changeEvent(QEvent* event) override;
