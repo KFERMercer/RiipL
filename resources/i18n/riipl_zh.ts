@@ -83,12 +83,12 @@
 <context>
     <name>ConfigEditors</name>
     <message>
-        <location filename="../../src/ui/widgets/ConfigEditors.cpp" line="119"/>
+        <location filename="../../src/ui/widgets/ConfigEditors.cpp" line="120"/>
         <source>Reset to default</source>
         <translation>恢复默认</translation>
     </message>
     <message>
-        <location filename="../../src/ui/widgets/ConfigEditors.cpp" line="497"/>
+        <location filename="../../src/ui/widgets/ConfigEditors.cpp" line="543"/>
         <source>Follow system</source>
         <translation>跟随系统</translation>
     </message>

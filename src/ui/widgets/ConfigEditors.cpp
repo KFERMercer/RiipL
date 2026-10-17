@@ -14,6 +14,7 @@
 #include <QApplication>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QCompleter>
 #include <QDoubleSpinBox>
 #include <QFontMetrics>
 #include <QHBoxLayout>
@@ -257,35 +258,81 @@ public:
         : QComboBox(editor)
         , m_editor(editor)
     {
-        setItemDelegate(new LabelDelegate(this));
+        setEditable(true);
+        // A typed entry is a value of its own, not an entry to add to the list.
+        setInsertPolicy(QComboBox::NoInsert);
+
+        completer()->setCompletionMode(QCompleter::PopupCompletion);
+        completer()->setFilterMode(Qt::MatchContains);
+        completer()->popup()->setItemDelegate(new LabelDelegate(completer()->popup()));
+        // A wrapping list drops the selection past its last row, which the field
+        // reads as an empty value.
+        completer()->setWrapAround(false);
+
+        // Typing turns the field text into a search; an emptied field dismisses the
+        // list instead.
+        connect(lineEdit(), &QLineEdit::textEdited, this, [this] {
+            if (!currentText().isEmpty())
+                present();
+        });
     }
 
-    // Re-opens an open popup: it takes its height when shown, so candidates that
-    // replaced the ones it opened with would stay out of sight.
-    void refitPopup()
+    // Lists the rows that replace the ones the popup opened with. A list the user
+    // closed stays closed, and the value stays selected for the next keystroke.
+    void refreshCandidates()
     {
-        if (!view()->window()->isVisible())
+        m_report = false;
+        if (!completer()->popup()->isVisible())
             return;
-        hidePopup();
-        fitWidth();
-        QComboBox::showPopup();
+        present();
+        if (currentText() == m_value)
+            lineEdit()->selectAll();
+    }
+
+    // Lists a row that reports something the list cannot offer instead of candidates.
+    void refreshReport()
+    {
+        m_report = true;
+        if (completer()->popup()->isVisible())
+            present();
     }
 
 protected:
     void showPopup() override
     {
+        if (completer()->popup()->isVisible()) {
+            completer()->popup()->hide();
+            return;
+        }
+        m_value = currentText();
         emit m_editor->popupAboutToShow();
-        fitWidth();
-        QComboBox::showPopup();
+        lineEdit()->setFocus();
+        lineEdit()->selectAll();
+        present();
     }
 
 private:
-    void fitWidth()
+    // Lists the rows whole unless the field holds a search over the candidates.
+    void present()
     {
-        view()->setMinimumWidth(view()->sizeHintForColumn(0) + 2 * view()->frameWidth());
+        QCompleter* search = completer();
+        const bool whole = m_report || currentText() == m_value;
+        search->setCompletionMode(whole ? QCompleter::UnfilteredPopupCompletion
+                                        : QCompleter::PopupCompletion);
+        // Qt writes the prefix back into the field, so the prefix is what it holds.
+        search->setCompletionPrefix(currentText());
+        QAbstractItemView* popup = search->popup();
+        // The popup is only as wide as the field, which the widest row with its label
+        // does not fit in.
+        popup->setMinimumWidth(popup->sizeHintForColumn(0) + 2 * popup->frameWidth());
+        search->complete();
     }
 
     ConfigEditableComboBox* m_editor;
+    // Text the field held when the list opened: any other text in it is a search.
+    QString m_value;
+    // The rows report something the list cannot offer instead of candidates.
+    bool m_report = false;
 };
 
 ConfigEditableComboBox::ConfigEditableComboBox(const QString& key, QWidget* parent)
@@ -294,9 +341,6 @@ ConfigEditableComboBox::ConfigEditableComboBox(const QString& key, QWidget* pare
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     m_box = new Box(this);
-    m_box->setEditable(true);
-    // A typed entry is a value of its own, not an entry to add to the list.
-    m_box->setInsertPolicy(QComboBox::NoInsert);
     auto* reset = createResetButton(this);
     layout->addWidget(m_box, 1);
     layout->addWidget(reset);
@@ -319,29 +363,31 @@ void ConfigEditableComboBox::setControlValue(const QJsonValue& v)
 
 void ConfigEditableComboBox::setItems(const QList<std::pair<QString, QString>>& items)
 {
-    const QString current = m_box->currentText();
-    {
-        const QSignalBlocker blocker(m_box);
-        m_box->clear();
-        for (const std::pair<QString, QString>& item : items) {
-            m_box->addItem(item.first);
-            m_box->setItemData(m_box->count() - 1, item.second, kLabelRole);
-        }
-        selectText(current);
-    }
-    m_box->refitPopup();
+    replaceItems(items);
+    m_box->refreshCandidates();
 }
 
 void ConfigEditableComboBox::setMessage(const QString& message)
 {
-    setItems({{message, QString()}});
+    replaceItems({{message, QString()}});
     // The popup greys out what it reports rather than offering it as a choice.
     if (QStandardItemModel* model = qobject_cast<QStandardItemModel*>(m_box->model())) {
-        if (QStandardItem* entry = model->item(0)) {
+        if (QStandardItem* entry = model->item(0))
             entry->setEnabled(false);
-            entry->setSelectable(false);
-        }
     }
+    m_box->refreshReport();
+}
+
+void ConfigEditableComboBox::replaceItems(const QList<std::pair<QString, QString>>& items)
+{
+    const QString current = m_box->currentText();
+    const QSignalBlocker blocker(m_box);
+    m_box->clear();
+    for (const std::pair<QString, QString>& item : items) {
+        m_box->addItem(item.first);
+        m_box->setItemData(m_box->count() - 1, item.second, kLabelRole);
+    }
+    selectText(current);
 }
 
 void ConfigEditableComboBox::selectText(const QString& text)

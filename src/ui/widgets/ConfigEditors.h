@@ -100,7 +100,7 @@ private:
 };
 
 // Editable entry list: the text is the value, so an entry the list does not
-// offer can be typed in.
+// offer can be typed in, and the candidates open in a popup the field searches.
 class ConfigEditableComboBox : public ConfigEditor
 {
     Q_OBJECT
@@ -124,10 +124,12 @@ protected:
     void setControlValue(const QJsonValue& v) override;
 
 private:
-    // Reports the popup to the editor that owns it.
+    // Presents the candidates and what the list reports.
     class Box;
     // Draws a candidate together with its label.
     class LabelDelegate;
+    // Replaces the rows, keeping the entry the field holds.
+    void replaceItems(const QList<std::pair<QString, QString>>& items);
     // Puts \p text in the field with the candidate it names highlighted.
     void selectText(const QString& text);
 
