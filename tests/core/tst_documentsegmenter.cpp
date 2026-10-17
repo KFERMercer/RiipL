@@ -89,6 +89,7 @@ private slots:
     void rejectsAnswersThatAreNotAWindow();
     void givesUpOnAnAnswerWithoutEntries();
     void decodesEscapedValues();
+    void keepsEscapedQuotesInsideValues();
     void keepsNewlineInsideValue();
     void readsQuotesTheAnswerLeftUnescaped();
     void salvagesValuesTheAnswerLeftUnclosed();
@@ -757,6 +758,29 @@ void TestDocumentSegmenter::decodesEscapedValues()
     QCOMPARE(*lines, QStringList({QStringLiteral("He said \"hi\""),
                                   QStringLiteral("C:\\path\\file"),
                                   QStringLiteral("a\tb"), QStringLiteral("中文")}));
+}
+
+void TestDocumentSegmenter::keepsEscapedQuotesInsideValues()
+{
+    const DocumentWindow window =
+        windowOf({QStringLiteral("first line"), QStringLiteral("second line")});
+
+    // A quoted run inside a value is no key, so it repeats no line number.
+    const std::optional<QStringList> lines = DocumentSegmenter::splitTranslation(
+        window, QStringLiteral(R"({"1":"a\"1\":b","2":"c"})"));
+    QVERIFY(lines.has_value());
+    QCOMPARE(*lines, QStringList({QStringLiteral("a\"1\":b"), QStringLiteral("c")}));
+
+    const std::optional<QStringList> second = DocumentSegmenter::splitTranslation(
+        window, QStringLiteral(R"({"1":"say \"2\": x","2":"c"})"));
+    QVERIFY(second.has_value());
+    QCOMPARE(*second, QStringList({QStringLiteral("say \"2\": x"), QStringLiteral("c")}));
+
+    // An envelope key ending in a line number is no repeat of that line either.
+    const std::optional<QStringList> wrapped = DocumentSegmenter::splitTranslation(
+        windowOf({QStringLiteral("only line")}), QStringLiteral(R"({"a\"1":{"1":"x"}})"));
+    QVERIFY(wrapped.has_value());
+    QCOMPARE(*wrapped, QStringList({QStringLiteral("x")}));
 }
 
 void TestDocumentSegmenter::keepsNewlineInsideValue()

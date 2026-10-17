@@ -2,6 +2,7 @@
 
 #include "utils/TextUtils.h"
 
+#include <QHash>
 #include <QJsonDocument>
 #include <QJsonObject>
 
@@ -165,20 +166,40 @@ qsizetype readQuoted(const QString& text, qsizetype index, QString& value, Quote
     return text.size();
 }
 
-// Occurrences of \p key as an object key in \p text. A repeated key is visible
-// only on the raw answer, since the JSON parser keeps one value per key.
-int keyOccurrences(const QString& text, const QString& key)
+// Quote closing the string opening at \p quote, or -1 when the answer never
+// closed it; an escaped quote stays inside the string.
+qsizetype closingQuote(const QString& text, qsizetype quote)
 {
-    const QString quoted = QStringLiteral("\"") + key + QStringLiteral("\"");
-    int count = 0;
-    qsizetype from = 0;
-    while ((from = text.indexOf(quoted, from)) >= 0) {
-        const qsizetype after = skipSpace(text, from + quoted.size());
-        if (after < text.size() && text.at(after) == QLatin1Char(':'))
-            ++count;
-        from = after;
+    qsizetype cursor = quote + 1;
+    while (cursor < text.size()) {
+        const QChar character = text.at(cursor);
+        if (character == QLatin1Char('\\')) {
+            cursor += 2;
+            continue;
+        }
+        if (character == QLatin1Char('"'))
+            return cursor;
+        ++cursor;
     }
-    return count;
+    return -1;
+}
+
+// Occurrences of every object key of \p text. A repeated key is visible only on
+// the raw answer, since the JSON parser keeps one value per key.
+QHash<QString, int> keyOccurrences(const QString& text)
+{
+    QHash<QString, int> counts;
+    qsizetype from = 0;
+    while ((from = text.indexOf(QLatin1Char('"'), from)) >= 0) {
+        const qsizetype close = closingQuote(text, from);
+        if (close < 0)
+            break;
+        const qsizetype after = skipSpace(text, close + 1);
+        if (after < text.size() && text.at(after) == QLatin1Char(':'))
+            ++counts[text.mid(from + 1, close - from - 1)];
+        from = close + 1;
+    }
+    return counts;
 }
 
 // Object of an answer that is valid JSON, unwrapped from a lone envelope such as
@@ -202,11 +223,12 @@ std::optional<QStringList> objectAnswers(const QJsonObject& object, const QStrin
     if (object.size() != count)
         return std::nullopt;
 
+    const QHash<QString, int> occurrences = keyOccurrences(text);
     QStringList answers;
     answers.reserve(count);
     for (int number = 1; number <= count; ++number) {
         const QString key = QString::number(number);
-        if (keyOccurrences(text, key) > 1)
+        if (occurrences.value(key) > 1)
             return std::nullopt;
         const QString answer = object.value(key).toString().trimmed();
         if (answer.isEmpty())
