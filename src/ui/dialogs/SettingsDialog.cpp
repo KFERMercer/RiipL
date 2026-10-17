@@ -553,9 +553,8 @@ QWidget* SettingsDialog::createDocumentPage()
                   new ConfigSpinBox(Keys::documentRetryCount, 0, 999, 1, page));
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Translate concurrently"),
                   new ConfigCheckBox(Keys::documentConcurrent, page));
-    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Cache translations"),
-                  new ConfigCheckBox(Keys::documentCacheEnabled, page));
-
+    auto* cacheRow = new QHBoxLayout();
+    cacheRow->addWidget(new ConfigCheckBox(Keys::documentCacheEnabled, page), 1);
     auto* clearButton = new QPushButton(page);
     connect(clearButton, &QPushButton::clicked, this, [this]() {
         if (QMessageBox::question(this, QCoreApplication::applicationName(),
@@ -564,8 +563,10 @@ QWidget* SettingsDialog::createDocumentPage()
             DocumentCache::clearAll();
         }
     });
-    form->addRow(QString(), clearButton);
     bindText([clearButton]() { clearButton->setText(tr("Clear document translation cache")); });
+    cacheRow->addWidget(clearButton);
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Cache translations"),
+                  static_cast<QLayout*>(cacheRow));
     return page;
 }
 

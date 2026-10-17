@@ -1463,27 +1463,27 @@
         <translation>窗口行数上限</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="556"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="568"/>
         <source>Cache translations</source>
         <translation>缓存翻译结果</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="562"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="561"/>
         <source>Delete all document translation caches?</source>
         <translation>确定删除全部文档翻译缓存？</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="579"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="580"/>
         <source>Interface language</source>
         <translation>界面语言</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="593"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="594"/>
         <source>Font size</source>
         <translation>字体大小</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="582"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="583"/>
         <source>Monitor clipboard</source>
         <translation>监听剪贴板</translation>
     </message>
@@ -1508,88 +1508,88 @@
         <translation>清空翻译历史</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="635"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="636"/>
         <source>Available placeholders (click to copy)</source>
         <translation>可用占位符（点击复制）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="640"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="641"/>
         <source>Language of the source text</source>
         <translation>原文语言</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="641"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="642"/>
         <source>Language to translate into</source>
         <translation>目标语言</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="642"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="643"/>
         <source>Tone applied to the translation</source>
         <translation>译文语气</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="643"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="644"/>
         <source>Style applied to the translation</source>
         <translation>译文风格</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="644"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="645"/>
         <source>Background information</source>
         <translation>背景信息</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="645"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="646"/>
         <source>Glossary entries, rendered as JSON</source>
         <translation>术语表条目，以 JSON 渲染</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="646"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="647"/>
         <source>Text to be translated</source>
         <translation>待翻译的文本</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="647"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="648"/>
         <source>Full translated text</source>
         <translation>译文全文</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="648"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="649"/>
         <source>Translation fragment around the selected word (candidate wording only)</source>
         <translation>选中词附近的译文片段（候选遣词专用）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="649"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="650"/>
         <source>Word selected in the translation pane (candidate wording only)</source>
         <translation>在译文区选中的词（候选遣词专用）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="650"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="651"/>
         <source>Marker placed before the selected word (candidate wording only)</source>
         <translation>标记选中词的记号 - 左（候选遣词专用）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="651"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="652"/>
         <source>Marker placed after the selected word (candidate wording only)</source>
         <translation>标记选中词的记号 - 右（候选遣词专用）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="653"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="654"/>
         <source>Number of lines in the translation window (document translation only)</source>
         <translation>翻译窗口段落数（文档翻译专用）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="654"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="655"/>
         <source>Previous segment to translate (document translation only)</source>
         <translation>上一个待翻译片段（文档翻译专用）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="655"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="656"/>
         <source>Next segment to translate (document translation only)</source>
         <translation>下一个待翻译片段（文档翻译专用）</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="274"/>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="670"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="671"/>
         <source>Copied</source>
         <translation>已复制</translation>
     </message>
@@ -1644,32 +1644,32 @@
         <translation>窗口词数上限</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="568"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="566"/>
         <source>Clear document translation cache</source>
         <translation>清空文档翻译缓存</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="584"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="585"/>
         <source>Enable notifications</source>
         <translation>开启通知</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="588"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="589"/>
         <source>Minimize to tray</source>
         <translation>最小化到托盘</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="591"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="592"/>
         <source>Always on top</source>
         <translation>窗口置顶</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="652"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="653"/>
         <source>Translation window, rendered as JSON (document translation only)</source>
         <translation>翻译窗口，以 JSON 渲染（文档翻译专用）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="686"/>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="687"/>
         <source>Preview prompt...</source>
         <translation>预览提示词...</translation>
     </message>
