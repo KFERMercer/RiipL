@@ -124,7 +124,7 @@ inline const QString translationBackground = QString();
 
 inline const int documentWindowWords = 200;
 inline const int documentWindowLines = 10;
-inline const int documentRetryCount = 3;
+inline const int documentRetryCount = 5;
 inline const bool documentConcurrent = true;
 inline const bool documentCacheEnabled = true;
 

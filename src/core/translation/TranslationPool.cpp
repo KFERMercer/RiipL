@@ -12,8 +12,7 @@
 
 namespace {
 
-// Any configured count reaches one within this many halvings.
-constexpr int kMaxHalvings = 30;
+constexpr int kSuccessesToRecover = 2;
 
 }
 
@@ -32,11 +31,15 @@ TranslationPool::TranslationPool(QObject* parent)
 {
 }
 
-int TranslationPool::limit() const
+int TranslationPool::configuredConcurrency() const
 {
     ConfigManager* config = ConfigManager::instance();
-    const int configured = config ? (std::max)(1, config->intValue(Keys::apiMaxConcurrency)) : 1;
-    return (std::max)(1, configured >> m_halvings);
+    return config ? (std::max)(1, config->intValue(Keys::apiMaxConcurrency)) : 1;
+}
+
+int TranslationPool::limit() const
+{
+    return (std::max)(1, configuredConcurrency() >> m_halvings);
 }
 
 bool TranslationPool::isBusy() const
@@ -55,18 +58,29 @@ void TranslationPool::updateBusy()
 
 void TranslationPool::noteSuccess()
 {
-    if (m_halvings == 0 || !m_filledSinceFailure)
+    if (m_halvings == 0 || !m_widthFilled)
         return;
-    m_halvings = 0;
-    m_filledSinceFailure = false;
+    if (++m_successesWhileFilled < kSuccessesToRecover)
+        return;
+    --m_halvings;
+    m_widthFilled = false;
+    m_successesWhileFilled = 0;
     // The restored count may let the queue in.
     scheduleDispatch();
 }
 
 void TranslationPool::noteFailure()
 {
-    m_halvings = (std::min)(m_halvings + 1, kMaxHalvings);
-    m_filledSinceFailure = false;
+    // The back-off stops at the halving that leaves one connection: a deeper one
+    // does not narrow the width further, and unwinding it would take successes
+    // that change nothing.
+    const int configured = configuredConcurrency();
+    int ceiling = 0;
+    while (configured >> (ceiling + 1))
+        ++ceiling;
+    m_halvings = (std::min)(m_halvings + 1, ceiling);
+    m_widthFilled = false;
+    m_successesWhileFilled = 0;
 }
 
 TranslationPool::JobId TranslationPool::enqueue(const QJsonObject& body,
@@ -112,7 +126,8 @@ void TranslationPool::cancel(JobId id)
 void TranslationPool::reset()
 {
     m_halvings = 0;
-    m_filledSinceFailure = false;
+    m_widthFilled = false;
+    m_successesWhileFilled = 0;
 }
 
 void TranslationPool::scheduleDispatch()
@@ -136,7 +151,7 @@ void TranslationPool::dispatch()
         m_clientJobs.insert(client, job.id);
         m_jobClients.insert(job.id, client);
         if (m_clientJobs.size() >= limit())
-            m_filledSinceFailure = true;
+            m_widthFilled = true;
         // Observed here so the back-off follows every request the pool carries.
         client->sendChatRequest(job.body,
             [this, done = std::move(job.onDone)](const QString& result) {

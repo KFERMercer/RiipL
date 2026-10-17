@@ -150,8 +150,9 @@ private slots:
     void reportsWhenItCarriesRequests();
     void reportsEveryFailedRequest();
     void keepsRequestsWithinTheConfiguredConcurrency();
-    void halvesTheConcurrencyOnFailureAndRestoresItOnSuccess();
-    void restoresOnlyAfterTheWidthIsFilledAgain();
+    void halvesTheConcurrencyOnFailureAndStepsBackOnSuccess();
+    void stepsBackOnlyAfterTwoSuccessesAtTheFilledWidth();
+    void halvesAgainFromTheSteppedBackWidth();
     void cancelReportsNothing();
     void cancellingARunningRequestFreesItsConnection();
     void cancellingASettledJobLeavesTheRunningOneAlone();
@@ -297,9 +298,9 @@ void TestTranslationPool::keepsRequestsWithinTheConfiguredConcurrency()
     QCOMPARE(m_api.peakPending, 2);
 }
 
-// A failed request halves the connections the pool uses; the configured count
-// returns once the reduced width has been filled again.
-void TestTranslationPool::halvesTheConcurrencyOnFailureAndRestoresItOnSuccess()
+// A failed request halves the connections the pool uses, and two successes at the
+// reduced width give one halving back rather than the configured count.
+void TestTranslationPool::halvesTheConcurrencyOnFailureAndStepsBackOnSuccess()
 {
     ConfigManager::instance()->setValue(Keys::apiMaxConcurrency, 4);
     TranslationPool pool;
@@ -319,14 +320,22 @@ void TestTranslationPool::halvesTheConcurrencyOnFailureAndRestoresItOnSuccess()
     QTest::qWait(50);
     QCOMPARE(m_api.requests, 5);
 
-    // The success restores the configured count, which lets the queue through.
+    // The first success leaves the width at one; the freed connection takes the
+    // next queued request instead.
     m_api.releaseNext(false);
-    QTRY_COMPARE(m_api.requests, 8);
+    QTest::qWait(50);
+    QCOMPARE(m_api.requests, 6);
+
+    // The second success gives one halving back, which is two connections, so the
+    // queue behind it fills both.
+    m_api.releaseNext(false);
+    QTRY_COMPARE(m_api.pending, 2);
+    QCOMPARE(m_api.requests, 8);
 }
 
-// A success restores the configured count only once the reduced width has been
-// filled again with no failure beside it.
-void TestTranslationPool::restoresOnlyAfterTheWidthIsFilledAgain()
+// The back-off gives a halving back only once the reduced width has been filled
+// again and two successes have landed at that width.
+void TestTranslationPool::stepsBackOnlyAfterTwoSuccessesAtTheFilledWidth()
 {
     ConfigManager::instance()->setValue(Keys::apiMaxConcurrency, 4);
     TranslationPool pool;
@@ -339,8 +348,8 @@ void TestTranslationPool::restoresOnlyAfterTheWidthIsFilledAgain()
     m_api.releaseNext(true);
     QTest::qWait(50);
 
-    // The successes beside the failure do not restore the count, because the pool
-    // never ran two requests together again.
+    // The successes beside the failure count for nothing: the failure dropped the
+    // filled width, and no request went out afterwards to fill it again.
     for (int index = 0; index < 3; ++index)
         m_api.releaseNext(false);
     QTest::qWait(50);
@@ -351,9 +360,54 @@ void TestTranslationPool::restoresOnlyAfterTheWidthIsFilledAgain()
     QTest::qWait(50);
     QCOMPARE(m_api.requests, 6);
 
-    // Filled again, a success restores the configured count.
+    // The first success at the filled width leaves it at two.
     m_api.releaseNext(false);
-    QTRY_COMPARE(m_api.requests, 7);
+    QTest::qWait(50);
+    QCOMPARE(m_api.pending, 2);
+
+    // The second steps the back-off back to the configured four, and the queue
+    // behind it fills all four.
+    m_api.releaseNext(false);
+    for (int index = 0; index < 4; ++index)
+        pool.enqueue(chatBody(QStringLiteral("last%1").arg(index)), DocumentPriority::window, {}, {}, {});
+    QTRY_COMPARE(m_api.pending, 4);
+}
+
+// A failure that follows a step back halves the width from where it stands.
+void TestTranslationPool::halvesAgainFromTheSteppedBackWidth()
+{
+    ConfigManager::instance()->setValue(Keys::apiMaxConcurrency, 8);
+    TranslationPool pool;
+
+    // Two failures take the eight connections down to two.
+    for (int index = 0; index < 2; ++index)
+        pool.enqueue(chatBody(QStringLiteral("doc%1").arg(index)), DocumentPriority::window, {}, {}, {});
+    QTRY_COMPARE(m_api.requests, 2);
+    m_api.releaseNext(true);
+    QTest::qWait(50);
+    m_api.releaseNext(true);
+    QTest::qWait(50);
+
+    // Two successes at the width of two step it back to four.
+    for (int index = 0; index < 2; ++index)
+        pool.enqueue(chatBody(QStringLiteral("step%1").arg(index)), DocumentPriority::window, {}, {}, {});
+    QTRY_COMPARE(m_api.requests, 4);
+    m_api.releaseNext(false);
+    QTest::qWait(50);
+    m_api.releaseNext(false);
+    QTest::qWait(50);
+
+    // The next failure halves that width, so four queued requests put two on the
+    // wire rather than one or four.
+    pool.enqueue(chatBody(QStringLiteral("fail")), DocumentPriority::window, {}, {}, {});
+    QTRY_COMPARE(m_api.requests, 5);
+    m_api.releaseNext(true);
+    QTest::qWait(50);
+
+    for (int index = 0; index < 4; ++index)
+        pool.enqueue(chatBody(QStringLiteral("after%1").arg(index)), DocumentPriority::window, {}, {}, {});
+    QTest::qWait(50);
+    QCOMPARE(m_api.pending, 2);
 }
 
 // A cancelled request is dropped, queued or running, without reaching its

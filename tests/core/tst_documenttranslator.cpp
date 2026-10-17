@@ -569,9 +569,9 @@ void TestDocumentTranslator::retryOutranksAQueuedWindow()
 }
 
 // A run that meets an endpoint out of context finishes anyway: the pool halves the
-// requests it keeps in flight on a failure and restores the configured count once
-// the reduced width has been filled again, so the windows the endpoint refused are
-// still translated.
+// requests it keeps in flight on a failure and gives a halving back once the
+// reduced width has been filled and answered twice, so the windows the endpoint
+// refused are still translated.
 void TestDocumentTranslator::lowersConcurrencyWhenTheEndpointRunsOutOfContext()
 {
     m_api.answerDelayMs = 20;
@@ -591,11 +591,12 @@ void TestDocumentTranslator::lowersConcurrencyWhenTheEndpointRunsOutOfContext()
     QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty() || !failed.isEmpty(), 20000);
 
     // Four requests went out together and the endpoint refused the three beside
-    // the first; the two bursts of retries collide once more before the pool
-    // settles, and the whole document is translated.
+    // the first; the back-off steps back to two connections while the retries are
+    // still waiting, so one of them collides once more before the pool settles and
+    // the whole document is translated.
     QCOMPARE(m_api.peakPending, 4);
-    QCOMPARE(m_api.refusals, 5);
-    QCOMPARE(m_api.requests, windows.size() + 5);
+    QCOMPARE(m_api.refusals, 4);
+    QCOMPARE(m_api.requests, windows.size() + 4);
     QVERIFY(failed.isEmpty());
     QVERIFY(!finished.isEmpty());
     for (const DocumentWindow& window : windows) {
@@ -1831,7 +1832,7 @@ void TestDocumentTranslator::usesTheDefaultRetryCount()
     ConfigManager::instance()->removeValue(Keys::documentRetryCount);
     QCOMPARE(ConfigManager::instance()->intValue(Keys::documentRetryCount),
              Defaults::documentRetryCount);
-    QCOMPARE(Defaults::documentRetryCount, 3);
+    QCOMPARE(Defaults::documentRetryCount, 5);
 
     m_api.failuresLeft = 10;
     DocumentTranslator translator;
@@ -1839,9 +1840,11 @@ void TestDocumentTranslator::usesTheDefaultRetryCount()
     connect(&translator, &DocumentTranslator::failed, this,
             [&failures](const QStringList&) { ++failures; });
 
+    // The pauses between the attempts grow with their number, so six attempts
+    // spend fifteen seconds before the window is given up.
     translator.start(document(1, 3), TranslationContext());
-    QTRY_VERIFY_WITH_TIMEOUT(failures == 1, 15000);
-    QCOMPARE(m_api.requests, 4);
+    QTRY_VERIFY_WITH_TIMEOUT(failures == 1, 30000);
+    QCOMPARE(m_api.requests, 6);
 }
 
 // A run option fixes the attempts a window gets, overriding the configured count

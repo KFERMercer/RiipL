@@ -13,9 +13,9 @@
 // Carries every translation request over one bounded set of connections, so no
 // action pushes the number of requests past the configured concurrency. A request
 // waits with the priority its caller gives it and the next free connection takes
-// the lowest one. A failed request halves the concurrency the pool allows; the
-// configured number returns once the pool has filled the reduced width and no
-// request has failed since.
+// the lowest one. A failed request halves the concurrency the pool allows, and
+// once the reduced width has been filled and answered twice one halving is given
+// back. A failure after that halves the width from where it stands.
 class TranslationPool : public QObject
 {
     Q_OBJECT
@@ -69,6 +69,7 @@ private:
     ApiClient* acquireClient();
     // Connections requests may run on, after any back-off.
     int limit() const;
+    int configuredConcurrency() const;
     void noteSuccess();
     void noteFailure();
     void updateBusy();
@@ -82,9 +83,9 @@ private:
     quint64 m_sequence = 0;
     // Halvings applied by the current back-off.
     int m_halvings = 0;
-    // Whether the reduced width has been filled since the last failure; a success
-    // restores the configured number only then.
-    bool m_filledSinceFailure = false;
+    // Whether the reduced width has been filled since the back-off last changed.
+    bool m_widthFilled = false;
+    int m_successesWhileFilled = 0;
     bool m_dispatchScheduled = false;
     bool m_busy = false;
 };
