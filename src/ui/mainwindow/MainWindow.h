@@ -202,6 +202,7 @@ private:
     // Translation the popup's replacement spans were resolved against.
     QString m_candidateOrigin;
     QUndoStack m_resultHistory;
+    QString m_resultLang;
     QString m_streamOrigin;
     bool m_streamOpen = false;
     // Record of the request in flight, filled from the context it was sent with.

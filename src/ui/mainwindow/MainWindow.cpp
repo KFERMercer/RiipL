@@ -30,6 +30,7 @@
 #include <QComboBox>
 #include <QCoreApplication>
 #include <QDateTime>
+#include <QDir>
 #include <QFileDialog>
 #include <QFont>
 #include <QHBoxLayout>
@@ -42,6 +43,7 @@
 #include <QResizeEvent>
 #include <QSaveFile>
 #include <QSplitter>
+#include <QStandardPaths>
 #include <QStatusBar>
 #include <QStringView>
 #include <QStyle>
@@ -869,6 +871,7 @@ void MainWindow::translateNow()
     }
     endResultStream();
     const TranslationContext context = currentContext();
+    m_resultLang = context.targetLang;
     // The record describes the request, not the controls as they stand when the
     // answer lands.
     TranslationRecord record;
@@ -951,6 +954,8 @@ void MainWindow::changeEvent(QEvent* event)
 void MainWindow::swapLanguages()
 {
     discardResultStream();
+    // The pane takes the text the source held, which the target picker then names.
+    m_resultLang.clear();
     const QString sourceCode = m_sourceLang->currentData().toString();
     const QString targetCode = m_targetLang->currentData().toString();
     if (sourceCode == QLatin1String("auto")) {
@@ -1129,18 +1134,21 @@ void MainWindow::exportTranslation()
         setStatus(Status::NothingToExport);
         return;
     }
-    const QString path = QFileDialog::getSaveFileName(this, tr("Export translation"),
-                                                      QStringLiteral("translation.txt"));
+    const QString lang
+        = m_resultLang.isEmpty() ? m_targetLang->currentData().toString() : m_resultLang;
+    const QString name = QStringLiteral("translated.%1.txt").arg(lang);
+    const QString path = QFileDialog::getSaveFileName(
+        this, tr("Export translation"),
+        QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)).filePath(name));
     if (path.isEmpty())
         return;
     QSaveFile file(path);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        setStatus(Status::CannotWrite, path);
-        return;
-    }
     const QByteArray data = text.toUtf8();
-    if (file.write(data) != data.size() || !file.commit()) {
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text) || file.write(data) != data.size()
+        || !file.commit()) {
         setStatus(Status::CannotWrite, path);
+        QMessageBox::warning(this, QCoreApplication::applicationName(),
+                             tr("Cannot write file: %1").arg(path));
         return;
     }
     setStatus(Status::Exported, path);
@@ -1180,6 +1188,7 @@ void MainWindow::reuseHistoryRecord(const TranslationRecord& record)
     const int targetIndex = m_targetLang->findData(record.targetLang);
     if (targetIndex >= 0)
         m_targetLang->setCurrentIndex(targetIndex);
+    m_resultLang = record.targetLang;
     setResultText(record.target);
 }
 
