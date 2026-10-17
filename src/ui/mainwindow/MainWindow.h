@@ -150,9 +150,11 @@ private:
     QAction* m_historyAction = nullptr;
     QAction* m_settingsAction = nullptr;
     QAction* m_settingsSeparator = nullptr;
+    QAction* m_promptPreviewAction = nullptr;
     // Toolbar buttons between the separators, in the order they appear; the
     // toolbar context menu toggles these.
     QList<QAction*> m_optionalToolBarButtons;
+    QAction* m_languageAction = nullptr;
     QAction* m_glossaryAction = nullptr;
     QAction* m_toneAction = nullptr;
     QAction* m_apiPresetAction = nullptr;

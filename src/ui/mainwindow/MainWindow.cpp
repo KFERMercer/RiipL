@@ -6,6 +6,8 @@
 #include "ui/dialogs/ContextPresetDialog.h"
 #include "ui/dialogs/GlossaryDialog.h"
 #include "ui/dialogs/HistoryDialog.h"
+#include "ui/dialogs/LanguageDialog.h"
+#include "ui/dialogs/PromptPreviewDialog.h"
 #include "ui/dialogs/SettingsDialog.h"
 #include "ui/dialogs/ToneDialog.h"
 #include "ui/widgets/AppFonts.h"
@@ -448,7 +450,6 @@ QWidget* MainWindow::createRightPane()
 void MainWindow::buildMenus()
 {
     m_fileMenu = menuBar()->addMenu(QString());
-    m_documentAction = m_fileMenu->addAction(QString());
     m_exportAction = m_fileMenu->addAction(QString());
     m_fileMenu->addSeparator();
     m_translateAction = new QAction(this);
@@ -459,8 +460,9 @@ void MainWindow::buildMenus()
     m_exitAction->setShortcutContext(Qt::ApplicationShortcut);
 
     m_editMenu = menuBar()->addMenu(QString());
-    m_glossaryAction = m_editMenu->addAction(QString());
+    m_languageAction = m_editMenu->addAction(QString());
     m_toneAction = m_editMenu->addAction(QString());
+    m_glossaryAction = m_editMenu->addAction(QString());
     m_historyAction = m_editMenu->addAction(QString());
     m_contextPresetAction = m_editMenu->addAction(QString());
     m_apiPresetAction = m_editMenu->addAction(QString());
@@ -502,6 +504,8 @@ void MainWindow::buildMenus()
     m_apiPresetGroup->setExclusive(true);
     rebuildApiPresetMenu();
     m_toolsMenu->addSeparator();
+    m_promptPreviewAction = m_toolsMenu->addAction(QString());
+    m_toolsMenu->addSeparator();
     m_settingsAction = m_toolsMenu->addAction(QString());
 
     m_helpMenu = menuBar()->addMenu(QString());
@@ -522,6 +526,7 @@ void MainWindow::buildMenus()
     m_stopAction->setEnabled(false);
     connect(m_stopAction, &QAction::triggered, this, &MainWindow::stopTranslations);
 
+    m_documentAction = new QAction(this);
     m_toolBar->addSeparator();
     // The buttons between the separators are the ones the toolbar popup toggles.
     m_optionalToolBarButtons = {m_documentAction, m_glossaryAction, m_yoloAction,
@@ -550,6 +555,16 @@ void MainWindow::buildMenus()
     connect(m_documentAction, &QAction::triggered, this, &MainWindow::showDocumentWindow);
     connect(m_exportAction, &QAction::triggered, this, &MainWindow::exportTranslation);
     connect(m_exitAction, &QAction::triggered, this, &MainWindow::quitApplication);
+    connect(m_languageAction, &QAction::triggered, this, [this]() {
+        ConfigManager* config = ConfigManager::instance();
+        LanguageDialog dialog(
+            Languages::customFromJson(config->value(Keys::translationCustomLanguages).toArray()),
+            this);
+        if (dialog.exec() == QDialog::Accepted) {
+            config->setValue(Keys::translationCustomLanguages,
+                             Languages::customToJson(dialog.customLanguages()));
+        }
+    });
     connect(m_glossaryAction, &QAction::triggered, this, [this]() {
         GlossaryDialog dialog(this);
         dialog.exec();
@@ -568,6 +583,10 @@ void MainWindow::buildMenus()
             [this]() { ApiPresetDialog::manage(this); });
     connect(m_contextPresetAction, &QAction::triggered, this,
             [this]() { ContextPresetDialog::manage(this); });
+    connect(m_promptPreviewAction, &QAction::triggered, this, [this]() {
+        PromptPreviewDialog dialog(this);
+        dialog.exec();
+    });
     connect(m_settingsAction, &QAction::triggered, this, &MainWindow::showSettingsDialog);
     connect(m_aboutAction, &QAction::triggered, this, [this]() {
         QMessageBox::about(this, tr("About %1").arg(QCoreApplication::applicationName()),
@@ -1197,23 +1216,25 @@ void MainWindow::retranslateUi()
     setWindowTitle(tr("%1 Translator").arg(QCoreApplication::applicationName()));
 
     m_fileMenu->setTitle(tr("&File"));
-    m_documentAction->setText(tr("Open document..."));
+    m_documentAction->setText(tr("Open document"));
     m_documentAction->setShortcut(QKeySequence::Open);
-    m_exportAction->setText(tr("Export translation..."));
+    m_exportAction->setText(tr("Export translation"));
     m_exportAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+S")));
     m_exitAction->setText(tr("Exit %1").arg(QCoreApplication::applicationName()));
     m_exitAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+Q")));
 
     m_editMenu->setTitle(tr("&Edit"));
-    m_glossaryAction->setText(tr("Glossary..."));
-    m_glossaryAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+G")));
-    m_toneAction->setText(tr("Manage tones..."));
+    m_languageAction->setText(tr("Languages"));
+    m_languageAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+L")));
+    m_toneAction->setText(tr("Tones"));
     m_toneAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+T")));
-    m_historyAction->setText(tr("History..."));
+    m_glossaryAction->setText(tr("Glossary"));
+    m_glossaryAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+G")));
+    m_historyAction->setText(tr("Translation history"));
     m_historyAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+H")));
-    m_contextPresetAction->setText(tr("Manage context presets..."));
+    m_contextPresetAction->setText(tr("Context presets"));
     m_contextPresetAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+P")));
-    m_apiPresetAction->setText(tr("Manage API presets..."));
+    m_apiPresetAction->setText(tr("API presets"));
     m_apiPresetAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+P")));
 
     m_viewMenu->setTitle(tr("&View"));
@@ -1231,7 +1252,8 @@ void MainWindow::retranslateUi()
     m_clipboardAction->setText(tr("Monitor clipboard"));
     m_yoloAction->setText(tr("YOLO mode"));
     m_apiPresetMenu->setTitle(tr("API preset"));
-    m_settingsAction->setText(tr("Settings..."));
+    m_promptPreviewAction->setText(tr("Prompt preview"));
+    m_settingsAction->setText(tr("Settings"));
 
     m_helpMenu->setTitle(tr("&Help"));
     m_aboutAction->setText(tr("About %1").arg(QCoreApplication::applicationName()));

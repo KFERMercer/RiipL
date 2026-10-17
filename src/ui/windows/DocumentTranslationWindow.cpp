@@ -225,12 +225,12 @@ void DocumentTranslationWindow::retranslateUi()
     m_pathEdit->setAccessibleName(tr("Document file"));
     m_preview->setAccessibleName(tr("Translated document"));
     m_previewGroup->setTitle(tr("Preview"));
-    m_browseButton->setText(tr("Browse..."));
+    m_browseButton->setText(tr("Browse"));
     m_translateAction->setText(tr("Translate"));
     m_translateAction->setToolTip(tr("Start translation"));
     m_stopAction->setText(tr("Stop"));
     m_stopAction->setToolTip(tr("Stop translation"));
-    m_exportButton->setText(tr("Export translation..."));
+    m_exportButton->setText(tr("Export translation"));
     m_closeButton->setText(tr("Close"));
     m_contextAction->setText(tr("Context"));
     m_contextAction->setToolTip(tr("Manage context presets"));

@@ -709,7 +709,7 @@ QWidget* SettingsDialog::createPromptsPage()
     auto* buttonRow = new QHBoxLayout();
     buttonRow->addStretch(1);
     auto* testButton = new QPushButton(page);
-    bindText([testButton]() { testButton->setText(tr("Preview prompt...")); });
+    bindText([testButton]() { testButton->setText(tr("Prompt preview")); });
     connect(testButton, &QPushButton::clicked, page, [page]() {
         PromptPreviewDialog dialog(page);
         dialog.exec();
