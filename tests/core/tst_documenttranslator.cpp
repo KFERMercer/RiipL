@@ -194,6 +194,7 @@ QVector<DocumentWindow> document(int windows, int linesPerWindow)
 QJsonObject chatBody(const QString& prompt)
 {
     return QJsonObject{
+        {QStringLiteral("model"), QStringLiteral("test-model")},
         {QStringLiteral("messages"),
          QJsonArray{QJsonObject{{QStringLiteral("role"), QStringLiteral("user")},
                                 {QStringLiteral("content"), prompt}}}}
