@@ -8,6 +8,7 @@
 #include <QLatin1String>
 #include <QList>
 #include <QLocale>
+#include <QSet>
 #include <QString>
 #include <QVector>
 
@@ -86,18 +87,24 @@ inline int indexOf(const QString& code)
                                 : static_cast<int>(std::distance(list.cbegin(), found));
 }
 
-// Drops the entries no picker could offer: a language carries both the key it
-// prompts with and the name it shows.
+// Completes a half-filled entry so a picker can offer it, and drops one whose
+// key a built-in language or an earlier entry already uses.
 inline QVector<CustomLanguage> customNormalized(const QVector<CustomLanguage>& custom)
 {
     QVector<CustomLanguage> result;
     result.reserve(custom.size());
+    QSet<QString> keys;
     for (const CustomLanguage& stored : custom) {
         CustomLanguage language;
         language.key = stored.key.trimmed();
         language.name = stored.name.trimmed();
-        if (language.key.isEmpty() || language.name.isEmpty())
+        if (language.name.isEmpty())
+            language.name = language.key;
+        else if (language.key.isEmpty())
+            language.key = language.name;
+        if (language.key.isEmpty() || indexOf(language.key) >= 0 || keys.contains(language.key))
             continue;
+        keys.insert(language.key);
         result.append(language);
     }
     return result;

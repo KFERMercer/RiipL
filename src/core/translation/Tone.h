@@ -3,6 +3,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QJsonValue>
+#include <QSet>
 #include <QString>
 #include <QVector>
 
@@ -55,18 +56,24 @@ inline const char* labelFor(const QString& key)
     return nullptr;
 }
 
-// Drops the entries no picker could offer: a tone carries both the key the
-// prompts name and the name it shows.
+// Completes a half-filled entry so a picker can offer it, and drops one whose
+// key a preset tone or an earlier entry already uses.
 inline QVector<CustomTone> customNormalized(const QVector<CustomTone>& custom)
 {
     QVector<CustomTone> result;
     result.reserve(custom.size());
+    QSet<QString> keys;
     for (const CustomTone& stored : custom) {
         CustomTone tone;
         tone.key = stored.key.trimmed();
         tone.name = stored.name.trimmed();
-        if (tone.key.isEmpty() || tone.name.isEmpty())
+        if (tone.name.isEmpty())
+            tone.name = tone.key;
+        else if (tone.key.isEmpty())
+            tone.key = tone.name;
+        if (tone.key.isEmpty() || labelFor(tone.key) != nullptr || keys.contains(tone.key))
             continue;
+        keys.insert(tone.key);
         result.append(tone);
     }
     return result;

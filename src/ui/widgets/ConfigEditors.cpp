@@ -562,11 +562,8 @@ QList<std::pair<QString, QString>> languageItems(bool includeAuto,
     // language just added is not buried under it.
     if (includeAuto)
         items.append({languageLabel(autoCode), autoCode});
-    for (const CustomLanguage& language : custom) {
-        // A built-in code already resolves to its catalog name.
-        if (Languages::indexOf(language.key) < 0)
-            items.append({language.name, language.key});
-    }
+    for (const CustomLanguage& language : custom)
+        items.append({language.name, language.key});
     for (const LangItem& lang : Languages::all()) {
         if (lang.code == autoCode)
             continue;
@@ -582,11 +579,8 @@ QList<std::pair<QString, QString>> toneItems(const QJsonArray& customTones)
     // the list no longer offers.
     const QString defaultKey = Defaults::value(Keys::translationTone).toString();
     items.append({toneLabel(defaultKey), defaultKey});
-    for (const CustomTone& tone : Tones::customFromJson(customTones)) {
-        // A preset key already resolves to its catalog name.
-        if (Tones::labelFor(tone.key) == nullptr)
-            items.append({tone.name, tone.key});
-    }
+    for (const CustomTone& tone : Tones::customFromJson(customTones))
+        items.append({tone.name, tone.key});
     for (const ToneItem& tone : Tones::presets()) {
         if (tone.key != defaultKey)
             items.append({toneLabel(tone.key), tone.key});

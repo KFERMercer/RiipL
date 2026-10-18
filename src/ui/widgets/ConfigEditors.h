@@ -210,7 +210,8 @@ private:
 
 // Item lists for the language and tone selectors, shared by every editor that
 // offers the same choice so the display names stay in step. A language item
-// carries the stored value: a built-in code or a custom key.
+// carries the stored value: a built-in code or a custom key. Custom entries are
+// expected in their normalized form.
 QList<std::pair<QString, QString>> languageItems(bool includeAuto,
                                                  const QVector<CustomLanguage>& custom = {});
 QList<std::pair<QString, QString>> uiLanguageItems();

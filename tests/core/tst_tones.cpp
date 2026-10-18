@@ -11,6 +11,8 @@ private slots:
     void exposesPresets();
     void resolvesPresetLabels();
     void parsesCustomTones();
+    void completesHalfFilledCustomTones();
+    void dropsCollidingCustomTones();
     void roundTripsCustomTones();
 };
 
@@ -41,32 +43,60 @@ void TestTones::parsesCustomTones()
                     {QStringLiteral("name"), QStringLiteral("  Pirate  ")}},
         QJsonObject{{QStringLiteral("key"), QStringLiteral("x-nameless")},
                     {QStringLiteral("name"), QStringLiteral("   ")}},
-        QJsonObject{{QStringLiteral("key"), QStringLiteral("   ")},
-                    {QStringLiteral("name"), QStringLiteral("Dropped")}},
-        QJsonObject{{QStringLiteral("name"), QStringLiteral("No key")}},
+        QJsonObject{{QStringLiteral("key"), QStringLiteral("pirate")},
+                    {QStringLiteral("name"), QStringLiteral("Duplicate key")}},
+        QJsonObject{{QStringLiteral("name"), QStringLiteral("formal")}},
         QJsonValue(QStringLiteral("not-an-object")),
         QJsonObject{{QStringLiteral("key"), QStringLiteral("x-last")},
                     {QStringLiteral("name"), QStringLiteral("Last")}}
     };
 
+    // The duplicate and the name deriving a preset key are dropped too.
     const QVector<CustomTone> parsed = customFromJson(stored);
-    QCOMPARE(parsed.size(), 2);
+    QCOMPARE(parsed.size(), 3);
     QCOMPARE(parsed.at(0).key, QStringLiteral("pirate"));
     QCOMPARE(parsed.at(0).name, QStringLiteral("Pirate"));
-    QCOMPARE(parsed.at(1).key, QStringLiteral("x-last"));
-    QCOMPARE(parsed.at(1).name, QStringLiteral("Last"));
+    QCOMPARE(parsed.at(1).key, QStringLiteral("x-nameless"));
+    QCOMPARE(parsed.at(1).name, QStringLiteral("x-nameless"));
+    QCOMPARE(parsed.at(2).key, QStringLiteral("x-last"));
+    QCOMPARE(parsed.at(2).name, QStringLiteral("Last"));
 
     QVERIFY(customFromJson(QJsonArray()).isEmpty());
+}
 
-    // The shared normaliser, exercised without the JSON reader.
+void TestTones::completesHalfFilledCustomTones()
+{
+    using namespace Tones;
     const QVector<CustomTone> normalized = customNormalized({
         {QStringLiteral("  pirate  "), QStringLiteral("  Pirate  ")},
         {QStringLiteral("x-nameless"), QString()},
-        {QStringLiteral("  "), QStringLiteral("Dropped")}
+        {QString(), QStringLiteral("Keyless")},
+        {QStringLiteral("   "), QStringLiteral("   ")}
     });
-    QCOMPARE(normalized.size(), 1);
+    QCOMPARE(normalized.size(), 3);
     QCOMPARE(normalized.at(0).key, QStringLiteral("pirate"));
     QCOMPARE(normalized.at(0).name, QStringLiteral("Pirate"));
+    QCOMPARE(normalized.at(1).key, QStringLiteral("x-nameless"));
+    QCOMPARE(normalized.at(1).name, QStringLiteral("x-nameless"));
+    QCOMPARE(normalized.at(2).key, QStringLiteral("Keyless"));
+    QCOMPARE(normalized.at(2).name, QStringLiteral("Keyless"));
+}
+
+void TestTones::dropsCollidingCustomTones()
+{
+    using namespace Tones;
+    const QVector<CustomTone> normalized = customNormalized({
+        {QStringLiteral("pirate"), QStringLiteral("Pirate")},
+        {QStringLiteral("pirate"), QStringLiteral("Duplicate")},
+        {QStringLiteral("formal"), QStringLiteral("Formal custom")},
+        {QString(), QStringLiteral("formal")},
+        {QStringLiteral("x-custom"), QStringLiteral("Custom")}
+    });
+    QCOMPARE(normalized.size(), 2);
+    QCOMPARE(normalized.at(0).key, QStringLiteral("pirate"));
+    QCOMPARE(normalized.at(0).name, QStringLiteral("Pirate"));
+    QCOMPARE(normalized.at(1).key, QStringLiteral("x-custom"));
+    QCOMPARE(normalized.at(1).name, QStringLiteral("Custom"));
 }
 
 void TestTones::roundTripsCustomTones()
