@@ -178,7 +178,7 @@
 <context>
     <name>DocumentTranslationWindow</name>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="223"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="224"/>
         <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="373"/>
         <source>Document translation</source>
         <translation>文档翻译</translation>
@@ -189,47 +189,42 @@
         <translation>就绪</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="234"/>
-        <source>Close</source>
-        <translation>关闭</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="225"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="226"/>
         <source>Document file</source>
         <translation>文档文件</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="226"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="227"/>
         <source>Translated document</source>
         <translation>译文文档</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="227"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="228"/>
         <source>Preview</source>
         <translation>预览</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="228"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="229"/>
         <source>Browse</source>
         <translation>浏览</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="229"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="230"/>
         <source>Translate</source>
         <translation>翻译</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="230"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="231"/>
         <source>Start translation</source>
         <translation>开始翻译</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="231"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="232"/>
         <source>Stop</source>
         <translation>停止</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="232"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="233"/>
         <source>Stop translation</source>
         <translation>停止翻译</translation>
     </message>
@@ -298,7 +293,7 @@
         <translation>失败窗口：%1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="224"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="225"/>
         <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="342"/>
         <source>Choose file</source>
         <translation>选择文件</translation>
@@ -316,7 +311,7 @@
         <translation>没有可翻译的内容</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="233"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="234"/>
         <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="478"/>
         <source>Export translation</source>
         <translation>导出译文</translation>
@@ -434,62 +429,57 @@
 <context>
     <name>HistoryDialog</name>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="94"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="95"/>
         <source>Translation history</source>
         <translation>历史翻译</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="100"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="101"/>
         <source>Search:</source>
         <translation>搜索：</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="132"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="133"/>
         <source>Reuse</source>
         <translation>重新使用</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="133"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="134"/>
         <source>Delete</source>
         <translation>删除</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="134"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="135"/>
         <source>Clear all</source>
         <translation>全部清空</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="135"/>
-        <source>Close</source>
-        <translation>关闭</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="159"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="160"/>
         <source>Delete all history records?</source>
         <translation>确定删除全部历史记录？</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="44"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="45"/>
         <source>Time</source>
         <translation>时间</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="56"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="57"/>
         <source>Direction</source>
         <translation>方向</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="50"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="51"/>
         <source>Source</source>
         <translation>原文</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="53"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="54"/>
         <source>Translation</source>
         <translation>译文</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="62"/>
+        <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="63"/>
         <source>Tone</source>
         <translation>语气</translation>
     </message>

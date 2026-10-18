@@ -108,6 +108,5 @@ private:
     QAction* m_translateAction = nullptr;
     QAction* m_stopAction = nullptr;
     QPushButton* m_exportButton = nullptr;
-    QPushButton* m_closeButton = nullptr;
     bool m_running = false;
 };

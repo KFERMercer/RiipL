@@ -18,6 +18,7 @@
 #include <QComboBox>
 #include <QCoreApplication>
 #include <QDialog>
+#include <QDialogButtonBox>
 #include <QEvent>
 #include <QFile>
 #include <QFileDialog>
@@ -133,13 +134,13 @@ DocumentTranslationWindow::DocumentTranslationWindow(ContextProvider context)
 
     m_exportButton = new QPushButton(this);
     m_exportButton->setEnabled(false);
-    m_closeButton = new QPushButton(this);
+    auto* closeButtons = new QDialogButtonBox(QDialogButtonBox::Close, this);
 
     buttonRow->addWidget(translateButton);
     buttonRow->addWidget(stopButton);
     buttonRow->addWidget(m_exportButton);
     buttonRow->addStretch(1);
-    buttonRow->addWidget(m_closeButton);
+    buttonRow->addWidget(closeButtons);
     layout->addLayout(buttonRow);
 
     connect(m_browseButton, &QPushButton::clicked, this, &DocumentTranslationWindow::browse);
@@ -148,7 +149,7 @@ DocumentTranslationWindow::DocumentTranslationWindow(ContextProvider context)
             &DocumentTranslationWindow::stopTranslation);
     connect(m_exportButton, &QPushButton::clicked, this,
             &DocumentTranslationWindow::exportResult);
-    connect(m_closeButton, &QPushButton::clicked, this, &QWidget::close);
+    connect(closeButtons, &QDialogButtonBox::rejected, this, &QWidget::close);
     connect(m_contextAction, &QAction::triggered, this,
             [this]() { ContextPresetDialog::manage(this); });
 
@@ -231,7 +232,6 @@ void DocumentTranslationWindow::retranslateUi()
     m_stopAction->setText(tr("Stop"));
     m_stopAction->setToolTip(tr("Stop translation"));
     m_exportButton->setText(tr("Export translation"));
-    m_closeButton->setText(tr("Close"));
     m_contextAction->setText(tr("Context"));
     m_contextAction->setToolTip(tr("Manage context presets"));
     m_sourceLang->setAccessibleName(tr("Source language"));

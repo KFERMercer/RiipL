@@ -9,6 +9,7 @@
 
 #include <QCoreApplication>
 #include <QDateTime>
+#include <QDialogButtonBox>
 #include <QHeaderView>
 #include <QHBoxLayout>
 #include <QItemSelectionModel>
@@ -132,12 +133,12 @@ HistoryDialog::HistoryDialog(HistoryManager* history, QWidget* parent)
     m_reuseButton = new QPushButton(tr("Reuse"), this);
     m_deleteButton = new QPushButton(tr("Delete"), this);
     auto* clearButton = new QPushButton(tr("Clear all"), this);
-    auto* closeButton = new QPushButton(tr("Close"), this);
+    auto* closeButtons = new QDialogButtonBox(QDialogButtonBox::Close, this);
     buttonRow->addWidget(m_reuseButton);
     buttonRow->addWidget(m_deleteButton);
     buttonRow->addWidget(clearButton);
     buttonRow->addStretch(1);
-    buttonRow->addWidget(closeButton);
+    buttonRow->addWidget(closeButtons);
     layout->addLayout(buttonRow);
 
     connect(m_history, &HistoryManager::changed, this, [this]() { reload(); });
@@ -161,7 +162,7 @@ HistoryDialog::HistoryDialog(HistoryManager* history, QWidget* parent)
         if (answer == QMessageBox::Yes)
             m_history->clear();
     });
-    connect(closeButton, &QPushButton::clicked, this, &QDialog::close);
+    connect(closeButtons, &QDialogButtonBox::rejected, this, &QDialog::close);
 
     reload();
     WindowState::track(this, WindowState::Id::history);
