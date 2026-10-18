@@ -7,17 +7,25 @@
 #include "core/translation/PromptBuilder.h"
 #include "ui/widgets/AppFonts.h"
 #include "ui/widgets/ConfigEditors.h"
+#include "ui/widgets/TranslationEdit.h"
 #include "ui/widgets/WindowState.h"
 
 #include <QComboBox>
-#include <QCoreApplication>
 #include <QDialogButtonBox>
 #include <QFormLayout>
-#include <QLineEdit>
-#include <QPlainTextEdit>
+#include <QGroupBox>
+#include <QTextDocument>
+#include <QTextEdit>
 #include <QVBoxLayout>
+#include <QtMath>
 
 #include <utility>
+
+namespace {
+
+constexpr int kInputLines = 4;
+
+}
 
 PromptPreviewDialog::PromptPreviewDialog(QWidget* parent)
     : QDialog(parent)
@@ -32,9 +40,8 @@ PromptPreviewDialog::PromptPreviewDialog(QWidget* parent)
     auto* layout = new QVBoxLayout(this);
 
     auto* form = new QFormLayout();
-    m_source = new QLineEdit(this);
-    m_source->setText(QStringLiteral("Hello, world! %1 is a translation tool.")
-                          .arg(QCoreApplication::applicationName()));
+    m_source = createTextBox();
+    m_source->setPlainText(QStringLiteral("Hello, world!"));
     m_sourceLang = new QComboBox(this);
     for (const std::pair<QString, QString>& item : languageItems(true, custom))
         m_sourceLang->addItem(item.first, item.second);
@@ -52,9 +59,11 @@ PromptPreviewDialog::PromptPreviewDialog(QWidget* parent)
     }
     selectComboItem(m_tone, config->stringValue(Keys::translationTone),
                     Defaults::value(Keys::translationTone).toString());
-    m_style = new QLineEdit(config->stringValue(Keys::translationStyle), this);
-    m_background = new QLineEdit(config->stringValue(Keys::translationBackground), this);
-    form->addRow(tr("Sample text"), m_source);
+    m_style = createTextBox();
+    m_style->setPlainText(config->stringValue(Keys::translationStyle));
+    m_background = createTextBox();
+    m_background->setPlainText(config->stringValue(Keys::translationBackground));
+    form->addRow(tr("Text to translate"), m_source);
     form->addRow(tr("Source language"), m_sourceLang);
     form->addRow(tr("Target language"), m_target);
     form->addRow(tr("Tone"), m_tone);
@@ -62,40 +71,64 @@ PromptPreviewDialog::PromptPreviewDialog(QWidget* parent)
     form->addRow(tr("Background"), m_background);
     layout->addLayout(form);
 
-    m_output = new QPlainTextEdit(this);
-    m_output->setReadOnly(true);
-    m_output->setFont(AppFonts::fixedWidth());
-    layout->addWidget(m_output, 1);
+    auto* previewGroup = new QGroupBox(tr("Preview"), this);
+    auto* previewLayout = new QVBoxLayout(previewGroup);
+    auto* previewForm = new QFormLayout();
+    // The role names the model reads the two prompts under, so they stay English.
+    m_system = createPreviewPane();
+    m_user = createPreviewPane();
+    previewForm->addRow(QStringLiteral("System"), m_system);
+    previewForm->addRow(QStringLiteral("User"), m_user);
+    previewLayout->addLayout(previewForm);
+    layout->addWidget(previewGroup, 1);
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Close, this);
     layout->addWidget(buttons);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::close);
 
-    connect(m_source, &QLineEdit::textChanged, this, &PromptPreviewDialog::refresh);
+    connect(m_source, &QTextEdit::textChanged, this, &PromptPreviewDialog::refresh);
     connect(m_sourceLang, &QComboBox::currentIndexChanged, this, &PromptPreviewDialog::refresh);
     connect(m_target, &QComboBox::currentIndexChanged, this, &PromptPreviewDialog::refresh);
     connect(m_tone, &QComboBox::currentIndexChanged, this, &PromptPreviewDialog::refresh);
-    connect(m_style, &QLineEdit::textChanged, this, &PromptPreviewDialog::refresh);
-    connect(m_background, &QLineEdit::textChanged, this, &PromptPreviewDialog::refresh);
+    connect(m_style, &QTextEdit::textChanged, this, &PromptPreviewDialog::refresh);
+    connect(m_background, &QTextEdit::textChanged, this, &PromptPreviewDialog::refresh);
     refresh();
     WindowState::track(this, WindowState::Id::promptPreview);
+}
+
+QTextEdit* PromptPreviewDialog::createTextBox()
+{
+    auto* view = new QTextEdit(this);
+    // Plain text only, so a paste carries no formatting into the prompt.
+    view->setAcceptRichText(false);
+    view->setFixedHeight(kInputLines * view->fontMetrics().lineSpacing()
+                         + 2 * qRound(view->document()->documentMargin())
+                         + 2 * view->frameWidth());
+    return view;
+}
+
+TranslationEdit* PromptPreviewDialog::createPreviewPane()
+{
+    auto* view = new TranslationEdit(this);
+    view->setFont(AppFonts::fixedWidth());
+    view->setWordSelectionEnabled(false);
+    view->setPlaceholderText(tr("(empty prompt)"));
+    return view;
 }
 
 void PromptPreviewDialog::refresh()
 {
     TranslationContext context;
-    context.sourceText = m_source->text();
+    context.sourceText = m_source->toPlainText();
     context.sourceLang = m_sourceLang->currentData().toString();
     context.targetLang = m_target->currentData().toString();
     context.tone = m_tone->currentData().toString();
-    context.style = m_style->text().trimmed();
-    context.background = m_background->text().trimmed();
+    context.style = m_style->toPlainText();
+    context.background = m_background->toPlainText();
     context.glossaryEnabled = m_glossaryEnabled;
     context.glossary = m_glossary;
     const PromptBuilder::Result result = PromptBuilder::build(context);
-    QString text;
-    if (!result.system.isEmpty())
-        text += QStringLiteral("[system]\n%1\n\n").arg(result.system);
-    text += result.user;
-    m_output->setPlainText(text.isEmpty() ? tr("(empty prompt)") : text);
+    // Replacing the text also puts the reader back at the top of the prompt.
+    m_system->setResult(result.system);
+    m_user->setResult(result.user);
 }

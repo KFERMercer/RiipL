@@ -1276,42 +1276,47 @@
 <context>
     <name>PromptPreviewDialog</name>
     <message>
-        <location filename="../../src/ui/dialogs/PromptPreviewDialog.cpp" line="25"/>
+        <location filename="../../src/ui/dialogs/PromptPreviewDialog.cpp" line="33"/>
         <source>Prompt preview</source>
         <translation>提示词预览</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/PromptPreviewDialog.cpp" line="57"/>
-        <source>Sample text</source>
-        <translation>示例文本</translation>
+        <location filename="../../src/ui/dialogs/PromptPreviewDialog.cpp" line="66"/>
+        <source>Text to translate</source>
+        <translation>待翻译文本</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/PromptPreviewDialog.cpp" line="58"/>
+        <location filename="../../src/ui/dialogs/PromptPreviewDialog.cpp" line="67"/>
         <source>Source language</source>
         <translation>源语言</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/PromptPreviewDialog.cpp" line="59"/>
+        <location filename="../../src/ui/dialogs/PromptPreviewDialog.cpp" line="68"/>
         <source>Target language</source>
         <translation>目标语言</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/PromptPreviewDialog.cpp" line="60"/>
+        <location filename="../../src/ui/dialogs/PromptPreviewDialog.cpp" line="69"/>
         <source>Tone</source>
         <translation>语气</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/PromptPreviewDialog.cpp" line="61"/>
+        <location filename="../../src/ui/dialogs/PromptPreviewDialog.cpp" line="70"/>
         <source>Style</source>
         <translation>风格</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/PromptPreviewDialog.cpp" line="62"/>
+        <location filename="../../src/ui/dialogs/PromptPreviewDialog.cpp" line="71"/>
         <source>Background</source>
         <translation>背景信息</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/PromptPreviewDialog.cpp" line="100"/>
+        <location filename="../../src/ui/dialogs/PromptPreviewDialog.cpp" line="74"/>
+        <source>Preview</source>
+        <translation>预览</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/PromptPreviewDialog.cpp" line="115"/>
         <source>(empty prompt)</source>
         <translation>（空提示词）</translation>
     </message>
