@@ -148,7 +148,10 @@ inline const QString promptSourceLang = R"TXT(- Original language: {source_lang}
 inline const QString promptTone = R"TXT(- Translation tone: {tone}
 )TXT";
 
-inline const QString promptStyle = R"TXT(- Language style: {style}
+inline const QString promptStyle = R"TXT(- Language style:
+  ```
+  {style}
+  ```
 )TXT";
 
 inline const QString promptBackground = R"TXT(- Background Information:

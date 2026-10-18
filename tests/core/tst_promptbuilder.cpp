@@ -18,6 +18,7 @@ private slots:
     void writesToneEntries();
     void formatsGlossaryAsJson();
     void indentsMultiLineEntries();
+    void trimsValuesBeforeInsertion();
     void keepsPlaceholdersInsideValuesLiteral();
     void marksSelectionInCandidatePrompt();
     void rendersShortTextTemplate();
@@ -264,22 +265,74 @@ void TestPromptBuilder::indentsMultiLineEntries()
 
     const QString prompt = PromptBuilder::build(context).user;
     QVERIFY(prompt.contains(QStringLiteral("- Translation tone: formal")));
-    // The style placeholder sits on the label line, so a multi-line value keeps
-    // its line breaks without taking on indentation of its own.
-    QVERIFY(prompt.contains(QStringLiteral("- Language style: concise\ntechnical")));
+    // A multi-line value keeps its line breaks and the fence stays aligned.
+    QVERIFY(prompt.contains(QStringLiteral("- Language style:\n  ```\n  concise\n  technical\n  ```")));
     QVERIFY(prompt.contains(QStringLiteral("- Background Information:\n  ```\n  line one\n  line two\n  ```")));
     QVERIFY(prompt.contains(QStringLiteral("- Glossary:\n  ```json\n  [\n      {\n          \"source\": \"fox\",")));
     QCOMPARE(prompt.count(Defaults::promptReference.trimmed()), 1);
     QVERIFY(prompt.indexOf(QStringLiteral("Hello")) > prompt.indexOf(Defaults::promptReference.trimmed()));
 
-    // A single-line value stays on the label line.
     TranslationContext single = context;
     single.style = QStringLiteral("concise");
-    QVERIFY(PromptBuilder::build(single).user.contains(QStringLiteral("- Language style: concise\n")));
+    QVERIFY(PromptBuilder::build(single).user
+                .contains(QStringLiteral("- Language style:\n  ```\n  concise\n  ```")));
 
     // An unset option removes its whole entry, indentation included.
     single.style.clear();
     QVERIFY(!PromptBuilder::build(single).user.contains(QStringLiteral("- Language style:")));
+}
+
+// A value reaches the template trimmed, and one that holds nothing but blanks
+// inserts nothing, so a blank option cannot leave its label behind.
+
+void TestPromptBuilder::trimsValuesBeforeInsertion()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    ConfigManager::createInstance(TestSupport::tempDir());
+
+    const QHash<QString, QString> variables = {
+        {QStringLiteral("source_text"), QStringLiteral("  padded  ")},
+        {QStringLiteral("tone"), QStringLiteral(" \n\t ")},
+    };
+    QCOMPARE(PromptBuilder::substitute(QStringLiteral("[{source_text}][{tone}]"), variables),
+             QStringLiteral("[padded][]"));
+
+    // Trimming keeps the value's own indentation, which the placeholder line
+    // then adds to.
+    QCOMPARE(PromptBuilder::substitute(
+                 QStringLiteral("  {source_text}"),
+                 {{QStringLiteral("source_text"), QStringLiteral("  a\n  b  ")}}),
+             QStringLiteral("  a\n    b"));
+
+    TranslationContext context;
+    context.sourceText = QStringLiteral("Hello");
+    context.targetLang = QStringLiteral("de");
+    context.sourceLang = QStringLiteral("  ");
+    context.tone = QStringLiteral(" \n\t ");
+    context.style = QStringLiteral("  \n  ");
+    context.background = QStringLiteral("\n\t");
+    QVERIFY(!PromptBuilder::build(context).user.contains(Defaults::promptReference.trimmed()));
+
+    context.tone = QStringLiteral("formal");
+    QString prompt = PromptBuilder::build(context).user;
+    QVERIFY(prompt.startsWith(Defaults::promptReference.trimmed()));
+    QVERIFY(prompt.contains(QStringLiteral("- Translation tone: formal")));
+    QVERIFY(!prompt.contains(QStringLiteral("- Original language:")));
+    QVERIFY(!prompt.contains(QStringLiteral("- Language style:")));
+    QVERIFY(!prompt.contains(QStringLiteral("- Background Information:")));
+
+    // A padded sentinel is still the sentinel, so it stays out as well.
+    context.tone = QStringLiteral(" default ");
+    context.sourceLang = QStringLiteral(" auto ");
+    QVERIFY(!PromptBuilder::build(context).user.contains(Defaults::promptReference.trimmed()));
+
+    context.sourceLang = QStringLiteral("ja");
+    context.style = QStringLiteral("  concise  ");
+    context.background = QStringLiteral("  notes  ");
+    prompt = PromptBuilder::build(context).user;
+    QVERIFY(prompt.contains(QStringLiteral("- Original language: Japanese")));
+    QVERIFY(prompt.contains(QStringLiteral("- Language style:\n  ```\n  concise\n  ```")));
+    QVERIFY(prompt.contains(QStringLiteral("- Background Information:\n  ```\n  notes\n  ```")));
 }
 
 void TestPromptBuilder::keepsPlaceholdersInsideValuesLiteral()

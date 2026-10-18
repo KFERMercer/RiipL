@@ -134,7 +134,7 @@ QString PromptBuilder::substitute(const QString& text, const QHash<QString, QStr
             const auto value = named ? variables.constFind(text.mid(at + 1, end - at - 1))
                                      : variables.constEnd();
             if (value != variables.constEnd()) {
-                result += indentedValue(*value, text, lineStart, at);
+                result += indentedValue(value->trimmed(), text, lineStart, at);
                 at = end + 1;
                 continue;
             }
@@ -178,16 +178,22 @@ QString PromptBuilder::render(const QString& key, const QHash<QString, QString>&
 QStringList PromptBuilder::referenceEntries(const TranslationContext& context,
                                             const QHash<QString, QString>& variables)
 {
+    const QString sourceLang = context.sourceLang.trimmed();
+    const QString tone = context.tone.trimmed();
+    const auto isSet = [&variables](const QString& name) {
+        return !variables.value(name).trimmed().isEmpty();
+    };
+
     QStringList entries;
-    if (!context.sourceLang.isEmpty() && context.sourceLang != QLatin1String("auto"))
+    if (!sourceLang.isEmpty() && sourceLang != QLatin1String("auto"))
         entries << render(Keys::promptSourceLang, variables);
-    if (!context.tone.isEmpty() && context.tone != QLatin1String("default"))
+    if (!tone.isEmpty() && tone != QLatin1String("default"))
         entries << render(Keys::promptTone, variables);
-    if (!context.style.isEmpty())
+    if (isSet(QStringLiteral("style")))
         entries << render(Keys::promptStyle, variables);
-    if (!context.background.isEmpty())
+    if (isSet(QStringLiteral("background")))
         entries << render(Keys::promptBackground, variables);
-    if (!variables.value(QStringLiteral("glossary")).isEmpty())
+    if (isSet(QStringLiteral("glossary")))
         entries << render(Keys::promptGlossary, variables);
     return entries;
 }

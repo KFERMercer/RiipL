@@ -42,8 +42,9 @@ struct DocumentWindowPrompt
 };
 
 // Assembles chat prompts from the user-editable templates in the configuration.
-// Each template carries its own labels and fences; an entry is emitted only
-// while its variable holds a value, so unset options stay out of the prompt.
+// Each template carries its own labels and fences; a value is inserted trimmed,
+// and an entry is emitted only while its variable holds a value, so unset
+// options stay out of the prompt.
 class PromptBuilder
 {
 public:
