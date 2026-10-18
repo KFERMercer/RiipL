@@ -38,10 +38,13 @@ void TestConfigManager::fallsBackToDefaults()
              Defaults::documentWindowWords);
     QCOMPARE(ConfigManager::instance()->intValue(Keys::documentWindowLines),
              Defaults::documentWindowLines);
+    QCOMPARE(ConfigManager::instance()->intValue(Keys::apiMaxTokens),
+             Defaults::apiMaxTokens);
     QCOMPARE(ConfigManager::instance()->intValue(Keys::apiMaxConcurrency),
              Defaults::apiMaxConcurrency);
     QCOMPARE(ConfigManager::instance()->boolValue(Keys::documentConcurrent),
              Defaults::documentConcurrent);
+    QCOMPARE(Defaults::apiMaxTokens, 8192);
     QCOMPARE(Defaults::apiMaxConcurrency, 1);
     QVERIFY(Defaults::documentConcurrent);
     QVERIFY(ConfigManager::instance()->isDefault(Keys::apiModel));

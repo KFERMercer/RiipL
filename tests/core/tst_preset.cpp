@@ -209,7 +209,7 @@ void TestPreset::writesEveryApiPresetField()
     preset.values.insert(Keys::apiBaseUrl, QStringLiteral("https://api.deepseek.com/v1"));
     preset.values.insert(Keys::apiKey, QStringLiteral("sk-deepseek"));
     preset.values.insert(Keys::apiModel, QStringLiteral("deepseek-chat"));
-    preset.values.insert(Keys::apiMaxTokens, 8192);
+    preset.values.insert(Keys::apiMaxTokens, 16384);
     preset.values.insert(Keys::apiTemperature, 0.3);
     preset.values.insert(Keys::apiMaxConcurrency, 8);
     preset.values.insert(Keys::apiStream, true);
@@ -221,7 +221,7 @@ void TestPreset::writesEveryApiPresetField()
     QCOMPARE(config->stringValue(Keys::apiBaseUrl), QStringLiteral("https://api.deepseek.com/v1"));
     QCOMPARE(config->stringValue(Keys::apiKey), QStringLiteral("sk-deepseek"));
     QCOMPARE(config->stringValue(Keys::apiModel), QStringLiteral("deepseek-chat"));
-    QCOMPARE(config->intValue(Keys::apiMaxTokens), 8192);
+    QCOMPARE(config->intValue(Keys::apiMaxTokens), 16384);
     QCOMPARE(config->doubleValue(Keys::apiTemperature), 0.3);
     QCOMPARE(config->boolValue(Keys::apiStream), true);
     QCOMPARE(config->intValue(Keys::apiMaxConcurrency), 8);
