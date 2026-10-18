@@ -1,15 +1,13 @@
 #pragma once
 
-#include <QWidget>
+#include <QMenu>
+#include <QPoint>
+#include <QString>
 
 #include "core/translation/PromptBuilder.h"
 #include "core/translation/TranslationEngine.h"
 
-class QLabel;
-class QListWidget;
-class QHideEvent;
-
-class CandidatePopup : public QWidget
+class CandidatePopup : public QMenu
 {
     Q_OBJECT
 
@@ -27,12 +25,13 @@ signals:
     // translation the popup was opened for.
     void candidateChosen(int start, int length, const QString& replacement);
 
-protected:
-    void hideEvent(QHideEvent* event) override;
-
 private:
+    void resetEntries();
+    void showStatus(const QString& text);
+    void showCandidates(const QVector<TranslationEngine::CandidateGroup>& groups);
+    void reposition();
+
     TranslationEngine* m_engine = nullptr;
-    QListWidget* m_list = nullptr;
-    QLabel* m_header = nullptr;
-    QLabel* m_status = nullptr;
+    QPoint m_anchor;
+    QString m_word;
 };

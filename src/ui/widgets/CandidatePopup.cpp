@@ -1,36 +1,27 @@
 #include "CandidatePopup.h"
 
-#include "core/translation/TranslationEngine.h"
+#include <QAction>
 
-#include <QLabel>
-#include <QListWidget>
-#include <QVBoxLayout>
+#include <algorithm>
+
+namespace {
+
+// A menu reads '&' as a mnemonic marker, so a literal ampersand is doubled.
+QString menuText(const QString& text)
+{
+    QString escaped = text;
+    escaped.replace(QLatin1Char('&'), QLatin1String("&&"));
+    return escaped;
+}
+
+}
 
 CandidatePopup::CandidatePopup(TranslationEngine* engine, QWidget* parent)
-    : QWidget(parent, Qt::Popup | Qt::FramelessWindowHint)
+    : QMenu(parent)
     , m_engine(engine)
 {
-    auto* layout = new QVBoxLayout(this);
-    m_header = new QLabel(this);
-    QFont headerFont = m_header->font();
-    headerFont.setBold(true);
-    m_header->setFont(headerFont);
-    m_status = new QLabel(this);
-    // Both repeat text the app did not author, so neither renders markup.
-    m_header->setTextFormat(Qt::PlainText);
-    m_status->setTextFormat(Qt::PlainText);
-    m_list = new QListWidget(this);
-    m_list->setFrameShape(QFrame::NoFrame);
-    m_list->hide();
-    layout->addWidget(m_header);
-    layout->addWidget(m_status);
-    layout->addWidget(m_list);
-
-    connect(m_list, &QListWidget::itemClicked, this, [this](QListWidgetItem* item) {
-        emit candidateChosen(item->data(Qt::UserRole).toInt(),
-                             item->data(Qt::UserRole + 1).toInt(),
-                             item->data(Qt::UserRole + 2).toString());
-        close();
+    connect(this, &QMenu::aboutToHide, this, [this]() {
+        m_engine->cancelCandidates();
     });
 }
 
@@ -40,58 +31,65 @@ void CandidatePopup::openFor(const QString& word,
                              const QPoint& globalPos,
                              const TranslationContext& context)
 {
-    m_header->setText(word);
-    move(globalPos + QPoint(8, 10));
-    show();
-    raise();
-    setFocus();
-
-    // The status label stays hidden after a rendered list, so a new lookup has
-    // to bring it back.
-    m_status->setText(tr("Fetching alternatives..."));
-    m_status->show();
-    m_list->clear();
-    m_list->hide();
-    adjustSize();
+    m_word = word;
+    m_anchor = globalPos;
+    showStatus(tr("Fetching alternatives..."));
+    popup(m_anchor);
 
     m_engine->requestCandidates(
         context, selectionStart, selectionEnd,
         [this](const QVector<TranslationEngine::CandidateGroup>& groups) {
-            if (!isVisible())
-                return;
-
-            // Groups arrive already resolved to a span of the translation, so a
-            // hallucinated or ambiguous target never reaches the list.
-            m_list->clear();
-            for (const TranslationEngine::CandidateGroup& group : groups) {
-                for (const TranslationEngine::CandidateOption& option : group.options) {
-                    auto* item = new QListWidgetItem(option.text, m_list);
-                    item->setData(Qt::UserRole, option.start);
-                    item->setData(Qt::UserRole + 1, option.length);
-                    item->setData(Qt::UserRole + 2, option.text);
-                }
-            }
-
-            if (m_list->count() == 0) {
-                m_status->setText(tr("No alternatives found"));
-                m_list->hide();
-            } else {
-                m_status->hide();
-                m_list->show();
-            }
-            adjustSize();
+            if (isVisible())
+                showCandidates(groups);
         },
         [this](const ApiClient::Error& failure) {
-            if (!isVisible())
-                return;
-            m_status->setText(failure.text());
-            m_list->hide();
-            adjustSize();
+            if (isVisible())
+                showStatus(failure.text());
         });
 }
 
-void CandidatePopup::hideEvent(QHideEvent* event)
+void CandidatePopup::resetEntries()
 {
-    m_engine->cancelCandidates();
-    QWidget::hideEvent(event);
+    clear();
+    // A section renders its text literally, so only the actions are escaped.
+    addSection(m_word);
+}
+
+void CandidatePopup::showStatus(const QString& text)
+{
+    resetEntries();
+    addAction(menuText(text))->setEnabled(false);
+    reposition();
+}
+
+void CandidatePopup::showCandidates(const QVector<TranslationEngine::CandidateGroup>& groups)
+{
+    const bool hasCandidates = std::any_of(
+        groups.cbegin(), groups.cend(),
+        [](const TranslationEngine::CandidateGroup& group) { return !group.options.isEmpty(); });
+    if (!hasCandidates) {
+        showStatus(tr("No alternatives found"));
+        return;
+    }
+
+    resetEntries();
+    for (const TranslationEngine::CandidateGroup& group : groups) {
+        for (const TranslationEngine::CandidateOption& option : group.options) {
+            QAction* action = addAction(menuText(option.text));
+            connect(action, &QAction::triggered, this,
+                    [this, start = option.start, length = option.length,
+                     replacement = option.text]() {
+                        emit candidateChosen(start, length, replacement);
+                    });
+        }
+    }
+    reposition();
+}
+
+void CandidatePopup::reposition()
+{
+    // Re-running the popup lets the native placement pull a grown menu back
+    // inside the screen.
+    if (isVisible())
+        popup(m_anchor);
 }
