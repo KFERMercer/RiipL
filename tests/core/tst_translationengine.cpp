@@ -301,7 +301,8 @@ void TestTranslationEngine::retriesEmptyCandidateReply()
         [&](const QVector<TranslationEngine::CandidateGroup>& groups) { received = groups; },
         [&](const ApiClient::Error&) { failed = true; });
 
-    QTRY_COMPARE_WITH_TIMEOUT(received.size(), 1, 5000);
+    QVERIFY(TestSupport::waitFor([&] { return received.size() == 1; }, 5000));
+    QCOMPARE(received.size(), 1);
     QVERIFY(!failed);
     // The unusable first reply was retried, and the second one was taken as final.
     QCOMPARE(requests, 2);
@@ -367,7 +368,8 @@ void TestTranslationEngine::sendsSystemPromptWithCandidates()
         [&](const QVector<TranslationEngine::CandidateGroup>& groups) { received = groups; },
         [](const ApiClient::Error&) {});
 
-    QTRY_COMPARE_WITH_TIMEOUT(received.size(), 1, 5000);
+    QVERIFY(TestSupport::waitFor([&] { return received.size() == 1; }, 5000));
+    QCOMPARE(received.size(), 1);
     const QJsonObject sent = QJsonDocument::fromJson(payload).object();
     const QJsonArray messages = sent.value(QStringLiteral("messages")).toArray();
     QCOMPARE(messages.size(), 2);
@@ -438,7 +440,8 @@ void TestTranslationEngine::picksShortTextTemplate()
             context, start, start + word.size(),
             [&](const QVector<TranslationEngine::CandidateGroup>& groups) { received = groups; },
             [](const ApiClient::Error&) {});
-        QTRY_COMPARE_WITH_TIMEOUT(received.size(), 1, 5000);
+        QVERIFY(TestSupport::waitFor([&] { return received.size() == 1; }, 5000));
+        QCOMPARE(received.size(), 1);
     };
 
     request(shortText, shortText.indexOf(word));
@@ -480,7 +483,8 @@ void TestTranslationEngine::failedDispatchReturnsToIdle()
     context.targetLang = QStringLiteral("zh");
     engine.translateText(context);
 
-    QTRY_COMPARE(errorSpy.count(), 1);
+    QVERIFY(TestSupport::waitFor([&] { return errorSpy.count() == 1; }, 5000));
+    QCOMPARE(errorSpy.count(), 1);
     // The failure is named rather than rendered, so a handler can translate it
     // when it is shown.
     QCOMPARE(errorSpy.first().first().value<ApiClient::Error>().code,

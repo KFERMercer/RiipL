@@ -186,7 +186,8 @@ void TestTranslationPool::interactiveRequestPassesQueuedDocuments()
     };
 
     enqueue(QStringLiteral("doc1"), DocumentPriority::window);
-    QTRY_COMPARE(m_api.requests, 1);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 1; }, 5000));
+    QCOMPARE(m_api.requests, 1);
 
     // The one connection is taken, so both wait for a slot.
     enqueue(QStringLiteral("doc2"), DocumentPriority::window);
@@ -195,7 +196,8 @@ void TestTranslationPool::interactiveRequestPassesQueuedDocuments()
     QCOMPARE(m_api.requests, 1);
 
     m_api.releaseAll();
-    QTRY_COMPARE(answered.size(), 3);
+    QVERIFY(TestSupport::waitFor([&] { return answered.size() == 3; }, 5000));
+    QCOMPARE(answered.size(), 3);
     QCOMPARE(m_api.prompts, QStringList({QStringLiteral("doc1"), QStringLiteral("interactive"),
                                          QStringLiteral("doc2")}));
 }
@@ -215,7 +217,8 @@ void TestTranslationPool::ordersTheCallersPriorities()
     // Occupies the one connection while the rest queue in an order the priorities
     // have to override.
     enqueue(QStringLiteral("running"), DocumentPriority::window);
-    QTRY_COMPARE(m_api.requests, 1);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 1; }, 5000));
+    QCOMPARE(m_api.requests, 1);
     enqueue(QStringLiteral("window"), DocumentPriority::window);
     enqueue(QStringLiteral("windowRetry"), DocumentPriority::windowRetry);
     enqueue(QStringLiteral("clipboard"), YoloPriority::clipboard);
@@ -224,7 +227,8 @@ void TestTranslationPool::ordersTheCallersPriorities()
     enqueue(QStringLiteral("interactiveRetry"), TranslationPriority::interactiveRetry);
 
     m_api.releaseAll();
-    QTRY_COMPARE(m_api.prompts.size(), 7);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.prompts.size() == 7; }, 5000));
+    QCOMPARE(m_api.prompts.size(), 7);
     QCOMPARE(m_api.prompts, QStringList({QStringLiteral("running"), QStringLiteral("interactiveRetry"),
                                          QStringLiteral("interactive"), QStringLiteral("clipboardRetry"),
                                          QStringLiteral("clipboard"), QStringLiteral("windowRetry"),
@@ -245,12 +249,13 @@ void TestTranslationPool::reportsWhenItCarriesRequests()
     QCOMPARE(busy.count(), 1);
     QCOMPARE(busy.at(0).at(0).toBool(), true);
 
-    QTRY_COMPARE(m_api.requests, 1);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 1; }, 5000));
+    QCOMPARE(m_api.requests, 1);
     QTest::qWait(50);
     QCOMPARE(busy.count(), 1);
 
     m_api.releaseAll();
-    QTRY_VERIFY(!pool.isBusy());
+    QVERIFY(TestSupport::waitFor([&] { return !pool.isBusy(); }, 5000));
     QCOMPARE(busy.count(), 2);
     QCOMPARE(busy.at(1).at(0).toBool(), false);
 
@@ -265,15 +270,18 @@ void TestTranslationPool::reportsEveryFailedRequest()
     QSignalSpy failed(&pool, &TranslationPool::requestFailed);
 
     pool.enqueue(chatBody(QStringLiteral("ok")), DocumentPriority::window, {}, {}, {});
-    QTRY_COMPARE(m_api.requests, 1);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 1; }, 5000));
+    QCOMPARE(m_api.requests, 1);
     m_api.releaseNext(false);
     QTest::qWait(50);
     QCOMPARE(failed.count(), 0);
 
     pool.enqueue(chatBody(QStringLiteral("bad")), DocumentPriority::window, {}, {}, {});
-    QTRY_COMPARE(m_api.requests, 2);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 2; }, 5000));
+    QCOMPARE(m_api.requests, 2);
     m_api.releaseNext(true);
-    QTRY_COMPARE(failed.count(), 1);
+    QVERIFY(TestSupport::waitFor([&] { return failed.count() == 1; }, 5000));
+    QCOMPARE(failed.count(), 1);
 
     QTest::qWait(50);
     QCOMPARE(failed.count(), 1);
@@ -288,13 +296,15 @@ void TestTranslationPool::keepsRequestsWithinTheConfiguredConcurrency()
     for (int index = 0; index < 5; ++index)
         pool.enqueue(chatBody(QStringLiteral("doc%1").arg(index)), DocumentPriority::window, {}, {}, {});
 
-    QTRY_COMPARE(m_api.requests, 2);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 2; }, 5000));
+    QCOMPARE(m_api.requests, 2);
     QTest::qWait(50);
     QCOMPARE(m_api.requests, 2);
     QCOMPARE(m_api.peakPending, 2);
 
     m_api.releaseAll();
-    QTRY_COMPARE(m_api.requests, 5);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 5; }, 5000));
+    QCOMPARE(m_api.requests, 5);
     QCOMPARE(m_api.peakPending, 2);
 }
 
@@ -307,7 +317,8 @@ void TestTranslationPool::halvesTheConcurrencyOnFailureAndStepsBackOnSuccess()
 
     for (int index = 0; index < 4; ++index)
         pool.enqueue(chatBody(QStringLiteral("doc%1").arg(index)), DocumentPriority::window, {}, {}, {});
-    QTRY_COMPARE(m_api.requests, 4);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 4; }, 5000));
+    QCOMPARE(m_api.requests, 4);
 
     // Four failures take the four connections down to one.
     for (int index = 0; index < 4; ++index)
@@ -329,7 +340,8 @@ void TestTranslationPool::halvesTheConcurrencyOnFailureAndStepsBackOnSuccess()
     // The second success gives one halving back, which is two connections, so the
     // queue behind it fills both.
     m_api.releaseNext(false);
-    QTRY_COMPARE(m_api.pending, 2);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.pending == 2; }, 5000));
+    QCOMPARE(m_api.pending, 2);
     QCOMPARE(m_api.requests, 8);
 }
 
@@ -342,7 +354,8 @@ void TestTranslationPool::stepsBackOnlyAfterTwoSuccessesAtTheFilledWidth()
 
     for (int index = 0; index < 4; ++index)
         pool.enqueue(chatBody(QStringLiteral("doc%1").arg(index)), DocumentPriority::window, {}, {}, {});
-    QTRY_COMPARE(m_api.requests, 4);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 4; }, 5000));
+    QCOMPARE(m_api.requests, 4);
 
     // One failure takes the four connections down to two.
     m_api.releaseNext(true);
@@ -370,7 +383,8 @@ void TestTranslationPool::stepsBackOnlyAfterTwoSuccessesAtTheFilledWidth()
     m_api.releaseNext(false);
     for (int index = 0; index < 4; ++index)
         pool.enqueue(chatBody(QStringLiteral("last%1").arg(index)), DocumentPriority::window, {}, {}, {});
-    QTRY_COMPARE(m_api.pending, 4);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.pending == 4; }, 5000));
+    QCOMPARE(m_api.pending, 4);
 }
 
 // A failure that follows a step back halves the width from where it stands.
@@ -382,7 +396,8 @@ void TestTranslationPool::halvesAgainFromTheSteppedBackWidth()
     // Two failures take the eight connections down to two.
     for (int index = 0; index < 2; ++index)
         pool.enqueue(chatBody(QStringLiteral("doc%1").arg(index)), DocumentPriority::window, {}, {}, {});
-    QTRY_COMPARE(m_api.requests, 2);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 2; }, 5000));
+    QCOMPARE(m_api.requests, 2);
     m_api.releaseNext(true);
     QTest::qWait(50);
     m_api.releaseNext(true);
@@ -391,7 +406,8 @@ void TestTranslationPool::halvesAgainFromTheSteppedBackWidth()
     // Two successes at the width of two step it back to four.
     for (int index = 0; index < 2; ++index)
         pool.enqueue(chatBody(QStringLiteral("step%1").arg(index)), DocumentPriority::window, {}, {}, {});
-    QTRY_COMPARE(m_api.requests, 4);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 4; }, 5000));
+    QCOMPARE(m_api.requests, 4);
     m_api.releaseNext(false);
     QTest::qWait(50);
     m_api.releaseNext(false);
@@ -400,7 +416,8 @@ void TestTranslationPool::halvesAgainFromTheSteppedBackWidth()
     // The next failure halves that width, so four queued requests put two on the
     // wire rather than one or four.
     pool.enqueue(chatBody(QStringLiteral("fail")), DocumentPriority::window, {}, {}, {});
-    QTRY_COMPARE(m_api.requests, 5);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 5; }, 5000));
+    QCOMPARE(m_api.requests, 5);
     m_api.releaseNext(true);
     QTest::qWait(50);
 
@@ -427,7 +444,8 @@ void TestTranslationPool::cancelReportsNothing()
     const TranslationPool::JobId running = pool.enqueue(chatBody(QStringLiteral("doc1")),
                                                         DocumentPriority::window,
                                                         first.first, {}, first.second);
-    QTRY_COMPARE(m_api.requests, 1);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 1; }, 5000));
+    QCOMPARE(m_api.requests, 1);
 
     auto second = callbacks();
     const TranslationPool::JobId queued = pool.enqueue(chatBody(QStringLiteral("doc2")),
@@ -450,17 +468,20 @@ void TestTranslationPool::cancellingARunningRequestFreesItsConnection()
 
     const TranslationPool::JobId running = pool.enqueue(chatBody(QStringLiteral("doc1")),
                                                         DocumentPriority::window, {}, {}, {});
-    QTRY_COMPARE(m_api.requests, 1);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 1; }, 5000));
+    QCOMPARE(m_api.requests, 1);
 
     QStringList answered;
     pool.enqueue(chatBody(QStringLiteral("doc2")), DocumentPriority::window,
                  [&answered](const QString&) { answered.append(QStringLiteral("doc2")); }, {}, {});
 
     pool.cancel(running);
-    QTRY_COMPARE(m_api.requests, 2);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 2; }, 5000));
+    QCOMPARE(m_api.requests, 2);
 
     m_api.releaseAll();
-    QTRY_COMPARE(answered.size(), 1);
+    QVERIFY(TestSupport::waitFor([&] { return answered.size() == 1; }, 5000));
+    QCOMPARE(answered.size(), 1);
     QCOMPARE(m_api.prompts, QStringList({QStringLiteral("doc1"), QStringLiteral("doc2")}));
 }
 
@@ -475,17 +496,21 @@ void TestTranslationPool::cancellingASettledJobLeavesTheRunningOneAlone()
     const TranslationPool::JobId settled = pool.enqueue(
         chatBody(QStringLiteral("doc1")), DocumentPriority::window,
         [&answered](const QString&) { answered.append(QStringLiteral("doc1")); }, {}, {});
-    QTRY_COMPARE(m_api.requests, 1);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 1; }, 5000));
+    QCOMPARE(m_api.requests, 1);
     m_api.releaseNext(false);
-    QTRY_COMPARE(answered.size(), 1);
+    QVERIFY(TestSupport::waitFor([&] { return answered.size() == 1; }, 5000));
+    QCOMPARE(answered.size(), 1);
 
     pool.enqueue(chatBody(QStringLiteral("doc2")), DocumentPriority::window,
                  [&answered](const QString&) { answered.append(QStringLiteral("doc2")); }, {}, {});
-    QTRY_COMPARE(m_api.requests, 2);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 2; }, 5000));
+    QCOMPARE(m_api.requests, 2);
 
     pool.cancel(settled);
     m_api.releaseAll();
-    QTRY_COMPARE(answered.size(), 2);
+    QVERIFY(TestSupport::waitFor([&] { return answered.size() == 2; }, 5000));
+    QCOMPARE(answered.size(), 2);
     QCOMPARE(answered, QStringList({QStringLiteral("doc1"), QStringLiteral("doc2")}));
 }
 

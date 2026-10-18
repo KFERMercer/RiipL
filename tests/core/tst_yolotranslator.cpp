@@ -113,7 +113,7 @@ void TestYoloTranslator::translatesThroughTheDocumentPath()
     context.targetLang = QStringLiteral("zh");
     translator.translate(QStringLiteral("alpha\nbeta\ngamma\n"), context);
     QVERIFY(translator.isRunning());
-    QTRY_VERIFY_WITH_TIMEOUT(!translated.isEmpty(), 10000);
+    QVERIFY(TestSupport::waitFor([&] { return !translated.isEmpty(); }, 10000));
 
     QCOMPARE(failed, 0);
     QVERIFY(!translator.isRunning());
@@ -140,11 +140,13 @@ void TestYoloTranslator::answersARepeatedTextFromTheDocumentCache()
 
     const TranslationContext context;
     translator.translate(QStringLiteral("alpha\nbeta\n"), context);
-    QTRY_COMPARE_WITH_TIMEOUT(translated.size(), 1, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return translated.size() == 1; }, 10000));
+    QCOMPARE(translated.size(), 1);
     QCOMPARE(m_api.requests, 1);
 
     translator.translate(QStringLiteral("alpha\nbeta\n"), context);
-    QTRY_COMPARE_WITH_TIMEOUT(translated.size(), 2, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return translated.size() == 2; }, 10000));
+    QCOMPARE(translated.size(), 2);
 
     QCOMPARE(m_api.requests, 1);
     QCOMPARE(translated.at(1), translated.at(0));
@@ -159,7 +161,8 @@ void TestYoloTranslator::takesTheConnectionAheadOfAQueuedDocument()
     // Occupies the one connection while the YOLO run and the document request
     // wait behind it.
     pool->enqueue(chatBody(QStringLiteral("blocker")), DocumentPriority::window, {}, {}, {});
-    QTRY_COMPARE(m_api.requests, 1);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 1; }, 5000));
+    QCOMPARE(m_api.requests, 1);
     pool->enqueue(chatBody(QStringLiteral("document")), DocumentPriority::window, {}, {}, {});
 
     YoloTranslator translator;
@@ -169,8 +172,9 @@ void TestYoloTranslator::takesTheConnectionAheadOfAQueuedDocument()
     translator.translate(QStringLiteral("clipboard line\n"), TranslationContext());
 
     m_api.releaseAll();
-    QTRY_COMPARE_WITH_TIMEOUT(m_api.requests, 3, 10000);
-    QTRY_VERIFY_WITH_TIMEOUT(!translated.isEmpty(), 10000);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 3; }, 10000));
+    QCOMPARE(m_api.requests, 3);
+    QVERIFY(TestSupport::waitFor([&] { return !translated.isEmpty(); }, 10000));
 
     QCOMPARE(m_api.prompts.at(0), QStringLiteral("blocker"));
     QVERIFY(m_api.prompts.at(1).contains(QStringLiteral("clipboard line")));
@@ -192,11 +196,13 @@ void TestYoloTranslator::replacesTheRunInFlight()
     connect(&translator, &YoloTranslator::failed, this, [&failed]() { ++failed; });
 
     translator.translate(QStringLiteral("alpha\nbeta\n"), TranslationContext());
-    QTRY_COMPARE(m_api.requests, 1);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 1; }, 5000));
+    QCOMPARE(m_api.requests, 1);
 
     translator.translate(QStringLiteral("gamma\ndelta\n"), TranslationContext());
     m_api.releaseAll();
-    QTRY_COMPARE_WITH_TIMEOUT(translated.size(), 1, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return translated.size() == 1; }, 10000));
+    QCOMPARE(translated.size(), 1);
 
     QCOMPARE(failed, 0);
     QVERIFY(!translator.isRunning());
@@ -217,7 +223,7 @@ void TestYoloTranslator::retriesAWindowOnce()
     connect(&translator, &YoloTranslator::failed, this, [&failed]() { ++failed; });
 
     translator.translate(QStringLiteral("alpha\nbeta\n"), TranslationContext());
-    QTRY_VERIFY_WITH_TIMEOUT(!translated.isEmpty(), 15000);
+    QVERIFY(TestSupport::waitFor([&] { return !translated.isEmpty(); }, 15000));
 
     QCOMPARE(failed, 0);
     QCOMPARE(m_api.requests, 2);
@@ -238,7 +244,8 @@ void TestYoloTranslator::givesUpAfterTheRetry()
     connect(&translator, &YoloTranslator::failed, this, [&failed]() { ++failed; });
 
     translator.translate(QStringLiteral("alpha\nbeta\n"), TranslationContext());
-    QTRY_COMPARE_WITH_TIMEOUT(failed, 1, 15000);
+    QVERIFY(TestSupport::waitFor([&] { return failed == 1; }, 15000));
+    QCOMPARE(failed, 1);
 
     QCOMPARE(m_api.requests, 2);
     QVERIFY(translated.isEmpty());
@@ -259,11 +266,13 @@ void TestYoloTranslator::stopsTheRunInFlight()
     connect(&translator, &YoloTranslator::stopped, this, [&stopped]() { ++stopped; });
 
     translator.translate(QStringLiteral("alpha\nbeta\n"), TranslationContext());
-    QTRY_COMPARE(m_api.requests, 1);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 1; }, 5000));
+    QCOMPARE(m_api.requests, 1);
     QVERIFY(translator.isRunning());
 
     translator.stop();
-    QTRY_COMPARE(stopped, 1);
+    QVERIFY(TestSupport::waitFor([&] { return stopped == 1; }, 5000));
+    QCOMPARE(stopped, 1);
     QVERIFY(!translator.isRunning());
 
     m_api.releaseAll();

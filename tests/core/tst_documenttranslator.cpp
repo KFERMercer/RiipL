@@ -226,6 +226,20 @@ QString cacheFileHolding(const DocumentCache& cache, const QString& marker)
     return QString();
 }
 
+// The point past which a stopped run can no longer report anything.
+bool poolIdle()
+{
+    return TestSupport::waitFor([] { return !TranslationPool::instance()->isBusy(); });
+}
+
+// Run options that pace a retry at \p delayMs instead of the production pause.
+DocumentRunOptions retryPause(int delayMs = 0)
+{
+    DocumentRunOptions options;
+    options.retryDelayMs = delayMs;
+    return options;
+}
+
 } // namespace
 
 class TestDocumentTranslator : public QObject
@@ -338,7 +352,8 @@ void TestDocumentTranslator::translatesEveryWindowInOrder()
             [&progress](int completed, int total) { progress.append({completed, total}); });
 
     translator.start(windows, context);
-    QTRY_COMPARE(progress.size(), 4);
+    QVERIFY(TestSupport::waitFor([&] { return progress.size() == 4; }, 5000));
+    QCOMPARE(progress.size(), 4);
     QVERIFY(!finished.isEmpty());
     QCOMPARE(m_api.requests, 3);
     QCOMPARE(progress.first(), qMakePair(0, 3));
@@ -383,7 +398,7 @@ void TestDocumentTranslator::foldsRepeatsAcrossBlankLines()
             [&finished](const QString& text) { finished = text; });
 
     translator.start(windows, context);
-    QTRY_VERIFY(!finished.isEmpty());
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 5000));
     QCOMPARE(m_api.requests, 1);
     QCOMPARE(m_api.windows.first().keys(),
              QStringList({QStringLiteral("1"), QStringLiteral("2"), QStringLiteral("3")}));
@@ -412,7 +427,7 @@ void TestDocumentTranslator::restoresWhitespaceAroundEveryLine()
             [&finished](const QString& text) { finished = text; });
 
     translator.start(windows, context);
-    QTRY_VERIFY(!finished.isEmpty());
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 5000));
     QCOMPARE(m_api.requests, 1);
 
     // Both occurrences of the repeated line reach the model as one line.
@@ -440,7 +455,7 @@ void TestDocumentTranslator::sendsNeighboursWithoutTheirWhitespace()
             [&finished](const QString& text) { finished = text; });
 
     translator.start(windows, context);
-    QTRY_VERIFY(!finished.isEmpty());
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 5000));
     QCOMPARE(m_api.requests, 2);
     for (const QString& prompt : std::as_const(m_api.prompts))
         QVERIFY2(!prompt.contains(QLatin1Char('\t')), qPrintable(prompt));
@@ -465,7 +480,7 @@ void TestDocumentTranslator::sendsQuotedLinesAsEscapedValues()
             [&finished](const QString& text) { finished = text; });
 
     translator.start(windows, context);
-    QTRY_VERIFY(!finished.isEmpty());
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 5000));
     QCOMPARE(m_api.requests, 1);
 
     const QString escapedQuote =
@@ -497,7 +512,7 @@ void TestDocumentTranslator::sendsWindowsUpToTheConfiguredConcurrency()
             [&completed](int count, int) { completed.append(count); });
 
     translator.start(windows, context);
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 20000);
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 20000));
 
     // Three requests overlap, and the run never exceeds the limit.
     QCOMPARE(m_api.peakPending, 3);
@@ -522,7 +537,8 @@ void TestDocumentTranslator::interactiveRequestTakesTheNextSlot()
     const QVector<DocumentWindow> windows = document(3, 3);
     DocumentTranslator translator;
     translator.start(windows, TranslationContext());
-    QTRY_COMPARE_WITH_TIMEOUT(m_api.requests, 1, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 1; }, 10000));
+    QCOMPARE(m_api.requests, 1);
 
     TranslationEngine engine;
     QString translated;
@@ -533,11 +549,11 @@ void TestDocumentTranslator::interactiveRequestTakesTheNextSlot()
     context.targetLang = QStringLiteral("zh");
     engine.translateText(context);
 
-    QTRY_VERIFY_WITH_TIMEOUT(!translated.isEmpty(), 10000);
+    QVERIFY(TestSupport::waitFor([&] { return !translated.isEmpty(); }, 10000));
 
     // The translation the user asked for went out before the document windows
     // that were already waiting for the one connection.
-    QTRY_VERIFY_WITH_TIMEOUT(m_api.prompts.size() >= 2, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.prompts.size() >= 2; }, 10000));
     QVERIFY(m_api.prompts.at(1).contains(QStringLiteral("Hello")));
 }
 
@@ -546,12 +562,12 @@ void TestDocumentTranslator::interactiveRequestTakesTheNextSlot()
 void TestDocumentTranslator::retryOutranksAQueuedWindow()
 {
     ConfigManager::instance()->setValue(Keys::apiMaxConcurrency, 1);
-    // The window in flight answers well after the failed window's retry pause is
-    // over, so the retry is certainly queued while it is still on the wire.
-    m_api.answerDelayMs = 1200;
+    // The window in flight answers long after the failed window's retry is
+    // queued, so the retry waits while it is still on the wire.
+    m_api.answerDelayMs = 120;
     m_api.failingPrompt = QStringLiteral("\"1\": \"window 0 line 0\"");
     m_api.answerDelays.append({m_api.failingPrompt, 10});
-    m_api.answerDelays.append({QStringLiteral("\"1\": \"window 1 line 0\""), 2500});
+    m_api.answerDelays.append({QStringLiteral("\"1\": \"window 1 line 0\""), 250});
 
     const QVector<DocumentWindow> windows = document(3, 3);
     DocumentTranslator translator;
@@ -559,8 +575,8 @@ void TestDocumentTranslator::retryOutranksAQueuedWindow()
     connect(&translator, &DocumentTranslator::finished, this,
             [&finished](const QString& text) { finished = text; });
 
-    translator.start(windows, TranslationContext());
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 20000);
+    translator.start(windows, TranslationContext(), std::nullopt, retryPause());
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 20000));
 
     // The retry of the first window is the third request, ahead of the window
     // that was still queued when it went out.
@@ -587,12 +603,12 @@ void TestDocumentTranslator::lowersConcurrencyWhenTheEndpointRunsOutOfContext()
     connect(&translator, &DocumentTranslator::failed, this,
             [&failed](const QStringList& samples) { failed = samples; });
 
-    translator.start(windows, TranslationContext());
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty() || !failed.isEmpty(), 20000);
+    translator.start(windows, TranslationContext(), std::nullopt, retryPause());
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty() || !failed.isEmpty(); }, 20000));
 
     // Four requests went out together and the endpoint refused the three beside
-    // the first; the back-off steps back to two connections while the retries are
-    // still waiting, so one of them collides once more before the pool settles and
+    // the first; the back-off steps back to two connections before the refused
+    // windows retry, so one of them collides once more before the pool settles and
     // the whole document is translated.
     QCOMPARE(m_api.peakPending, 4);
     QCOMPARE(m_api.refusals, 4);
@@ -620,7 +636,7 @@ void TestDocumentTranslator::capsConcurrencyAfterTheLastWindow()
             [&finished](const QString& text) { finished = text; });
 
     translator.start(windows, context);
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
 
     // Only the three windows there are go out, however high the limit is.
     QCOMPARE(m_api.requests, 3);
@@ -642,7 +658,7 @@ void TestDocumentTranslator::runsSerialWhenConcurrencyIsOff()
             [&finished](const QString& text) { finished = text; });
 
     translator.start(windows, context);
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
 
     QCOMPARE(m_api.requests, 4);
     QCOMPARE(m_api.peakPending, 1);
@@ -663,7 +679,7 @@ void TestDocumentTranslator::runsSerialAtOneRequest()
             [&finished](const QString& text) { finished = text; });
 
     translator.start(windows, context);
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
 
     QCOMPARE(m_api.requests, 3);
     QCOMPARE(m_api.peakPending, 1);
@@ -685,7 +701,7 @@ void TestDocumentTranslator::runsSerialOverCachedWindows()
             [&finished](const QString& text) { finished = text; });
 
     translator.start(windows, TranslationContext(), cache);
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
     QCOMPARE(m_api.requests, 3);
 
     // One window stays cached, and it is not the one the run takes first.
@@ -702,7 +718,7 @@ void TestDocumentTranslator::runsSerialOverCachedWindows()
     m_api.peakPending = 0;
     finished.clear();
     translator.start(windows, TranslationContext(), cache);
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
 
     // The cached window is answered without a request, and the run stays serial.
     QCOMPARE(m_api.requests, 2);
@@ -724,8 +740,8 @@ void TestDocumentTranslator::retriesInSerialMode()
     connect(&translator, &DocumentTranslator::finished, this,
             [&finished](const QString& text) { finished = text; });
 
-    translator.start(windows, TranslationContext());
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 15000);
+    translator.start(windows, TranslationContext(), std::nullopt, retryPause());
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 15000));
 
     // The retry repeats the first window's request, before the window behind it.
     QCOMPARE(m_api.requests, 3);
@@ -747,7 +763,7 @@ void TestDocumentTranslator::reassemblesDocumentsFromOverlappingAnswers()
             [&finished](const QString& text) { finished = text; });
 
     translator.start(windows, context);
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
 
     // Every line is translated once, in document order, whatever order the
     // answers came back in.
@@ -783,7 +799,7 @@ void TestDocumentTranslator::reportsTheSourceDocumentAtTheStart()
     QCOMPARE(reports.size(), 1);
     QCOMPARE(reports.first(), DocumentSegmenter::assemble(windows, {}));
 
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
 
     // One report per accepted window follows it.
     QCOMPARE(reports.size(), windows.size() + 1);
@@ -812,7 +828,7 @@ void TestDocumentTranslator::showsAnswersWhereTheyBelongWhateverTheirOrder()
             [&finished](const QString& text) { finished = text; });
 
     translator.start(windows, context);
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 15000);
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 15000));
 
     // The report of the start, then one per accepted window.
     QCOMPARE(reports.size(), 4);
@@ -840,7 +856,7 @@ void TestDocumentTranslator::retriesOneWindowWhileOthersAreInFlight()
     // The last window fails once and then answers after the others, so its retry
     // is certainly in flight while the earlier windows are accepted.
     m_api.failingPrompt = QStringLiteral("\"1\": \"window 3 line 0\"");
-    m_api.answerDelays.append({m_api.failingPrompt, 300});
+    m_api.answerDelays.append({m_api.failingPrompt, 100});
     ConfigManager::instance()->setValue(Keys::apiMaxConcurrency, 4);
 
     const QVector<DocumentWindow> windows = document(4, 3);
@@ -862,8 +878,8 @@ void TestDocumentTranslator::retriesOneWindowWhileOthersAreInFlight()
     connect(&translator, &DocumentTranslator::finished, this,
             [&finished](const QString& text) { finished = text; });
 
-    translator.start(windows, context);
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 20000);
+    translator.start(windows, context, std::nullopt, retryPause());
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 20000));
 
     // The failed window is retried after the three windows beside it have been
     // accepted: the fifth request is the retry, and it went out past the third
@@ -894,9 +910,9 @@ void TestDocumentTranslator::stopsOnTheLastWindow()
             [&finished](const QString& text) { finished = text; });
 
     translator.start(windows, TranslationContext());
-    QTRY_VERIFY_WITH_TIMEOUT(stopped, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return stopped; }, 10000));
 
-    QTest::qWait(200);
+    QVERIFY(poolIdle());
     QVERIFY(finished.isEmpty());
 }
 
@@ -905,7 +921,7 @@ void TestDocumentTranslator::stopsEveryRequestInFlight()
 {
     // Answers take long enough that the whole first batch is still on the wire
     // when the stop lands.
-    m_api.answerDelayMs = 500;
+    m_api.answerDelayMs = 200;
     ConfigManager::instance()->setValue(Keys::apiMaxConcurrency, 4);
 
     const QVector<DocumentWindow> windows = document(6, 3);
@@ -919,13 +935,14 @@ void TestDocumentTranslator::stopsEveryRequestInFlight()
 
     translator.start(windows, context);
     // The first batch of four windows is out, and the fifth is still queued.
-    QTRY_COMPARE_WITH_TIMEOUT(m_api.requests, 4, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 4; }, 10000));
+    QCOMPARE(m_api.requests, 4);
     translator.stop();
-    QTRY_VERIFY_WITH_TIMEOUT(stopped, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return stopped; }, 10000));
 
     // No further window is sent, and the answers still on the wire are not
     // reported as a finished document.
-    QTest::qWait(700);
+    QVERIFY(poolIdle());
     QCOMPARE(m_api.requests, 4);
     QVERIFY(finished.isEmpty());
 }
@@ -953,12 +970,13 @@ void TestDocumentTranslator::leavesOutAWindowThatCannotBeTranslated()
     connect(&translator, &DocumentTranslator::finished, this,
             [&finished](const QString& text) { finished = text; });
 
-    translator.start(windows, TranslationContext());
-    QTRY_COMPARE_WITH_TIMEOUT(failed.size(), 1, 10000);
+    translator.start(windows, TranslationContext(), std::nullopt, retryPause());
+    QVERIFY(TestSupport::waitFor([&] { return failed.size() == 1; }, 10000));
+    QCOMPARE(failed.size(), 1);
 
     // Every window was sent, and the one that failed is reported by the head of
     // its request digest.
-    QTest::qWait(300);
+    QVERIFY(poolIdle());
     QCOMPARE(m_api.requests, 5);
     QCOMPARE(failed.first().size(), 8);
     QVERIFY(finished.isEmpty());
@@ -986,14 +1004,16 @@ void TestDocumentTranslator::reusesTheSamePoolForASecondRun()
 
     const QVector<DocumentWindow> first = document(2, 3);
     translator.start(first, context);
-    QTRY_COMPARE_WITH_TIMEOUT(finishedRuns, 1, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finishedRuns == 1; }, 10000));
+    QCOMPARE(finishedRuns, 1);
     QCOMPARE(finished.split(QLatin1Char('\n')).size(),
              DocumentSegmenter::assemble(first, {}).split(QLatin1Char('\n')).size());
 
     m_api.requests = 0;
     const QVector<DocumentWindow> second = document(4, 3);
     translator.start(second, context);
-    QTRY_COMPARE_WITH_TIMEOUT(finishedRuns, 2, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finishedRuns == 2; }, 10000));
+    QCOMPARE(finishedRuns, 2);
 
     // The larger second run still sends every window once.
     QCOMPARE(m_api.requests, 4);
@@ -1019,7 +1039,7 @@ void TestDocumentTranslator::cachesAcceptedAnswers()
             [&finished](const QString& text) { finished = text; });
 
     translator.start(windows, TranslationContext(), cache);
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
     QCOMPARE(m_api.requests, 2);
 
     // One file per window, holding its lines keyed by line number and named by
@@ -1056,7 +1076,7 @@ void TestDocumentTranslator::cachesAnswersInLineOrder()
             [&finished](const QString& text) { finished = text; });
 
     translator.start(windows, TranslationContext(), cache);
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
 
     const QStringList files = cacheFiles(cache, kAnswerSuffix);
     QCOMPARE(files.size(), 1);
@@ -1094,14 +1114,16 @@ void TestDocumentTranslator::reusesCachedAnswersOnTheNextRun()
             [&reports](const QString&) { ++reports; });
 
     translator.start(windows, TranslationContext(), cache);
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 1, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finished.size() == 1; }, 10000));
+    QCOMPARE(finished.size(), 1);
     QCOMPARE(m_api.requests, 3);
 
     m_api.requests = 0;
     progress.clear();
     reports = 0;
     translator.start(windows, TranslationContext(), cache);
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 2, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finished.size() == 2; }, 10000));
+    QCOMPARE(finished.size(), 2);
 
     // The run answers itself from the cache, a window at a time, and reports the
     // document only at its start: a window the cache answers is not reported on its
@@ -1130,7 +1152,8 @@ void TestDocumentTranslator::reusesARequestOfAnotherDocument()
             [&progress](int completed, int total) { progress.append({completed, total}); });
 
     translator.start(full, TranslationContext(), cache);
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 1, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finished.size() == 1; }, 10000));
+    QCOMPARE(finished.size(), 1);
     QCOMPARE(m_api.requests, 3);
 
     // The last window of the tail sends the request of the last window of the full
@@ -1139,7 +1162,8 @@ void TestDocumentTranslator::reusesARequestOfAnotherDocument()
     m_api.requests = 0;
     progress.clear();
     translator.start(tail, TranslationContext(), cache);
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 2, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finished.size() == 2; }, 10000));
+    QCOMPARE(finished.size(), 2);
 
     QCOMPARE(m_api.requests, 1);
     QCOMPARE(progress.first(), qMakePair(0, 2));
@@ -1158,7 +1182,8 @@ void TestDocumentTranslator::requestsOnlyTheWindowsTheCacheMisses()
             [&finished](const QString& text) { finished.append(text); });
 
     translator.start(windows, TranslationContext(), cache);
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 1, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finished.size() == 1; }, 10000));
+    QCOMPARE(finished.size(), 1);
 
     // One cached window is dropped, as a run that failed before would have left it.
     const QStringList files = cacheFiles(cache, kAnswerSuffix);
@@ -1169,7 +1194,8 @@ void TestDocumentTranslator::requestsOnlyTheWindowsTheCacheMisses()
 
     m_api.requests = 0;
     translator.start(windows, TranslationContext(), cache);
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 2, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finished.size() == 2; }, 10000));
+    QCOMPARE(finished.size(), 2);
 
     QCOMPARE(m_api.requests, 1);
     QCOMPARE(finished.at(1), finished.at(0));
@@ -1192,7 +1218,7 @@ void TestDocumentTranslator::handsTheFirstWindowOverBeforeTheRest()
             [&progress](int completed, int total) { progress.append({completed, total}); });
 
     translator.start(windows, TranslationContext(), cache);
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
 
     // The cache holds the two windows behind the first one.
     const QStringList files = cacheFiles(cache, kAnswerSuffix);
@@ -1212,7 +1238,7 @@ void TestDocumentTranslator::handsTheFirstWindowOverBeforeTheRest()
     QCOMPARE(progress.first(), qMakePair(0, 3));
     QVERIFY(finished.isEmpty());
 
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
     QCOMPARE(m_api.requests, 1);
     QCOMPARE(progress.last(), qMakePair(3, 3));
 }
@@ -1239,7 +1265,7 @@ void TestDocumentTranslator::reportsTheCachedWindowsBeforeTheModel()
             [&finished](const QString& text) { finished = text; });
 
     translator.start(windows, TranslationContext(), cache);
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
 
     // The cache holds the first two windows.
     const QStringList files = cacheFiles(cache, kAnswerSuffix);
@@ -1253,7 +1279,7 @@ void TestDocumentTranslator::reportsTheCachedWindowsBeforeTheModel()
     finished.clear();
     m_api.requests = 0;
     translator.start(windows, TranslationContext(), cache);
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
 
     // The two cached windows went out as one report, before the request of the
     // third one reached the endpoint; its own answer is the last report.
@@ -1284,7 +1310,8 @@ void TestDocumentTranslator::restartsFromTheReportOfACachedWindow()
 
     // The first run fills the cache, so the next one starts on a cached window.
     translator.start(windows, TranslationContext(), cache);
-    QTRY_COMPARE_WITH_TIMEOUT(runs, 1, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return runs == 1; }, 10000));
+    QCOMPARE(runs, 1);
 
     bool restarted = false;
     connect(&translator, &DocumentTranslator::progressChanged, this,
@@ -1298,7 +1325,8 @@ void TestDocumentTranslator::restartsFromTheReportOfACachedWindow()
     m_api.requests = 0;
     finished.clear();
     translator.start(windows, TranslationContext(), cache);
-    QTRY_COMPARE_WITH_TIMEOUT(runs, 2, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return runs == 2; }, 10000));
+    QCOMPARE(runs, 2);
 
     // The run that took over reached every window, all of them from the cache.
     QCOMPARE(m_api.requests, 0);
@@ -1321,12 +1349,14 @@ void TestDocumentTranslator::separatesTheCacheByRequest()
     TranslationContext context;
     context.targetLang = QStringLiteral("zh");
     translator.start(windows, context, cache);
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 1, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finished.size() == 1; }, 10000));
+    QCOMPARE(finished.size(), 1);
 
     m_api.requests = 0;
     context.targetLang = QStringLiteral("en");
     translator.start(windows, context, cache);
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 2, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finished.size() == 2; }, 10000));
+    QCOMPARE(finished.size(), 2);
 
     QCOMPARE(m_api.requests, 1);
 }
@@ -1344,24 +1374,28 @@ void TestDocumentTranslator::separatesTheCacheByRequestBody()
             [&finished](const QString& text) { finished.append(text); });
 
     translator.start(windows, TranslationContext(), cache);
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 1, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finished.size() == 1; }, 10000));
+    QCOMPARE(finished.size(), 1);
 
     ConfigManager::instance()->setValue(Keys::apiModel, QStringLiteral("other-model"));
     m_api.requests = 0;
     translator.start(windows, TranslationContext(), cache);
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 2, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finished.size() == 2; }, 10000));
+    QCOMPARE(finished.size(), 2);
     QCOMPARE(m_api.requests, 1);
 
     ConfigManager::instance()->setValue(Keys::apiExtraBody,
                                         QStringLiteral("{\"model\": \"third-model\"}"));
     m_api.requests = 0;
     translator.start(windows, TranslationContext(), cache);
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 3, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finished.size() == 3; }, 10000));
+    QCOMPARE(finished.size(), 3);
     QCOMPARE(m_api.requests, 1);
 
     m_api.requests = 0;
     translator.start(windows, TranslationContext(), cache);
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 4, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finished.size() == 4; }, 10000));
+    QCOMPARE(finished.size(), 4);
     QCOMPARE(m_api.requests, 0);
 }
 
@@ -1378,14 +1412,16 @@ void TestDocumentTranslator::separatesTheCacheByConnection()
             [&finished](const QString& text) { finished.append(text); });
 
     translator.start(windows, TranslationContext(), cache);
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 1, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finished.size() == 1; }, 10000));
+    QCOMPARE(finished.size(), 1);
     QCOMPARE(m_api.requests, 1);
 
     ConfigManager* config = ConfigManager::instance();
     config->setValue(Keys::apiCustomHeaders, QStringLiteral("X-Provider: mirror"));
     m_api.requests = 0;
     translator.start(windows, TranslationContext(), cache);
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 2, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finished.size() == 2; }, 10000));
+    QCOMPARE(finished.size(), 2);
     QCOMPARE(m_api.requests, 1);
 
     // Another base URL asks again, even one that reaches the same endpoint.
@@ -1393,12 +1429,14 @@ void TestDocumentTranslator::separatesTheCacheByConnection()
                      config->stringValue(Keys::apiBaseUrl) + QLatin1Char('/'));
     m_api.requests = 0;
     translator.start(windows, TranslationContext(), cache);
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 3, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finished.size() == 3; }, 10000));
+    QCOMPARE(finished.size(), 3);
     QCOMPARE(m_api.requests, 1);
 
     m_api.requests = 0;
     translator.start(windows, TranslationContext(), cache);
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 4, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finished.size() == 4; }, 10000));
+    QCOMPARE(finished.size(), 4);
     QCOMPARE(m_api.requests, 0);
 }
 
@@ -1419,7 +1457,8 @@ void TestDocumentTranslator::ignoresTheOrderHeadersAreTypedIn()
     config->setValue(Keys::apiCustomHeaders,
                      QStringLiteral("X-Provider: mirror\nX-Trace: on"));
     translator.start(windows, TranslationContext(), cache);
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 1, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finished.size() == 1; }, 10000));
+    QCOMPARE(finished.size(), 1);
     QCOMPARE(m_api.requests, 1);
     QCOMPARE(cacheFiles(cache, kAnswerSuffix).size(), 1);
 
@@ -1427,7 +1466,8 @@ void TestDocumentTranslator::ignoresTheOrderHeadersAreTypedIn()
                      QStringLiteral("x-trace:on\nx-provider: mirror"));
     m_api.requests = 0;
     translator.start(windows, TranslationContext(), cache);
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 2, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finished.size() == 2; }, 10000));
+    QCOMPARE(finished.size(), 2);
     QCOMPARE(m_api.requests, 0);
     QCOMPARE(finished.at(1), finished.at(0));
     QCOMPARE(cacheFiles(cache, kAnswerSuffix).size(), 1);
@@ -1436,7 +1476,8 @@ void TestDocumentTranslator::ignoresTheOrderHeadersAreTypedIn()
                      QStringLiteral("x-trace:on\nx-provider: other"));
     m_api.requests = 0;
     translator.start(windows, TranslationContext(), cache);
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 3, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finished.size() == 3; }, 10000));
+    QCOMPARE(finished.size(), 3);
     QCOMPARE(m_api.requests, 1);
     QCOMPARE(cacheFiles(cache, kAnswerSuffix).size(), 2);
 }
@@ -1454,7 +1495,8 @@ void TestDocumentTranslator::ignoresSettingsThatDoNotShapeTheAnswer()
             [&finished](const QString& text) { finished.append(text); });
 
     translator.start(windows, TranslationContext(), cache);
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 1, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finished.size() == 1; }, 10000));
+    QCOMPARE(finished.size(), 1);
 
     ConfigManager* config = ConfigManager::instance();
     config->setValue(Keys::apiKey, QStringLiteral("another-key"));
@@ -1462,7 +1504,8 @@ void TestDocumentTranslator::ignoresSettingsThatDoNotShapeTheAnswer()
     config->setValue(Keys::apiStream, true);
     m_api.requests = 0;
     translator.start(windows, TranslationContext(), cache);
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 2, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finished.size() == 2; }, 10000));
+    QCOMPARE(finished.size(), 2);
 
     QCOMPARE(m_api.requests, 0);
     QCOMPARE(finished.at(1), finished.at(0));
@@ -1481,7 +1524,7 @@ void TestDocumentTranslator::retiresTheFailureOfAnAnsweredRequest()
             [&finished](const QString& text) { finished = text; });
 
     translator.start(windows, TranslationContext(), cache);
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
     QCOMPARE(m_api.requests, 1);
 
     // The record of an attempt that failed, beside the answer of its own request.
@@ -1492,7 +1535,7 @@ void TestDocumentTranslator::retiresTheFailureOfAnAnsweredRequest()
     m_api.requests = 0;
     finished.clear();
     translator.start(windows, TranslationContext(), cache);
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
 
     QCOMPARE(m_api.requests, 0);
     QVERIFY(cacheFiles(cache, kFailureSuffix).isEmpty());
@@ -1515,7 +1558,8 @@ void TestDocumentTranslator::stopsOnTheReportOfACachedWindow()
             [&finished](const QString& text) { finished.append(text); });
 
     translator.start(windows, TranslationContext(), cache);
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 1, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finished.size() == 1; }, 10000));
+    QCOMPARE(finished.size(), 1);
 
     // One window stays cached, and it is the one the run takes first.
     const QStringList files = cacheFiles(cache, kAnswerSuffix);
@@ -1537,9 +1581,9 @@ void TestDocumentTranslator::stopsOnTheReportOfACachedWindow()
 
     m_api.requests = 0;
     translator.start(windows, TranslationContext(), cache);
-    QTRY_VERIFY_WITH_TIMEOUT(stopped, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return stopped; }, 10000));
 
-    QTest::qWait(200);
+    QVERIFY(poolIdle());
     QCOMPARE(m_api.requests, 0);
     QCOMPARE(finished.size(), 1);
 }
@@ -1557,7 +1601,8 @@ void TestDocumentTranslator::ignoresCachedAnswersOfTheWrongShape()
             [&finished](const QString& text) { finished.append(text); });
 
     translator.start(windows, TranslationContext(), cache);
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 1, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finished.size() == 1; }, 10000));
+    QCOMPARE(finished.size(), 1);
 
     const QStringList files = cacheFiles(cache, kAnswerSuffix);
     QCOMPARE(files.size(), 1);
@@ -1569,7 +1614,8 @@ void TestDocumentTranslator::ignoresCachedAnswersOfTheWrongShape()
 
     m_api.requests = 0;
     translator.start(windows, TranslationContext(), cache);
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 2, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finished.size() == 2; }, 10000));
+    QCOMPARE(finished.size(), 2);
 
     QCOMPARE(m_api.requests, 1);
     QVERIFY(stale.open(QIODevice::ReadOnly));
@@ -1591,8 +1637,8 @@ void TestDocumentTranslator::keepsUnusableAnswersAsFailures()
     connect(&translator, &DocumentTranslator::failed, this,
             [&reported](const QStringList&) { reported = true; });
 
-    translator.start(windows, TranslationContext(), cache);
-    QTRY_VERIFY_WITH_TIMEOUT(reported, 10000);
+    translator.start(windows, TranslationContext(), cache, retryPause());
+    QVERIFY(TestSupport::waitFor([&] { return reported; }, 10000));
 
     // The unusable answer is stored with the line it lost, and no entry is
     // written for a window the run did not accept.
@@ -1610,8 +1656,8 @@ void TestDocumentTranslator::keepsUnusableAnswersAsFailures()
     connect(&translator, &DocumentTranslator::finished, this,
             [&finished](const QString& text) { finished = text; });
 
-    translator.start(windows, TranslationContext(), cache);
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+    translator.start(windows, TranslationContext(), cache, retryPause());
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
 
     QCOMPARE(m_api.requests, 2);
     QVERIFY(cacheFiles(cache, kFailureSuffix).isEmpty());
@@ -1633,8 +1679,9 @@ void TestDocumentTranslator::namesEveryFailedSample()
     connect(&translator, &DocumentTranslator::failed, this,
             [&failed](const QStringList& samples) { failed = samples; });
 
-    translator.start(windows, TranslationContext(), cache);
-    QTRY_COMPARE_WITH_TIMEOUT(failed.size(), 3, 10000);
+    translator.start(windows, TranslationContext(), cache, retryPause());
+    QVERIFY(TestSupport::waitFor([&] { return failed.size() == 3; }, 10000));
+    QCOMPARE(failed.size(), 3);
 
     // Each name is the head of one failure file, which is named by the whole
     // digest of the request.
@@ -1651,8 +1698,9 @@ void TestDocumentTranslator::namesEveryFailedSample()
     const QStringList cached = failed;
     m_api.malformedLeft = 10;
     failed.clear();
-    translator.start(windows, TranslationContext());
-    QTRY_COMPARE_WITH_TIMEOUT(failed.size(), 3, 10000);
+    translator.start(windows, TranslationContext(), std::nullopt, retryPause());
+    QVERIFY(TestSupport::waitFor([&] { return failed.size() == 3; }, 10000));
+    QCOMPARE(failed.size(), 3);
     QCOMPARE(failed, cached);
 }
 
@@ -1671,8 +1719,8 @@ void TestDocumentTranslator::dropsTheFailureBeforeSending()
     connect(&translator, &DocumentTranslator::failed, this,
             [&reported](const QStringList&) { reported = true; });
 
-    translator.start(windows, TranslationContext(), cache);
-    QTRY_VERIFY_WITH_TIMEOUT(reported, 10000);
+    translator.start(windows, TranslationContext(), cache, retryPause());
+    QVERIFY(TestSupport::waitFor([&] { return reported; }, 10000));
     QCOMPARE(cacheFiles(cache, kFailureSuffix).size(), 1);
 
     // The next run reaches the model again; the record goes with the request, so
@@ -1686,8 +1734,8 @@ void TestDocumentTranslator::dropsTheFailureBeforeSending()
     connect(&translator, &DocumentTranslator::finished, this,
             [&finished](const QString& text) { finished = text; });
 
-    translator.start(windows, TranslationContext(), cache);
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+    translator.start(windows, TranslationContext(), cache, retryPause());
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
 
     QVERIFY(failureGoneWhenSent);
     QVERIFY(cacheFiles(cache, kFailureSuffix).isEmpty());
@@ -1705,8 +1753,8 @@ void TestDocumentTranslator::resendsTheSamePromptOnRetry()
     connect(&translator, &DocumentTranslator::finished, this,
             [&finished](const QString& text) { finished = text; });
 
-    translator.start(windows, context);
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+    translator.start(windows, context, std::nullopt, retryPause());
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
     // One window per request plus the one the failure made necessary.
     QCOMPARE(m_api.requests, 3);
 
@@ -1727,8 +1775,8 @@ void TestDocumentTranslator::retriesAnswerOfTheWrongShape()
     connect(&translator, &DocumentTranslator::finished, this,
             [&finished](const QString& text) { finished = text; });
 
-    translator.start(windows, context);
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+    translator.start(windows, context, std::nullopt, retryPause());
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
 
     // An answer missing a key is sent again, and the retry repeats the request.
     QCOMPARE(m_api.requests, 2);
@@ -1750,8 +1798,9 @@ void TestDocumentTranslator::failsOnceMalformedAnswersAreExhausted()
             [&failed](const QStringList& samples) { failed = samples; });
     connect(&translator, &DocumentTranslator::finished, this, [&done](const QString&) { done = true; });
 
-    translator.start(windows, TranslationContext());
-    QTRY_COMPARE_WITH_TIMEOUT(failed.size(), 2, 10000);
+    translator.start(windows, TranslationContext(), std::nullopt, retryPause());
+    QVERIFY(TestSupport::waitFor([&] { return failed.size() == 2; }, 10000));
+    QCOMPARE(failed.size(), 2);
 
     // A wrong shape is retried like any other failed window, and the run carries on
     // to the window beside it, so both are reported once their attempts are used.
@@ -1771,8 +1820,9 @@ void TestDocumentTranslator::failsOnceAttemptsAreExhausted()
             [&failed](const QStringList& samples) { failed = samples; });
     connect(&translator, &DocumentTranslator::finished, this, [&done](const QString&) { done = true; });
 
-    translator.start(windows, TranslationContext());
-    QTRY_COMPARE_WITH_TIMEOUT(failed.size(), 2, 10000);
+    translator.start(windows, TranslationContext(), std::nullopt, retryPause());
+    QVERIFY(TestSupport::waitFor([&] { return failed.size() == 2; }, 10000));
+    QCOMPARE(failed.size(), 2);
     QVERIFY(!done);
     QCOMPARE(m_api.requests, 6);
 }
@@ -1793,13 +1843,13 @@ void TestDocumentTranslator::retriesAgainOnTheNextRun()
     connect(&translator, &DocumentTranslator::finished, this,
             [&finished](const QString& text) { finished = text; });
 
-    translator.start(windows, context);
-    QTRY_VERIFY_WITH_TIMEOUT(failures == 1, 10000);
+    translator.start(windows, context, std::nullopt, retryPause());
+    QVERIFY(TestSupport::waitFor([&] { return failures == 1; }, 10000));
     QCOMPARE(m_api.requests, 3);
 
     m_api.failuresLeft = 1;
-    translator.start(windows, context);
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+    translator.start(windows, context, std::nullopt, retryPause());
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
     QCOMPARE(failures, 1);
     QCOMPARE(m_api.requests, 5);
 }
@@ -1816,14 +1866,14 @@ void TestDocumentTranslator::retriesAsOftenAsConfigured()
 
     m_api.failuresLeft = 10;
     ConfigManager::instance()->setValue(Keys::documentRetryCount, 0);
-    translator.start(windows, context);
-    QTRY_VERIFY_WITH_TIMEOUT(failures == 1, 10000);
+    translator.start(windows, context, std::nullopt, retryPause());
+    QVERIFY(TestSupport::waitFor([&] { return failures == 1; }, 10000));
     QCOMPARE(m_api.requests, 1);
 
     m_api.failuresLeft = 10;
     ConfigManager::instance()->setValue(Keys::documentRetryCount, 2);
-    translator.start(windows, context);
-    QTRY_VERIFY_WITH_TIMEOUT(failures == 2, 10000);
+    translator.start(windows, context, std::nullopt, retryPause());
+    QVERIFY(TestSupport::waitFor([&] { return failures == 2; }, 10000));
     QCOMPARE(m_api.requests, 4);
 }
 
@@ -1840,10 +1890,8 @@ void TestDocumentTranslator::usesTheDefaultRetryCount()
     connect(&translator, &DocumentTranslator::failed, this,
             [&failures](const QStringList&) { ++failures; });
 
-    // The pauses between the attempts grow with their number, so six attempts
-    // spend fifteen seconds before the window is given up.
-    translator.start(document(1, 3), TranslationContext());
-    QTRY_VERIFY_WITH_TIMEOUT(failures == 1, 30000);
+    translator.start(document(1, 3), TranslationContext(), std::nullopt, retryPause());
+    QVERIFY(TestSupport::waitFor([&] { return failures == 1; }, 30000));
     QCOMPARE(m_api.requests, 6);
 }
 
@@ -1861,8 +1909,10 @@ void TestDocumentTranslator::honorsTheRunRetryCount()
 
     DocumentRunOptions none;
     none.retryCount = 0;
+    none.retryDelayMs = 0;
     translator.start(document(1, 3), TranslationContext(), std::nullopt, none);
-    QTRY_COMPARE_WITH_TIMEOUT(failed.size(), 1, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return failed.size() == 1; }, 10000));
+    QCOMPARE(failed.size(), 1);
     QCOMPARE(m_api.requests, 1);
 
     // Two retries are three attempts in all, one short of the configured count.
@@ -1870,8 +1920,10 @@ void TestDocumentTranslator::honorsTheRunRetryCount()
     failed.clear();
     DocumentRunOptions twice;
     twice.retryCount = 2;
+    twice.retryDelayMs = 0;
     translator.start(document(1, 3), TranslationContext(), std::nullopt, twice);
-    QTRY_COMPARE_WITH_TIMEOUT(failed.size(), 1, 15000);
+    QVERIFY(TestSupport::waitFor([&] { return failed.size() == 1; }, 15000));
+    QCOMPARE(failed.size(), 1);
     QCOMPARE(m_api.requests, 3);
 }
 
@@ -1880,11 +1932,12 @@ void TestDocumentTranslator::honorsTheRunPriority()
 {
     ConfigManager::instance()->setValue(Keys::apiMaxConcurrency, 1);
     // Keeps the running request on the wire while the run's window queues.
-    m_api.answerDelayMs = 200;
+    m_api.answerDelayMs = 50;
     TranslationPool* pool = TranslationPool::instance();
 
     pool->enqueue(chatBody(QStringLiteral("running")), DocumentPriority::window, {}, {}, {});
-    QTRY_COMPARE(m_api.requests, 1);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 1; }, 5000));
+    QCOMPARE(m_api.requests, 1);
     pool->enqueue(chatBody(QStringLiteral("ahead")), 40, {}, {}, {});
     pool->enqueue(chatBody(QStringLiteral("behind")), 60, {}, {}, {});
 
@@ -1897,7 +1950,10 @@ void TestDocumentTranslator::honorsTheRunPriority()
             [&finished](const QString& text) { finished = text; });
     translator.start(document(1, 3), TranslationContext(), std::nullopt, options);
 
-    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty(), 10000);
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
+    // The two requests beside the run's window leave as their connections free.
+    QVERIFY(TestSupport::waitFor([&] { return m_api.prompts.size() == 4; }, 10000));
+    QCOMPARE(m_api.prompts.size(), 4);
 
     // The run's window went out between the two requests beside it.
     QCOMPARE(m_api.prompts.size(), 4);
@@ -1928,7 +1984,8 @@ void TestDocumentTranslator::stopsDuringResultDelivery()
     });
 
     translator.start(windows, context);
-    QTRY_VERIFY_WITH_TIMEOUT(stopped, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return stopped; }, 10000));
+    QVERIFY(poolIdle());
 
     // The document reported so far holds the accepted window translated and the
     // windows the run did not reach as their source text.
@@ -1955,14 +2012,15 @@ void TestDocumentTranslator::stopsWhileARetryIsPending()
         finished = text;
     });
 
-    translator.start(windows, context);
-    QTRY_COMPARE_WITH_TIMEOUT(m_api.requests, 1, 10000);
+    translator.start(windows, context, std::nullopt, retryPause(200));
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 1; }, 10000));
+    QCOMPARE(m_api.requests, 1);
     translator.stop();
-    QTRY_VERIFY_WITH_TIMEOUT(stopped, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return stopped; }, 10000));
 
     // A stop that lands while the retry waits must keep the request from going
-    // out once the pause is over.
-    QTest::qWait(1500);
+    // out once the pause is over, so the pause has to run out here.
+    QTest::qWait(300);
     QCOMPARE(m_api.requests, 1);
     QVERIFY(finished.isEmpty());
 }
@@ -1999,7 +2057,8 @@ void TestDocumentTranslator::failsEveryWindowOnceWithoutAnEndpoint()
             [&finished](const QString& text) { finished = text; });
 
     translator.start(windows, TranslationContext());
-    QTRY_COMPARE(failed.size(), count);
+    QVERIFY(TestSupport::waitFor([&] { return failed.size() == count; }, 5000));
+    QCOMPARE(failed.size(), count);
     QVERIFY(finished.isEmpty());
     QCOMPARE(m_api.requests, 0);
 

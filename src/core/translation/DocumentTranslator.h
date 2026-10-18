@@ -19,12 +19,21 @@ inline constexpr int windowRetry = 89;
 
 }
 
+namespace DocumentRetry {
+
+// Pause before each attempt after the first, multiplied by the attempt number.
+inline constexpr int delayMs = 1000;
+
+}
+
 struct DocumentRunOptions
 {
     int priority = DocumentPriority::window;
     int priorityRetry = DocumentPriority::windowRetry;
     // Attempts after the first; unset takes the configured document count.
     std::optional<int> retryCount = std::nullopt;
+    // Callers may shorten it; zero still leaves the retry on the event loop.
+    int retryDelayMs = DocumentRetry::delayMs;
 };
 
 // Sends a document to the API window by window and rebuilds the translation from
@@ -106,6 +115,7 @@ private:
     DocumentRunOptions m_options;
     // Resolved from the run options when the run starts.
     int m_retries = 0;
+    int m_retryDelayMs = DocumentRetry::delayMs;
     std::optional<DocumentCache> m_cache = std::nullopt;
     // Whether the document changed since it was last reported.
     bool m_documentPending = false;

@@ -18,8 +18,6 @@
 
 namespace {
 
-// Pause before each attempt after the first.
-constexpr int kRetryDelayMs = 1000;
 // Characters of the request digest that name a window the run left out.
 constexpr int kReportedSampleCharacters = 8;
 
@@ -68,6 +66,7 @@ void DocumentTranslator::start(const QVector<DocumentWindow>& windows,
     m_retries = options.retryCount
         ? (std::max)(0, *options.retryCount)
         : (std::max)(0, ConfigManager::instance()->intValue(Keys::documentRetryCount));
+    m_retryDelayMs = (std::max)(0, options.retryDelayMs);
     m_cache = std::move(cache);
     m_failedSamples.clear();
     m_documentPending = false;
@@ -312,7 +311,7 @@ void DocumentTranslator::retryOrFail(int index)
     const int retries = m_retries;
     if (m_attempts.at(index) <= retries) {
         const quint64 generation = m_generation;
-        QTimer::singleShot(kRetryDelayMs * m_attempts.at(index), this, [this, index, generation]() {
+        QTimer::singleShot(m_retryDelayMs * m_attempts.at(index), this, [this, index, generation]() {
             if (!m_active || generation != m_generation || m_settled.at(index)
                 || m_jobs.at(index) != 0)
                 return;

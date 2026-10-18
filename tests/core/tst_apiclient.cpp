@@ -210,7 +210,8 @@ void TestApiClient::requestsDerivedEndpoint()
                            nullptr,
                            [&](const ApiClient::Error& failure) { error = failure; });
 
-    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 5000);
+    QVERIFY(TestSupport::waitFor([&] { return finishedSpy.count() == 1; }, 5000));
+    QCOMPARE(finishedSpy.count(), 1);
     QVERIFY2(!error.has_value(), "the request must not report a failure");
     QCOMPARE(result, QStringLiteral("ok"));
     QCOMPARE(requestLine, QStringLiteral("POST /v1/chat/completions HTTP/1.1"));
@@ -278,7 +279,8 @@ void TestApiClient::reportsIdleBeforeDelivering()
                            [&order](const QString&) { order << QStringLiteral("done"); },
                            nullptr, nullptr);
 
-    QTRY_COMPARE_WITH_TIMEOUT(order.size(), 2, 5000);
+    QVERIFY(TestSupport::waitFor([&] { return order.size() == 2; }, 5000));
+    QCOMPARE(order.size(), 2);
     QCOMPARE(order, QStringList({QStringLiteral("finished"), QStringLiteral("done")}));
 }
 
@@ -312,7 +314,8 @@ void TestApiClient::keepsResultWhenHandlerStartsNextRequest()
                            nullptr,
                            [&error](const ApiClient::Error& failure) { error = failure; });
 
-    QTRY_COMPARE_WITH_TIMEOUT(results.size(), 2, 5000);
+    QVERIFY(TestSupport::waitFor([&] { return results.size() == 2; }, 5000));
+    QCOMPARE(results.size(), 2);
     QVERIFY2(!error.has_value(), "the next request must not change this one's outcome");
     QCOMPARE(results, QStringList({QStringLiteral("first"), QStringLiteral("second")}));
 }
@@ -335,7 +338,8 @@ void TestApiClient::reportsIdleTimeout()
     client.sendChatRequest(chatBody(), nullptr, nullptr,
                            [&error](const ApiClient::Error& failure) { error = failure; });
 
-    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finishedSpy.count() == 1; }, 10000));
+    QCOMPARE(finishedSpy.count(), 1);
     QVERIFY(error.has_value());
     QCOMPARE(error->code, ApiClient::ErrorCode::TimedOut);
 }
@@ -361,7 +365,8 @@ void TestApiClient::readsTrailingStreamFrame()
     client.sendChatRequest(body, [&result](const QString& text) { result = text; }, nullptr,
                            [&error](const ApiClient::Error& failure) { error = failure; });
 
-    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 5000);
+    QVERIFY(TestSupport::waitFor([&] { return finishedSpy.count() == 1; }, 5000));
+    QCOMPARE(finishedSpy.count(), 1);
     QVERIFY2(!error.has_value(), "the trailing frame must be read");
     QCOMPARE(result, QStringLiteral("Hello"));
 }
@@ -391,7 +396,8 @@ void TestApiClient::keepsStreamHeldOpenAfterTerminator()
     client.sendChatRequest(body, [&result](const QString& text) { result = text; }, nullptr,
                            [&error](const ApiClient::Error& failure) { error = failure; });
 
-    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 10000);
+    QVERIFY(TestSupport::waitFor([&] { return finishedSpy.count() == 1; }, 10000));
+    QCOMPARE(finishedSpy.count(), 1);
     QVERIFY2(!error.has_value(), "the terminator settles the request");
     QCOMPARE(result, QStringLiteral("Hello"));
 }
@@ -416,7 +422,8 @@ void TestApiClient::rejectsStreamWithoutContent()
     client.sendChatRequest(body, nullptr, nullptr,
                            [&error](const ApiClient::Error& failure) { error = failure; });
 
-    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 5000);
+    QVERIFY(TestSupport::waitFor([&] { return finishedSpy.count() == 1; }, 5000));
+    QCOMPARE(finishedSpy.count(), 1);
     QVERIFY(error.has_value());
     QCOMPARE(error->code, ApiClient::ErrorCode::InvalidResponse);
 }
@@ -443,7 +450,8 @@ void TestApiClient::reportsStreamErrorFrame()
     client.sendChatRequest(body, [&result](const QString& text) { result = text; }, nullptr,
                            [&error](const ApiClient::Error& failure) { error = failure; });
 
-    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 5000);
+    QVERIFY(TestSupport::waitFor([&] { return finishedSpy.count() == 1; }, 5000));
+    QCOMPARE(finishedSpy.count(), 1);
     QVERIFY(error.has_value());
     QCOMPARE(error->code, ApiClient::ErrorCode::ServerMessage);
     QCOMPARE(error->detail, QStringLiteral("Context size has been exceeded."));
@@ -475,7 +483,8 @@ void TestApiClient::deliversStreamedDeltasOnceBeforeStreamError()
                            [&deltas](const QString& piece) { deltas << piece; },
                            [&error](const ApiClient::Error& failure) { error = failure; });
 
-    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 5000);
+    QVERIFY(TestSupport::waitFor([&] { return finishedSpy.count() == 1; }, 5000));
+    QCOMPARE(finishedSpy.count(), 1);
     QVERIFY(error.has_value());
     QCOMPARE(deltas.join(QString()), QStringLiteral("Hel"));
 }
@@ -501,7 +510,8 @@ void TestApiClient::reportsStreamErrorCodeWithoutMessage()
     client.sendChatRequest(body, nullptr, nullptr,
                            [&error](const ApiClient::Error& failure) { error = failure; });
 
-    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 5000);
+    QVERIFY(TestSupport::waitFor([&] { return finishedSpy.count() == 1; }, 5000));
+    QCOMPARE(finishedSpy.count(), 1);
     QVERIFY(error.has_value());
     QCOMPARE(error->code, ApiClient::ErrorCode::HttpStatus);
     QCOMPARE(error->detail, QStringLiteral("503"));
@@ -529,7 +539,8 @@ void TestApiClient::reportsBrokenStreamAsNetworkFailure()
     client.sendChatRequest(body, [&result](const QString& text) { result = text; }, nullptr,
                            [&error](const ApiClient::Error& failure) { error = failure; });
 
-    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 5000);
+    QVERIFY(TestSupport::waitFor([&] { return finishedSpy.count() == 1; }, 5000));
+    QCOMPARE(finishedSpy.count(), 1);
     QVERIFY(error.has_value());
     QCOMPARE(error->code, ApiClient::ErrorCode::NetworkFailure);
     QVERIFY2(result.isEmpty(), "a stream cut off before its terminator is not an answer");
@@ -555,7 +566,8 @@ void TestApiClient::dropsOversizedResponse()
     client.sendChatRequest(chatBody(), nullptr, nullptr,
                            [&error](const ApiClient::Error& failure) { error = failure; });
 
-    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 15000);
+    QVERIFY(TestSupport::waitFor([&] { return finishedSpy.count() == 1; }, 15000));
+    QCOMPARE(finishedSpy.count(), 1);
     QVERIFY(error.has_value());
     QCOMPARE(error->code, ApiClient::ErrorCode::ResponseTooLarge);
 }
@@ -604,7 +616,8 @@ void TestApiClient::listsModels()
                       [&models](const QList<ApiClient::Model>& listed) { models = listed; },
                       [&error](const ApiClient::Error& failure) { error = failure; });
 
-    QTRY_COMPARE_WITH_TIMEOUT(models.size(), 2, 5000);
+    QVERIFY(TestSupport::waitFor([&] { return models.size() == 2; }, 5000));
+    QCOMPARE(models.size(), 2);
     QVERIFY2(!error.has_value(), "the listing must not report a failure");
     QCOMPARE(modelIds(models), QStringList({QStringLiteral("gpt-4o-mini"), QStringLiteral("o3-mini")}));
     QCOMPARE(finishedSpy.count(), 0);
@@ -640,7 +653,8 @@ void TestApiClient::listsModelsFromGivenValues()
                       [&models](const QList<ApiClient::Model>& listed) { models = listed; },
                       [&error](const ApiClient::Error& failure) { error = failure; });
 
-    QTRY_COMPARE_WITH_TIMEOUT(models.size(), 1, 5000);
+    QVERIFY(TestSupport::waitFor([&] { return models.size() == 1; }, 5000));
+    QCOMPARE(models.size(), 1);
     QVERIFY2(!error.has_value(), "the given settings must carry the request");
     QCOMPARE(modelIds(models), QStringList({QStringLiteral("local-model")}));
 
@@ -672,7 +686,7 @@ void TestApiClient::reportsModelListFailure()
                       [&models](const QList<ApiClient::Model>& listed) { models = listed; },
                       [&error](const ApiClient::Error& failure) { error = failure; });
 
-    QTRY_VERIFY_WITH_TIMEOUT(error.has_value(), 5000);
+    QVERIFY(TestSupport::waitFor([&] { return error.has_value(); }, 5000));
     QCOMPARE(error->code, ApiClient::ErrorCode::ServerMessage);
     QCOMPARE(error->detail, QStringLiteral("invalid key"));
     QVERIFY(models.isEmpty());
@@ -699,7 +713,7 @@ void TestApiClient::dropsOversizedModelList()
                       [&models](const QList<ApiClient::Model>& listed) { models = listed; },
                       [&error](const ApiClient::Error& failure) { error = failure; });
 
-    QTRY_VERIFY_WITH_TIMEOUT(error.has_value(), 15000);
+    QVERIFY(TestSupport::waitFor([&] { return error.has_value(); }, 15000));
     QCOMPARE(error->code, ApiClient::ErrorCode::ResponseTooLarge);
     QVERIFY(models.isEmpty());
 }

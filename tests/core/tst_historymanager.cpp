@@ -148,7 +148,8 @@ void TestHistoryManager::compactsOnTheDebounce()
         manager.addRecord(record(i));
     QCOMPARE(fileLines(path).size(), 12);
 
-    QTRY_COMPARE_WITH_TIMEOUT(fileLines(path).size(), 8, 2000);
+    QVERIFY(TestSupport::waitFor([&] { return fileLines(path).size() == 8; }, 2000));
+    QCOMPARE(fileLines(path).size(), 8);
 }
 
 // A line a crash cut short is dropped instead of failing the whole file.

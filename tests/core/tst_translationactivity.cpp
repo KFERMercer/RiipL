@@ -91,11 +91,14 @@ void TestTranslationActivity::followsThePoolFromBusyToDone()
 
     TranslationPool* pool = TranslationPool::instance();
     pool->enqueue(chatBody(QStringLiteral("doc")), DocumentPriority::window, {}, {}, {});
-    QTRY_COMPARE(activity.state(), TranslationActivity::State::Busy);
-    QTRY_COMPARE(m_api.requests, 1);
+    QVERIFY(TestSupport::waitFor([&] { return activity.state() == TranslationActivity::State::Busy; }, 5000));
+    QCOMPARE(activity.state(), TranslationActivity::State::Busy);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 1; }, 5000));
+    QCOMPARE(m_api.requests, 1);
 
     m_api.releaseNext(false);
-    QTRY_COMPARE(activity.state(), TranslationActivity::State::Done);
+    QVERIFY(TestSupport::waitFor([&] { return activity.state() == TranslationActivity::State::Done; }, 5000));
+    QCOMPARE(activity.state(), TranslationActivity::State::Done);
     QVERIFY(!pool->isBusy());
     QCOMPARE(states, QStringList({QStringLiteral("busy"), QStringLiteral("done")}));
 }
@@ -113,26 +116,32 @@ void TestTranslationActivity::holdsAFailureUntilNewWork()
     TranslationPool* pool = TranslationPool::instance();
     pool->enqueue(chatBody(QStringLiteral("first")), DocumentPriority::window, {}, {}, {});
     pool->enqueue(chatBody(QStringLiteral("second")), DocumentPriority::window, {}, {}, {});
-    QTRY_COMPARE(activity.state(), TranslationActivity::State::Busy);
-    QTRY_COMPARE(m_api.requests, 2);
+    QVERIFY(TestSupport::waitFor([&] { return activity.state() == TranslationActivity::State::Busy; }, 5000));
+    QCOMPARE(activity.state(), TranslationActivity::State::Busy);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 2; }, 5000));
+    QCOMPARE(m_api.requests, 2);
 
     // One failure leaves the pool carrying the request beside it.
     m_api.releaseNext(true);
-    QTRY_COMPARE(activity.state(), TranslationActivity::State::Failure);
+    QVERIFY(TestSupport::waitFor([&] { return activity.state() == TranslationActivity::State::Failure; }, 5000));
+    QCOMPARE(activity.state(), TranslationActivity::State::Failure);
     QVERIFY(pool->isBusy());
 
     // The queue runs out on the success beside the failure, which the state
     // holds.
     m_api.releaseNext(false);
-    QTRY_VERIFY(!pool->isBusy());
+    QVERIFY(TestSupport::waitFor([&] { return !pool->isBusy(); }, 5000));
     QTest::qWait(50);
     QCOMPARE(activity.state(), TranslationActivity::State::Failure);
 
     pool->enqueue(chatBody(QStringLiteral("later")), DocumentPriority::window, {}, {}, {});
-    QTRY_COMPARE(activity.state(), TranslationActivity::State::Busy);
-    QTRY_COMPARE(m_api.requests, 3);
+    QVERIFY(TestSupport::waitFor([&] { return activity.state() == TranslationActivity::State::Busy; }, 5000));
+    QCOMPARE(activity.state(), TranslationActivity::State::Busy);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 3; }, 5000));
+    QCOMPARE(m_api.requests, 3);
     m_api.releaseAll();
-    QTRY_COMPARE(activity.state(), TranslationActivity::State::Done);
+    QVERIFY(TestSupport::waitFor([&] { return activity.state() == TranslationActivity::State::Done; }, 5000));
+    QCOMPARE(activity.state(), TranslationActivity::State::Done);
 
     QCOMPARE(states, QStringList({QStringLiteral("busy"), QStringLiteral("failure"),
                                   QStringLiteral("busy"), QStringLiteral("done")}));
@@ -145,18 +154,24 @@ void TestTranslationActivity::markReadyClearsTheOutcome()
     TranslationPool* pool = TranslationPool::instance();
 
     pool->enqueue(chatBody(QStringLiteral("doc")), DocumentPriority::window, {}, {}, {});
-    QTRY_COMPARE(activity.state(), TranslationActivity::State::Busy);
-    QTRY_COMPARE(m_api.requests, 1);
+    QVERIFY(TestSupport::waitFor([&] { return activity.state() == TranslationActivity::State::Busy; }, 5000));
+    QCOMPARE(activity.state(), TranslationActivity::State::Busy);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 1; }, 5000));
+    QCOMPARE(m_api.requests, 1);
     m_api.releaseNext(false);
-    QTRY_COMPARE(activity.state(), TranslationActivity::State::Done);
+    QVERIFY(TestSupport::waitFor([&] { return activity.state() == TranslationActivity::State::Done; }, 5000));
+    QCOMPARE(activity.state(), TranslationActivity::State::Done);
     activity.markReady();
     QCOMPARE(activity.state(), TranslationActivity::State::Ready);
 
     pool->enqueue(chatBody(QStringLiteral("doc")), DocumentPriority::window, {}, {}, {});
-    QTRY_COMPARE(activity.state(), TranslationActivity::State::Busy);
-    QTRY_COMPARE(m_api.requests, 2);
+    QVERIFY(TestSupport::waitFor([&] { return activity.state() == TranslationActivity::State::Busy; }, 5000));
+    QCOMPARE(activity.state(), TranslationActivity::State::Busy);
+    QVERIFY(TestSupport::waitFor([&] { return m_api.requests == 2; }, 5000));
+    QCOMPARE(m_api.requests, 2);
     m_api.releaseNext(true);
-    QTRY_COMPARE(activity.state(), TranslationActivity::State::Failure);
+    QVERIFY(TestSupport::waitFor([&] { return activity.state() == TranslationActivity::State::Failure; }, 5000));
+    QCOMPARE(activity.state(), TranslationActivity::State::Failure);
     activity.markReady();
     QCOMPARE(activity.state(), TranslationActivity::State::Ready);
 

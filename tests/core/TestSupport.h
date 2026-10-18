@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QByteArray>
+#include <QElapsedTimer>
 #include <QHostAddress>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -21,6 +22,22 @@
 #include "core/translation/TranslationEngine.h"
 
 namespace TestSupport {
+
+// Turns the event loop in 1 ms steps, which keeps a wait that settles at once cheap.
+template <typename Predicate>
+bool waitFor(Predicate predicate, int timeoutMs = 5000)
+{
+    if (predicate())
+        return true;
+    QElapsedTimer timer;
+    timer.start();
+    while (timer.elapsed() <= timeoutMs) {
+        QTest::qWait(1);
+        if (predicate())
+            return true;
+    }
+    return false;
+}
 
 // Directory private to the running test function. The temporary root lives for
 // the whole process, so suites that build a store per case never share a path.
