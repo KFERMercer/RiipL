@@ -1,6 +1,5 @@
 #include "PresetListEditor.h"
 
-#include "core/config/Defaults.h"
 #include "ui/widgets/AppIcons.h"
 
 #include <QAbstractItemView>
@@ -183,8 +182,7 @@ QJsonObject PresetListEditor::selectedValues() const
     const int row = selectedIndex();
     if (row < 0)
         return QJsonObject();
-    return Presets::withDefaults(m_model->item(row, kNameColumn)->data(kValuesRole).toJsonObject(),
-                                 fieldKeys());
+    return storedValues(m_model->item(row, kNameColumn)->data(kValuesRole).toJsonObject());
 }
 
 void PresetListEditor::overwriteSelected(const QJsonObject& values)
@@ -193,7 +191,7 @@ void PresetListEditor::overwriteSelected(const QJsonObject& values)
     if (row < 0)
         return;
 
-    const QJsonObject stored = Presets::withDefaults(values, fieldKeys());
+    const QJsonObject stored = storedValues(values);
     m_model->item(row, kNameColumn)->setData(stored, kValuesRole);
     for (int column = 0; column < m_fields.size(); ++column) {
         const QString text = stored.value(m_fields.at(column).key).toString();
@@ -206,7 +204,7 @@ void PresetListEditor::overwriteSelected(const QJsonObject& values)
 
 void PresetListEditor::saveAs(const QString& name, const QJsonObject& values)
 {
-    const QJsonObject stored = Presets::withDefaults(values, fieldKeys());
+    const QJsonObject stored = storedValues(values);
     const QList<QStandardItem*> taken = m_model->findItems(name, Qt::MatchExactly, kNameColumn);
     if (taken.isEmpty()) {
         m_model->appendRow(rowFor(Preset{name, stored}));
@@ -244,18 +242,20 @@ void PresetListEditor::removeSelected()
     refreshButtons();
 }
 
-QStringList PresetListEditor::fieldKeys() const
+QJsonObject PresetListEditor::storedValues(const QJsonObject& values) const
 {
+    if (m_fields.isEmpty())
+        return values;
     QStringList keys;
     keys.reserve(m_fields.size());
     for (const FieldColumn& field : m_fields)
         keys.append(field.key);
-    return keys;
+    return Presets::withDefaults(values, keys);
 }
 
 QList<QStandardItem*> PresetListEditor::rowFor(const Preset& preset) const
 {
-    const QJsonObject values = Presets::withDefaults(preset.values, fieldKeys());
+    const QJsonObject values = storedValues(preset.values);
     auto* name = new QStandardItem(preset.name);
     name->setEditable(false);
     name->setData(values, kValuesRole);

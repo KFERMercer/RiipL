@@ -64,7 +64,8 @@ signals:
     void changed();
 
 private:
-    QStringList fieldKeys() const;
+    // A list without field columns keeps the values whole instead of projecting them.
+    QJsonObject storedValues(const QJsonObject& values) const;
     QList<QStandardItem*> rowFor(const Preset& preset) const;
     QStringList names() const;
     QString uniqueName(const QString& base) const;
