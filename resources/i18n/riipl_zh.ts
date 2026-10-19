@@ -352,7 +352,7 @@
 <context>
     <name>GlossaryDialog</name>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="228"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="230"/>
         <source>Glossary</source>
         <translation>术语表</translation>
     </message>
@@ -376,68 +376,70 @@
     </message>
     <message>
         <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="65"/>
+        <source>Import JSON</source>
+        <translation>导入 JSON</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="66"/>
+        <source>Export JSON</source>
+        <translation>导出 JSON</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="75"/>
         <source>Add</source>
         <translation>添加</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="66"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="76"/>
         <source>Remove</source>
         <translation>删除</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="69"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="70"/>
         <source>Move up</source>
         <translation>上移</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="72"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="73"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="74"/>
         <source>Move down</source>
         <translation>下移</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="73"/>
-        <source>Import JSON...</source>
-        <translation>导入 JSON...</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="74"/>
-        <source>Export JSON...</source>
-        <translation>导出 JSON...</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="104"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="106"/>
         <source>Leave empty to keep the term untranslated</source>
         <translation>留空则保留原文</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="185"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="187"/>
         <source>Import glossary</source>
         <translation>导入术语表</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="186"/>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="209"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="188"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="211"/>
         <source>JSON files (*.json)</source>
         <translation>JSON 文件 (*.json)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="192"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="194"/>
         <source>Cannot open file: %1</source>
         <translation>无法打开文件：%1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="199"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="201"/>
         <source>Invalid glossary JSON format</source>
         <translation>术语表 JSON 格式无效</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="207"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="209"/>
         <source>Export glossary</source>
         <translation>导出术语表</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="215"/>
-        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="222"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="217"/>
+        <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="224"/>
         <source>Cannot write file: %1</source>
         <translation>无法写入文件：%1</translation>
     </message>
@@ -530,24 +532,24 @@
         <translation>自定义语言</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/LanguageDialog.cpp" line="75"/>
+        <location filename="../../src/ui/dialogs/LanguageDialog.cpp" line="83"/>
         <source>Add</source>
         <translation>添加</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/LanguageDialog.cpp" line="76"/>
+        <location filename="../../src/ui/dialogs/LanguageDialog.cpp" line="84"/>
         <source>Remove</source>
         <translation>删除</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/LanguageDialog.cpp" line="79"/>
-        <location filename="../../src/ui/dialogs/LanguageDialog.cpp" line="80"/>
+        <location filename="../../src/ui/dialogs/LanguageDialog.cpp" line="77"/>
+        <location filename="../../src/ui/dialogs/LanguageDialog.cpp" line="78"/>
         <source>Move up</source>
         <translation>上移</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/LanguageDialog.cpp" line="83"/>
-        <location filename="../../src/ui/dialogs/LanguageDialog.cpp" line="84"/>
+        <location filename="../../src/ui/dialogs/LanguageDialog.cpp" line="81"/>
+        <location filename="../../src/ui/dialogs/LanguageDialog.cpp" line="82"/>
         <source>Move down</source>
         <translation>下移</translation>
     </message>
@@ -1782,24 +1784,24 @@
         <translation>显示名称</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="75"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="83"/>
         <source>Add</source>
         <translation>添加</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="76"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="84"/>
         <source>Remove</source>
         <translation>删除</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="79"/>
-        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="80"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="77"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="78"/>
         <source>Move up</source>
         <translation>上移</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="83"/>
-        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="84"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="81"/>
+        <location filename="../../src/ui/dialogs/ToneDialog.cpp" line="82"/>
         <source>Move down</source>
         <translation>下移</translation>
     </message>

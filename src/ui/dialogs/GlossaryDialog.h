@@ -41,9 +41,9 @@ private:
     QStandardItemModel* m_model = nullptr;
     QSortFilterProxyModel* m_proxy = nullptr;
     QLineEdit* m_filter = nullptr;
-    QPushButton* m_removeButton = nullptr;
     QToolButton* m_moveUpButton = nullptr;
     QToolButton* m_moveDownButton = nullptr;
+    QPushButton* m_removeButton = nullptr;
 };
 
 class GlossaryDialog : public QDialog

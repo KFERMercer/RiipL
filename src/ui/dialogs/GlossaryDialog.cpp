@@ -62,31 +62,33 @@ GlossaryTable::GlossaryTable(QWidget* parent)
     m_table->setModel(m_proxy);
 
     auto* buttonRow = new QHBoxLayout();
-    auto addButton = new QPushButton(tr("Add"), this);
-    m_removeButton = new QPushButton(tr("Remove"), this);
+    auto* importButton = new QPushButton(tr("Import JSON"), this);
+    auto* exportButton = new QPushButton(tr("Export JSON"), this);
     m_moveUpButton = new QToolButton(this);
     m_moveUpButton->setIcon(AppIcons::moveUp());
     m_moveUpButton->setToolTip(tr("Move up"));
+    m_moveUpButton->setAccessibleName(tr("Move up"));
     m_moveDownButton = new QToolButton(this);
     m_moveDownButton->setIcon(AppIcons::moveDown());
     m_moveDownButton->setToolTip(tr("Move down"));
-    auto importButton = new QPushButton(tr("Import JSON..."), this);
-    auto exportButton = new QPushButton(tr("Export JSON..."), this);
-    buttonRow->addWidget(addButton);
-    buttonRow->addWidget(m_removeButton);
-    buttonRow->addWidget(m_moveUpButton);
-    buttonRow->addWidget(m_moveDownButton);
-    buttonRow->addStretch(1);
+    m_moveDownButton->setAccessibleName(tr("Move down"));
+    auto* addButton = new QPushButton(tr("Add"), this);
+    m_removeButton = new QPushButton(tr("Remove"), this);
     buttonRow->addWidget(importButton);
     buttonRow->addWidget(exportButton);
+    buttonRow->addWidget(m_moveUpButton);
+    buttonRow->addWidget(m_moveDownButton);
+    buttonRow->addWidget(addButton);
+    buttonRow->addWidget(m_removeButton);
+    buttonRow->addStretch(1);
     layout->addLayout(buttonRow);
 
-    connect(addButton, &QPushButton::clicked, this, &GlossaryTable::addRow);
-    connect(m_removeButton, &QPushButton::clicked, this, &GlossaryTable::removeSelected);
-    connect(m_moveUpButton, &QToolButton::clicked, this, [this]() { moveRow(-1); });
-    connect(m_moveDownButton, &QToolButton::clicked, this, [this]() { moveRow(1); });
     connect(importButton, &QPushButton::clicked, this, &GlossaryTable::importJson);
     connect(exportButton, &QPushButton::clicked, this, &GlossaryTable::exportJson);
+    connect(m_moveUpButton, &QToolButton::clicked, this, [this]() { moveRow(-1); });
+    connect(m_moveDownButton, &QToolButton::clicked, this, [this]() { moveRow(1); });
+    connect(addButton, &QPushButton::clicked, this, &GlossaryTable::addRow);
+    connect(m_removeButton, &QPushButton::clicked, this, &GlossaryTable::removeSelected);
     connect(m_filter, &QLineEdit::textChanged, this, [this](const QString& text) {
         m_proxy->setFilterFixedString(text.trimmed());
     });

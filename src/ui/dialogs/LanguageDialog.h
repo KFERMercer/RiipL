@@ -38,8 +38,8 @@ private:
 
     QTableView* m_custom = nullptr;
     QStandardItemModel* m_customModel = nullptr;
-    QPushButton* m_removeButton = nullptr;
     QToolButton* m_moveUpButton = nullptr;
     QToolButton* m_moveDownButton = nullptr;
+    QPushButton* m_removeButton = nullptr;
     QVector<CustomLanguage> m_initialLanguages;
 };

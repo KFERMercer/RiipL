@@ -72,8 +72,6 @@ ToneDialog::ToneDialog(const QVector<CustomTone>& customTones, QWidget* parent)
     loadTones(customTones);
 
     auto* buttonRow = new QHBoxLayout();
-    auto* addButton = new QPushButton(tr("Add"), this);
-    m_removeButton = new QPushButton(tr("Remove"), this);
     m_moveUpButton = new QToolButton(this);
     m_moveUpButton->setIcon(AppIcons::moveUp());
     m_moveUpButton->setToolTip(tr("Move up"));
@@ -82,20 +80,22 @@ ToneDialog::ToneDialog(const QVector<CustomTone>& customTones, QWidget* parent)
     m_moveDownButton->setIcon(AppIcons::moveDown());
     m_moveDownButton->setToolTip(tr("Move down"));
     m_moveDownButton->setAccessibleName(tr("Move down"));
-    buttonRow->addWidget(addButton);
-    buttonRow->addWidget(m_removeButton);
+    auto* addButton = new QPushButton(tr("Add"), this);
+    m_removeButton = new QPushButton(tr("Remove"), this);
     buttonRow->addWidget(m_moveUpButton);
     buttonRow->addWidget(m_moveDownButton);
+    buttonRow->addWidget(addButton);
+    buttonRow->addWidget(m_removeButton);
     buttonRow->addStretch(1);
     layout->addLayout(buttonRow);
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
     layout->addWidget(buttons);
 
-    connect(addButton, &QPushButton::clicked, this, &ToneDialog::addTone);
-    connect(m_removeButton, &QPushButton::clicked, this, &ToneDialog::removeTone);
     connect(m_moveUpButton, &QToolButton::clicked, this, [this]() { moveTone(-1); });
     connect(m_moveDownButton, &QToolButton::clicked, this, [this]() { moveTone(1); });
+    connect(addButton, &QPushButton::clicked, this, &ToneDialog::addTone);
+    connect(m_removeButton, &QPushButton::clicked, this, &ToneDialog::removeTone);
     connect(m_custom->selectionModel(), &QItemSelectionModel::currentChanged, this,
             &ToneDialog::refreshButtons);
     connect(m_customModel, &QAbstractItemModel::rowsInserted, this, &ToneDialog::refreshButtons);
