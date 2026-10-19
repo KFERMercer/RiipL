@@ -96,10 +96,10 @@ void PresetBar::retranslateUi()
     m_newButton->setText(tr("New"));
     m_newButton->setToolTip(tr("Create an empty preset"));
     m_newButton->setAccessibleName(tr("New preset"));
-    m_overwriteButton->setText(tr("Save preset"));
-    m_saveAsButton->setText(tr("Save as..."));
+    m_overwriteButton->setText(tr("Save"));
+    m_saveAsButton->setText(tr("Save as"));
     m_saveAsButton->setToolTip(tr("Save the current values under a new name"));
-    m_manageButton->setText(tr("Manage..."));
+    m_manageButton->setText(tr("Manage presets"));
     m_manageButton->setToolTip(tr("Rename, copy, reorder, delete or load presets"));
 }
 

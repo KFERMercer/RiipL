@@ -1150,24 +1150,28 @@
     </message>
     <message>
         <location filename="../../src/ui/widgets/PresetBar.cpp" line="99"/>
+        <source>Save</source>
+        <translation>保存</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widgets/PresetBar.cpp" line="100"/>
+        <source>Save as</source>
+        <translation>另存为</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widgets/PresetBar.cpp" line="102"/>
+        <source>Manage presets</source>
+        <translation>管理预设</translation>
+    </message>
+    <message>
         <location filename="../../src/ui/widgets/PresetBar.cpp" line="165"/>
         <source>Save preset</source>
         <translation>保存预设</translation>
     </message>
     <message>
-        <location filename="../../src/ui/widgets/PresetBar.cpp" line="100"/>
-        <source>Save as...</source>
-        <translation>另存为...</translation>
-    </message>
-    <message>
         <location filename="../../src/ui/widgets/PresetBar.cpp" line="101"/>
         <source>Save the current values under a new name</source>
         <translation>以新名称保存当前值</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/widgets/PresetBar.cpp" line="102"/>
-        <source>Manage...</source>
-        <translation>管理...</translation>
     </message>
     <message>
         <location filename="../../src/ui/widgets/PresetBar.cpp" line="103"/>
