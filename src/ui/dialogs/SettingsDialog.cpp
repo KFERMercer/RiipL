@@ -490,7 +490,7 @@ QWidget* SettingsDialog::createTranslationPage()
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Glossary"), static_cast<QLayout*>(glossaryRow));
 
     auto* autoTranslateCheck = new ConfigCheckBox(Keys::uiAutoTranslate, page);
-    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Auto translate after typing"), autoTranslateCheck);
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Auto translate input"), autoTranslateCheck);
 
     auto* historyRow = new QHBoxLayout();
     historyRow->addWidget(new ConfigCheckBox(Keys::historyEnabled, page), 1);
@@ -517,7 +517,7 @@ QWidget* SettingsDialog::createTranslationPage()
     });
     bindText([clearHistoryButton]() { clearHistoryButton->setText(tr("Clear translation history")); });
     historyLimitRow->addWidget(clearHistoryButton);
-    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Max records"),
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Max history records"),
                   static_cast<QLayout*>(historyLimitRow));
 
     // The preset bar rewrites the style and the background together, so the three

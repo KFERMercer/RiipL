@@ -44,7 +44,7 @@ ContextPresetDialog::ContextPresetDialog(const QVector<Preset>& presets, const Q
     auto* contextLayout = new QVBoxLayout(contextFrame);
 
     auto* saveRow = new QHBoxLayout();
-    m_newButton = new QPushButton(tr("New"), contextFrame);
+    m_newButton = new QPushButton(tr("New preset"), contextFrame);
     m_newButton->setToolTip(tr("Create an empty preset"));
     m_newButton->setAccessibleName(tr("New preset"));
     m_saveButton = new QPushButton(tr("Save preset"), contextFrame);

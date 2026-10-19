@@ -46,7 +46,7 @@
     <message>
         <location filename="../../src/core/network/ApiClient.cpp" line="668"/>
         <source>API response contains no choices</source>
-        <translation>API 响应中没有选项内容</translation>
+        <translation>API 响应中未包含候选内容</translation>
     </message>
     <message>
         <location filename="../../src/core/network/ApiClient.cpp" line="670"/>
@@ -56,7 +56,7 @@
     <message>
         <location filename="../../src/core/network/ApiClient.cpp" line="672"/>
         <source>API response reached the token limit before it ended</source>
-        <translation>API 响应在结束前达到了令牌上限</translation>
+        <translation>API 响应达到了 Token 上限</translation>
     </message>
     <message>
         <location filename="../../src/core/network/ApiClient.cpp" line="674"/>
@@ -71,7 +71,7 @@
     <message>
         <location filename="../../src/core/network/ApiClient.cpp" line="678"/>
         <source>Nothing to translate</source>
-        <translation>没有需要翻译的内容</translation>
+        <translation>没有可翻译的内容</translation>
     </message>
     <message>
         <location filename="../../src/core/network/ApiClient.cpp" line="680"/>
@@ -121,16 +121,12 @@
         <translation>上下文预设</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/ContextPresetDialog.cpp" line="47"/>
-        <source>New</source>
-        <translation>新建</translation>
-    </message>
-    <message>
         <location filename="../../src/ui/dialogs/ContextPresetDialog.cpp" line="48"/>
         <source>Create an empty preset</source>
         <translation>新建空预设</translation>
     </message>
     <message>
+        <location filename="../../src/ui/dialogs/ContextPresetDialog.cpp" line="47"/>
         <location filename="../../src/ui/dialogs/ContextPresetDialog.cpp" line="49"/>
         <location filename="../../src/ui/dialogs/ContextPresetDialog.cpp" line="212"/>
         <source>New preset</source>
@@ -411,7 +407,7 @@
     <message>
         <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="104"/>
         <source>Leave empty to keep the term untranslated</source>
-        <translation>留空则该术语保留原文不翻译</translation>
+        <translation>留空则保留原文</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/GlossaryDialog.cpp" line="185"/>
@@ -461,7 +457,7 @@
     <message>
         <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="133"/>
         <source>Reuse</source>
-        <translation>重新使用</translation>
+        <translation>复用</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/HistoryDialog.cpp" line="134"/>
@@ -882,7 +878,7 @@
     <message>
         <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1277"/>
         <source>Manage glossary</source>
-        <translation>管理术语</translation>
+        <translation>管理术语表</translation>
     </message>
     <message>
         <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1278"/>
@@ -912,7 +908,7 @@
     <message>
         <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1303"/>
         <source>Stop all</source>
-        <translation>停止所有</translation>
+        <translation>全部停止</translation>
     </message>
     <message>
         <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1223"/>
@@ -1232,7 +1228,7 @@
     <message>
         <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="88"/>
         <source>Load preset</source>
-        <translation>读取预设</translation>
+        <translation>加载预设</translation>
     </message>
     <message>
         <location filename="../../src/ui/widgets/PresetListEditor.cpp" line="89"/>
@@ -1361,7 +1357,7 @@
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="109"/>
         <source>Prompt templates</source>
-        <translation>Prompt 模板</translation>
+        <translation>提示词模板</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="108"/>
@@ -1510,11 +1506,6 @@
         <translation>目标语言</translation>
     </message>
     <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="493"/>
-        <source>Auto translate after typing</source>
-        <translation>输入后自动翻译</translation>
-    </message>
-    <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="572"/>
         <source>Unlimited</source>
         <translation>不限制</translation>
@@ -1557,22 +1548,27 @@
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="506"/>
         <source>Save translation history</source>
-        <translation>保存翻译历史</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="520"/>
-        <source>Max records</source>
-        <translation>最大记录数</translation>
+        <translation>保存历史翻译</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="518"/>
         <source>Clear translation history</source>
-        <translation>清空翻译历史</translation>
+        <translation>清空历史翻译</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="445"/>
         <source>Custom languages</source>
         <translation>自定义语言</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="493"/>
+        <source>Auto translate input</source>
+        <translation>自动翻译输入</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="520"/>
+        <source>Max history records</source>
+        <translation>最大历史记录</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="661"/>
@@ -1607,12 +1603,12 @@
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="671"/>
         <source>Glossary entries, rendered as JSON</source>
-        <translation>术语表条目，以 JSON 渲染</translation>
+        <translation>术语表条目（JSON 格式）</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="672"/>
         <source>Text to be translated</source>
-        <translation>待翻译的文本</translation>
+        <translation>待翻译文本</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="673"/>
@@ -1632,17 +1628,17 @@
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="676"/>
         <source>Marker placed before the selected word (candidate wording only)</source>
-        <translation>标记选中词的记号 - 左（候选遣词专用）</translation>
+        <translation>选中词前置标记（候选遣词专用）</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="677"/>
         <source>Marker placed after the selected word (candidate wording only)</source>
-        <translation>标记选中词的记号 - 右（候选遣词专用）</translation>
+        <translation>选中词后置标记（候选遣词专用）</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="679"/>
         <source>Number of lines in the translation window (document translation only)</source>
-        <translation>翻译窗口段落数（文档翻译专用）</translation>
+        <translation>翻译窗口行数（文档翻译专用）</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="680"/>
@@ -1708,7 +1704,7 @@
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="352"/>
         <source>One per line: Header-Name: value</source>
-        <translation>每行一条：请求头名: 值</translation>
+        <translation>每行一条：Header-Name: value</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="575"/>
@@ -1738,7 +1734,7 @@
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="678"/>
         <source>Translation window, rendered as JSON (document translation only)</source>
-        <translation>翻译窗口，以 JSON 渲染（文档翻译专用）</translation>
+        <translation>翻译窗口（JSON 格式，文档翻译专用）</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="577"/>
@@ -1873,7 +1869,7 @@
     <message>
         <location filename="../../src/core/translation/Tone.h" line="42"/>
         <source>Machine-like</source>
-        <translation>机器</translation>
+        <translation>机械</translation>
     </message>
     <message>
         <location filename="../../src/core/translation/Tone.h" line="43"/>
