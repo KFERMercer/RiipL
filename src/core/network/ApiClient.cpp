@@ -36,7 +36,16 @@ bool isRequestableScheme(const QUrl& url)
 // Message the API worded itself for a failed response.
 QString apiErrorMessage(const QByteArray& body)
 {
-    const QJsonDocument doc = QJsonDocument::fromJson(body);
+    QJsonDocument doc = QJsonDocument::fromJson(body);
+
+    // WORKAROUND(Gemini): the endpoint wraps error bodies in a root JSON array,
+    // violating the OpenAI ErrorResponse schema. Remove once Google conforms.
+    // https://discuss.ai.google.dev/t/issue-with-openai-compatible-api-error-response-root-array-causing-misleading-no-body-errors-in-openai-node-api-library-openai/82899
+    if (doc.isArray()) {
+        const QJsonArray array = doc.array();
+        doc = QJsonDocument(!array.isEmpty() ? array.first().toObject() : QJsonObject());
+    }
+
     if (!doc.isObject())
         return QString();
     const QJsonValue error = doc.object().value(QStringLiteral("error"));

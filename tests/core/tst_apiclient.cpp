@@ -182,6 +182,7 @@ private slots:
     void reportsPlainTextFailureBody();
     void dropsOversizedModelList();
     void refusesUnusableModelBaseUrl();
+    void reportsArrayWrappedFailure();
 };
 
 void TestApiClient::initTestCase()
@@ -1284,6 +1285,34 @@ void TestApiClient::refusesUnusableModelBaseUrl()
         QVERIFY(error.has_value());
         QCOMPARE(error->code, ApiClient::ErrorCode::BaseUrlInvalid);
     }
+}
+
+// An error body the endpoint wraps in a root JSON array still reaches the user.
+void TestApiClient::reportsArrayWrappedFailure()
+{
+    QDir().mkpath(TestSupport::tempDir());
+    ConfigManager::createInstance(TestSupport::tempDir());
+
+    OneShotServer server;
+    QVERIFY(server.listen());
+    server.serve(failureReply(
+        "400 Bad Request",
+        QByteArrayLiteral(
+            R"([{"error":{"code":400,"message":"Please pass a valid API key","status":"INVALID_ARGUMENT"}}])")));
+    ConfigManager::instance()->setValue(
+        Keys::apiBaseUrl, QStringLiteral("http://127.0.0.1:%1/v1").arg(server.port()));
+
+    ApiClient client;
+    QSignalSpy finishedSpy(&client, &ApiClient::requestFinished);
+    std::optional<ApiClient::Error> error;
+    client.sendChatRequest(chatBody(), nullptr, nullptr,
+                           [&error](const ApiClient::Error& failure) { error = failure; });
+
+    QVERIFY(TestSupport::waitFor([&] { return finishedSpy.count() == 1; }, 5000));
+    QCOMPARE(finishedSpy.count(), 1);
+    QVERIFY(error.has_value());
+    QCOMPARE(error->code, ApiClient::ErrorCode::ServerMessage);
+    QCOMPARE(error->detail, QStringLiteral("Please pass a valid API key"));
 }
 
 QTEST_MAIN(TestApiClient)
