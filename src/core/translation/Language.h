@@ -45,6 +45,7 @@ inline const QVector<LangItem>& all()
         {QStringLiteral("fil"), QT_TRANSLATE_NOOP("Languages", "Filipino")},
         {QStringLiteral("fr"), QT_TRANSLATE_NOOP("Languages", "French")},
         {QStringLiteral("de"), QT_TRANSLATE_NOOP("Languages", "German")},
+        {QStringLiteral("el"), QT_TRANSLATE_NOOP("Languages", "Greek")},
         {QStringLiteral("gu"), QT_TRANSLATE_NOOP("Languages", "Gujarati")},
         {QStringLiteral("he"), QT_TRANSLATE_NOOP("Languages", "Hebrew")},
         {QStringLiteral("hi"), QT_TRANSLATE_NOOP("Languages", "Hindi")},
@@ -161,15 +162,16 @@ inline const char* labelFor(const QString& code)
 inline QString guessFromScript(const QString& text)
 {
     enum Language : int {
-        Arabic, Bengali, Tibetan, Gujarati, Hebrew, Hindi, Japanese, Khmer,
-        Korean, Mongolian, Burmese, Russian, Tamil, Telugu, Thai, Chinese,
-        LanguageCount
+        Arabic, Bengali, Tibetan, Greek, Gujarati, Hebrew, Hindi, Japanese,
+        Khmer, Korean, Mongolian, Burmese, Russian, Tamil, Telugu, Thai,
+        Chinese, LanguageCount
     };
     static constexpr QLocale::Language kLanguages[LanguageCount] = {
-        QLocale::Arabic, QLocale::Bengali, QLocale::Tibetan, QLocale::Gujarati,
-        QLocale::Hebrew, QLocale::Hindi, QLocale::Japanese, QLocale::Khmer,
-        QLocale::Korean, QLocale::Mongolian, QLocale::Burmese, QLocale::Russian,
-        QLocale::Tamil, QLocale::Telugu, QLocale::Thai, QLocale::Chinese
+        QLocale::Arabic, QLocale::Bengali, QLocale::Tibetan, QLocale::Greek,
+        QLocale::Gujarati, QLocale::Hebrew, QLocale::Hindi, QLocale::Japanese,
+        QLocale::Khmer, QLocale::Korean, QLocale::Mongolian, QLocale::Burmese,
+        QLocale::Russian, QLocale::Tamil, QLocale::Telugu, QLocale::Thai,
+        QLocale::Chinese
     };
 
     int counts[LanguageCount] = {};
@@ -179,6 +181,7 @@ inline QString guessFromScript(const QString& text)
         case QChar::Script_Arabic: ++counts[Arabic]; break;
         case QChar::Script_Bengali: ++counts[Bengali]; break;
         case QChar::Script_Tibetan: ++counts[Tibetan]; break;
+        case QChar::Script_Greek: ++counts[Greek]; break;
         case QChar::Script_Gujarati: ++counts[Gujarati]; break;
         case QChar::Script_Hebrew: ++counts[Hebrew]; break;
         case QChar::Script_Devanagari: ++counts[Hindi]; break;
