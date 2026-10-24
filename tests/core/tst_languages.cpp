@@ -20,6 +20,7 @@ private slots:
     void roundTripsCustomLanguages();
     void resolvesBuiltInAndCustomKeys();
     void exposesBcp47Tags();
+    void ordersBuiltInsAlphabetically();
 };
 
 void TestLanguages::guessesLanguageFromScript()
@@ -252,6 +253,20 @@ void TestLanguages::exposesBcp47Tags()
         }
         QVERIFY2(!tags.contains(lang.code), qPrintable(lang.code));
         tags.insert(lang.code);
+    }
+}
+
+void TestLanguages::ordersBuiltInsAlphabetically()
+{
+    using namespace Languages;
+    const QVector<LangItem>& list = all();
+    QVERIFY(!list.isEmpty());
+    QCOMPARE(list.constFirst().code, QStringLiteral("auto"));
+    for (qsizetype i = 2; i < list.size(); ++i) {
+        const QString previous = QString::fromUtf8(list.at(i - 1).en);
+        const QString current = QString::fromUtf8(list.at(i).en);
+        QVERIFY2(QString::compare(previous, current, Qt::CaseInsensitive) < 0,
+                 qPrintable(QStringLiteral("%1 should precede %2").arg(previous, current)));
     }
 }
 
