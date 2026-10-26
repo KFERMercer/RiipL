@@ -562,12 +562,12 @@
         <translation>自动检测</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="41"/>
+        <location filename="../../src/core/translation/Language.h" line="37"/>
         <source>Chinese</source>
         <translation>中文</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="44"/>
+        <location filename="../../src/core/translation/Language.h" line="38"/>
         <source>English</source>
         <translation>英语</translation>
     </message>
@@ -607,7 +607,7 @@
         <translation>俄语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="37"/>
+        <location filename="../../src/core/translation/Language.h" line="39"/>
         <source>Arabic</source>
         <translation>阿拉伯语</translation>
     </message>
@@ -667,12 +667,12 @@
         <translation>波兰语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="42"/>
+        <location filename="../../src/core/translation/Language.h" line="43"/>
         <source>Czech</source>
         <translation>捷克语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="43"/>
+        <location filename="../../src/core/translation/Language.h" line="44"/>
         <source>Dutch</source>
         <translation>荷兰语</translation>
     </message>
@@ -682,7 +682,7 @@
         <translation>高棉语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="39"/>
+        <location filename="../../src/core/translation/Language.h" line="41"/>
         <source>Burmese</source>
         <translation>缅甸语</translation>
     </message>
@@ -717,7 +717,7 @@
         <translation>希伯来语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="38"/>
+        <location filename="../../src/core/translation/Language.h" line="40"/>
         <source>Bengali</source>
         <translation>孟加拉语</translation>
     </message>
@@ -752,7 +752,7 @@
         <translation>维吾尔语</translation>
     </message>
     <message>
-        <location filename="../../src/core/translation/Language.h" line="40"/>
+        <location filename="../../src/core/translation/Language.h" line="42"/>
         <source>Cantonese</source>
         <translation>粤语</translation>
     </message>

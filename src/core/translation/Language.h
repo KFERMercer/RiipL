@@ -34,14 +34,14 @@ inline const QVector<LangItem>& all()
 {
     static const QVector<LangItem> list = {
         {QStringLiteral("auto"), QT_TRANSLATE_NOOP("Languages", "Auto detect")},
+        {QStringLiteral("zh"), QT_TRANSLATE_NOOP("Languages", "Chinese")},
+        {QStringLiteral("en"), QT_TRANSLATE_NOOP("Languages", "English")},
         {QStringLiteral("ar"), QT_TRANSLATE_NOOP("Languages", "Arabic")},
         {QStringLiteral("bn"), QT_TRANSLATE_NOOP("Languages", "Bengali")},
         {QStringLiteral("my"), QT_TRANSLATE_NOOP("Languages", "Burmese")},
         {QStringLiteral("yue"), QT_TRANSLATE_NOOP("Languages", "Cantonese")},
-        {QStringLiteral("zh"), QT_TRANSLATE_NOOP("Languages", "Chinese")},
         {QStringLiteral("cs"), QT_TRANSLATE_NOOP("Languages", "Czech")},
         {QStringLiteral("nl"), QT_TRANSLATE_NOOP("Languages", "Dutch")},
-        {QStringLiteral("en"), QT_TRANSLATE_NOOP("Languages", "English")},
         {QStringLiteral("fil"), QT_TRANSLATE_NOOP("Languages", "Filipino")},
         {QStringLiteral("fr"), QT_TRANSLATE_NOOP("Languages", "French")},
         {QStringLiteral("de"), QT_TRANSLATE_NOOP("Languages", "German")},

@@ -20,7 +20,6 @@ private slots:
     void roundTripsCustomLanguages();
     void resolvesBuiltInAndCustomKeys();
     void exposesBcp47Tags();
-    void ordersBuiltInsAlphabetically();
 };
 
 void TestLanguages::guessesLanguageFromScript()
@@ -100,6 +99,8 @@ void TestLanguages::resolveAutoExcludesTarget()
     // one, so a request never asks for a translation into its own language.
     QCOMPARE(resolveAuto(QStringLiteral("你好"), QStringLiteral("en")), QStringLiteral("zh"));
     QCOMPARE(resolveAuto(QStringLiteral("你好"), QStringLiteral("fr")), QStringLiteral("zh"));
+    QCOMPARE(resolveAuto(QStringLiteral("Hello world"), QStringLiteral("zh")), QStringLiteral("en"));
+    QCOMPARE(resolveAuto(QStringLiteral("Hello world"), QStringLiteral("en")), QStringLiteral("zh"));
     const QString latinFallback = resolveAuto(QStringLiteral("Hello world"), QStringLiteral("en"));
     QVERIFY(latinFallback != QStringLiteral("en"));
     QVERIFY(indexOf(latinFallback) > 0);
@@ -253,20 +254,6 @@ void TestLanguages::exposesBcp47Tags()
         }
         QVERIFY2(!tags.contains(lang.code), qPrintable(lang.code));
         tags.insert(lang.code);
-    }
-}
-
-void TestLanguages::ordersBuiltInsAlphabetically()
-{
-    using namespace Languages;
-    const QVector<LangItem>& list = all();
-    QVERIFY(!list.isEmpty());
-    QCOMPARE(list.constFirst().code, QStringLiteral("auto"));
-    for (qsizetype i = 2; i < list.size(); ++i) {
-        const QString previous = QString::fromUtf8(list.at(i - 1).en);
-        const QString current = QString::fromUtf8(list.at(i).en);
-        QVERIFY2(QString::compare(previous, current, Qt::CaseInsensitive) < 0,
-                 qPrintable(QStringLiteral("%1 should precede %2").arg(previous, current)));
     }
 }
 
