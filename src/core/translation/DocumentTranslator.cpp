@@ -175,10 +175,10 @@ void DocumentTranslator::dispatchPending()
            && (m_settled.at(m_nextWindow)
                || (!m_serial && m_attempts.at(m_nextWindow) > 0)))
         ++m_nextWindow;
-    if (m_nextWindow >= m_windows.size())
+    if (m_nextWindow >= m_windows.size() || (m_serial && m_attempts.at(m_nextWindow) > 0)) {
+        reportDocument();
         return;
-    if (m_serial && m_attempts.at(m_nextWindow) > 0)
-        return;
+    }
 
     // The walk takes one window per turn of the event loop, so the request of a
     // window leaves as soon as the window is built.
@@ -238,8 +238,8 @@ void DocumentTranslator::sendWindow(int index, const QString& sample)
         [this, index](const ApiClient::Error&) { handleWindowError(index); });
 }
 
-// An answer the run waited for is reported as it lands; a window the cache answered
-// is reported with the next one.
+// An answer the run waited for is reported as it lands; the windows the cache
+// answered are reported together.
 void DocumentTranslator::acceptWindow(int index, const QStringList& lines, bool report)
 {
     const quint64 generation = m_generation;

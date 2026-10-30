@@ -278,6 +278,7 @@ private slots:
     void requestsOnlyTheWindowsTheCacheMisses();
     void handsTheFirstWindowOverBeforeTheRest();
     void reportsTheCachedWindowsBeforeTheModel();
+    void reportsTheCachedWindowsWhileTheModelAnswers();
     void restartsFromTheReportOfACachedWindow();
     void separatesTheCacheByRequest();
     void separatesTheCacheByRequestBody();
@@ -1291,6 +1292,48 @@ void TestDocumentTranslator::reportsTheCachedWindowsBeforeTheModel()
     QVERIFY(reports.at(1).contains(QStringLiteral("译文 window 1 line 0")));
     QVERIFY(!reports.at(1).contains(QStringLiteral("译文 window 2 line 0")));
     QCOMPARE(m_api.requests, 1);
+}
+
+// A window the cache does not hold does not hold back the windows it does: they
+// are reported while its answer is still on the wire.
+void TestDocumentTranslator::reportsTheCachedWindowsWhileTheModelAnswers()
+{
+    m_api.answerDelayMs = 200;
+    const QVector<DocumentWindow> windows = document(3, 3);
+    const DocumentCache cache(TestSupport::tempDir() + QStringLiteral("/cache"));
+
+    DocumentTranslator translator;
+    QStringList reports;
+    QString finished;
+    connect(&translator, &DocumentTranslator::windowTranslated, this,
+            [&reports](const QString& text) { reports.append(text); });
+    connect(&translator, &DocumentTranslator::finished, this,
+            [&finished](const QString& text) { finished = text; });
+
+    translator.start(windows, TranslationContext(), cache);
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
+
+    // The cache holds the two windows behind the first one.
+    const QStringList files = cacheFiles(cache, kAnswerSuffix);
+    QCOMPARE(files.size(), 3);
+    const QString dropped = cacheFileHolding(cache, QStringLiteral("window 0 line 0"));
+    QVERIFY(!dropped.isEmpty());
+    QVERIFY(QFile::remove(cachePath(cache, dropped)));
+
+    reports.clear();
+    finished.clear();
+    m_api.requests = 0;
+    translator.start(windows, TranslationContext(), cache);
+    QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
+
+    // The two cached windows went out as one report, ahead of the first
+    // window's answer.
+    QCOMPARE(reports.size(), 3);
+    QVERIFY(reports.at(1).contains(QStringLiteral("译文 window 1 line 0")));
+    QVERIFY(reports.at(1).contains(QStringLiteral("译文 window 2 line 0")));
+    QVERIFY(!reports.at(1).contains(QStringLiteral("译文 window 0 line 0")));
+    QCOMPARE(m_api.requests, 1);
+    QCOMPARE(reports.constLast(), finished);
 }
 
 // A run started over one that is under way takes over: every window of the new run
