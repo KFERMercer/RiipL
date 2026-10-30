@@ -12,6 +12,7 @@
 #include "core/translation/PromptBuilder.h"
 
 class QAction;
+class QCloseEvent;
 class QComboBox;
 class QGroupBox;
 class QLabel;
@@ -21,8 +22,8 @@ class QPushButton;
 class StatusPresenter;
 class TranslationEdit;
 
-// A top-level peer of the main window. Closing hides it with the document, the
-// progress and the result kept, so a run carries on in the background.
+// A top-level peer of the main window. Closing stops a run under way and hides
+// the window with the document, the progress and the result kept.
 class DocumentTranslationWindow : public QWidget
 {
     Q_OBJECT
@@ -40,6 +41,7 @@ public:
 
 protected:
     void changeEvent(QEvent* event) override;
+    void closeEvent(QCloseEvent* event) override;
 
 private slots:
     void browse();

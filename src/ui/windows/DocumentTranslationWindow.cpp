@@ -15,6 +15,7 @@
 
 #include <QAction>
 #include <QByteArray>
+#include <QCloseEvent>
 #include <QComboBox>
 #include <QCoreApplication>
 #include <QDialog>
@@ -205,6 +206,12 @@ DocumentTranslationWindow::DocumentTranslationWindow(ContextProvider context)
 }
 
 DocumentTranslationWindow::~DocumentTranslationWindow() = default;
+
+void DocumentTranslationWindow::closeEvent(QCloseEvent* event)
+{
+    stopTranslation();
+    QWidget::closeEvent(event);
+}
 
 void DocumentTranslationWindow::changeEvent(QEvent* event)
 {
