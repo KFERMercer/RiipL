@@ -387,6 +387,7 @@ void ConfigEditableComboBox::replaceItems(const QList<std::pair<QString, QString
     m_box->clear();
     for (const std::pair<QString, QString>& item : items) {
         m_box->addItem(item.first);
+        m_box->setItemData(m_box->count() - 1, item.first, Qt::ToolTipRole);
         m_box->setItemData(m_box->count() - 1, item.second, kLabelRole);
     }
     selectText(current);

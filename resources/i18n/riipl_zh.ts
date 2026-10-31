@@ -108,7 +108,7 @@
         <translation>恢复默认</translation>
     </message>
     <message>
-        <location filename="../../src/ui/widgets/ConfigEditors.cpp" line="545"/>
+        <location filename="../../src/ui/widgets/ConfigEditors.cpp" line="546"/>
         <source>Follow system</source>
         <translation>跟随系统</translation>
     </message>
