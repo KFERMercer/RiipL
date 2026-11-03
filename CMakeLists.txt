@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(RiipL VERSION 0.2 LANGUAGES CXX)
+project(RiipL VERSION 1.0 LANGUAGES CXX)
 
 set(RIIPL_BUILD_VERSION "${PROJECT_VERSION}")
 find_package(Git QUIET)
