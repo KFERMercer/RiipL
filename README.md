@@ -4,7 +4,7 @@
 
 # RiipL
 
-**Local DeepL Rip-off.**
+**Lightning-fast, all-in-one desktop translator**
 
 ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-cce5ff)
 ![Qt](https://img.shields.io/badge/Qt-6.8%2B-41CD52?logo=qt&logoColor=white)
@@ -13,36 +13,47 @@
 
 **English** | [中文](README.zh-CN.md)
 
-[Introduction](#introduction) · [Features](#features) · [Installation](#installation) · [Build](#manual-build) · [Architecture](#architecture) · [Notes](#usage-notes)
-
 ![APP Screenshot](img/APP.png)
+
+[Introduction](#introduction) · [Features](#features) · [Installation](#installation) · [Build](#manual-build) · [Notes](#additional-notes)
 
 </div>
 
 ## Introduction
 
-RiipL is a cross-platform desktop translation app. It plugs into **any OpenAI-compatible API** to serve as its translation engine, relying on no cloud translation service.
+RiipL is an extremely lightweight, lightning-fast, all-in-one cross-platform desktop translation app. It connects to **any OpenAI-compatible API** to power translation and other advanced features.
 
-RiipL openly, shamelessly rips off and reimplements [DeepL](https://www.deepl.com)'s most features: translation notes, glossaries, wording alternatives, long-document translation and more. No more paying for an [expensive DeepL subscription](https://www.deepl.com/pro).
+RiipL shamelessly, brutally rips off and implements most of [DeepL Translator](https://www.deepl.com/products/translator)'s flagship paid features, including but not limited to translation notes, glossaries, wording alternatives, and long-document translation. You no longer need to subscribe to [expensive DeepL Pro](https://www.deepl.com/pro), nor do you have to endure their slow web page loading.
 
-RiipL is built with C++ and Qt 6, and the compiled binary weighs in at only about **1MB**. Linux, macOS and Windows are supported.
+RiipL is deeply integrated with the desktop environment and local workflows, thoroughly optimized for professional scenarios such as batch translation, extremely long documents, and fast real-time translation.
 
-The AI Agent under human supervision wrote the majority of RiipL's code.
+Built with high-performance C++ and Qt, unlike heavy clients based on Node.js-derived stacks or rendered with browser engines, RiipL compiles to a binary size of only about **1 MB**, cold-starts in milliseconds, and uses negligible memory.
+
+Parts of RiipL's code were written by AI agent under human supervision, and have undergone human review.
 
 ## Features
 
-What DeepL reserves for paying members, RiipL gives you completely free:
+- **Flexible Model Providers**: Connect to OpenAI, Ollama, LM Studio, llama.cpp, and other compatible endpoints. Supports auto-fetching model configurations and saving multiple API presets for quick switching between different models and endpoints.
 
-- 🔌 **Bring your own model** — works with OpenAI, Ollama, LM Studio, llama.cpp and any compatible gateway.
-- 🧩 **Prompt template pipeline** — multiple customizable prompt templates: glossary, tone, style, background knowledge and more. Live preview supported.
-- 📖 **Glossary** — custom translations for your domain terms, with JSON import/export.
-- 🗣 **Tones, styles & background** — 14 preset tones plus custom ones, with free-form style and background info.
-- 📋 **Clipboard monitoring** — clipboard text is translated automatically, with copy-back of results.
-- 🕘 **Translation history** — search and reuse past translations.
+- **Multilingual Support**: Built-in support for over 40 common languages, with options to add custom languages or dialects.
+
+- **Long-Document Translation**: Supports translating extremely long documents, with flexible configuration of glossaries, background information, tone, personas, and more.
+
+- **Glossary**: Define domain-specific terms to ensure strict model adherence, with support for importing and exporting JSON files.
+
+- **Tone, Style & Background**: Built-in preset tones with support for adding and reordering custom tones. Supports entering custom style guides and background knowledge, with multiple context presets saved for easy switching across different scenarios.
+
+- **YOLO Mode**: Automatically monitors and translates clipboard content in the background and writes it back, preserving original formatting for seamless in-place replacement at the source.
+
+- **Wording Alternatives**: Click any word in the translation to view multiple candidate alternatives, complete with full undo and redo support.
+
+- **Open Prompt Pipeline**: Standalone, freely editable templates for system prompts, tones, glossaries, and long documents, complete with a real-time preview window to inspect the full prompt.
+
+- **Translation History**: Automatically saves translation records, with keyword search and quick reuse.
 
 ## Installation
 
-### Linux (Arch based)
+### Linux (Arch-based)
 
 - Release branch:
 
@@ -56,7 +67,11 @@ What DeepL reserves for paying members, RiipL gives you completely free:
   yay -S riipl-git
   ```
 
-### Other Linux distros / macOS / Windows
+### Other Linux Distributions
+
+Download pre-built packages from [Releases](https://github.com/KFERMercer/RiipL/releases/latest).
+
+### macOS & Windows
 
 See [Manual Build](#manual-build).
 
@@ -76,7 +91,7 @@ Debian / Ubuntu:
 sudo apt install build-essential cmake qt6-base-dev qt6-tools-dev qt6-l10n-tools qt6-svg-dev
 ```
 
-Windows and macOS need a regular Qt 6 installation (online installer or `brew install qt cmake`); deploy with `windeployqt` / `macdeployqt` respectively.
+Windows and macOS need a regular Qt 6 installation (online installer or `brew install qt cmake`), and use `windeployqt` / `macdeployqt` respectively for deployment.
 
 ### Compile
 
@@ -85,29 +100,9 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --clean-first -j$(nproc)
 ```
 
-After a successful build the executable lives at `./build/riipl`.
+After a successful build, the executable is located at `./build/riipl`.
 
-## Architecture
+## Additional Notes
 
-```text
-RiipL/
-├── resources/            # app icon, .qrc bundles, i18n .ts sources
-├── src/
-│   ├── core/             # framework-free logic (unit-tested)
-│   │   ├── config/       # Defaults.h (default configuration) + ConfigManager (fallback store)
-│   │   ├── network/      # ApiClient: SSE streaming, timeouts, error mapping
-│   │   ├── translation/  # PromptBuilder, TranslationEngine, languages & tones
-│   │   ├── models/       # Glossary
-│   │   ├── json/         # JsonUtils
-│   │   └── history/      # HistoryManager
-│   ├── ui/               # MainWindow, bound editor widgets, dialogs
-│   └── utils/            # TextUtils, SingleInstance
-├── packaging/            # packaging script and package definition
-└── tests/
-    └── core/             # QTest suites for the core layer, one per unit, wired to CTest
-```
-
-## Usage Notes
-
-- Translation quality and the stable operation of some features depend on the connected model.
-- The API key is stored in plain text inside `config.json`; protect the file yourself if necessary.
+- Translation quality and the stable operation of certain features partially depend on the connected model's capabilities. RiipL's optimization baseline is [`tencent/Hy-MT2-7B`](https://huggingface.co/tencent/Hy-MT2-7B); models less capable than this may be unstable in operation.
+- API keys are stored in plain text inside `config.json`; protect this file as needed.
