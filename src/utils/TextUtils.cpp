@@ -1,8 +1,8 @@
 #include "TextUtils.h"
 
 #include <QList>
-#include <algorithm>
 #include <QTextBoundaryFinder>
+#include <algorithm>
 
 namespace {
 

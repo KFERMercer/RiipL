@@ -10,8 +10,8 @@ set(RIIPL_TEST_SUITES
     tst_glossary
     tst_historymanager
     tst_languages
-    tst_promptbuilder
     tst_preset
+    tst_promptbuilder
     tst_singleinstance
     tst_textutils
     tst_tones

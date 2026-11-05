@@ -1,13 +1,13 @@
 #pragma once
 
-#include <algorithm>
-#include <iterator>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QJsonValue>
 #include <QString>
 #include <QStringList>
 #include <QVector>
+#include <algorithm>
+#include <iterator>
 
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"

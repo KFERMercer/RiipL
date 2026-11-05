@@ -35,14 +35,14 @@ add_compile_options(
 
 # Shared helpers used by the app shell and the test suite.
 add_library(riipl_utils STATIC
+    src/utils/AppLog.cpp
+    src/utils/AppLog.h
+    src/utils/AppTranslator.cpp
+    src/utils/AppTranslator.h
     src/utils/SingleInstance.cpp
     src/utils/SingleInstance.h
     src/utils/TextUtils.cpp
     src/utils/TextUtils.h
-    src/utils/AppTranslator.cpp
-    src/utils/AppTranslator.h
-    src/utils/AppLog.cpp
-    src/utils/AppLog.h
 )
 target_include_directories(riipl_utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(riipl_utils PUBLIC Qt6::Core Qt6::Network)
@@ -51,34 +51,34 @@ set(CORE_SOURCES
     src/core/config/ConfigManager.cpp
     src/core/document/DocumentCache.cpp
     src/core/document/DocumentSegmenter.cpp
-    src/core/network/ApiClient.cpp
-    src/core/translation/PromptBuilder.cpp
-    src/core/translation/TranslationPool.cpp
-    src/core/translation/TranslationEngine.cpp
-    src/core/translation/DocumentTranslator.cpp
-    src/core/translation/YoloTranslator.cpp
-    src/core/translation/TranslationActivity.cpp
-    src/core/models/Glossary.cpp
     src/core/history/HistoryManager.cpp
+    src/core/models/Glossary.cpp
+    src/core/network/ApiClient.cpp
+    src/core/translation/DocumentTranslator.cpp
+    src/core/translation/PromptBuilder.cpp
+    src/core/translation/TranslationActivity.cpp
+    src/core/translation/TranslationEngine.cpp
+    src/core/translation/TranslationPool.cpp
+    src/core/translation/YoloTranslator.cpp
 )
 set(CORE_HEADERS
-    src/core/config/Defaults.h
     src/core/config/ConfigManager.h
+    src/core/config/Defaults.h
     src/core/config/Preset.h
     src/core/document/DocumentCache.h
     src/core/document/DocumentSegmenter.h
-    src/core/network/ApiClient.h
-    src/core/translation/Language.h
-    src/core/translation/Tone.h
-    src/core/translation/PromptBuilder.h
-    src/core/translation/TranslationPool.h
-    src/core/translation/TranslationEngine.h
-    src/core/translation/DocumentTranslator.h
-    src/core/translation/YoloTranslator.h
-    src/core/translation/TranslationActivity.h
-    src/core/models/Glossary.h
     src/core/history/HistoryManager.h
     src/core/json/JsonUtils.h
+    src/core/models/Glossary.h
+    src/core/network/ApiClient.h
+    src/core/translation/DocumentTranslator.h
+    src/core/translation/Language.h
+    src/core/translation/PromptBuilder.h
+    src/core/translation/Tone.h
+    src/core/translation/TranslationActivity.h
+    src/core/translation/TranslationEngine.h
+    src/core/translation/TranslationPool.h
+    src/core/translation/YoloTranslator.h
 )
 add_library(riipl_core STATIC ${CORE_SOURCES} ${CORE_HEADERS})
 target_include_directories(riipl_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -87,53 +87,53 @@ target_link_libraries(riipl_core PUBLIC Qt6::Core Qt6::Network PRIVATE riipl_uti
 
 set(UI_SOURCES
     src/main.cpp
-    src/ui/mainwindow/MainWindow.cpp
-    src/ui/widgets/ConfigEditors.cpp
-    src/ui/widgets/PresetBar.cpp
-    src/ui/widgets/MessageBoxes.cpp
-    src/ui/widgets/PresetListEditor.cpp
-    src/ui/widgets/TranslationEdit.cpp
-    src/ui/widgets/CandidatePopup.cpp
-    src/ui/widgets/AppIcons.cpp
-    src/ui/widgets/SessionClipboard.cpp
-    src/ui/widgets/AppFonts.cpp
-    src/ui/widgets/FlowLayout.cpp
-    src/ui/widgets/ThemeColors.cpp
-    src/ui/widgets/StatusPresenter.cpp
-    src/ui/widgets/WindowState.cpp
-    src/ui/dialogs/SettingsDialog.cpp
     src/ui/dialogs/ApiPresetDialog.cpp
     src/ui/dialogs/ContextPresetDialog.cpp
     src/ui/dialogs/GlossaryDialog.cpp
-    src/ui/dialogs/LanguageDialog.cpp
-    src/ui/dialogs/ToneDialog.cpp
-    src/ui/dialogs/PromptPreviewDialog.cpp
     src/ui/dialogs/HistoryDialog.cpp
+    src/ui/dialogs/LanguageDialog.cpp
+    src/ui/dialogs/PromptPreviewDialog.cpp
+    src/ui/dialogs/SettingsDialog.cpp
+    src/ui/dialogs/ToneDialog.cpp
+    src/ui/mainwindow/MainWindow.cpp
+    src/ui/widgets/AppFonts.cpp
+    src/ui/widgets/AppIcons.cpp
+    src/ui/widgets/CandidatePopup.cpp
+    src/ui/widgets/ConfigEditors.cpp
+    src/ui/widgets/FlowLayout.cpp
+    src/ui/widgets/MessageBoxes.cpp
+    src/ui/widgets/PresetBar.cpp
+    src/ui/widgets/PresetListEditor.cpp
+    src/ui/widgets/SessionClipboard.cpp
+    src/ui/widgets/StatusPresenter.cpp
+    src/ui/widgets/ThemeColors.cpp
+    src/ui/widgets/TranslationEdit.cpp
+    src/ui/widgets/WindowState.cpp
     src/ui/windows/DocumentTranslationWindow.cpp
 )
 set(UI_HEADERS
-    src/ui/mainwindow/MainWindow.h
-    src/ui/widgets/ConfigEditors.h
-    src/ui/widgets/PresetBar.h
-    src/ui/widgets/MessageBoxes.h
-    src/ui/widgets/PresetListEditor.h
-    src/ui/widgets/TranslationEdit.h
-    src/ui/widgets/CandidatePopup.h
-    src/ui/widgets/AppIcons.h
-    src/ui/widgets/SessionClipboard.h
-    src/ui/widgets/AppFonts.h
-    src/ui/widgets/FlowLayout.h
-    src/ui/widgets/ThemeColors.h
-    src/ui/widgets/StatusPresenter.h
-    src/ui/widgets/WindowState.h
-    src/ui/dialogs/SettingsDialog.h
     src/ui/dialogs/ApiPresetDialog.h
     src/ui/dialogs/ContextPresetDialog.h
     src/ui/dialogs/GlossaryDialog.h
-    src/ui/dialogs/LanguageDialog.h
-    src/ui/dialogs/ToneDialog.h
-    src/ui/dialogs/PromptPreviewDialog.h
     src/ui/dialogs/HistoryDialog.h
+    src/ui/dialogs/LanguageDialog.h
+    src/ui/dialogs/PromptPreviewDialog.h
+    src/ui/dialogs/SettingsDialog.h
+    src/ui/dialogs/ToneDialog.h
+    src/ui/mainwindow/MainWindow.h
+    src/ui/widgets/AppFonts.h
+    src/ui/widgets/AppIcons.h
+    src/ui/widgets/CandidatePopup.h
+    src/ui/widgets/ConfigEditors.h
+    src/ui/widgets/FlowLayout.h
+    src/ui/widgets/MessageBoxes.h
+    src/ui/widgets/PresetBar.h
+    src/ui/widgets/PresetListEditor.h
+    src/ui/widgets/SessionClipboard.h
+    src/ui/widgets/StatusPresenter.h
+    src/ui/widgets/ThemeColors.h
+    src/ui/widgets/TranslationEdit.h
+    src/ui/widgets/WindowState.h
     src/ui/windows/DocumentTranslationWindow.h
 )
 

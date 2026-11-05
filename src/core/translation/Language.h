@@ -1,7 +1,5 @@
 #pragma once
 
-#include <algorithm>
-#include <iterator>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QJsonValue>
@@ -11,6 +9,8 @@
 #include <QSet>
 #include <QString>
 #include <QVector>
+#include <algorithm>
+#include <iterator>
 
 struct LangItem
 {

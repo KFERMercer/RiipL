@@ -23,8 +23,8 @@
 #include <QSpinBox>
 #include <QStandardItemModel>
 #include <QStyle>
-#include <QStyledItemDelegate>
 #include <QStyleOptionViewItem>
+#include <QStyledItemDelegate>
 #include <QToolButton>
 
 namespace {

@@ -1,8 +1,8 @@
 #include "core/config/ConfigManager.h"
 #include "core/config/Defaults.h"
+#include "ui/mainwindow/MainWindow.h"
 #include "utils/AppLog.h"
 #include "utils/AppTranslator.h"
-#include "ui/mainwindow/MainWindow.h"
 #include "utils/SingleInstance.h"
 
 #include <QApplication>

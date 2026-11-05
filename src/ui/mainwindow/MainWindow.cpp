@@ -1,7 +1,11 @@
 #include "MainWindow.h"
 
-#include "ui/widgets/CandidatePopup.h"
-#include "ui/windows/DocumentTranslationWindow.h"
+#include "core/config/ConfigManager.h"
+#include "core/config/Defaults.h"
+#include "core/config/Preset.h"
+#include "core/models/Glossary.h"
+#include "core/translation/Language.h"
+#include "core/translation/Tone.h"
 #include "ui/dialogs/ApiPresetDialog.h"
 #include "ui/dialogs/ContextPresetDialog.h"
 #include "ui/dialogs/GlossaryDialog.h"
@@ -12,17 +16,13 @@
 #include "ui/dialogs/ToneDialog.h"
 #include "ui/widgets/AppFonts.h"
 #include "ui/widgets/AppIcons.h"
+#include "ui/widgets/CandidatePopup.h"
+#include "ui/widgets/ConfigEditors.h"
 #include "ui/widgets/StatusPresenter.h"
 #include "ui/widgets/ThemeColors.h"
 #include "ui/widgets/TranslationEdit.h"
-#include "ui/widgets/ConfigEditors.h"
 #include "ui/widgets/WindowState.h"
-#include "core/config/Preset.h"
-#include "core/config/ConfigManager.h"
-#include "core/config/Defaults.h"
-#include "core/models/Glossary.h"
-#include "core/translation/Language.h"
-#include "core/translation/Tone.h"
+#include "ui/windows/DocumentTranslationWindow.h"
 
 #include <QAction>
 #include <QActionGroup>
@@ -43,8 +43,8 @@
 #include <QPlainTextEdit>
 #include <QRandomGenerator>
 #include <QResizeEvent>
-#include <QShowEvent>
 #include <QSaveFile>
+#include <QShowEvent>
 #include <QSplitter>
 #include <QStandardPaths>
 #include <QStatusBar>
@@ -55,8 +55,8 @@
 #include <QToolBar>
 #include <QToolButton>
 #include <QUndoCommand>
-#include <QWindow>
 #include <QVBoxLayout>
+#include <QWindow>
 
 #include <algorithm>
 #include <utility>

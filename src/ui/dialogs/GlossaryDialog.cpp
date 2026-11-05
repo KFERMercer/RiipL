@@ -9,8 +9,8 @@
 #include <QDialogButtonBox>
 #include <QFile>
 #include <QFileDialog>
-#include <QHeaderView>
 #include <QHBoxLayout>
+#include <QHeaderView>
 #include <QItemSelectionModel>
 #include <QJsonDocument>
 #include <QLabel>

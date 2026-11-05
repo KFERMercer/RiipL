@@ -4,12 +4,12 @@
 #include "core/config/Defaults.h"
 #include "utils/TextUtils.h"
 
-#include <algorithm>
-#include <utility>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QStringList>
+#include <algorithm>
+#include <utility>
 
 namespace {
 

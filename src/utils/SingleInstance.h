@@ -1,7 +1,7 @@
 #pragma once
 
-#include <QObject>
 #include <QLockFile>
+#include <QObject>
 #include <QString>
 
 class QLocalServer;

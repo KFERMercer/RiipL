@@ -10,8 +10,8 @@
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QDialogButtonBox>
-#include <QHeaderView>
 #include <QHBoxLayout>
+#include <QHeaderView>
 #include <QItemSelectionModel>
 #include <QLabel>
 #include <QLineEdit>

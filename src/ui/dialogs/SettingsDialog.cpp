@@ -26,19 +26,19 @@
 
 #include <QAbstractButton>
 #include <QApplication>
-#include <QCoreApplication>
 #include <QClipboard>
+#include <QCoreApplication>
 #include <QCursor>
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QItemSelectionModel>
 #include <QJsonDocument>
 #include <QLabel>
 #include <QLineEdit>
 #include <QList>
-#include <QItemSelectionModel>
 #include <QListView>
 #include <QMessageBox>
 #include <QPlainTextEdit>
