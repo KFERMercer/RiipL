@@ -382,6 +382,7 @@ QWidget* MainWindow::createLeftPane()
     layout->addLayout(topRow);
 
     m_sourceEdit = new QPlainTextEdit(pane);
+    m_sourceEdit->setTabChangesFocus(true);
     layout->addWidget(m_sourceEdit, 1);
 
     auto* bottomRow = new QHBoxLayout();

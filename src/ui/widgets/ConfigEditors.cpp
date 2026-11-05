@@ -411,6 +411,7 @@ ConfigTextEdit::ConfigTextEdit(const QString& key, QWidget* parent)
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     m_edit = new QPlainTextEdit(this);
+    m_edit->setTabChangesFocus(true);
     auto* reset = createResetButton(this);
     layout->addWidget(m_edit, 1);
     layout->addWidget(reset);

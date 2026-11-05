@@ -99,6 +99,7 @@ PromptPreviewDialog::PromptPreviewDialog(QWidget* parent)
 QTextEdit* PromptPreviewDialog::createTextBox()
 {
     auto* view = new QTextEdit(this);
+    view->setTabChangesFocus(true);
     // Plain text only, so a paste carries no formatting into the prompt.
     view->setAcceptRichText(false);
     view->setFixedHeight(kInputLines * view->fontMetrics().lineSpacing()

@@ -57,6 +57,7 @@ LanguageDialog::LanguageDialog(const QVector<CustomLanguage>& customLanguages, Q
 
     layout->addWidget(new QLabel(tr("Custom languages"), this));
     m_custom = new QTableView(this);
+    m_custom->setTabKeyNavigation(false);
     m_custom->setAlternatingRowColors(true);
     m_custom->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_custom->setSelectionMode(QAbstractItemView::SingleSelection);

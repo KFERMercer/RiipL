@@ -43,6 +43,7 @@ GlossaryTable::GlossaryTable(QWidget* parent)
     layout->addLayout(topRow);
 
     m_table = new QTableView(this);
+    m_table->setTabKeyNavigation(false);
     m_table->setAlternatingRowColors(true);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_table->setSelectionMode(QAbstractItemView::SingleSelection);
