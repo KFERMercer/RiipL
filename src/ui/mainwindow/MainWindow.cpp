@@ -43,6 +43,7 @@
 #include <QPlainTextEdit>
 #include <QRandomGenerator>
 #include <QResizeEvent>
+#include <QShowEvent>
 #include <QSaveFile>
 #include <QSplitter>
 #include <QStandardPaths>
@@ -317,6 +318,16 @@ void MainWindow::resizeEvent(QResizeEvent* event)
     QMainWindow::resizeEvent(event);
     // Queued, because the panes take their new geometry after this handler returns.
     QTimer::singleShot(0, this, &MainWindow::updateSwapButtonGeometry);
+}
+
+void MainWindow::showEvent(QShowEvent* event)
+{
+    QMainWindow::showEvent(event);
+    // Queued, because the window is not active yet when the event arrives.
+    QTimer::singleShot(0, this, [this] {
+        if (m_sourceEdit)
+            m_sourceEdit->setFocus();
+    });
 }
 
 void MainWindow::showToolBarPopup(const QPoint& position)

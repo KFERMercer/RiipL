@@ -23,6 +23,7 @@ class QLabel;
 class QMenu;
 class QPlainTextEdit;
 class QResizeEvent;
+class QShowEvent;
 class QSplitter;
 class QSystemTrayIcon;
 class QTimer;
@@ -45,6 +46,7 @@ protected:
     void changeEvent(QEvent* event) override;
     void closeEvent(QCloseEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
+    void showEvent(QShowEvent* event) override;
 
 private slots:
     void onSourceChanged();
