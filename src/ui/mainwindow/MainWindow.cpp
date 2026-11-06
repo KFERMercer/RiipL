@@ -51,6 +51,7 @@
 #include <QStringView>
 #include <QStyle>
 #include <QSystemTrayIcon>
+#include <QTextCursor>
 #include <QTimer>
 #include <QToolBar>
 #include <QToolButton>
@@ -1006,6 +1007,7 @@ void MainWindow::swapLanguages()
     const QString resultText = m_resultEdit->result();
     if (!resultText.isEmpty()) {
         m_sourceEdit->setPlainText(resultText);
+        m_sourceEdit->moveCursor(QTextCursor::End);
         setResultText(sourceText);
     }
 }
@@ -1013,8 +1015,10 @@ void MainWindow::swapLanguages()
 void MainWindow::pasteSource()
 {
     const QString text = m_clipboard.text();
-    if (carriesText(text))
+    if (carriesText(text)) {
         m_sourceEdit->setPlainText(text);
+        m_sourceEdit->moveCursor(QTextCursor::End);
+    }
     m_sourceEdit->setFocus();
 }
 
@@ -1023,8 +1027,10 @@ void MainWindow::onClipboardTimeout()
     const QString text = m_clipboard.text();
     if (!clipboardTextIsNewWork(text))
         return;
-    if (m_clipboardAction->isChecked())
+    if (m_clipboardAction->isChecked()) {
         m_sourceEdit->setPlainText(text);
+        m_sourceEdit->moveCursor(QTextCursor::End);
+    }
     if (m_yoloAction->isChecked()) {
         m_yolo.translate(text, currentContext());
         updateStopAction();
@@ -1047,6 +1053,8 @@ void MainWindow::takeClipboardText()
         return;
     }
     m_sourceEdit->setPlainText(text);
+    m_sourceEdit->moveCursor(QTextCursor::End);
+    m_sourceEdit->setFocus();
     translateNow();
 }
 
@@ -1213,6 +1221,7 @@ void MainWindow::reuseHistoryRecord(const TranslationRecord& record)
 {
     discardResultStream();
     m_sourceEdit->setPlainText(record.source);
+    m_sourceEdit->moveCursor(QTextCursor::End);
     const int sourceIndex = m_sourceLang->findData(record.sourceLang);
     if (sourceIndex >= 0)
         m_sourceLang->setCurrentIndex(sourceIndex);
