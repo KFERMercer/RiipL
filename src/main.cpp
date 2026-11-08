@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
     QCoreApplication::setApplicationVersion(RIIPL_BUILD_VERSION);
 
     QCommandLineParser parser;
-    parser.setApplicationDescription(QStringLiteral("Local DeepL rip-off powered by any OpenAI-compatible API."));
+    parser.setApplicationDescription(QStringLiteral("Lightning-fast, all-in-one desktop translator."));
     const QCommandLineOption helpOption = parser.addHelpOption();
     const QCommandLineOption versionOption = parser.addVersionOption();
 

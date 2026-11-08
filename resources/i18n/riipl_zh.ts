@@ -935,11 +935,6 @@
         <translation>关于 %1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="606"/>
-        <source>&lt;b&gt;%1 %2&lt;/b&gt;&lt;br/&gt;An AI-powered desktop translator.&lt;br/&gt;Built with Qt %3.&lt;br/&gt;Project homepage: &lt;a href=&quot;%4&quot;&gt;%4&lt;/a&gt;</source>
-        <translation>&lt;b&gt;%1 %2&lt;/b&gt;&lt;br/&gt;AI 驱动的桌面翻译工具。&lt;br/&gt;基于 Qt %3 构建。&lt;br/&gt;项目主页：&lt;a href=&quot;%4&quot;&gt;%4&lt;/a&gt;</translation>
-    </message>
-    <message>
         <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="939"/>
         <source>Translating...</source>
         <translation>翻译中...</translation>
@@ -1021,6 +1016,11 @@
         <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1290"/>
         <source>YOLO</source>
         <translation>YOLO</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="606"/>
+        <source>&lt;b&gt;%1 %2&lt;/b&gt;&lt;br/&gt;Lightning-fast, all-in-one desktop translator.&lt;br/&gt;Built with Qt %3.&lt;br/&gt;Project homepage: &lt;a href=&quot;%4&quot;&gt;%4&lt;/a&gt;</source>
+        <translation>&lt;b&gt;%1 %2&lt;/b&gt;&lt;br/&gt;快如闪电的全能桌面翻译器。&lt;br/&gt;基于 Qt %3 构建。&lt;br/&gt;项目主页：&lt;a href=&quot;%4&quot;&gt;%4&lt;/a&gt;</translation>
     </message>
     <message>
         <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1240"/>

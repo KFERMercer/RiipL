@@ -604,7 +604,7 @@ void MainWindow::buildMenus()
     connect(m_aboutAction, &QAction::triggered, this, [this]() {
         QMessageBox::about(this, tr("About %1").arg(QCoreApplication::applicationName()),
                            tr("<b>%1 %2</b><br/>"
-                              "An AI-powered desktop translator.<br/>"
+                              "Lightning-fast, all-in-one desktop translator.<br/>"
                               "Built with Qt %3.<br/>"
                               "Project homepage: <a href=\"%4\">%4</a>")
                                .arg(QCoreApplication::applicationName(),

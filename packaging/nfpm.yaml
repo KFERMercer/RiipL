@@ -12,7 +12,7 @@ vendor: KFERMercer
 homepage: https://github.com/KFERMercer/RiipL
 license: GPL-3.0-or-later
 description: |
-  RiipL Translator: Your local DeepL ripoff.
+  RiipL Translator: Lightning-fast, all-in-one desktop translator.
 
 contents:
   - src: "${RIIPL_BIN}"
