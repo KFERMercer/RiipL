@@ -22,6 +22,8 @@
 
 namespace {
 
+QByteArray s_originalHome;
+
 // One JSON entry per window line, keyed from 1 on.
 QByteArray translationOf(const QString& prompt)
 {
@@ -76,6 +78,8 @@ private:
 // keeps them in Qt's test tree rather than the user's cache directory.
 void TestYoloTranslator::initTestCase()
 {
+    s_originalHome = qgetenv("HOME");
+    qputenv("HOME", QFile::encodeName(TestSupport::tempDir()));
     QStandardPaths::setTestModeEnabled(true);
 }
 
@@ -83,6 +87,10 @@ void TestYoloTranslator::cleanupTestCase()
 {
     DocumentCache::clearAll();
     QStandardPaths::setTestModeEnabled(false);
+    if (!s_originalHome.isEmpty())
+        qputenv("HOME", s_originalHome);
+    else
+        qunsetenv("HOME");
 }
 
 void TestYoloTranslator::init()
