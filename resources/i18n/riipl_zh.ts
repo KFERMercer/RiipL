@@ -4,77 +4,77 @@
 <context>
     <name>ApiClient</name>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="650"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="648"/>
         <source>API base URL is not configured</source>
         <translation>未配置 API 基础地址</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="652"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="650"/>
         <source>API base URL must be an absolute http or https URL</source>
         <translation>API 基础地址必须是绝对的 http 或 https URL</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="654"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="652"/>
         <source>Chat request must name a model and at least one message</source>
         <translation>聊天请求必须指定模型和至少一条消息</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="656"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="654"/>
         <source>Request timed out</source>
         <translation>请求超时</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="658"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="656"/>
         <source>Network request failed</source>
         <translation>网络请求失败</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="659"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="657"/>
         <source>Network request failed: %1</source>
         <translation>网络请求失败：%1</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="661"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="659"/>
         <source>Request failed with status %1</source>
         <translation>请求失败，状态码 %1</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="666"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="664"/>
         <source>Failed to parse API response</source>
         <translation>解析 API 响应失败</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="668"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="666"/>
         <source>API response contains no choices</source>
         <translation>API 响应中未包含候选内容</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="670"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="668"/>
         <source>API response contains no text</source>
         <translation>API 响应中没有文本内容</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="672"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="670"/>
         <source>API response reached the token limit before it ended</source>
         <translation>API 响应达到了 Token 上限</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="674"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="672"/>
         <source>API response was stopped by the content filter</source>
         <translation>API 响应被内容过滤器拦截</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="676"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="674"/>
         <source>API response is too large to accept</source>
         <translation>API 响应过大，无法接收</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="678"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="676"/>
         <source>Nothing to translate</source>
         <translation>没有可翻译的内容</translation>
     </message>
     <message>
-        <location filename="../../src/core/network/ApiClient.cpp" line="680"/>
+        <location filename="../../src/core/network/ApiClient.cpp" line="678"/>
         <source>Nothing to look up</source>
         <translation>没有可查询的内容</translation>
     </message>
@@ -103,12 +103,12 @@
 <context>
     <name>ConfigEditors</name>
     <message>
-        <location filename="../../src/ui/widgets/ConfigEditors.cpp" line="119"/>
+        <location filename="../../src/ui/widgets/ConfigEditors.cpp" line="118"/>
         <source>Reset to default</source>
         <translation>恢复默认</translation>
     </message>
     <message>
-        <location filename="../../src/ui/widgets/ConfigEditors.cpp" line="547"/>
+        <location filename="../../src/ui/widgets/ConfigEditors.cpp" line="546"/>
         <source>Follow system</source>
         <translation>跟随系统</translation>
     </message>

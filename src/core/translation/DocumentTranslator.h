@@ -79,9 +79,7 @@ private:
     // waits for the window in hand to settle first.
     void dispatchPending();
     void processWindow(int index);
-    // Hands one attempt of a window to the pool under \p sample.
     void sendWindow(int index, const QString& sample);
-    // Marks a window accepted and reports the document when \p report.
     void acceptWindow(int index, const QStringList& lines, bool report);
     // Reports the document as it stands, when an answer it has not reported yet
     // landed.

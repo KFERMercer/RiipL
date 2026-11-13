@@ -16,7 +16,6 @@ public:
     explicit StatusPresenter(QLabel* label);
 
     void show(TextProvider text);
-    // Renders the status in the error colour.
     void showFailure(TextProvider text);
     void refresh();
 

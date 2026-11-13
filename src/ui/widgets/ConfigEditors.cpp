@@ -34,7 +34,6 @@ struct ConfigEditorsTr
     Q_DECLARE_TR_FUNCTIONS(ConfigEditors)
 };
 
-// Label of a candidate.
 constexpr int kLabelRole = Qt::UserRole + 1;
 
 QToolButton* createResetButton(QWidget* parent)

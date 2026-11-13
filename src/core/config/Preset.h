@@ -34,7 +34,6 @@ inline QJsonObject withDefaults(const QJsonObject& values, const QStringList& fi
     return result;
 }
 
-// The fields as currently applied in the configuration.
 inline QJsonObject capture(const QStringList& fields)
 {
     QJsonObject values;
@@ -44,7 +43,6 @@ inline QJsonObject capture(const QStringList& fields)
     return values;
 }
 
-// Writes a preset's fields into the running configuration.
 inline void apply(const Preset& preset, const QStringList& fields)
 {
     const QJsonObject values = withDefaults(preset.values, fields);
@@ -80,7 +78,6 @@ inline QVector<Preset> fromJson(const QJsonArray& stored)
     return presets;
 }
 
-// Index of the first preset named \p name, or -1.
 inline int indexOf(const QVector<Preset>& presets, const QString& name)
 {
     const auto found = std::find_if(presets.cbegin(), presets.cend(),

@@ -21,7 +21,6 @@ struct AnswerEntry
 // punctuation closing it.
 enum class Quoted { Key, Value };
 
-// Index of the first character from \p index that is not a space.
 qsizetype skipSpace(const QString& text, qsizetype index)
 {
     while (index < text.size() && text.at(index).isSpace())
@@ -29,7 +28,6 @@ qsizetype skipSpace(const QString& text, qsizetype index)
     return index;
 }
 
-// Whether the quote at \p quote opens a "key": pair.
 bool startsEntry(const QString& text, qsizetype quote)
 {
     qsizetype cursor = quote + 1;

@@ -33,9 +33,7 @@ public:
 
     struct Options
     {
-        // Offers the search box filtering the listed presets.
         bool searchable = false;
-        // Offers the button loading the highlighted preset.
         bool loadButton = false;
     };
 
@@ -47,20 +45,17 @@ public:
     int selectedIndex() const;
     void setSelectedIndex(int index);
     QString selectedName() const;
-    // Values of the selected preset, with every captured field filled in.
     QJsonObject selectedValues() const;
 
     // Writes \p values into the selected preset, which keeps its name.
     void overwriteSelected(const QJsonObject& values);
     // Adds a preset named \p name, replacing the entry that carries it already.
     void saveAs(const QString& name, const QJsonObject& values);
-    // Removes the selected preset, asking for confirmation first.
     void removeSelected();
 
 signals:
     // A double click or the load action asked for the highlighted preset.
     void loadRequested();
-    // The list or the selection changed.
     void changed();
 
 private:

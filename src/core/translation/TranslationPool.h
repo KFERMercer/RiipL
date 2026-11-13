@@ -38,15 +38,12 @@ public:
                   DoneCallback onDone,
                   DeltaCallback onDelta,
                   ErrorCallback onError);
-    // Drops a queued or running request, reporting nothing to its callbacks.
     void cancel(JobId id);
     // Forgets the back-off learned from failed requests.
     void reset();
-    // Whether the pool holds a request, queued or running.
     bool isBusy() const;
 
 signals:
-    // Whether the pool carries requests, when that changes.
     void busyChanged(bool busy);
     void requestFailed();
 

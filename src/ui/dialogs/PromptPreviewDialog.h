@@ -23,9 +23,7 @@ private slots:
     void refresh();
 
 private:
-    // Creates an editable box of a fixed height, whatever text it holds.
     QTextEdit* createTextBox();
-    // Creates a read-only box for one half of the prompt.
     TranslationEdit* createPreviewPane();
 
     bool m_glossaryEnabled = false;

@@ -17,7 +17,6 @@ const QString kGlossaryTargetKey = QStringLiteral("target");
 // an empty block.
 const QString kNoAdjacentWindow = QStringLiteral("None");
 
-// Trims every fragment and joins the non-empty ones.
 QString joined(const QStringList& fragments)
 {
     QStringList parts;

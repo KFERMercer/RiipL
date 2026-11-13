@@ -23,7 +23,6 @@ public:
     void setText(const QString& text);
 
 signals:
-    // The clipboard may hold different text than it did.
     void changed();
 
 private:

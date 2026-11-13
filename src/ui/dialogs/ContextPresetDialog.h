@@ -36,7 +36,6 @@ public:
     // without one the configuration is written directly.
     void setApplyHandler(std::function<void(const QVector<Preset>&, const QJsonObject&)> handler);
 
-    // Presets as edited, in display order.
     QVector<Preset> presets() const;
     QJsonObject values() const;
 
@@ -49,7 +48,6 @@ private slots:
     void refreshButtons();
 
 private:
-    // True while the presets or the context differ from what Apply last committed.
     bool isDirty() const;
     // Fills the editors from \p preset; a field it does not carry falls back to
     // its default.

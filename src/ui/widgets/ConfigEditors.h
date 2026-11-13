@@ -52,7 +52,6 @@ protected:
 
     void setupDisplay(QToolButton* resetButton);
     void loadConfigValue();
-    // Re-anchors the dirty-tracking baseline to the current config value.
     void captureBaseline();
     // Forwards wrapped-control change notifications; suppresses programmatic echoes.
     void handleControlChange();
@@ -109,7 +108,6 @@ public:
     explicit ConfigEditableComboBox(const QString& key, QWidget* parent = nullptr);
 
     QJsonValue value() const override;
-    // Replaces the candidates.
     void setItems(const QList<std::pair<QString, QString>>& items);
     // Replaces the candidates with one entry carrying \p message, which cannot
     // be picked.
@@ -124,13 +122,9 @@ protected:
     void setControlValue(const QJsonValue& v) override;
 
 private:
-    // Presents the candidates and what the list reports.
     class Box;
-    // Draws a candidate together with its label.
     class LabelDelegate;
-    // Replaces the rows, keeping the entry the field holds.
     void replaceItems(const QList<std::pair<QString, QString>>& items);
-    // Puts \p text in the field with the candidate it names highlighted.
     void selectText(const QString& text);
 
     Box* m_box = nullptr;
@@ -146,7 +140,6 @@ public:
     QJsonValue value() const override;
     QPlainTextEdit* edit() const { return m_edit; }
 
-    // Applies the fixed-width font and disables wrapping.
     static void applyFixedWidthFont(QPlainTextEdit* edit);
 
 protected:

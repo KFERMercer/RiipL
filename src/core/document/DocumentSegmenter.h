@@ -29,7 +29,6 @@ struct DocumentWindow
     // Whitespace closing the document; the last window sets it.
     QString whitespaceAfter;
 
-    // Text of the window as it is requested.
     QString source() const;
     // Lines the window holds, duplicates collapsed.
     int lineCount() const { return lines.size(); }
@@ -55,7 +54,6 @@ public:
     // One window as it reads in the document, whitespace included. A window without
     // a full answer keeps its source text.
     static QString renderWindow(const DocumentWindow& window, const QStringList& translatedLines);
-    // Rebuilds the document from one line list per window, as it was written.
     static QString assemble(const QVector<DocumentWindow>& windows,
                             const QVector<QStringList>& translations);
 };

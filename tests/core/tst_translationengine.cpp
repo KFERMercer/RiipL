@@ -169,8 +169,9 @@ void TestTranslationEngine::absorbsRestatedNeighbour()
 
     // The click lands on the second character of the word and the model narrows
     // its target to that character alone, while the alternative restates the
-    // first one. Taking `old` literally would splice `小猫咪` after the `小` left
-    // behind and produce `小小猫咪`, so the span has to cover `小猫`.
+    // preceding character. Taking `old` literally would splice the expanded
+    // replacement after the prefix left behind and duplicate it, so the span
+    // has to cover the full word.
     const QVector<TranslationEngine::CandidateGroup> parsed =
         TranslationEngine::parseCandidateResponse(
             QStringLiteral(R"([{"old":"猫","new":["小猫咪","猫咪"]}])"));

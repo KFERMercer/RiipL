@@ -25,13 +25,11 @@ public:
     // API edits of their own.
     static void manage(QWidget* parent);
 
-    // Presets as edited, in display order.
     QVector<Preset> presets() const;
     // Preset loaded on accept, or -1 for an empty list.
     int loadedIndex() const;
 
 private:
-    // True while the presets differ from the ones the window opened with.
     bool isDirty() const;
 
     PresetListEditor* m_list = nullptr;

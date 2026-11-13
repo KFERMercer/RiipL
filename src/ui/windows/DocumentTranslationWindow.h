@@ -36,7 +36,6 @@ public:
     explicit DocumentTranslationWindow(ContextProvider context);
     ~DocumentTranslationWindow() override;
 
-    // Ends a run under way; called from outside this window.
     void stopTranslation();
 
 protected:
@@ -68,10 +67,8 @@ private:
     // Reads the document the path box holds; false when there is nothing to
     // translate, with the reason already reported.
     bool loadFile();
-    // Drops the result on screen without touching the loaded document.
     void clearResult();
     void setRunning(bool running);
-    // Whether the run accepted a window; the progress bar counts them.
     bool hasTranslatedWindow() const;
     void endRun();
     void setStatus(Status status, const QString& argument = QString());

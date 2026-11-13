@@ -104,7 +104,6 @@ public:
     // the dropped request's callbacks.
     void cancel();
 
-    // Lists the models the connection's endpoint offers.
     void listModels(const Connection& connection, ModelsCallback onDone, ErrorCallback onError);
 
     static std::optional<QList<Model>> parseModels(const QByteArray& body);

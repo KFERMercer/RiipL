@@ -31,7 +31,6 @@ QString readFile(const QString& path)
     return QString::fromUtf8(file.readAll());
 }
 
-// Digest a request is cached under.
 QString sampleOf(const QByteArray& request)
 {
     return QString::fromLatin1(

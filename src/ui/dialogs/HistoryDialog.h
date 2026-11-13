@@ -26,7 +26,6 @@ signals:
 private:
     void reload();
     void refreshButtons();
-    // Row of the selected record in the source model, or -1.
     int currentRow() const;
     void reuseItem(const QModelIndex& index);
     void removeCurrent();

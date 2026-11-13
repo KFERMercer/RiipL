@@ -33,7 +33,6 @@ bool isRequestableScheme(const QUrl& url)
     return scheme == QLatin1String("http") || scheme == QLatin1String("https");
 }
 
-// Message the API worded itself for a failed response.
 QString apiErrorMessage(const QByteArray& body)
 {
     QJsonDocument doc = QJsonDocument::fromJson(body);
@@ -76,7 +75,6 @@ std::optional<ApiClient::Error> finishFailure(const QString& finishReason)
     return std::nullopt;
 }
 
-// Reads a non-streaming reply as CreateChatCompletionResponse.
 CompletionReply parseCompletion(const QByteArray& body)
 {
     const QJsonObject root = QJsonDocument::fromJson(body).object();

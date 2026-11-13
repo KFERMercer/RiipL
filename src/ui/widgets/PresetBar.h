@@ -35,31 +35,25 @@ public:
 
     // Pending values of the page's editors, recorded by Save and Save as...
     void setValuesProvider(std::function<QJsonObject()> provider);
-    // Fills the page's editors from \p preset.
     void setApplier(std::function<void(const Preset&)> applier);
     // Runs Manage...; a nullopt result leaves the presets untouched.
     void setManageHandler(std::function<std::optional<Managed>(const QVector<Preset>&, int)> handler);
 
     QVector<Preset> presets() const;
-    // Replaces the presets and points the selector at the one they now match.
     void setPresets(const QVector<Preset>& presets);
 
     // Reads the stored presets and points the selector at the preset the current
     // values match.
     void loadPresets();
-    // True while the presets differ from the stored ones.
     bool isDirty() const;
-    // Writes the presets into the configuration when they differ.
     void applyPresets();
 
     // Rebuilds the selector and points it at the preset the current values match.
     void syncSelection();
-    // Enables the actions that would change something.
     void refreshActions();
     void retranslateUi();
 
 signals:
-    // The preset list or the selection changed, so the page holds a pending edit.
     void changed();
 
 private slots:

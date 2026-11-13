@@ -56,7 +56,6 @@ public:
     void reject() override;
 
 private:
-    // True while the terms differ from the ones the window opened with.
     bool isDirty() const;
 
     GlossaryTable* m_table = nullptr;
