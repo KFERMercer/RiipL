@@ -26,6 +26,38 @@ constexpr int kNameColumn = 0;
 // Captured values of a row, which its field columns render.
 constexpr int kValuesRole = Qt::UserRole;
 
+// Matches the copy names this editor generates for \p name, parsing the
+// embedded number instead of counting up to it.
+bool isCopyNameOf(const QString& base, const QString& name)
+{
+    if (base == PresetListEditor::tr("%1 copy").arg(name))
+        return true;
+
+    const QString format = PresetListEditor::tr("%1 copy %2");
+    const qsizetype marker = format.indexOf(QStringLiteral("%2"));
+    if (marker < 0)
+        return false;
+    QString prefix = format.left(marker);
+    prefix.replace(QStringLiteral("%1"), name);
+    QString suffix = format.mid(marker + 2);
+    suffix.replace(QStringLiteral("%1"), name);
+    if (!base.startsWith(prefix) || !base.endsWith(suffix)
+        || base.size() <= prefix.size() + suffix.size()) {
+        return false;
+    }
+
+    const QString digits = base.mid(prefix.size(), base.size() - prefix.size() - suffix.size());
+    if (digits.front() == QLatin1Char('0'))
+        return false;
+    for (const QChar digit : digits) {
+        if (digit < QLatin1Char('0') || digit > QLatin1Char('9'))
+            return false;
+    }
+    bool ok = false;
+    const int number = digits.toInt(&ok);
+    return ok && number >= 2;
+}
+
 }
 
 PresetListEditor::PresetListEditor(const QVector<FieldColumn>& fields, const Options& options,
@@ -355,22 +387,12 @@ QStringList PresetListEditor::names() const
 
 QString PresetListEditor::uniqueName(const QString& base) const
 {
-    // A name this editor generated for a copy is not a stem of its own, so copies
-    // of copies keep counting on the name they were copied from. Both sides use
-    // the same formats, which keeps the marker in step with the translation.
+    // A generated copy name is not a stem of its own, so copies of copies keep
+    // numbering from the name they came from.
     const QStringList existing = names();
     QString stem = base;
     for (const QString& name : existing) {
-        bool isCopyOfName = false;
-        for (int number = 1; !isCopyOfName; ++number) {
-            const QString candidate = number == 1 ? tr("%1 copy").arg(name)
-                                                  : tr("%1 copy %2").arg(name).arg(number);
-            if (candidate == base)
-                isCopyOfName = true;
-            else if (candidate.size() > base.size())
-                break;
-        }
-        if (isCopyOfName) {
+        if (isCopyNameOf(base, name)) {
             stem = name;
             break;
         }
