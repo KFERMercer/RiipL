@@ -404,7 +404,7 @@ QString PresetListEditor::uniqueName(const QString& base) const
         return firstCopy;
 
     for (int number = 2;; ++number) {
-        const QString candidate = tr("%1 copy %2").arg(stem).arg(number);
+        const QString candidate = tr("%1 copy %2").arg(stem, QString::number(number));
         if (!taken(candidate))
             return candidate;
     }
