@@ -268,11 +268,6 @@ QWidget* SettingsDialog::createApiPage()
 
     auto* apiKeyEdit = new ConfigLineEdit(Keys::apiKey, true, page);
     auto* copyKeyButton = new QPushButton(page);
-    auto* apiKeyHint = new QLabel(page);
-    auto applyApiKeyHint = [apiKeyHint]() {
-        apiKeyHint->setText(tr("Stored in the configuration file as plain text"));
-        ThemeColors::setTextColor(apiKeyHint, ThemeColors::neutralText(apiKeyHint));
-    };
     auto* apiKeyField = new QWidget(page);
     auto* apiKeyFieldLayout = new QHBoxLayout(apiKeyField);
     apiKeyFieldLayout->setContentsMargins(0, 0, 0, 0);
@@ -288,17 +283,14 @@ QWidget* SettingsDialog::createApiPage()
     connect(apiKeyEdit->edit(), &QLineEdit::textChanged, apiKeyField,
             [syncCopyKeyButton](const QString&) { syncCopyKeyButton(); });
     syncCopyKeyButton();
-    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "API key"),
-                  fieldWithHint(apiKeyField, apiKeyHint));
-    applyApiKeyHint();
-    bindText(applyApiKeyHint);
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "API key"), apiKeyField);
 
     m_modelCombo = new ConfigEditableComboBox(Keys::apiModel, page);
     connect(m_modelCombo, &ConfigEditableComboBox::popupAboutToShow, this,
             &SettingsDialog::reloadModels);
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Model"), m_modelCombo);
 
-    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Server connection timeout (ms)"),
+    addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Connection timeout (ms)"),
                   new ConfigSpinBox(Keys::apiTimeoutMs, ApiTimeout::minimumMs, 300000, 1000, page));
     addLabeledRow(form, QT_TRANSLATE_NOOP("SettingsDialog", "Max tokens"),
                   new ConfigSpinBox(Keys::apiMaxTokens, 1, 1000000, 256, page));
