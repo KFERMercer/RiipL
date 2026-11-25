@@ -486,7 +486,7 @@ void TestDocumentTranslator::sendsQuotedLinesAsEscapedValues()
     QCOMPARE(m_api.requests, 1);
 
     const QString escapedQuote =
-        QStringLiteral("\"1\": \"\\\"I'm glad you could come to the party,\\\" He said.\"");
+        QStringLiteral("\"1\":\"\\\"I'm glad you could come to the party,\\\" He said.\"");
     QVERIFY2(m_api.prompts.first().contains(escapedQuote), qPrintable(m_api.prompts.first()));
     QCOMPARE(m_api.windows.first().value(QStringLiteral("1")).toString(), lines.at(0));
     QCOMPARE(m_api.windows.first().value(QStringLiteral("2")).toString(), lines.at(1));
@@ -567,9 +567,9 @@ void TestDocumentTranslator::retryOutranksAQueuedWindow()
     // The window in flight answers long after the failed window's retry is
     // queued, so the retry waits while it is still on the wire.
     m_api.answerDelayMs = 120;
-    m_api.failingPrompt = QStringLiteral("\"1\": \"window 0 line 0\"");
+    m_api.failingPrompt = QStringLiteral("\"1\":\"window 0 line 0\"");
     m_api.answerDelays.append({m_api.failingPrompt, 10});
-    m_api.answerDelays.append({QStringLiteral("\"1\": \"window 1 line 0\""), 250});
+    m_api.answerDelays.append({QStringLiteral("\"1\":\"window 1 line 0\""), 250});
 
     const QVector<DocumentWindow> windows = document(3, 3);
     DocumentTranslator translator;
@@ -814,9 +814,9 @@ void TestDocumentTranslator::showsAnswersWhereTheyBelongWhateverTheirOrder()
 {
     ConfigManager::instance()->setValue(Keys::apiMaxConcurrency, 3);
     // The last window answers first, the middle one next, the first one last.
-    m_api.answerDelays = {{QStringLiteral("\"1\": \"window 2 line 0\""), 20},
-                          {QStringLiteral("\"1\": \"window 1 line 0\""), 120},
-                          {QStringLiteral("\"1\": \"window 0 line 0\""), 240}};
+    m_api.answerDelays = {{QStringLiteral("\"1\":\"window 2 line 0\""), 20},
+                          {QStringLiteral("\"1\":\"window 1 line 0\""), 120},
+                          {QStringLiteral("\"1\":\"window 0 line 0\""), 240}};
 
     const QVector<DocumentWindow> windows = document(3, 3);
     TranslationContext context;
@@ -857,7 +857,7 @@ void TestDocumentTranslator::retriesOneWindowWhileOthersAreInFlight()
     m_api.answerDelayMs = 20;
     // The last window fails once and then answers after the others, so its retry
     // is certainly in flight while the earlier windows are accepted.
-    m_api.failingPrompt = QStringLiteral("\"1\": \"window 3 line 0\"");
+    m_api.failingPrompt = QStringLiteral("\"1\":\"window 3 line 0\"");
     m_api.answerDelays.append({m_api.failingPrompt, 100});
     ConfigManager::instance()->setValue(Keys::apiMaxConcurrency, 4);
 
@@ -955,7 +955,7 @@ void TestDocumentTranslator::leavesOutAWindowThatCannotBeTranslated()
 {
     m_api.answerDelayMs = 20;
     // The first window fails every time and answers ahead of the others.
-    m_api.failingPrompt = QStringLiteral("\"1\": \"window 0 line 0\"");
+    m_api.failingPrompt = QStringLiteral("\"1\":\"window 0 line 0\"");
     m_api.answerDelays.append({m_api.failingPrompt, 10});
     ConfigManager::instance()->setValue(Keys::apiMaxConcurrency, 3);
     ConfigManager::instance()->setValue(Keys::documentRetryCount, 0);
@@ -1089,7 +1089,7 @@ void TestDocumentTranslator::cachesAnswersInLineOrder()
     int previous = -1;
     QStringList lines;
     for (int line = 1; line <= count; ++line) {
-        const int at = answer.indexOf(QStringLiteral("\"%1\": ").arg(line));
+        const int at = answer.indexOf(QStringLiteral("\"%1\":").arg(line));
         QVERIFY2(at > previous, qPrintable(answer));
         previous = at;
     }

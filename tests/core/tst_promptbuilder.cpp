@@ -31,11 +31,8 @@ private slots:
 namespace {
 
 // Window as the document prompt carries it: one numbered entry per line, in
-// line order, indented like the glossary block.
-const QString kWindowJson = QStringLiteral("{\n"
-                                           "    \"1\": \"第一行\",\n"
-                                           "    \"2\": \"第二行\"\n"
-                                           "}");
+// line order, on the single line the prompt takes.
+const QString kWindowJson = QStringLiteral("{\"1\":\"第一行\",\"2\":\"第二行\"}");
 
 } // namespace
 
@@ -222,6 +219,8 @@ void TestPromptBuilder::formatsGlossaryAsJson()
     entries.append({QStringLiteral("RiipL"), QString()});
 
     const QString data = PromptBuilder::glossaryData(entries);
+    // The block reaches the model on a single compact line.
+    QVERIFY(!data.contains(QLatin1Char('\n')));
     const QJsonDocument doc = QJsonDocument::fromJson(data.toUtf8());
     QVERIFY(doc.isArray());
     const QJsonArray array = doc.array();
@@ -243,8 +242,8 @@ void TestPromptBuilder::formatsGlossaryAsJson()
     PromptBuilder::Result result = PromptBuilder::build(context);
     QVERIFY(result.user.contains(QStringLiteral("- Glossary:")));
     QVERIFY(result.user.contains(QStringLiteral("```json")));
-    QVERIFY(result.user.contains(QStringLiteral("\"source\": \"苹果\"")));
-    QVERIFY(result.user.contains(QStringLiteral("\"target\": \"Apple\"")));
+    QVERIFY(result.user.contains(QStringLiteral("\"source\":\"苹果\"")));
+    QVERIFY(result.user.contains(QStringLiteral("\"target\":\"Apple\"")));
 }
 
 void TestPromptBuilder::indentsMultiLineEntries()
@@ -268,7 +267,7 @@ void TestPromptBuilder::indentsMultiLineEntries()
     // A multi-line value keeps its line breaks and the fence stays aligned.
     QVERIFY(prompt.contains(QStringLiteral("- Language style:\n  ```\n  concise\n  technical\n  ```")));
     QVERIFY(prompt.contains(QStringLiteral("- Background Information:\n  ```\n  line one\n  line two\n  ```")));
-    QVERIFY(prompt.contains(QStringLiteral("- Glossary:\n  ```json\n  [\n      {\n          \"source\": \"fox\",")));
+    QVERIFY(prompt.contains(QStringLiteral("- Glossary:\n  ```json\n  [{\"source\":\"fox\",\"target\":\"Fuchs\"}]\n  ```")));
     QCOMPARE(prompt.count(Defaults::promptReference.trimmed()), 1);
     QVERIFY(prompt.indexOf(QStringLiteral("Hello")) > prompt.indexOf(Defaults::promptReference.trimmed()));
 
@@ -523,26 +522,23 @@ void TestPromptBuilder::rendersWindowAsNumberedJson()
                  lines.at(index));
     }
 
-    // One entry per line, keys in line order, each entry on its own indented line.
-    const QStringList rendered = data.split(QLatin1Char('\n'));
-    QCOMPARE(rendered.size(), lines.size() + 2);
-    QCOMPARE(rendered.first(), QStringLiteral("{"));
-    QCOMPARE(rendered.last(), QStringLiteral("}"));
-    for (int index = 0; index < lines.size(); ++index) {
-        const QString entry = rendered.at(index + 1);
-        QVERIFY2(entry.startsWith(QStringLiteral("    \"")), qPrintable(entry));
-        QCOMPARE(entry.section(QLatin1Char('"'), 1, 1), QString::number(index + 1));
-    }
+    // One entry per line, keys in line order, the whole object on a single
+    // compact line.
+    QCOMPARE(data, QStringLiteral("{\"1\":\"first\",\"2\":\"second\",\"3\":\"third\"}"));
 
     // Numeric key order holds past nine lines, where sorting the keys as text
     // would put "10" before "2".
     QStringList many;
     for (int index = 0; index < 12; ++index)
         many << QStringLiteral("line %1").arg(index);
-    const QStringList wide = PromptBuilder::documentWindowData(many).split(QLatin1Char('\n'));
-    QCOMPARE(wide.size(), many.size() + 2);
-    for (int index = 0; index < many.size(); ++index)
-        QCOMPARE(wide.at(index + 1).section(QLatin1Char('"'), 1, 1), QString::number(index + 1));
+    const QString wide = PromptBuilder::documentWindowData(many);
+    QVERIFY(!wide.contains(QLatin1Char('\n')));
+    int previous = -1;
+    for (int index = 0; index < many.size(); ++index) {
+        const int at = wide.indexOf(QStringLiteral("\"%1\":").arg(index + 1));
+        QVERIFY2(at > previous, qPrintable(wide));
+        previous = at;
+    }
 
     // Text that would break the object is escaped in the value it is sent as,
     // quotes and backslashes alike.
@@ -554,14 +550,12 @@ void TestPromptBuilder::rendersWindowAsNumberedJson()
 
     const QStringList spoken = {QStringLiteral("\"I'm glad you could come to the party,\" He said.")};
     QCOMPARE(PromptBuilder::documentWindowData(spoken),
-             QStringLiteral("{\n"
-                            "    \"1\": \"\\\"I'm glad you could come to the party,\\\" He said.\"\n"
-                            "}"));
+             QStringLiteral("{\"1\":\"\\\"I'm glad you could come to the party,\\\" He said.\"}"));
 
     // A tab and a line break stay inside the value as well.
     const QStringList control = {QStringLiteral("a\tb\nc")};
     QCOMPARE(PromptBuilder::documentWindowData(control),
-             QStringLiteral("{\n    \"1\": \"a\\tb\\nc\"\n}"));
+             QStringLiteral("{\"1\":\"a\\tb\\nc\"}"));
 }
 
 void TestPromptBuilder::offersEveryPlaceholderToEveryTemplate()

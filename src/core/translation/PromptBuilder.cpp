@@ -62,7 +62,7 @@ QString PromptBuilder::glossaryData(const QVector<GlossaryEntry>& entries)
     }
     if (array.isEmpty())
         return QString();
-    return QString::fromUtf8(QJsonDocument(array).toJson(QJsonDocument::Indented)).trimmed();
+    return QString::fromUtf8(QJsonDocument(array).toJson(QJsonDocument::Compact));
 }
 
 QString PromptBuilder::documentWindowData(const QStringList& lines)
@@ -80,10 +80,9 @@ QString PromptBuilder::documentWindowData(const QStringList& lines)
 
     QStringList entries;
     entries.reserve(lines.size());
-    for (int index = 0; index < lines.size(); ++index) {
-        entries.append(QStringLiteral("    \"%1\": %2").arg(index + 1).arg(escaped(lines.at(index))));
-    }
-    return QStringLiteral("{\n") + entries.join(QStringLiteral(",\n")) + QStringLiteral("\n}");
+    for (int index = 0; index < lines.size(); ++index)
+        entries.append(QStringLiteral("\"%1\":%2").arg(index + 1).arg(escaped(lines.at(index))));
+    return QStringLiteral("{") + entries.join(QLatin1Char(',')) + QStringLiteral("}");
 }
 
 QStringList PromptBuilder::knownPlaceholders()
