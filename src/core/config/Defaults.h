@@ -122,7 +122,7 @@ inline const QString translationTone = QStringLiteral("default");
 inline const QString translationStyle = QString();
 inline const QString translationBackground = QString();
 
-inline const int documentWindowWords = 200;
+inline const int documentWindowWords = 500;
 inline const int documentWindowLines = 10;
 inline const int documentRetryCount = 5;
 inline const bool documentConcurrent = true;
