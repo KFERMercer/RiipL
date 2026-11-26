@@ -92,7 +92,7 @@
     <message>
         <location filename="../../src/ui/widgets/CandidatePopup.cpp" line="36"/>
         <source>Fetching alternatives...</source>
-        <translation>正在获取候选表达……</translation>
+        <translation>正在获取候选表达…</translation>
     </message>
     <message>
         <location filename="../../src/ui/widgets/CandidatePopup.cpp" line="71"/>
@@ -141,7 +141,7 @@
     <message>
         <location filename="../../src/ui/dialogs/ContextPresetDialog.cpp" line="51"/>
         <source>Save as...</source>
-        <translation>另存为……</translation>
+        <translation>另存为…</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/ContextPresetDialog.cpp" line="52"/>
@@ -335,7 +335,7 @@
     <message>
         <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="355"/>
         <source>Translating...</source>
-        <translation>翻译中……</translation>
+        <translation>翻译中…</translation>
     </message>
     <message>
         <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="367"/>
@@ -937,7 +937,7 @@
     <message>
         <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="939"/>
         <source>Translating...</source>
-        <translation>翻译中……</translation>
+        <translation>翻译中…</translation>
     </message>
     <message>
         <location filename="../../src/ui/mainwindow/MainWindow.cpp" line="1237"/>
@@ -1479,7 +1479,7 @@
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="368"/>
         <source>Loading the model list...</source>
-        <translation>正在加载模型列表……</translation>
+        <translation>正在加载模型列表…</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="376"/>
@@ -1701,7 +1701,7 @@
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="475"/>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="490"/>
         <source>Manage...</source>
-        <translation>管理……</translation>
+        <translation>管理…</translation>
     </message>
     <message>
         <location filename="../../src/ui/dialogs/SettingsDialog.cpp" line="344"/>
