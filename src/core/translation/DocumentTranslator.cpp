@@ -69,7 +69,6 @@ void DocumentTranslator::start(const QVector<DocumentWindow>& windows,
     m_retryDelayMs = (std::max)(0, options.retryDelayMs);
     m_cache = std::move(cache);
     m_failedSamples.clear();
-    m_documentPending = false;
     m_nextWindow = 0;
     m_completed = 0;
     m_serial = !ConfigManager::instance()->boolValue(Keys::documentConcurrent);
@@ -82,9 +81,6 @@ void DocumentTranslator::start(const QVector<DocumentWindow>& windows,
     m_active = true;
     // Reported with the run under way, so a slot that stops here stops it.
     emit progressChanged(m_completed, m_windows.size());
-    // Marked changed so the start reports the document as it stands.
-    m_documentPending = true;
-    reportDocument();
     dispatchPending();
 }
 
@@ -103,39 +99,45 @@ DocumentWindowPrompt DocumentTranslator::windowPrompt(int index) const
 // The answer follows what the model is asked — the endpoint, the headers and the
 // body — and nothing that only carries the request there. The window number is no
 // part of it, so any document sending the same request reuses the same answer.
-QString DocumentTranslator::sampleDigest(int index) const
+DocumentTranslator::WindowRequest DocumentTranslator::buildRequest(int index) const
 {
     TranslationContext context = m_context;
     context.sourceText = m_sources.at(index);
     const PromptBuilder::Result prompt =
         PromptBuilder::buildDocument(context, windowPrompt(index));
 
-    QJsonObject body = ApiClient::withExtraBody(TranslationEngine::buildRequestBody(
+    const QJsonObject body = ApiClient::withExtraBody(TranslationEngine::buildRequestBody(
         prompt, ConfigManager::instance()->boolValue(Keys::apiStream)));
     // Streaming decides how the answer arrives, not what it says.
-    body.remove(QStringLiteral("stream"));
+    QJsonObject digestBody = body;
+    digestBody.remove(QStringLiteral("stream"));
 
     const ApiClient::Connection connection = ApiClient::Connection::configured();
     const QJsonObject sample{
         {QStringLiteral("base_url"), connection.baseUrl},
         {QStringLiteral("headers"), canonicalHeaders(connection.customHeaders)},
-        {QStringLiteral("body"), body}
+        {QStringLiteral("body"), digestBody}
     };
 
     QCryptographicHash hash(QCryptographicHash::Sha256);
     hash.addData(QJsonDocument(sample).toJson(QJsonDocument::Compact));
-    return QString::fromLatin1(hash.result().toHex());
+    return {body, QString::fromLatin1(hash.result().toHex())};
 }
 
 std::optional<QStringList> DocumentTranslator::cachedTranslation(int index,
-                                                                 const QString& sample) const
+                                                                const QString& digest) const
 {
     if (!m_cache)
         return std::nullopt;
-    const std::optional<QString> answer = m_cache->cachedAnswer(sample);
+    const std::optional<QString> answer = m_cache->cachedAnswer(digest);
     if (!answer)
         return std::nullopt;
     return DocumentSegmenter::splitTranslation(m_windows.at(index), *answer);
+}
+
+QString DocumentTranslator::document() const
+{
+    return DocumentSegmenter::assemble(m_windows, m_translations);
 }
 
 void DocumentTranslator::stop()
@@ -175,17 +177,14 @@ void DocumentTranslator::dispatchPending()
            && (m_settled.at(m_nextWindow)
                || (!m_serial && m_attempts.at(m_nextWindow) > 0)))
         ++m_nextWindow;
-    if (m_nextWindow >= m_windows.size() || (m_serial && m_attempts.at(m_nextWindow) > 0)) {
-        reportDocument();
+    if (m_nextWindow >= m_windows.size() || (m_serial && m_attempts.at(m_nextWindow) > 0))
         return;
-    }
 
     // The walk takes one window per turn of the event loop, so the request of a
     // window leaves as soon as the window is built.
     const quint64 generation = m_generation;
     const int index = m_nextWindow;
     processWindow(index);
-    // A slot reached from the window may have replaced this run.
     if (generation != m_generation)
         return;
     if (m_serial && !m_settled.at(index))
@@ -197,73 +196,52 @@ void DocumentTranslator::dispatchPending()
 void DocumentTranslator::processWindow(int index)
 {
     const quint64 generation = m_generation;
-    const QString sample = sampleDigest(index);
+    const WindowRequest request = buildRequest(index);
     if (m_cache) {
-        if (const std::optional<QStringList> lines = cachedTranslation(index, sample)) {
+        if (const std::optional<QStringList> lines = cachedTranslation(index, request.digest)) {
             // The answer stands in place of the attempts that failed.
-            m_cache->removeFailure(sample);
-            acceptWindow(index, *lines, false);
+            m_cache->removeFailure(request.digest);
+            acceptWindow(index, *lines);
             return;
         }
     }
-
-    // The windows the cache answered are reported before the run waits on the model.
-    reportDocument();
     if (generation != m_generation)
         return;
-    sendWindow(index, sample);
+    sendWindow(index, request);
 }
 
 // The digest goes with the attempt, so the answer is kept under the request that
 // produced it.
-void DocumentTranslator::sendWindow(int index, const QString& sample)
+void DocumentTranslator::sendWindow(int index, const WindowRequest& request)
 {
     const int priority = m_attempts.at(index) > 0 ? m_options.priorityRetry
                                                   : m_options.priority;
     ++m_attempts[index];
-    m_samples[index] = sample;
+    m_samples[index] = request.digest;
     if (m_cache)
-        m_cache->removeFailure(sample);
+        m_cache->removeFailure(request.digest);
 
-    TranslationContext context = m_context;
-    context.sourceText = m_sources.at(index);
-    const PromptBuilder::Result prompt =
-        PromptBuilder::buildDocument(context, windowPrompt(index));
-    const QJsonObject body = TranslationEngine::buildRequestBody(
-        prompt, ConfigManager::instance()->boolValue(Keys::apiStream));
-
-    m_jobs[index] = TranslationPool::instance()->enqueue(body, priority,
+    m_jobs[index] = TranslationPool::instance()->enqueue(request.body, priority,
         [this, index](const QString& response) { handleWindowFinished(index, response); },
         {},
         [this, index](const ApiClient::Error&) { handleWindowError(index); });
 }
 
-// An answer the run waited for is reported as it lands; the windows the cache
-// answered are reported together.
-void DocumentTranslator::acceptWindow(int index, const QStringList& lines, bool report)
+void DocumentTranslator::acceptWindow(int index, const QStringList& lines)
 {
     const quint64 generation = m_generation;
     m_translations[index] = lines;
     m_settled[index] = true;
     ++m_completed;
-    m_documentPending = true;
-    emit progressChanged(m_completed, m_windows.size());
-    if (report)
-        reportDocument();
-    // A slot reached from the report may have replaced this run, whose end this is
-    // not.
-    if (generation == m_generation && allWindowsSettled())
-        finishRun();
-}
-
-// A window the cache answers costs no wait, so the document is not rebuilt for each
-// of them.
-void DocumentTranslator::reportDocument()
-{
-    if (!m_documentPending)
+    // The window goes out before the counter, so a stop from either signal keeps it.
+    emit windowTranslated(index, DocumentSegmenter::renderWindow(m_windows.at(index), lines));
+    if (generation != m_generation)
         return;
-    m_documentPending = false;
-    emit windowTranslated(DocumentSegmenter::assemble(m_windows, m_translations));
+    emit progressChanged(m_completed, m_windows.size());
+    if (generation != m_generation)
+        return;
+    if (allWindowsSettled())
+        finishRun();
 }
 
 void DocumentTranslator::handleWindowFinished(int index, const QString& response)
@@ -288,8 +266,10 @@ void DocumentTranslator::handleWindowFinished(int index, const QString& response
         m_cache->storeAnswer(m_samples.at(index), PromptBuilder::documentWindowData(*lines));
         m_cache->removeFailure(m_samples.at(index));
     }
-    acceptWindow(index, *lines, true);
-    if (m_active)
+    const quint64 generation = m_generation;
+    acceptWindow(index, *lines);
+    // A run that took over is walked by the dispatch its start queued.
+    if (generation == m_generation && m_active)
         dispatchPending();
 }
 
@@ -315,13 +295,18 @@ void DocumentTranslator::retryOrFail(int index)
             if (!m_active || generation != m_generation || m_settled.at(index)
                 || m_jobs.at(index) != 0)
                 return;
-            sendWindow(index, sampleDigest(index));
+            sendWindow(index, buildRequest(index));
         });
         return;
     }
 
+    const quint64 generation = m_generation;
     m_settled[index] = true;
     m_failedSamples.append(m_samples.at(index).left(kReportedSampleCharacters));
+    // The window goes out as its source text, so the document keeps its place.
+    emit windowTranslated(index, DocumentSegmenter::renderWindow(m_windows.at(index), QStringList()));
+    if (generation != m_generation)
+        return;
 
     if (allWindowsSettled()) {
         finishRun();
@@ -339,8 +324,6 @@ void DocumentTranslator::finishRun()
 {
     m_active = false;
     if (!m_failedSamples.isEmpty()) {
-        // The document the run built goes out before the windows it left out.
-        reportDocument();
         emit failed(m_failedSamples);
         return;
     }

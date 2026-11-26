@@ -31,4 +31,6 @@ private:
     bool write(const QString& path, const QString& text) const;
 
     QString m_rootPath;
+    // Whether the location has been created by this cache.
+    mutable bool m_rootReady = false;
 };

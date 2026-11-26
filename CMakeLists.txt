@@ -21,7 +21,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Widgets Network Svg DBus LinguistTools)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Widgets Network Concurrent Svg DBus LinguistTools)
 qt_standard_project_setup(REQUIRES 6.8)
 
 # qt_standard_project_setup enables MOC and UIC but not RCC.
@@ -146,7 +146,8 @@ qt_add_executable(riipl
     ${UI_HEADERS}
     resources/riipl.qrc
 )
-target_link_libraries(riipl PRIVATE riipl_core riipl_utils Qt6::Widgets Qt6::Svg Qt6::DBus)
+target_link_libraries(riipl PRIVATE riipl_core riipl_utils Qt6::Widgets Qt6::Concurrent Qt6::Svg
+                                 Qt6::DBus)
 
 target_compile_options(riipl PRIVATE "$<$<PLATFORM_ID:Linux>:-fPIC>")
 target_link_options(riipl PRIVATE "$<$<AND:$<CONFIG:Release>,$<PLATFORM_ID:Linux>>:-s>")

@@ -34,14 +34,26 @@
 #include <QProgressBar>
 #include <QPushButton>
 #include <QSaveFile>
+#include <QScrollBar>
 #include <QStyle>
+#include <QTextCursor>
+#include <QTextDocument>
 #include <QToolButton>
 #include <QVBoxLayout>
+#include <QtConcurrent>
 
+#include <chrono>
+#include <exception>
 #include <optional>
 #include <utility>
 
 namespace {
+
+// Windows reported within one interval go into the preview as one insertion.
+constexpr std::chrono::milliseconds kPreviewInterval{50};
+
+// Shortest pause between two scrolls to the end of the preview.
+constexpr std::chrono::milliseconds kFollowInterval{200};
 
 QVector<Preset> storedApiPresets()
 {
@@ -54,6 +66,31 @@ QFrame* verticalSeparator(QWidget* parent)
     separator->setFrameShape(QFrame::VLine);
     separator->setFrameShadow(QFrame::Sunken);
     return separator;
+}
+
+// Reads the document and splits it into windows; runs off the interface thread,
+// since a long document would hold it for seconds. The text comes back whole only
+// when the preview is to show it.
+LoadedDocument loadDocumentFile(const QString& path, int wordLimit, int lineLimit,
+                                bool keepText)
+{
+    LoadedDocument loaded;
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        loaded.error = path;
+        return loaded;
+    }
+    const QByteArray bytes = file.readAll();
+    // A read that stopped short hands back what it read, which is no document.
+    if (file.error() != QFileDevice::NoError) {
+        loaded.error = path;
+        return loaded;
+    }
+    loaded.path = path;
+    loaded.windows = DocumentSegmenter::partition(QString::fromUtf8(bytes), wordLimit, lineLimit);
+    if (keepText && !loaded.windows.isEmpty())
+        loaded.text = DocumentSegmenter::assemble(loaded.windows, {});
+    return loaded;
 }
 
 }
@@ -173,11 +210,26 @@ DocumentTranslationWindow::DocumentTranslationWindow(ContextProvider context)
     });
     connect(ConfigManager::instance(), &ConfigManager::changed, this,
             &DocumentTranslationWindow::onConfigChanged);
+    connect(&m_loadWatcher, &QFutureWatcher<LoadedDocument>::finished, this,
+            &DocumentTranslationWindow::handleLoaded);
 
-    connect(&m_translator, &DocumentTranslator::windowTranslated, this, [this](const QString& text) {
-        m_completedText = text;
-        m_preview->updateResult(text);
-    });
+    m_previewTimer.setSingleShot(true);
+    m_previewTimer.setInterval(kPreviewInterval);
+    m_followTimer.start();
+    connect(&m_previewTimer, &QTimer::timeout, this, &DocumentTranslationWindow::flushPreview);
+
+    connect(&m_translator, &DocumentTranslator::windowTranslated, this,
+            [this](int index, const QString& text) {
+                if (!m_streaming) {
+                    // The document as it was loaded stands until the first window is
+                    // reported; the translation replaces it from here on.
+                    m_streaming = true;
+                    m_preview->setResult(QString());
+                }
+                m_pendingText[index] = text;
+                if (!m_previewTimer.isActive())
+                    m_previewTimer.start();
+            });
     connect(&m_translator, &DocumentTranslator::progressChanged, this,
             [this](int completed, int total) {
                 m_progress->setRange(0, total);
@@ -186,17 +238,22 @@ DocumentTranslationWindow::DocumentTranslationWindow(ContextProvider context)
                     setStatus(Status::Progress);
             });
     connect(&m_translator, &DocumentTranslator::finished, this, [this](const QString& text) {
+        flushPreview();
+        followPreview();
         m_completedText = text;
-        m_preview->updateResult(text);
         endRun();
         setStatus(Status::Finished);
     });
     connect(&m_translator, &DocumentTranslator::failed, this,
             [this](const QStringList& samples) {
+                flushPreview();
+                followPreview();
                 endRun();
                 setStatus(Status::Failed, samples.join(QStringLiteral(", ")));
             });
     connect(&m_translator, &DocumentTranslator::stopped, this, [this]() {
+        flushPreview();
+        followPreview();
         endRun();
         setStatus(Status::Stopped);
     });
@@ -313,7 +370,7 @@ void DocumentTranslationWindow::populateLanguageCombo(QComboBox* combo, bool inc
 
 void DocumentTranslationWindow::updateOptionsEnabled()
 {
-    const bool editable = !m_running;
+    const bool editable = !m_running && !m_loading;
     m_sourceLang->setEnabled(editable);
     m_targetLang->setEnabled(editable);
     m_contextAction->setEnabled(editable);
@@ -347,6 +404,8 @@ QString DocumentTranslationWindow::statusText(Status status, const QString& argu
         return tr("Ready");
     case Status::ChooseFile:
         return tr("Choose file");
+    case Status::Loading:
+        return tr("Loading...");
     case Status::CannotOpen:
         return tr("Cannot open file: %1").arg(argument);
     case Status::NoContent:
@@ -387,12 +446,17 @@ void DocumentTranslationWindow::browse()
     if (path.isEmpty())
         return;
     m_pathEdit->setText(path);
-    clearResult();
+    loadDocument(false);
 }
 
 void DocumentTranslationWindow::clearResult()
 {
+    m_previewTimer.stop();
+    m_pendingText.clear();
+    m_placedLength.clear();
+    m_placedHighest = -1;
     m_completedText.clear();
+    m_streaming = false;
     m_preview->setResult(QString());
     m_progress->setRange(0, 1);
     m_progress->setValue(0);
@@ -400,55 +464,118 @@ void DocumentTranslationWindow::clearResult()
     setStatus(Status::Ready);
 }
 
-bool DocumentTranslationWindow::loadFile()
+// What is on screen belongs to the path the box held before, so it is dropped
+// before the file is read.
+void DocumentTranslationWindow::loadDocument(bool thenTranslate)
 {
-    // What is on screen belongs to the path the box held before, so it is dropped
-    // before the file is read.
+    if (m_loading)
+        return;
     const QString path = m_pathEdit->text().trimmed();
     m_loadedPath.clear();
     m_windows.clear();
-    clearResult();
+    // A run leaves the preview as it stands until its first window is reported.
+    if (thenTranslate) {
+        m_previewTimer.stop();
+        m_pendingText.clear();
+        m_placedLength.assign(m_windows.size(), 0);
+        m_placedHighest = -1;
+        m_completedText.clear();
+        m_streaming = false;
+        m_exportButton->setEnabled(false);
+    } else {
+        clearResult();
+    }
 
     if (path.isEmpty()) {
         setStatus(Status::ChooseFile);
-        return false;
+        return;
     }
 
-    QFile file(path);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        setStatus(Status::CannotOpen, path);
-        QMessageBox::warning(this, QCoreApplication::applicationName(),
-                             tr("Cannot open file: %1").arg(path));
-        return false;
-    }
-
-    const QString content = QString::fromUtf8(file.readAll());
-    m_loadedPath = path;
+    // The limits are read here, since the worker reads neither the configuration
+    // nor the interface.
     ConfigManager* config = ConfigManager::instance();
-    m_windows = DocumentSegmenter::partition(content,
-                                             config->intValue(Keys::documentWindowWords),
-                                             config->intValue(Keys::documentWindowLines));
-    if (m_windows.isEmpty()) {
+    const int wordLimit = config->intValue(Keys::documentWindowWords);
+    const int lineLimit = config->intValue(Keys::documentWindowLines);
+
+    m_startAfterLoad = thenTranslate;
+    m_loadDropped = false;
+    setLoading(true);
+    setStatus(Status::Loading);
+    m_loadWatcher.setFuture(QtConcurrent::run([path, wordLimit, lineLimit, thenTranslate]() {
+        return loadDocumentFile(path, wordLimit, lineLimit, !thenTranslate);
+    }));
+}
+
+void DocumentTranslationWindow::handleLoaded()
+{
+    setLoading(false);
+    // The run the document was read for is gone, so the document is not wanted.
+    if (std::exchange(m_loadDropped, false)) {
+        m_startAfterLoad = false;
+        setStatus(Status::Ready);
+        return;
+    }
+
+    LoadedDocument loaded;
+    try {
+        loaded = m_loadWatcher.result();
+    } catch (const std::exception&) {
+        setStatus(Status::CannotOpen, m_pathEdit->text().trimmed());
+        QMessageBox::warning(
+            this, QCoreApplication::applicationName(),
+            tr("Cannot open file: %1").arg(m_pathEdit->text().trimmed()));
+        return;
+    }
+    const bool thenTranslate = m_startAfterLoad;
+    m_startAfterLoad = false;
+
+    if (!loaded.error.isEmpty()) {
+        setStatus(Status::CannotOpen, loaded.error);
+        QMessageBox::warning(this, QCoreApplication::applicationName(),
+                             tr("Cannot open file: %1").arg(loaded.error));
+        return;
+    }
+    if (loaded.windows.isEmpty()) {
         setStatus(Status::NoContent);
         QMessageBox::information(this, QCoreApplication::applicationName(),
                                  tr("No content to translate"));
-        return false;
+        return;
     }
-    return true;
+
+    m_loadedPath = loaded.path;
+    m_windows = loaded.windows;
+    if (thenTranslate) {
+        startTranslation();
+        return;
+    }
+    // The file reads as it is until a run replaces it with the translation.
+    m_preview->setResult(loaded.text);
+    setStatus(Status::Ready);
 }
 
 void DocumentTranslationWindow::start()
 {
-    if (m_running)
+    if (m_running || m_loading)
         return;
     // Read here, so a run always translates the file the path box holds.
-    if (!loadFile())
-        return;
+    loadDocument(true);
+}
 
+void DocumentTranslationWindow::startTranslation()
+{
     ConfigManager* config = ConfigManager::instance();
     std::optional<DocumentCache> cache = std::nullopt;
     if (config->boolValue(Keys::documentCacheEnabled))
         cache.emplace();
+
+    m_previewTimer.stop();
+    m_follow = true;
+    m_followValue = -1;
+    m_pendingText.clear();
+    m_placedLength.assign(m_windows.size(), 0);
+    m_placedHighest = -1;
+    m_completedText.clear();
+    m_streaming = false;
 
     m_progress->setRange(0, m_windows.size());
     m_progress->setValue(0);
@@ -465,6 +592,11 @@ void DocumentTranslationWindow::start()
 void DocumentTranslationWindow::stopTranslation()
 {
     m_translator.stop();
+    if (m_loading) {
+        // The load belongs to the run that is ending, so what it reads is dropped.
+        m_loadDropped = true;
+        m_startAfterLoad = false;
+    }
 }
 
 bool DocumentTranslationWindow::hasTranslatedWindow() const
@@ -486,7 +618,10 @@ void DocumentTranslationWindow::exportResult()
     if (path.isEmpty())
         return;
     QSaveFile file(path);
-    const QByteArray data = m_completedText.toUtf8();
+    // A run that ended early still exports whole: the windows it left out read as
+    // their source text.
+    const QString text = m_completedText.isEmpty() ? m_translator.document() : m_completedText;
+    const QByteArray data = text.toUtf8();
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text) || file.write(data) != data.size()
         || !file.commit()) {
         setStatus(Status::CannotWrite, path);
@@ -497,7 +632,7 @@ void DocumentTranslationWindow::exportResult()
     setStatus(Status::Exported, path);
 }
 
-// The preview already holds the document accepted so far, so a stop does not wipe
+// The preview already holds the windows accepted so far, so a stop does not wipe
 // the lines translated.
 void DocumentTranslationWindow::endRun()
 {
@@ -505,16 +640,91 @@ void DocumentTranslationWindow::endRun()
     m_exportButton->setEnabled(hasTranslatedWindow());
 }
 
+// A window goes in ahead of the ones placed after it: the gap is as wide as the
+// requests in flight.
+void DocumentTranslationWindow::flushPreview()
+{
+    m_previewTimer.stop();
+    if (m_pendingText.empty())
+        return;
+
+    QTextDocument* document = m_preview->document();
+    // The windows that close no gap are written in one piece, since each insertion
+    // into a long document is what a run pays for.
+    QString piece;
+    const auto writePiece = [&piece, document]() {
+        if (piece.isEmpty())
+            return;
+        QTextCursor cursor(document);
+        cursor.setPosition(document->characterCount() - 1);
+        cursor.insertText(piece);
+        piece.clear();
+    };
+    for (auto pending = m_pendingText.begin(); pending != m_pendingText.end(); ++pending) {
+        const int index = pending->first;
+        // A paragraph break is one position, however many characters write it.
+        QString text = pending->second;
+        if (text.contains(QLatin1Char('\r'))) {
+            text.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+            text.replace(QLatin1Char('\r'), QLatin1Char('\n'));
+        }
+        qsizetype tail = 0;
+        for (int after = index + 1; after <= m_placedHighest; ++after)
+            tail += m_placedLength.at(after);
+        if (tail == 0) {
+            piece += text;
+        } else {
+            QTextCursor cursor(document);
+            cursor.setPosition(document->characterCount() - 1 - tail);
+            cursor.insertText(text);
+        }
+        m_placedLength[index] = text.size();
+        m_placedHighest = (std::max)(m_placedHighest, index);
+    }
+    writePiece();
+    m_pendingText.clear();
+    if (std::chrono::milliseconds(m_followTimer.elapsed()) >= kFollowInterval) {
+        m_followTimer.restart();
+        // The reader who scrolls away from where the run left them reads elsewhere;
+        // scrolling on rejoins the end.
+        QScrollBar* bar = m_preview->verticalScrollBar();
+        if (m_followValue >= 0 && bar->value() != m_followValue)
+            m_follow = bar->value() > m_followValue;
+        followPreview();
+    }
+}
+
+void DocumentTranslationWindow::followPreview()
+{
+    if (!m_follow)
+        return;
+    QScrollBar* bar = m_preview->verticalScrollBar();
+    m_followValue = bar->maximum();
+    bar->setValue(m_followValue);
+}
+
 void DocumentTranslationWindow::setRunning(bool running)
 {
     m_running = running;
-    m_translateAction->setEnabled(!running);
-    m_stopAction->setEnabled(running);
-    m_pathEdit->setEnabled(!running);
-    m_browseButton->setEnabled(!running);
-    updateOptionsEnabled();
     if (running)
         m_exportButton->setEnabled(false);
+    updateActions();
+}
+
+void DocumentTranslationWindow::setLoading(bool loading)
+{
+    m_loading = loading;
+    updateActions();
+}
+
+void DocumentTranslationWindow::updateActions()
+{
+    const bool idle = !m_running && !m_loading;
+    m_translateAction->setEnabled(idle);
+    m_stopAction->setEnabled(m_running);
+    m_pathEdit->setEnabled(idle);
+    m_browseButton->setEnabled(idle);
+    updateOptionsEnabled();
 }
 
 void DocumentTranslationWindow::setStatus(Status status, const QString& argument)

@@ -35,8 +35,11 @@ bool DocumentCache::write(const QString& path, const QString& text) const
 {
     if (path.isEmpty())
         return false;
-    if (!QDir().mkpath(m_rootPath))
-        return false;
+    if (!m_rootReady) {
+        if (!QDir().mkpath(m_rootPath))
+            return false;
+        m_rootReady = true;
+    }
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly))
         return false;
