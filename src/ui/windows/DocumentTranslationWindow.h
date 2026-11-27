@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QElapsedTimer>
 #include <QFutureWatcher>
 #include <QString>
 #include <QTimer>
@@ -92,8 +91,6 @@ private:
     void updateActions();
     // Writes the windows reported since the last flush into their places.
     void flushPreview();
-    // Keeps the preview at its end while the reader stays there.
-    void followPreview();
     bool hasTranslatedWindow() const;
     void endRun();
     void setStatus(Status status, const QString& argument = QString());
@@ -123,13 +120,6 @@ private:
     // it is exported.
     QString m_completedText;
     QTimer m_previewTimer;
-    // Paces the scroll to the end of the preview: laying out a long document for the
-    // scroll range costs more than the text itself.
-    QElapsedTimer m_followTimer;
-    // Whether the reader sits at the end of the preview, and the scroll position the
-    // run left them at.
-    bool m_follow = true;
-    int m_followValue = -1;
     // Whether the preview carries the translation rather than the document as it
     // was loaded.
     bool m_streaming = false;

@@ -194,163 +194,163 @@
 <context>
     <name>DocumentTranslationWindow</name>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="288"/>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="439"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="280"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="431"/>
         <source>Document translation</source>
         <translation>文档翻译</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="404"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="396"/>
         <source>Ready</source>
         <translation>就绪</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="290"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="282"/>
         <source>Document file</source>
         <translation>文档</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="291"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="283"/>
         <source>Translated document</source>
         <translation>译文文档</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="292"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="284"/>
         <source>Preview</source>
         <translation>预览</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="293"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="285"/>
         <source>Browse</source>
         <translation>浏览</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="294"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="286"/>
         <source>Translate</source>
         <translation>翻译</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="295"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="287"/>
         <source>Start translation</source>
         <translation>开始翻译</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="296"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="288"/>
         <source>Stop</source>
         <translation>停止</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="297"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="289"/>
         <source>Stop translation</source>
         <translation>停止翻译</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="299"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="291"/>
         <source>Context</source>
         <translation>上下文</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="300"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="292"/>
         <source>Manage context presets</source>
         <translation>管理上下文预设</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="301"/>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="302"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="293"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="294"/>
         <source>Source language</source>
         <translation>源语言</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="307"/>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="308"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="299"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="300"/>
         <source>API preset</source>
         <translation>API 预设</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="305"/>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="306"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="297"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="298"/>
         <source>Tone</source>
         <translation>语气</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="303"/>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="304"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="295"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="296"/>
         <source>Target language</source>
         <translation>目标语言</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="331"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="323"/>
         <source>No presets</source>
         <translation>无预设</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="331"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="323"/>
         <source>Custom</source>
         <translation>自定义</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="408"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="400"/>
         <source>Loading...</source>
         <translation>正在载入…</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="416"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="408"/>
         <source>Translated %1/%2 windows</source>
         <translation>已翻译 %1/%2 个窗口</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="418"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="410"/>
         <source>Translation finished</source>
         <translation>翻译完成</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="422"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="414"/>
         <source>Stopped</source>
         <translation>已停止</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="420"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="412"/>
         <source>Failed windows: %1</source>
         <translation>失败窗口：%1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="289"/>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="406"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="281"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="398"/>
         <source>Choose file</source>
         <translation>选择文件</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="410"/>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="526"/>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="535"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="402"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="518"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="527"/>
         <source>Cannot open file: %1</source>
         <translation>无法打开文件：%1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="412"/>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="541"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="404"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="533"/>
         <source>No content to translate</source>
         <translation>没有可翻译的内容</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="298"/>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="617"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="290"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="607"/>
         <source>Export translation</source>
         <translation>导出译文</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="414"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="406"/>
         <source>Translating...</source>
         <translation>翻译中…</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="426"/>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="629"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="418"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="619"/>
         <source>Cannot write file: %1</source>
         <translation>无法写入文件：%1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="424"/>
+        <location filename="../../src/ui/windows/DocumentTranslationWindow.cpp" line="416"/>
         <source>Exported to %1</source>
         <translation>已导出到 %1</translation>
     </message>

@@ -34,7 +34,6 @@
 #include <QProgressBar>
 #include <QPushButton>
 #include <QSaveFile>
-#include <QScrollBar>
 #include <QStyle>
 #include <QTextCursor>
 #include <QTextDocument>
@@ -51,9 +50,6 @@ namespace {
 
 // Windows reported within one interval go into the preview as one insertion.
 constexpr std::chrono::milliseconds kPreviewInterval{50};
-
-// Shortest pause between two scrolls to the end of the preview.
-constexpr std::chrono::milliseconds kFollowInterval{200};
 
 QVector<Preset> storedApiPresets()
 {
@@ -215,7 +211,6 @@ DocumentTranslationWindow::DocumentTranslationWindow(ContextProvider context)
 
     m_previewTimer.setSingleShot(true);
     m_previewTimer.setInterval(kPreviewInterval);
-    m_followTimer.start();
     connect(&m_previewTimer, &QTimer::timeout, this, &DocumentTranslationWindow::flushPreview);
 
     connect(&m_translator, &DocumentTranslator::windowTranslated, this,
@@ -239,7 +234,6 @@ DocumentTranslationWindow::DocumentTranslationWindow(ContextProvider context)
             });
     connect(&m_translator, &DocumentTranslator::finished, this, [this](const QString& text) {
         flushPreview();
-        followPreview();
         m_completedText = text;
         endRun();
         setStatus(Status::Finished);
@@ -247,13 +241,11 @@ DocumentTranslationWindow::DocumentTranslationWindow(ContextProvider context)
     connect(&m_translator, &DocumentTranslator::failed, this,
             [this](const QStringList& samples) {
                 flushPreview();
-                followPreview();
                 endRun();
                 setStatus(Status::Failed, samples.join(QStringLiteral(", ")));
             });
     connect(&m_translator, &DocumentTranslator::stopped, this, [this]() {
         flushPreview();
-        followPreview();
         endRun();
         setStatus(Status::Stopped);
     });
@@ -569,8 +561,6 @@ void DocumentTranslationWindow::startTranslation()
         cache.emplace();
 
     m_previewTimer.stop();
-    m_follow = true;
-    m_followValue = -1;
     m_pendingText.clear();
     m_placedLength.assign(m_windows.size(), 0);
     m_placedHighest = -1;
@@ -648,6 +638,9 @@ void DocumentTranslationWindow::flushPreview()
     if (m_pendingText.empty())
         return;
 
+    // Keep the preview at its end only while the reader stays there.
+    const bool follow = m_preview->isScrolledToBottom();
+
     QTextDocument* document = m_preview->document();
     // The windows that close no gap are written in one piece, since each insertion
     // into a long document is what a run pays for.
@@ -683,24 +676,8 @@ void DocumentTranslationWindow::flushPreview()
     }
     writePiece();
     m_pendingText.clear();
-    if (std::chrono::milliseconds(m_followTimer.elapsed()) >= kFollowInterval) {
-        m_followTimer.restart();
-        // The reader who scrolls away from where the run left them reads elsewhere;
-        // scrolling on rejoins the end.
-        QScrollBar* bar = m_preview->verticalScrollBar();
-        if (m_followValue >= 0 && bar->value() != m_followValue)
-            m_follow = bar->value() > m_followValue;
-        followPreview();
-    }
-}
-
-void DocumentTranslationWindow::followPreview()
-{
-    if (!m_follow)
-        return;
-    QScrollBar* bar = m_preview->verticalScrollBar();
-    m_followValue = bar->maximum();
-    bar->setValue(m_followValue);
+    if (follow)
+        m_preview->scrollToBottom();
 }
 
 void DocumentTranslationWindow::setRunning(bool running)

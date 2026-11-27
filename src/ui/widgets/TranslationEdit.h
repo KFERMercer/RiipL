@@ -22,6 +22,8 @@ public:
     // Grows the result by \p piece without rebuilding the document. The view
     // follows the end only while the reader is already there.
     void appendResult(const QString& piece);
+    bool isScrolledToBottom() const;
+    void scrollToBottom();
     // Replaces the \p length characters at \p start, so a replacement is
     // rejected outright once the translation has moved on.
     bool replaceWordAt(int start, int length, const QString& replacement);

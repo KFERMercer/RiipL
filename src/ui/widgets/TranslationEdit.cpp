@@ -49,15 +49,26 @@ void TranslationEdit::appendResult(const QString& piece)
 {
     if (piece.isEmpty())
         return;
-    auto* bar = verticalScrollBar();
-    const bool follow = bar->value() == bar->maximum();
+    const bool follow = isScrolledToBottom();
 
     QTextCursor cursor(document());
     cursor.movePosition(QTextCursor::End);
     cursor.insertText(piece);
 
     if (follow)
-        bar->setValue(bar->maximum());
+        scrollToBottom();
+}
+
+bool TranslationEdit::isScrolledToBottom() const
+{
+    const QScrollBar* bar = verticalScrollBar();
+    return bar->value() == bar->maximum();
+}
+
+void TranslationEdit::scrollToBottom()
+{
+    QScrollBar* bar = verticalScrollBar();
+    bar->setValue(bar->maximum());
 }
 
 void TranslationEdit::clearHighlight()
