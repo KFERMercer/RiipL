@@ -25,7 +25,7 @@ class QPushButton;
 class StatusPresenter;
 class TranslationEdit;
 
-// A document read off the disk and split into translation windows.
+// A document read off the disk: whole for a preview, split for a run.
 struct LoadedDocument
 {
     QString path;

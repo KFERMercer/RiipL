@@ -34,6 +34,7 @@
 #include <QProgressBar>
 #include <QPushButton>
 #include <QSaveFile>
+#include <QStringView>
 #include <QStyle>
 #include <QTextCursor>
 #include <QTextDocument>
@@ -64,11 +65,10 @@ QFrame* verticalSeparator(QWidget* parent)
     return separator;
 }
 
-// Reads the document and splits it into windows; runs off the interface thread,
-// since a long document would hold it for seconds. The text comes back whole only
-// when the preview is to show it.
+// Reads the document off the interface thread, since a long document would hold it
+// for seconds; a run also splits it into translation windows.
 LoadedDocument loadDocumentFile(const QString& path, int wordLimit, int lineLimit,
-                                bool keepText)
+                                bool split)
 {
     LoadedDocument loaded;
     QFile file(path);
@@ -83,9 +83,10 @@ LoadedDocument loadDocumentFile(const QString& path, int wordLimit, int lineLimi
         return loaded;
     }
     loaded.path = path;
-    loaded.windows = DocumentSegmenter::partition(QString::fromUtf8(bytes), wordLimit, lineLimit);
-    if (keepText && !loaded.windows.isEmpty())
-        loaded.text = DocumentSegmenter::assemble(loaded.windows, {});
+    if (split)
+        loaded.windows = DocumentSegmenter::partition(QString::fromUtf8(bytes), wordLimit, lineLimit);
+    else
+        loaded.text = QString::fromUtf8(bytes);
     return loaded;
 }
 
@@ -494,7 +495,7 @@ void DocumentTranslationWindow::loadDocument(bool thenTranslate)
     setLoading(true);
     setStatus(Status::Loading);
     m_loadWatcher.setFuture(QtConcurrent::run([path, wordLimit, lineLimit, thenTranslate]() {
-        return loadDocumentFile(path, wordLimit, lineLimit, !thenTranslate);
+        return loadDocumentFile(path, wordLimit, lineLimit, thenTranslate);
     }));
 }
 
@@ -527,7 +528,8 @@ void DocumentTranslationWindow::handleLoaded()
                              tr("Cannot open file: %1").arg(loaded.error));
         return;
     }
-    if (loaded.windows.isEmpty()) {
+    if (thenTranslate ? loaded.windows.isEmpty()
+                      : QStringView(loaded.text).trimmed().isEmpty()) {
         setStatus(Status::NoContent);
         QMessageBox::information(this, QCoreApplication::applicationName(),
                                  tr("No content to translate"));
@@ -535,8 +537,8 @@ void DocumentTranslationWindow::handleLoaded()
     }
 
     m_loadedPath = loaded.path;
-    m_windows = loaded.windows;
     if (thenTranslate) {
+        m_windows = loaded.windows;
         startTranslation();
         return;
     }
