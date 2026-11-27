@@ -49,7 +49,7 @@
 namespace {
 
 // Windows reported within one interval go into the preview as one insertion.
-constexpr std::chrono::milliseconds kPreviewInterval{50};
+constexpr std::chrono::milliseconds kPreviewInterval{100};
 
 QVector<Preset> storedApiPresets()
 {
