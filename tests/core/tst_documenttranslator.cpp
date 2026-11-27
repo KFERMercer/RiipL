@@ -201,14 +201,22 @@ QJsonObject chatBody(const QString& prompt)
     };
 }
 
-// Suffixes the two kinds of document cache file carry.
-const QString kAnswerSuffix = QStringLiteral(".document.cache.json");
-const QString kFailureSuffix = QStringLiteral(".document.failure.json");
+// Cache file names carry the digest of the request and a JSON suffix, and
+// failures sit in their own directory.
+const QString kCacheSuffix = QStringLiteral(".json");
+const QString kFailureDir = QStringLiteral("failure");
 
 // Cache files one cache holds, sorted so a case can rely on their order.
-QStringList cacheFiles(const DocumentCache& cache, const QString& suffix)
+QStringList cacheFiles(const DocumentCache& cache)
 {
-    return QDir(cache.rootPath()).entryList({QStringLiteral("*") + suffix}, QDir::Files, QDir::Name);
+    return QDir(cache.rootPath()).entryList({QStringLiteral("*") + kCacheSuffix}, QDir::Files,
+                                             QDir::Name);
+}
+
+QStringList failureFiles(const DocumentCache& cache)
+{
+    return QDir(QDir(cache.rootPath()).filePath(kFailureDir))
+        .entryList({QStringLiteral("*") + kCacheSuffix}, QDir::Files, QDir::Name);
 }
 
 QString cachePath(const DocumentCache& cache, const QString& name)
@@ -216,10 +224,15 @@ QString cachePath(const DocumentCache& cache, const QString& name)
     return QDir(cache.rootPath()).filePath(name);
 }
 
+QString failurePath(const DocumentCache& cache, const QString& name)
+{
+    return QDir(QDir(cache.rootPath()).filePath(kFailureDir)).filePath(name);
+}
+
 // Cache file holding \p marker, which tells one window's answer from another's.
 QString cacheFileHolding(const DocumentCache& cache, const QString& marker)
 {
-    for (const QString& name : cacheFiles(cache, kAnswerSuffix)) {
+    for (const QString& name : cacheFiles(cache)) {
         QFile cached(cachePath(cache, name));
         if (cached.open(QIODevice::ReadOnly) && QString::fromUtf8(cached.readAll()).contains(marker))
             return name;
@@ -713,7 +726,7 @@ void TestDocumentTranslator::runsSerialOverCachedWindows()
     QCOMPARE(m_api.requests, 3);
 
     // One window stays cached, and it is not the one the run takes first.
-    const QStringList files = cacheFiles(cache, kAnswerSuffix);
+    const QStringList files = cacheFiles(cache);
     QCOMPARE(files.size(), 3);
     const QString kept = cacheFileHolding(cache, QStringLiteral("window 1 line 0"));
     QVERIFY(!kept.isEmpty());
@@ -1065,11 +1078,11 @@ void TestDocumentTranslator::cachesAcceptedAnswers()
 
     // One file per window, holding its lines keyed by line number and named by
     // the whole digest of the request.
-    const QStringList files = cacheFiles(cache, kAnswerSuffix);
+    const QStringList files = cacheFiles(cache);
     QCOMPARE(files.size(), 2);
     QSet<QString> firstLines;
     for (const QString& file : files) {
-        QCOMPARE(file.size(), 64 + kAnswerSuffix.size());
+        QCOMPARE(file.size(), 64 + kCacheSuffix.size());
         QFile cached(cachePath(cache, file));
         QVERIFY(cached.open(QIODevice::ReadOnly));
         const QJsonObject answer = QJsonDocument::fromJson(cached.readAll()).object();
@@ -1099,7 +1112,7 @@ void TestDocumentTranslator::cachesAnswersInLineOrder()
     translator.start(windows, TranslationContext(), cache);
     QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
 
-    const QStringList files = cacheFiles(cache, kAnswerSuffix);
+    const QStringList files = cacheFiles(cache);
     QCOMPARE(files.size(), 1);
     QFile cached(cachePath(cache, files.first()));
     QVERIFY(cached.open(QIODevice::ReadOnly));
@@ -1206,7 +1219,7 @@ void TestDocumentTranslator::requestsOnlyTheWindowsTheCacheMisses()
     QCOMPARE(finished.size(), 1);
 
     // One cached window is dropped, as a run that failed before would have left it.
-    const QStringList files = cacheFiles(cache, kAnswerSuffix);
+    const QStringList files = cacheFiles(cache);
     QCOMPARE(files.size(), 3);
     const QString dropped = cacheFileHolding(cache, QStringLiteral("window 1 line 0"));
     QVERIFY(!dropped.isEmpty());
@@ -1219,7 +1232,7 @@ void TestDocumentTranslator::requestsOnlyTheWindowsTheCacheMisses()
 
     QCOMPARE(m_api.requests, 1);
     QCOMPARE(finished.at(1), finished.at(0));
-    QCOMPARE(cacheFiles(cache, kAnswerSuffix).size(), 3);
+    QCOMPARE(cacheFiles(cache).size(), 3);
 }
 
 // The run hands a window over as it is taken, so the windows behind the first one
@@ -1241,7 +1254,7 @@ void TestDocumentTranslator::handsTheFirstWindowOverBeforeTheRest()
     QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
 
     // The cache holds the two windows behind the first one.
-    const QStringList files = cacheFiles(cache, kAnswerSuffix);
+    const QStringList files = cacheFiles(cache);
     QCOMPARE(files.size(), 3);
     const QString dropped = cacheFileHolding(cache, QStringLiteral("window 0 line 0"));
     QVERIFY(!dropped.isEmpty());
@@ -1287,7 +1300,7 @@ void TestDocumentTranslator::reportsTheCachedWindowsBeforeTheModel()
     QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
 
     // The cache holds the first two windows.
-    const QStringList files = cacheFiles(cache, kAnswerSuffix);
+    const QStringList files = cacheFiles(cache);
     QCOMPARE(files.size(), 3);
     const QString dropped = cacheFileHolding(cache, QStringLiteral("window 2 line 0"));
     QVERIFY(!dropped.isEmpty());
@@ -1337,7 +1350,7 @@ void TestDocumentTranslator::reportsTheCachedWindowsWhileTheModelAnswers()
     QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
 
     // The cache holds the two windows behind the first one.
-    const QStringList files = cacheFiles(cache, kAnswerSuffix);
+    const QStringList files = cacheFiles(cache);
     QCOMPARE(files.size(), 3);
     const QString dropped = cacheFileHolding(cache, QStringLiteral("window 0 line 0"));
     QVERIFY(!dropped.isEmpty());
@@ -1607,7 +1620,7 @@ void TestDocumentTranslator::ignoresTheOrderHeadersAreTypedIn()
     QVERIFY(TestSupport::waitFor([&] { return finished.size() == 1; }, 10000));
     QCOMPARE(finished.size(), 1);
     QCOMPARE(m_api.requests, 1);
-    QCOMPARE(cacheFiles(cache, kAnswerSuffix).size(), 1);
+    QCOMPARE(cacheFiles(cache).size(), 1);
 
     config->setValue(Keys::apiCustomHeaders,
                      QStringLiteral("x-trace:on\nx-provider: mirror"));
@@ -1617,7 +1630,7 @@ void TestDocumentTranslator::ignoresTheOrderHeadersAreTypedIn()
     QCOMPARE(finished.size(), 2);
     QCOMPARE(m_api.requests, 0);
     QCOMPARE(finished.at(1), finished.at(0));
-    QCOMPARE(cacheFiles(cache, kAnswerSuffix).size(), 1);
+    QCOMPARE(cacheFiles(cache).size(), 1);
 
     config->setValue(Keys::apiCustomHeaders,
                      QStringLiteral("x-trace:on\nx-provider: other"));
@@ -1626,7 +1639,7 @@ void TestDocumentTranslator::ignoresTheOrderHeadersAreTypedIn()
     QVERIFY(TestSupport::waitFor([&] { return finished.size() == 3; }, 10000));
     QCOMPARE(finished.size(), 3);
     QCOMPARE(m_api.requests, 1);
-    QCOMPARE(cacheFiles(cache, kAnswerSuffix).size(), 2);
+    QCOMPARE(cacheFiles(cache).size(), 2);
 }
 
 // A setting that only carries the request there leaves the key alone, so the
@@ -1674,9 +1687,9 @@ void TestDocumentTranslator::retiresTheFailureOfAnAnsweredRequest()
     QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
     QCOMPARE(m_api.requests, 1);
 
-    // The record of an attempt that failed, beside the answer of its own request.
-    const QString answer = cacheFiles(cache, kAnswerSuffix).first();
-    const QString sample = answer.left(answer.size() - kAnswerSuffix.size());
+    // The record of an attempt that failed, kept under the digest of its request.
+    const QString answer = cacheFiles(cache).first();
+    const QString sample = answer.left(answer.size() - kCacheSuffix.size());
     QVERIFY(cache.storeFailure(sample, QStringLiteral("{\"1\":")));
 
     m_api.requests = 0;
@@ -1685,7 +1698,7 @@ void TestDocumentTranslator::retiresTheFailureOfAnAnsweredRequest()
     QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
 
     QCOMPARE(m_api.requests, 0);
-    QVERIFY(cacheFiles(cache, kFailureSuffix).isEmpty());
+    QVERIFY(failureFiles(cache).isEmpty());
     QVERIFY(cache.cachedAnswer(sample) == PromptBuilder::documentWindowData(
                                               {QStringLiteral("译文 window 0 line 0"),
                                                QStringLiteral("译文 window 0 line 1"),
@@ -1709,7 +1722,7 @@ void TestDocumentTranslator::stopsOnTheReportOfACachedWindow()
     QCOMPARE(finished.size(), 1);
 
     // One window stays cached, and it is the one the run takes first.
-    const QStringList files = cacheFiles(cache, kAnswerSuffix);
+    const QStringList files = cacheFiles(cache);
     QCOMPARE(files.size(), 3);
     const QString kept = cacheFileHolding(cache, QStringLiteral("window 0 line 0"));
     QVERIFY(!kept.isEmpty());
@@ -1751,7 +1764,7 @@ void TestDocumentTranslator::ignoresCachedAnswersOfTheWrongShape()
     QVERIFY(TestSupport::waitFor([&] { return finished.size() == 1; }, 10000));
     QCOMPARE(finished.size(), 1);
 
-    const QStringList files = cacheFiles(cache, kAnswerSuffix);
+    const QStringList files = cacheFiles(cache);
     QCOMPARE(files.size(), 1);
     const QString path = cachePath(cache, files.first());
     QFile stale(path);
@@ -1789,12 +1802,12 @@ void TestDocumentTranslator::keepsUnusableAnswersAsFailures()
 
     // The unusable answer is stored with the line it lost, and no entry is
     // written for a window the run did not accept.
-    const QStringList failures = cacheFiles(cache, kFailureSuffix);
+    const QStringList failures = failureFiles(cache);
     QCOMPARE(failures.size(), 1);
-    QFile broken(cachePath(cache, failures.first()));
+    QFile broken(failurePath(cache, failures.first()));
     QVERIFY(broken.open(QIODevice::ReadOnly));
     QCOMPARE(QJsonDocument::fromJson(broken.readAll()).object().size(), 2);
-    QVERIFY(cacheFiles(cache, kAnswerSuffix).isEmpty());
+    QVERIFY(cacheFiles(cache).isEmpty());
 
     // The next run reaches the model again, and its answer takes the place of
     // the failure.
@@ -1807,8 +1820,8 @@ void TestDocumentTranslator::keepsUnusableAnswersAsFailures()
     QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
 
     QCOMPARE(m_api.requests, 2);
-    QVERIFY(cacheFiles(cache, kFailureSuffix).isEmpty());
-    QCOMPARE(cacheFiles(cache, kAnswerSuffix).size(), 1);
+    QVERIFY(failureFiles(cache).isEmpty());
+    QCOMPARE(cacheFiles(cache).size(), 1);
 }
 
 // Every window the run could not translate is reported under the short digest of
@@ -1832,7 +1845,7 @@ void TestDocumentTranslator::namesEveryFailedSample()
 
     // Each name is the head of one failure file, which is named by the whole
     // digest of the request.
-    const QStringList files = cacheFiles(cache, kFailureSuffix);
+    const QStringList files = failureFiles(cache);
     QCOMPARE(files.size(), 3);
     for (const QString& sample : failed) {
         QCOMPARE(sample.size(), 8);
@@ -1868,14 +1881,14 @@ void TestDocumentTranslator::dropsTheFailureBeforeSending()
 
     translator.start(windows, TranslationContext(), cache, retryPause());
     QVERIFY(TestSupport::waitFor([&] { return reported; }, 10000));
-    QCOMPARE(cacheFiles(cache, kFailureSuffix).size(), 1);
+    QCOMPARE(failureFiles(cache).size(), 1);
 
     // The next run reaches the model again; the record goes with the request, so
     // it is gone while the request is on the wire.
     m_api.malformedLeft = 0;
     bool failureGoneWhenSent = false;
     m_api.onRequest = [&cache, &failureGoneWhenSent]() {
-        failureGoneWhenSent = cacheFiles(cache, kFailureSuffix).isEmpty();
+        failureGoneWhenSent = failureFiles(cache).isEmpty();
     };
     QString finished;
     connect(&translator, &DocumentTranslator::finished, this,
@@ -1885,8 +1898,8 @@ void TestDocumentTranslator::dropsTheFailureBeforeSending()
     QVERIFY(TestSupport::waitFor([&] { return !finished.isEmpty(); }, 10000));
 
     QVERIFY(failureGoneWhenSent);
-    QVERIFY(cacheFiles(cache, kFailureSuffix).isEmpty());
-    QCOMPARE(cacheFiles(cache, kAnswerSuffix).size(), 1);
+    QVERIFY(failureFiles(cache).isEmpty());
+    QCOMPARE(cacheFiles(cache).size(), 1);
 }
 
 void TestDocumentTranslator::resendsTheSamePromptOnRetry()

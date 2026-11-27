@@ -4,16 +4,16 @@
 
 #include <optional>
 
-// Answers of document windows, one file per request below the cache location:
-// <sample>.document.cache.json holds the answer of the request named by <sample>,
-// <sample>.document.failure.json the reply of a request that could not be used.
+// Answers of document windows, one file per request in the document cache:
+// document/<sample>.json holds the answer of the request named by <sample>,
+// document/failure/<sample>.json the reply of a request that could not be used.
 // <sample> is the full digest of the request, so any document sending the same
 // request is answered from the cache; files are addressed by that name alone, and a
 // record no request asks for again stays until the cache is cleared.
 class DocumentCache
 {
 public:
-    // An empty rootPath selects the standard cache location.
+    // An empty rootPath selects the document directory in the standard cache.
     explicit DocumentCache(const QString& rootPath = QString());
 
     QString rootPath() const { return m_rootPath; }
@@ -27,10 +27,9 @@ public:
 
 private:
     static QString standardRootPath();
-    QString pathFor(const QString& sample, const QString& suffix) const;
+    QString answerPath(const QString& sample) const;
+    QString failurePath(const QString& sample) const;
     bool write(const QString& path, const QString& text) const;
 
     QString m_rootPath;
-    // Whether the location has been created by this cache.
-    mutable bool m_rootReady = false;
 };

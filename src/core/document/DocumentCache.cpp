@@ -2,13 +2,15 @@
 
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QSaveFile>
 #include <QStandardPaths>
 
 namespace {
 
-const QString kAnswerSuffix = QStringLiteral(".document.cache.json");
-const QString kFailureSuffix = QStringLiteral(".document.failure.json");
+const QString kDocumentDir = QStringLiteral("document");
+const QString kFailureDir = QStringLiteral("failure");
+const QString kFileSuffix = QStringLiteral(".json");
 
 }
 
@@ -19,14 +21,24 @@ DocumentCache::DocumentCache(const QString& rootPath)
 
 QString DocumentCache::standardRootPath()
 {
-    return QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+    const QString cache = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+    if (cache.isEmpty())
+        return QString();
+    return QDir(cache).filePath(kDocumentDir);
 }
 
-QString DocumentCache::pathFor(const QString& sample, const QString& suffix) const
+QString DocumentCache::answerPath(const QString& sample) const
 {
-    if (sample.isEmpty())
+    if (sample.isEmpty() || m_rootPath.isEmpty())
         return QString();
-    return QDir(m_rootPath).filePath(sample + suffix);
+    return QDir(m_rootPath).filePath(sample + kFileSuffix);
+}
+
+QString DocumentCache::failurePath(const QString& sample) const
+{
+    if (sample.isEmpty() || m_rootPath.isEmpty())
+        return QString();
+    return QDir(QDir(m_rootPath).filePath(kFailureDir)).filePath(sample + kFileSuffix);
 }
 
 // QSaveFile, so a write cut short leaves the previous answer rather than half a
@@ -35,11 +47,8 @@ bool DocumentCache::write(const QString& path, const QString& text) const
 {
     if (path.isEmpty())
         return false;
-    if (!m_rootReady) {
-        if (!QDir().mkpath(m_rootPath))
-            return false;
-        m_rootReady = true;
-    }
+    if (!QDir().mkpath(QFileInfo(path).absolutePath()))
+        return false;
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly))
         return false;
@@ -51,7 +60,7 @@ bool DocumentCache::write(const QString& path, const QString& text) const
 
 std::optional<QString> DocumentCache::cachedAnswer(const QString& sample) const
 {
-    const QString path = pathFor(sample, kAnswerSuffix);
+    const QString path = answerPath(sample);
     if (path.isEmpty())
         return std::nullopt;
     QFile file(path);
@@ -62,27 +71,24 @@ std::optional<QString> DocumentCache::cachedAnswer(const QString& sample) const
 
 bool DocumentCache::storeAnswer(const QString& sample, const QString& answer) const
 {
-    return write(pathFor(sample, kAnswerSuffix), answer);
+    return write(answerPath(sample), answer);
 }
 
 bool DocumentCache::storeFailure(const QString& sample, const QString& reply) const
 {
-    return write(pathFor(sample, kFailureSuffix), reply);
+    return write(failurePath(sample), reply);
 }
 
 void DocumentCache::removeFailure(const QString& sample) const
 {
-    const QString path = pathFor(sample, kFailureSuffix);
+    const QString path = failurePath(sample);
     if (!path.isEmpty())
         QFile::remove(path);
 }
 
-// The only place the cache location is listed; translating addresses files by name.
 void DocumentCache::clearAll(const QString& rootPath)
 {
-    QDir root(rootPath.isEmpty() ? standardRootPath() : rootPath);
-    const QStringList names = root.entryList(
-        {QStringLiteral("*") + kAnswerSuffix, QStringLiteral("*") + kFailureSuffix}, QDir::Files);
-    for (const QString& name : names)
-        root.remove(name);
+    const QString root = rootPath.isEmpty() ? standardRootPath() : rootPath;
+    if (!root.isEmpty())
+        QDir(root).removeRecursively();
 }

@@ -37,9 +37,14 @@ QString sampleOf(const QByteArray& request)
         QCryptographicHash::hash(request, QCryptographicHash::Sha256).toHex());
 }
 
-QStringList entriesWithSuffix(const QString& root, const QString& suffix)
+QString failureDir(const QString& root)
 {
-    return QDir(root).entryList({QStringLiteral("*") + suffix}, QDir::Files, QDir::Name);
+    return QDir(root).filePath(QStringLiteral("failure"));
+}
+
+QStringList jsonFiles(const QString& path)
+{
+    return QDir(path).entryList({QStringLiteral("*.json")}, QDir::Files, QDir::Name);
 }
 
 } // namespace
@@ -54,22 +59,22 @@ private slots:
     void keepsAndClearsFailures();
     void removesOnlyTheNamedFailure();
     void storesNothingWithoutASample();
-    void keepsAnswersFlatInTheCacheLocation();
+    void keepsAnswersFlatInTheDocumentCache();
     void clearsEveryDocumentCache();
     void cachesByDefault();
 };
 
-// Without a root of its own the cache lives in the standard cache directory, and
-// a given root is used as it stands.
+// Without a root of its own the cache lives in the document directory of the
+// standard cache location, and a given root is used as it stands.
 void TestDocumentCache::usesTheStandardCacheLocation()
 {
     const QString standard = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
     QVERIFY(!standard.isEmpty());
-    QCOMPARE(DocumentCache().rootPath(), standard);
+    QCOMPARE(DocumentCache().rootPath(), QDir(standard).filePath(QStringLiteral("document")));
     QCOMPARE(DocumentCache(TestSupport::tempDir()).rootPath(), TestSupport::tempDir());
 }
 
-// An answer lies directly below the cache location under the whole digest of the
+// An answer lies directly in the document cache under the whole digest of the
 // request that produced it.
 void TestDocumentCache::roundTripsAnswersByName()
 {
@@ -83,16 +88,17 @@ void TestDocumentCache::roundTripsAnswersByName()
     QVERIFY(cache.storeAnswer(sample, answer));
     QVERIFY(cache.cachedAnswer(sample) == answer);
     QCOMPARE(root.entryList(QDir::Files, QDir::Name),
-             QStringList{sample + QStringLiteral(".document.cache.json")});
+             QStringList{sample + QStringLiteral(".json")});
 }
 
+// A failure lies in the failure directory under the whole digest of its request.
 void TestDocumentCache::keepsAndClearsFailures()
 {
     const QDir root(TestSupport::tempDir());
     const DocumentCache cache(root.path());
     const QString sample = sampleOf(QByteArrayLiteral("window one"));
     const QString broken = QStringLiteral("{\"1\": \"译文\", \"2\":");
-    const QString path = root.filePath(sample + QStringLiteral(".document.failure.json"));
+    const QString path = QDir(failureDir(root.path())).filePath(sample + QStringLiteral(".json"));
 
     QVERIFY(cache.storeFailure(sample, broken));
     QCOMPARE(readFile(path), broken);
@@ -113,8 +119,8 @@ void TestDocumentCache::removesOnlyTheNamedFailure()
 
     cache.removeFailure(first);
 
-    QCOMPARE(entriesWithSuffix(TestSupport::tempDir(), QStringLiteral(".document.failure.json")),
-             QStringList{second + QStringLiteral(".document.failure.json")});
+    QCOMPARE(jsonFiles(failureDir(TestSupport::tempDir())),
+             QStringList{second + QStringLiteral(".json")});
     QVERIFY(cache.cachedAnswer(first) == QStringLiteral("{}"));
 }
 
@@ -128,11 +134,12 @@ void TestDocumentCache::storesNothingWithoutASample()
     QVERIFY(!cache.cachedAnswer(QString()));
     cache.removeFailure(QString());
     QVERIFY(QDir(TestSupport::tempDir()).entryList(QDir::Files).isEmpty());
+    QVERIFY(!QDir(failureDir(TestSupport::tempDir())).exists());
 }
 
-// Every answer sits in the cache location itself: a window is found by name, and
+// Every answer sits in the document cache itself: a window is found by name, and
 // any cache reads what another wrote.
-void TestDocumentCache::keepsAnswersFlatInTheCacheLocation()
+void TestDocumentCache::keepsAnswersFlatInTheDocumentCache()
 {
     const QDir root(TestSupport::tempDir());
     const DocumentCache first(root.path());
@@ -143,17 +150,17 @@ void TestDocumentCache::keepsAnswersFlatInTheCacheLocation()
     QVERIFY(second.storeAnswer(two, QStringLiteral("{}")));
 
     QCOMPARE(root.entryList(QDir::Files, QDir::Name),
-             QStringList({one + QStringLiteral(".document.cache.json"),
-                          two + QStringLiteral(".document.cache.json")}));
+             QStringList({one + QStringLiteral(".json"), two + QStringLiteral(".json")}));
     QVERIFY(root.entryList(QDir::Dirs | QDir::NoDotAndDotDot).isEmpty());
     QVERIFY(second.cachedAnswer(one) == QStringLiteral("{}"));
 }
 
-// Clearing takes the answers and failures of every request and leaves the rest of
-// the cache location alone.
+// Clearing takes the whole document cache and leaves the rest of the cache
+// location alone.
 void TestDocumentCache::clearsEveryDocumentCache()
 {
-    const DocumentCache cache(TestSupport::tempDir());
+    const QString documentRoot = QDir(TestSupport::tempDir()).filePath(QStringLiteral("document"));
+    const DocumentCache cache(documentRoot);
     const QString sample = sampleOf(QByteArrayLiteral("window one"));
     QVERIFY(cache.storeAnswer(sample, QStringLiteral("{}")));
     QVERIFY(cache.storeFailure(sample, QStringLiteral("{")));
@@ -161,11 +168,9 @@ void TestDocumentCache::clearsEveryDocumentCache()
     const QString unrelated =
         writeFile(QStringLiteral("unrelated.txt"), QByteArrayLiteral("keep me"));
 
-    DocumentCache::clearAll(TestSupport::tempDir());
+    DocumentCache::clearAll(documentRoot);
 
-    QVERIFY(entriesWithSuffix(TestSupport::tempDir(), QStringLiteral(".document.cache.json")).isEmpty());
-    QVERIFY(entriesWithSuffix(TestSupport::tempDir(), QStringLiteral(".document.failure.json"))
-                .isEmpty());
+    QVERIFY(!QDir(documentRoot).exists());
     QVERIFY(QFile::exists(unrelated));
 }
 
